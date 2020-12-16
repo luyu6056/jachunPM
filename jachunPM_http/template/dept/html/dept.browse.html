@@ -1,0 +1,166 @@
+{{template "header.html" .}}
+<div id='mainMenu' class='clearfix'>
+  <div class='btn-toolbar pull-left'>
+    <span class='btn btn-link btn-active-text'><span class='text'>{{.Lang.dept.common}}</span></span>
+  </div>
+</div>
+<div id='mainContent' class='main-row'>
+  <div class='side-col col-4'>
+    <div class='panel'>
+      <div class='panel-heading'>
+        <div class='panel-title'>{{.Data.title}}</div>
+      </div>
+      <div class='panel-body'>
+        <ul data-name='tree-dept' id='deptTree'></ul>
+      </div>
+    </div>
+  </div>
+  <div class='main-col col-8'>
+    <div class='panel'>
+      <div class='panel-heading'>
+        <div class='panel-title'>{{.Lang.dept.manageChild}}</div>
+      </div>
+      <div class='panel-body'>
+        <form method='post' target='hiddenwin' action='{{helper_createLink "dept" "manageChild"}}'>
+          <table class='table table-form'>
+            <tr>
+              <td>
+                <nobr>
+                {{html_a (helper_createLink "dept" "browse") .App.company.Name}}
+                {{.Lang.common.arrow}}
+                {{range $dept := .Data.parentDepts}}
+                    {{html_a (helper_createLink "dept" "browse" "deptID=" (string $dept.Id)) $dept.Name}}
+                    {{$.Lang.common.arrow}}
+                {{end}}
+                </nobr>
+              </td>
+              <td class='w-300px'> 
+                {{range $sonDept := .Data.sons}}
+                    {{html_input (string $sonDept.Id) $sonDept.Name "class='form-control' autocomplete='off'"}}
+                {{end}}
+                {{range genlist 5}}{{html_input "0" "" "class='form-control' autocomplete='off'"}}{{end}}
+              </td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class='form-actions'>
+                {{html_submitButton .}}
+                {{html_backButton .}}
+                {{html_hidden "parentDeptID" (string .Data.deptID)}}
+              </td>
+            </tr>
+          </table>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+$(function()
+{
+    var data = $.parseJSON('{{jsonMarshal .Data.tree}}');
+    var options = {
+        name: 'deptTree',
+        initialState: 'preserve',
+        data: data,
+        sortable: 
+        {
+            lazy: true, 
+            nested: true,
+            canMoveHere: function($ele, $target)
+            {
+                if($ele && $target && $ele.parent().closest('li').attr('data-id') !== $target.parent().closest('li').attr('data-id')) return false;
+            }
+        },
+        itemCreator: function($li, item)
+        {
+            var link = item.Id !== undefined ? ('<a href="' + createLink('dept', 'browse', 'dept={0}'.format(item.Id)) + '">' + item.Name + '</a>') : ('<span class="tree-toggle">' + item.Name + '</span>');
+            var $toggle = $('<span class="dept-name module-name" data-id="' + item.Id + '">' + link + '</span>');
+            if(item.Manager)
+            {
+                $toggle.append('&nbsp; <span class="dept-manager text-muted"><i class="icon icon-user"></i> ' + item.ManagerName + '</span>');
+            }
+            $li.append($toggle);
+            return true;
+        },
+        actions: 
+        {
+            sort:
+            {
+                title: '{{.Lang.dept.dragAndSort }}',
+                template: '<a class="sort-handler" href="javascript:;">{{.Lang.common.sort}}</a>'
+            },
+            edit:
+            {
+                linkTemplate: '{{helper_createLink "dept" "edit" "deptid={0}"}}',
+                title: '{{.Lang.dept.edit }}',
+                template: '<a href="javascript:;" data-width="600">{{.Lang.common.edit}}</a>'
+            },
+            "delete":
+            {
+                linkTemplate: '{{helper_createLink "dept" "delete" "deptid={0}"}}',
+                title: '{{.Lang.dept.delete }}',
+                template: '<a href="javascript:;">{{.Lang.common.delete}}</a>'
+            }
+        },
+        action: function(event)
+        {
+            var action = event.action, $target = $(event.target), item = event.item;
+            if(action.type === 'edit')
+            {
+                new $.zui.ModalTrigger({
+                    type: 'ajax',
+                    url: action.linkTemplate.format(item.Id),
+                    keyboard: true
+                }).show();
+            }
+            else if(action.type === 'delete')
+            {
+                window.open(action.linkTemplate.format(item.Id), 'hiddenwin');
+            }
+            else if(action.type === 'sort')
+            {
+                var orders = {};
+                $('#deptTree').find('li:not(.tree-action-item)').each(function()
+                {
+                    var $li = $(this);
+                    var item = $li.data();
+                    orders[item.Id] = $li.attr('data-order') || item.Order;
+                });
+                $.ajax({
+                    url: '{{helper_createLink "dept" "updateOrder"}}',
+                    type: 'POST',
+                    dataType: 'html',
+                    data: orders,
+                })
+                .done(function(data) {
+                    $(data).appendTo('body');
+                })
+                .fail(function(e) {
+                    bootbox.alert(e);
+                });
+                
+               
+            }
+        }
+    };
+
+    {{- if common_hasPriv . "dept" "updateorder"}}{{else}}options.actions["sort"] = false;{{end}}
+    {{- if common_hasPriv . "dept" "edit"}}{{else}}options.actions["edit"] = false;{{end}}
+    {{- if common_hasPriv . "dept" "delete"}}{{else}}options.actions["delete"] = false;{{end}}
+
+    var $tree = $('#deptTree').tree(options);
+
+    var tree = $tree.data('zui.tree');
+    if(!tree.store.time) tree.expand($tree.find('li:not(.tree-action-item)').first());
+
+    $tree.on('mouseenter', 'li:not(.tree-action-item)', function(e)
+    {
+        $('#deptTree').find('li.hover').removeClass('hover');
+        $(this).addClass('hover');
+        e.stopPropagation();
+    });
+});
+</script>
+{{template "footer.html" .}}

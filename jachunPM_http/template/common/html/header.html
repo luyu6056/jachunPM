@@ -1,0 +1,87 @@
+{{template "header.lite.html" .}}
+
+{{importHeaderHook .}} 
+
+{{if eq .App.onlybody ""}}
+<header id='header'>
+  <div id='mainHeader'>
+    <div class='container'>
+      <hgroup id='heading'>
+        {{$heading := .App.company.Name}}
+        <h1 id='companyname' title='{{$heading}}'{{if gt (strlen $heading) 36}} class='long-name'{{end}}>{{html_a (helper_createLink "index" "index")  $heading}}</h1>
+      </hgroup>
+      <nav id='navbar'>{{printMainmenu .}}</nav>
+      <div id='toolbar'>
+        <div id="userMenu">
+        {{$searchObject := .App.moduleName}}
+        {{if eq .App.moduleName "product"}}
+        {{if eq .App.methodName "browse"}}{{$searchObject = "story"}}{{end}}
+        {{else if eq .App.moduleName "project"}}
+            {{if gt (strpos "task|story|bug|build" .App.methodName) -1}}{{$searchObject = .App.methodName}}{{end}}
+        {{else if or (eq .App.moduleName "my") (eq .App.moduleName  "user")}}
+            {{$searchObject = .App.methodName}}
+        {{end}}
+        {{- if eq (getValue .Lang.common.searchObjects $searchObject) nil}}{{$searchObject = "bug"}}{{end}}
+        <div id='searchbox'>
+        <div class='input-group'>
+        <div class='input-group-btn'>
+          <a data-toggle='dropdown' class='btn btn-link'><span id='searchTypeName'>{{getValue .Lang.common.searchObjects $searchObject}}</span> <span class='caret'></span></a>
+          {{html_hidden "searchType" $searchObject}}
+          <ul id='searchTypeMenu' class='dropdown-menu'>
+{{- range $key,$value := .Lang.common.searchObjects}}<li{{if eq $key $searchObject}} class='selected'{{end}}><a href='javascript:$.setSearchType("{{$key}}");' data-value='{{$key}}'>{{$value}}</a></li>
+{{end -}}
+          </ul></div>
+          <input id='searchInput' class='form-control search-input' type='search' onclick='this.value=\"\"' onkeydown='if(event.keyCode==13) $.gotoObject();' placeholder='{{.Lang.common.searchTips}}'/>
+          </div>
+          <a href='javascript:$.gotoObject();' class='btn btn-link' id='searchGo'>GO!</a>
+          </div>
+          <ul id="userNav" class="nav nav-default">
+            <li><a class='dropdown-toggle' data-toggle='dropdown'>
+              <span class='user-name'>{{if eq .App.user.Realname ""}}{{.App.user.Account}}{{else}}{{.App.user.Realname}}{{end}}</span><span class='caret'></span></a>
+                <ul class='dropdown-menu pull-right'>
+                  <li class="user-profile-item">
+                    <a href='{{helper_createLink "my" "profile"}}' class='{{if eq (getValue .Lang.user.roleList .App.user.Role) ""}} no-role{{end}}'>
+                    <div class='avatar avatar bg-secondary avatar-circle'>{{substr .App.user.Account 0 1}}</div>
+                    <div class="user-profile-name">{{if eq .App.user.Realname ""}}{{.App.user.Account}}{{else}}{{.App.user.Realname}}{{end}}</div>
+                    {{if getValue .Lang.user.roleList .App.user.Role}}<div class="user-profile-role">{{getValue .Lang.user.roleList .App.user.Role}}</div>{{end}}</a></li>
+                    <li class="divider"></li>
+                    <li>{{html_a (helper_createLink "my" "profile") .Lang.common.profile}}</li>
+                    <li>{{html_a (helper_createLink "my" "changepassword") .Lang.common.changePassword "" "class='iframe' data-width='500'"}}</li>
+                    <li class='divider'></li>
+                    <li class='dropdown-submenu'>
+                      <a href='javascript:;'>{{.Lang.common.theme}}</a>
+                      <ul class='dropdown-menu pull-left'>
+                      {{range $key,$value := .Lang.common.themes}}
+                          <li {{if eq (cookie $ "theme") $key}}class='selected'{{end}}><a href='javascript:selectTheme("{{$key}}");' data-value='{{$key}}'>{{$value}}</a></li>
+                      {{end}}
+                      </ul>
+                    </li>
+                    <li class='dropdown-submenu'>
+                    <a href='javascript:;'>{{.Lang.common.lang}}</a>
+                      <ul class='dropdown-menu pull-left'>
+                      {{range $value := .Config.langs}}
+                        <li {{if eq (cookie $ "lang") $value.Key}}class='selected'{{end}}><a href='javascript:selectLang("{{$value.Key}}");'>{{$value.Value}}</a></li>
+                      {{end}}
+                      </ul>
+                  </li>
+                <li class='custom-item'><a href='{{helper_createLink "custom" "ajaxMenu" (strAdd "module=" .App.moduleName "&method=" .App.methodName)}}' data-toggle='modal' data-type='iframe' data-icon='cog' data-width='80%'>{{.Lang.common.customMenu}}</a></li>
+                <li class="divider"></li>
+                <li>{{html_a (helper_createLink "user" "logout") .Lang.common.logout}}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id='subHeader'>
+    <div class='container'>
+      <div id="pageNav" class='btn-toolbar'>{{if .Lang.common.modulePageNav}}{{.Lang.common.modulePageNav}}{{end}}</div>
+      <nav id='subNavbar'>{{common_printModuleMenu . .App.moduleName}}</nav>
+      <div id="pageActions"><div class='btn-toolbar'>{{if .Lang.common.modulePageActions}}{{.Lang.common.modulePageActions}}{{end}}</div></div>
+    </div>
+  </div>
+ 
+</header>
+{{end}}
+
+<main id='main'>
+  <div class='container'>

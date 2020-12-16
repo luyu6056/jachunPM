@@ -1,0 +1,62 @@
+{{template "header.lite.html" .}}
+{{js_import (strAdd .Config.jsRoot  "aes.js")}}
+<main id="main" class="fade no-padding">
+  <div class="container" id="login">
+    <div id="loginPanel">
+      <header>
+        <h2>{{printf .Lang.common.welcome .App.company.Name }}</h2>
+        <div class="actions dropdown dropdown-hover" id='langs'>
+          <button type='button' class='btn' title='Change Language/更换语言/更換語言'>{{.App.ClientLangString}} <span class="caret"></span></button>
+          <ul class="dropdown-menu pull-right">
+            {{range $value:=.Config.langs}}
+            <li><a class="switch-lang" data-value="{{$value.Key}}">{{$value.Value}}</a></li>
+            {{end}}
+          </ul>
+        </div>
+      </header>
+      <div class="table-row">
+        <div class="col-4 text-center" id='logo-box'>
+          <img src="{{.Config.webRoot}}theme/default/images/main/{{.Lang.common.logoImg}}" />
+        </div>
+        <div class="col-8">
+          <form method='post' target='hiddenwin'>
+            <table class='table table-form'>
+              <tbody>
+                <tr>
+                  <th>{{.Lang.user.account}}</th>
+                  <td><input class='form-control' type='text' name='account' id='account' autofocus /></td>
+                </tr>
+                <tr>
+                  <th>{{.Lang.user.password}}</th>
+                  <td><input class='form-control' type='password' name='password' /></td>
+                </tr>
+                <tr>
+                  <th></th>
+                  <td id="keeplogin">{{html_checkBox "keepLogin"  .Lang.user.keepLogin  .Data.keepLogin}}</td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td class="form-actions">
+                  {{html_submitButton . .Lang.common.login  ""  "btn btn-primary"}}
+                  {{html_hidden "referer"  .Data.referer}}
+                  {{html_a (inlink . "reset") .Lang.user.resetPassword}}
+                  
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </form>
+        </div>
+      </div>
+      
+    </div>
+    <div id="info" class="table-row">
+      <div class="table-col text-middle text-center">
+        <div id="poweredby">
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+{{template "footer.lite.html" .}}

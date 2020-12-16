@@ -1,0 +1,8 @@
+<script>
+var chooseUsersToMail    = '{{.Lang.common.chooseUsersToMail}}';
+$(document).ready(function()
+{
+    $("#mailto").attr('data-placeholder', chooseUsersToMail);
+    $("#mailto, #productID").chosen();
+});
+</script>

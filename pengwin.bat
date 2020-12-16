@@ -1,0 +1,1 @@
+"D:\Program Files\ConEmu\ConEmu64.exe" "pengwin.exe run"

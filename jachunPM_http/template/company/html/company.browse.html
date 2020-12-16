@@ -1,0 +1,111 @@
+{{template "header.html" .}}
+<script type="text/javascript">
+    deptID={{.Data.deptID}}
+    confirmDelete="{{.Lang.user.confirmDelete}}"
+</script>
+<div id='mainMenu' class='clearfix'>
+  <div id='sidebarHeader'>
+    <div class="title">
+      {{if .Data.dept.name}}{{.Data.dept.name}}{{else}}{{.Lang.dept.common}}{{end}}
+      {{if .Data.deptID}}{{html_a (inlink . "browse" "deptID=0") "<i class='icon icon-sm icon-close'></i>" "" "class='text-muted'"}}{{end}}
+    </div>
+  </div>
+  <div class='btn-toolbar pull-left'>
+    <a class="btn btn-link querybox-toggle" id='bysearchTab'><i class="icon icon-search muted"></i> {{.Lang.user.search}}</a>
+  </div>
+  <div class='btn-toolbar pull-right'>
+    {{common_printLink . "user" "batchCreate" (strAdd "dept=" .Data.deptID) "<i class='icon icon-plus'></i> "  .Lang.user.batchCreate "" "class='btn btn-secondary'"}}
+    {{common_printLink . "user" "create" (strAdd "dept=" .Data.deptID) "<i class='icon icon-plus'></i> " .Lang.user.create "" "class='btn btn-primary'"}}
+  </div>
+</div>
+<div id='mainContent' class='main-row fade'>
+  <div class='side-col' id='sidebar'>
+    <div class="sidebar-toggle"><i class="icon icon-angle-left"></i></div>
+    <div class='cell'>
+      {{.Data.deptTree}}
+      <div class='text-center'>
+        {{common_printLink . "dept" "browse" "" .Lang.dept.manage "" "class='btn btn-info btn-wide'"}}
+      </div>
+    </div>
+  </div>
+  <div class='main-col'>
+    <div class="cell" id="queryBox"></div>
+    <form class='main-table table-user' data-ride='table' action='{{helper_createLink "user" "batchEdit" "deptID=" .Data.deptID}}' method='post' id='userListForm'>
+      {{$canBatchEdit := common_hasPriv . "user" "batchEdit"}}
+      <table class='table has-sort-head' id='userList'>
+        <thead>
+        <tr>
+         
+          <th class='c-id'>
+            {{if $canBatchEdit}}
+            <div class="checkbox-primary check-all" title="{{.Lang.common.selectAll}}">
+              <label></label>
+            </div>
+            {{end}}
+            {{common_printOrderLink . "id" .Data.orderBy .Data.vars .Lang.common.idAB}}
+          </th>
+          <th>{{common_printOrderLink . "realname" .Data.orderBy .Data.vars .Lang.user.realname}}</th>
+          <th>{{common_printOrderLink . "account" .Data.orderBy .Data.vars .Lang.user.account}}</th>
+          <th class="w-90px">{{common_printOrderLink . "role" .Data.orderBy .Data.vars .Lang.user.role}}</th>
+          <th class="c-url">{{common_printOrderLink . "email" .Data.orderBy .Data.vars .Lang.user.email}}</th>
+          <th class="c-type">{{common_printOrderLink . "gender" .Data.orderBy .Data.vars .Lang.user.gender}}</th>
+          <th>{{common_printOrderLink . "phone" .Data.orderBy .Data.vars .Lang.user.phone}}</th>
+          <th>{{common_printOrderLink . "qq" .Data.orderBy .Data.vars .Lang.user.qq}}</th>
+          <th class="c-date">{{common_printOrderLink . "last" .Data.orderBy .Data.vars .Lang.user.last}}</th>
+          <th class="w-90px">{{common_printOrderLink . "visits" .Data.orderBy .Data.vars .Lang.user.visits}}</th>
+          <th class='c-actions'>{{.Lang.common.actions}}</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{range $user:= .Data.users}}
+        <tr>
+          <td class='c-id'>
+            {{if $canBatchEdit}}
+            {{html_checkBox "users" (appendKeyValueStr $user.Account "")}}{{html_a (helper_createLink "user" "view" "account=" $user.Account) (printf "%03d" $user.Id)}}
+            {{else}}
+            {{printf "%03d" $user.Id}}
+            {{end}}
+          </td>
+          <td {{if $user.Deleted}}class="line_m"{{end}}>{{if common_hasPriv . "user" "view"}}{{common_printLink . "user" "view" (strAdd "account=" $user.Account) $user.Realname "" (strAdd "title='" $user.Realname (and $user.Deleted .Lang.user.deleted))}}{{else}}{{$user.Realname}}{{end}}</td>
+          <td>{{$user.Account}}</td>
+          <td class="w-90px" title='{{getValue .Lang.user.roleList $user.Role}}'>{{getValue .Lang.user.roleList $user.Role}}</td>
+          <td class="c-url" title="{{$user.Email}}">{{if $user.Email}}<a href='mailto:{{$user.Email}}'></a>{{end}}</td>
+          <td class="c-type">{{getValue .Lang.user.genderList $user.Gender}}</td>
+          <td>{{$user.Phone}}</td>
+          <td>{{if $user.Qq}}{{html_a (strAdd "tencent://message/?uin=" $user.Qq) $user.Qq}}{{end}}</td>
+          <td class='c-date'>{{if $user.Last}}{{date "2006-01-02" $user.Last}}{{end}}</td>
+          <td class='c-num text-center'>{{$user.Visits}}</td>
+          <td class='c-actions'>
+            <?php
+            if(!empty(.Config.sso.turnon)) common_printIcon "user" "unbind" "userID=$user->account" $user, 'list', 'unlink', "hiddenwin"
+            common_printIcon "user" "unlock" "userID=$user->account" $user, 'list', 'unlock', "hiddenwin"
+            common_printIcon "user" "edit" "userID=$user->id&from=company" "', 'list"
+            if($user->deleted){
+              $restoreClass = (strpos($this->app->company->admins, ",{$user->account},") === false and common_hasPriv "user" "restore") ? 'btn iframe' : 'btn disabled';
+              html_a $this->createLink('user' "restore" "userID=$user->id") '<i class="icon-restart"></i>', '', "title='{.Lang.user.restore}' class='{$restoreClass}'"
+            }else{
+              $deleteClass = (strpos($this->app->company->admins, ",{$user->account},") === false and common_hasPriv "user" "delete") ? 'btn iframe' : 'btn disabled';
+              html_a $this->createLink('user' "delete" "userID=$user->id") '<i class="icon-close"></i>', '', "title='{.Lang.user.delete}' class='{$deleteClass}'"
+            }
+            
+            ?>
+          </td>
+
+        </tr>
+        {{end}}
+        </tbody>
+      </table>
+      {{if .Data.users}}
+      <div class='table-footer'>
+        {{if $canBatchEdit}}
+        <div class="checkbox-primary check-all"><label>{{.Lang.common.selectAll}}</label></div>
+        <div class="table-actions btn-toolbar">{{html_submitButton .Lang.edit "" "btn"}}</div>
+        {{end}}
+        
+      </div>
+      {{end}}
+    </form>
+  </div>
+</div>
+<script lanugage='javascript'>$('#dept{{.Data.deptID}}').addClass('active');</script>
+{{template "footer.html" .}}

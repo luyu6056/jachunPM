@@ -1,0 +1,79 @@
+</div>{{/* end '.outer' in 'header.html.php'. */}}
+<script>
+$.initSidebar();
+</script>
+{{/*if $extView = $this->getExtViewFile(__FILE__)){include $extView; return helper::cd()}*/}}
+
+<iframe frameborder='0' name='hiddenwin' id='hiddenwin' scrolling='no' class='debugwin hidden'></iframe>
+
+
+</main>{{/* end '#wrap' in 'header.html.php'. */}}
+<footer id='footer'>
+    <!--新增的全局悬浮-->
+    {{if hasPriv "index" "notice"}}
+    <div class="panel block-sm block-bug " id="block99" data-id="12" data-name="系统公告" data-order="6" data-url="/zentao/block-printBlock-12-my.html" style="position: absolute;top: -285px;width: 250px;left: 20px;">
+        <div class="panel-heading">
+            <div class="panel-title">
+                系统公告
+                
+            </div>
+            <nav class="panel-actions nav nav-default">
+            <i onclick="$('#block99').hide()" class="icon-common-delete icon-close" style="float: right;"></i>
+          </nav>
+        </div>
+        {{if .Notice}}
+            <div class='panel-body'><div class='article-content'>{{.Notice}}</div></div>'
+        {{else}}
+            <div class='empty-tip'>{{.Lang.block.emptyTip}}</div>
+        {{end}}
+</div>
+
+  <div class="container">
+    {{printBreadMenu .ModuleName  .Value.position }}
+
+  </div>
+</footer>
+
+<script>
+{{loadConfig . "message"}}
+{{if .Config.message.browser.turnon}}
+/* Alert got messages. */
+needPing = false;
+$(function()
+{
+    var windowBlur = false;
+    if(window.Notification)
+    {
+        window.onblur  = function(){windowBlur = true;}
+        window.onfocus = function(){windowBlur = false;}
+    }
+    setInterval(function()
+    {
+        $.get(createLink('message', 'ajaxGetMessage', "windowBlur=" + (windowBlur ? '1' : '0')), function(data)
+        {
+            if(!windowBlur)
+            {
+                $('#noticeBox').append(data);
+                adjustNoticePosition();
+            }
+            else
+            {
+                if(data)
+                {
+                    if(typeof data == 'string') data = $.parseJSON(data);
+                    if(typeof data.message == 'string') notifyMessage(data);
+                }
+            }
+        });
+    }, {{multiply .Config.message.browser.pollTime 1000}});
+})
+{{end}}
+
+
+</script>
+
+{{end}}
+{{template "footer.oa.html" .}}
+{{template "footer.search.html" .}}
+</body>
+</html>
