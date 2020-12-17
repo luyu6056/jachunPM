@@ -83,16 +83,14 @@ type Database_mysql_stmt struct {
 }
 
 func (conn *Mysql_Conn) Prepare(sql []byte) (*Database_mysql_stmt, error) {
-	query := Bytes2str(sql)
+	query := string(sql)
 	conn.stmtMutex.RLock()
 	if stmt, exists := conn.stmtCache[query]; exists {
 		// must update reference counter in lock scope
-
 		conn.stmtMutex.RUnlock()
 		return stmt, nil
 	}
 	conn.stmtMutex.RUnlock()
-
 	conn.stmtMutex.Lock()
 	defer conn.stmtMutex.Unlock()
 	if stmt, exists := conn.stmtCache[query]; exists {

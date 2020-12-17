@@ -48,15 +48,13 @@ func SendMsgToRemote(ctx *server.Context, c gnet.Conn) error {
 				default:
 					libraries.ReleaseLog("未注册服务，host未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 				}
-				return nil
+				continue
 			}
 
 			svr, ok := c.Context().(*RpcServer)
 			if !ok {
 				return errors.New("收到非rpcserver消息")
-			}
-			//检查local
-			if in.Local != uint16(svr.ServerNo)|uint16(svr.Id)<<8 {
+			} else if in.Local != uint16(svr.ServerNo)|uint16(svr.Id)<<8 { //检查local
 				return errors.New(fmt.Sprintf("消息的local来源不对,in.Local%d,local%d", in.Local, uint16(svr.ServerNo)|uint16(svr.Id)<<8))
 			}
 
@@ -221,7 +219,11 @@ func HostServerHandler() {
 					svr.SendMsg(svr.local, 0, 0, out)
 					out.Put()
 				}
-
+			case *protocol.MSG_COMMON_regServer:
+				//common掉线可能会导致其他服务反复发送reg
+				if data.No != svr.ServerNo {
+					libraries.DebugLog("注册的serverNo不对，注册%d,实际%d", data.No, svr.ServerNo)
+				}
 			default:
 				libraries.ReleaseLog("host未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 			}

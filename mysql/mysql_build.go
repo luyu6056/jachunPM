@@ -120,6 +120,7 @@ func (this *Mysql_Build) On(on string) *Mysql_Build {
 }
 func (this *Mysql_Build) Where(conditions ...interface{}) *Mysql_Build {
 	if len(conditions) == 0 || this.err != nil {
+		this.sql.where.WriteString("1=1")
 		return this
 	}
 	var where map[string]interface{}
@@ -201,6 +202,10 @@ func (this *Mysql_Build) Where(conditions ...interface{}) *Mysql_Build {
 
 //全or模式
 func (this *Mysql_Build) WhereOr(condition map[string]interface{}) *Mysql_Build {
+	if len(condition) == 0 || this.err != nil {
+		this.sql.where.WriteString("1=1")
+		return this
+	}
 	this.sql.where.Write([]byte{32, 119, 104, 101, 114, 101, 32})
 	for key, value := range condition {
 		this.buffer.Reset()
@@ -232,6 +237,8 @@ func (this *Mysql_Build) _where(key string, value interface{}) error {
 	case []int, []int8, []int16, []int32, []int64, []uint, []uint8, []uint16, []uint32, []uint64, []string: // where key in (...)
 		ref := reflect.ValueOf(value)
 		if ref.Len() == 0 {
+			this.buffer.WriteString(Getkey(key))
+			this.buffer.WriteString("= NULL")
 			return nil
 		}
 		this.buffer.WriteString(Getkey(key))
@@ -273,6 +280,8 @@ func (this *Mysql_Build) _where_interface(key string, value interface{}) error {
 			case []int, []int8, []int16, []int32, []int64, []uint, []uint8, []uint16, []uint32, []uint64, []string:
 				ref := reflect.ValueOf(v)
 				if ref.Len() == 0 {
+					this.buffer.WriteString(Getkey(key))
+					this.buffer.WriteString("= NULL")
 					return nil
 				}
 				this.buffer.WriteString(Getkey(key))

@@ -6,27 +6,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="renderer" content="webkit">
   <title>{{.Data.title}} - {{.Lang.common.jachunPM}}</title>
-{{- if .Config.debug}}
+{{- if .Config.common.debug}}
   {{- $timestamp := time}}
-  {{css_import (strAdd .Config.themeRoot  "zui/css/min.css?t="  $timestamp)}}
-  {{css_import (strAdd .Config.defaultTheme  "style.css?t="  $timestamp)}}
-  {{css_import .Config.langTheme}}
-  {{if eq (strpos .Config.langTheme "default") -1}}{{css_import (strAdd .App.ClientTheme   "style.css?t="  $timestamp)}}{{end}}
-  {{js_import (strAdd .Config.jsRoot  "jquery/lib.js")}}
-  {{js_import (strAdd .Config.jsRoot  "zui/min.js?t="  $timestamp)}}
-  {{js_import (strAdd .Config.jsRoot  "my.full.js?t="  $timestamp)}}
+  {{css_import (strAdd .Config.common.themeRoot  "zui/css/min.css?t="  $timestamp)}}
+  {{css_import (strAdd .Config.common.defaultTheme  "style.css?t="  $timestamp)}}
+  {{css_import .Config.common.langTheme}}
+  {{if eq (strpos .Config.common.langTheme "default") -1}}{{css_import (strAdd .App.ClientTheme   "style.css?t="  $timestamp)}}{{end}}
+  {{js_import (strAdd .Config.common.jsRoot  "jquery/lib.js")}}
+  {{js_import (strAdd .Config.common.jsRoot  "zui/min.js?t="  $timestamp)}}
+  {{js_import (strAdd .Config.common.jsRoot  "my.full.js?t="  $timestamp)}}
 {{- else}}
-  {{css_import (strAdd .Config.defaultTheme .App.ClientLang "." .App.ClientTheme ".css")}}  
-  {{js_import (strAdd .Config.jsRoot  "all.js")}}
+  {{css_import (strAdd .Config.common.defaultTheme .App.ClientLang "." .App.ClientTheme ".css")}}  
+  {{js_import (strAdd .Config.common.jsRoot  "all.js")}}
 {{- end}}
 {{- if .Data.pageCSS}}<style>{{.Data.pageCSS}}</style>{{end}}
-  <link rel='icon' href='{{strAdd .Config.webRoot "favicon.ico"}}' type='image/x-icon' />
-  <link rel='shortcut icon' href='{{strAdd .Config.webRoot "favicon.ico"}}' type='image/x-icon' />
+  <link rel='icon' href='{{strAdd .Config.common.webRoot "favicon.ico"}}' type='image/x-icon' />
+  <link rel='shortcut icon' href='{{strAdd .Config.common.webRoot "favicon.ico"}}' type='image/x-icon' />
 <!--[if lt IE 10]>
-{{- js_import (strAdd .Config.webRoot  "jquery/placeholder/min.js") }}
+{{- js_import (strAdd .Config.common.webRoot  "jquery/placeholder/min.js") }}
 <![endif]-->
 <style type="text/css">{{getTemplateCss .App.TemplateName}}</style>
 <script>config.onlybody = "{{if eq .App.onlybody ""}}no{{else}}yes{{end}}";
+config.currentMethod='{{.App.methodName}}';
+config.currentModule='{{.App.moduleName}}';
 var lang={};
 lang.submitting = '{{.Lang.common.loading}}';
 lang.save       = '{{.Lang.common.save}}';

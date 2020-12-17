@@ -14,7 +14,8 @@ func HandleTick(t time.Time) {
 	var users []*db.User
 	var company *db.Company
 	var deptlist []*db.Dept
-	firstFlag := protocol.RpcTickStatusFirst | protocol.RpcTickStatusFirst
+	firstFlag := protocol.RpcTickStatusFirst
+
 	if HostConn.Status&firstFlag == firstFlag {
 		HostConn.Status -= protocol.RpcTickStatusFirst
 		//检查是否缺少默认admin
@@ -57,9 +58,10 @@ func HandleTick(t time.Time) {
 		if err != nil {
 			panic("检查dept失败" + err.Error())
 		}
+
 	} else {
 		//检查是否需要更新缓存
-		err := db.DB.Table(db.TABLE_USER).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Select(&users)
+		err := db.DB.Table(db.TABLE_USER).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&users)
 		if err != nil {
 			libraries.ReleaseLog("检查user刷新缓存失败%v", err)
 		}
@@ -67,7 +69,7 @@ func HandleTick(t time.Time) {
 		if err != nil {
 			libraries.ReleaseLog("检查company刷新缓存失败%v", err)
 		}
-		err = db.DB.Table(db.TABLE_DEPT).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Select(&deptlist)
+		err = db.DB.Table(db.TABLE_DEPT).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&deptlist)
 		if err != nil {
 			libraries.ReleaseLog("检查dept刷新缓存失败%v", err)
 		}
@@ -96,6 +98,7 @@ func HandleTick(t time.Time) {
 			cache.Role = user.Role
 			cache.Visits = user.Visits
 			cache.Deleted = user.Deleted
+			cache.QQ = user.QQ
 			HostConn.CacheSet(protocol.PATH_USER_INFO_CACHE, strconv.Itoa(int(user.Id)), cache, 0)
 		}
 		cache.Put()

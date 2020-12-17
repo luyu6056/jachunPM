@@ -8,6 +8,7 @@ import (
 	"protocol"
 	"reflect"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -28,6 +29,7 @@ func loadFuncs() {
 	commonModelFuncs()
 	htmlFuncs()
 	hookFuncs()
+	isClickableFuncs()
 	global_t.Funcs(global_Funcs)
 }
 
@@ -45,8 +47,10 @@ func createLink(moduleName string, methodName string, vars interface{}) string {
 			for _, v := range v {
 				buf.WriteString(url.QueryEscape(v.Key))
 				buf.WriteByte('=')
-				buf.WriteString(url.QueryEscape(v.Value))
+				buf.WriteString(v.Value)
+				buf.WriteByte('&')
 			}
+			buf.Truncate(buf.Len() - 1)
 		}
 	case []string:
 		if len(v) > 0 {
@@ -315,6 +319,44 @@ func htmlFuncs() {
 		bufpool.Put(buf)
 		return template.HTML(res)
 	}
+	global_Funcs["pager_show"] = func(data *TemplateData, align, typ string) template.HTML { //($align = 'right', $type = 'full')
+
+		if typ == "pagerjs" {
+			if data.Page.Total == 0 {
+				return template.HTML("<div class='pull-right'>" + data.Lang["pager"]["noRecord"].(string) + "</div>")
+			}
+			var vars []protocol.HtmlKeyValueStr
+
+			for key, value := range data.ws.GetAllQuery() {
+				if key == "recPerPage" || key == "pageID" {
+					continue
+				}
+				vars = append(vars, protocol.HtmlKeyValueStr{key, value[0]})
+			}
+
+			vars = append(vars, protocol.HtmlKeyValueStr{"recPerPage", "{recPerPage}"})
+			vars = append(vars, protocol.HtmlKeyValueStr{"pageID", "{page}"})
+			buf := bufpool.Get().(*libraries.MsgBuffer)
+			buf.WriteString("<ul class='pager' data-page-cookie='")
+			buf.WriteString(data.Page.CookieName)
+			buf.WriteString("' data-ride='pager' data-rec-total='")
+			buf.WriteString(strconv.Itoa(data.Page.Total))
+			buf.WriteString("' data-rec-per-page='")
+			buf.WriteString(strconv.Itoa(data.Page.PerPage))
+			buf.WriteString("' data-page='")
+			buf.WriteString(strconv.Itoa(data.Page.Page))
+			buf.WriteString("' data-link-creator='")
+			buf.WriteString(createLink(data.App["moduleName"].(string), data.App["methodName"].(string), vars))
+			buf.WriteString("'></ul>")
+			res := buf.String()
+			buf.Reset()
+			bufpool.Put(buf)
+			return template.HTML(res)
+		} else {
+			//parent::show($align, $type);
+		}
+		return template.HTML("")
+	}
 }
 func hookFuncs() {
 	global_Funcs["importHeaderHook"] = func(data *TemplateData) (res template.HTML) {
@@ -363,8 +405,12 @@ func html_a(href string, value ...string) string {
 	buf.WriteString("<a href='")
 	buf.WriteString(href)
 	buf.WriteString("' ")
-	if len(value) == 2 {
-		buf.WriteString(value[1])
+	if len(value) == 3 {
+		buf.WriteString(value[2])
+	}
+	if len(value) > 1 && value[1] != "_self" {
+		buf.WriteString(" target='" + value[1])
+		buf.WriteString("'")
 	}
 	buf.WriteString(">")
 	if len(value) > 0 {
@@ -401,4 +447,17 @@ func html_input(name string, value ...string) string { // value  attrib
 	buf.Reset()
 	bufpool.Put(buf)
 	return res
+}
+func isClickableFuncs() {
+	global_Funcs["MSG_USER_INFO_cache_isClickable"] = func(data *TemplateData, obj interface{}, action string) bool {
+		v := obj.(*protocol.MSG_USER_INFO_cache)
+		lockMinutes := 0
+		if str, ok := data.Config["user"]["lockMinutes"].(string); ok {
+			lockMinutes, _ = strconv.Atoi(str)
+		}
+		if action == "unlock" && data.Time.Unix()-v.Locked >= int64(lockMinutes)*60 {
+			return false
+		}
+		return true
+	}
 }

@@ -43,9 +43,9 @@ type User struct {
 	Role       string    `db:"type:varchar(10)"`
 	Realname   string    `db:"type:varchar(100)"`
 	Commiter   string    `db:"type:varchar(100)"`
-	Gender     int8      `db:"default(0)"` // 0=f,1=m,
+	Gender     int8      `db:"default(0)"` // 0男，1女
 	Email      string    `db:"type:varchar(90)"`
-	Qq         string    `db:"type:varchar(20)"`
+	QQ         int64     `db:"type:varchar(20)"`
 	Mobile     string    `db:"type:varchar(11)"`
 	Phone      string    `db:"type:varchar(20)"`
 	Weixin     string    `db:"type:varchar(90)"`

@@ -90,7 +90,38 @@ func (hs *Httpserver) Write(b *libraries.MsgBuffer) {
 	hs.Out.Reset()
 	hs.Out.Write(http1head200)
 	hs.Out.Write(http1nocache)
-	hs.httpsfinish(b, b.Len())
+	hs.Out.WriteString("Content-Type: text/html;charset=utf-8\r\n")
+	hs.data.Reset(b.Bytes())
+	if b.Len() > 4096 {
+		isdeflate := strings.Contains(hs.Request.GetHeader("Accept-Encoding"), "deflate")
+		var isgzip bool
+		if !isdeflate {
+			isgzip = strings.Contains(hs.Request.GetHeader("Accept-Encoding"), "gzip")
+		}
+		if isdeflate { //deflate压缩资源
+			hs.Out.Write(http1deflate)
+			buf := msgbufpool.Get().(*libraries.MsgBuffer)
+			defer msgbufpool.Put(buf)
+			buf.Reset()
+			w := CompressNoContextTakeover(buf, 6)
+			w.Write(b.Bytes())
+			w.Close()
+			hs.data.Reset(buf.Bytes())
+		} else if isgzip { //gzip可压缩资源
+			hs.Out.Write(http1gzip)
+			g := gzippool.Get().(*gzip.Writer)
+			buf := msgbufpool.Get().(*libraries.MsgBuffer)
+			defer msgbufpool.Put(buf)
+			defer gzippool.Put(g)
+			buf.Reset()
+			g.Reset(buf)
+			g.Write(b.Bytes())
+			g.Flush()
+			hs.data.Reset(buf.Bytes())
+		}
+	}
+	hs.httpsfinish(hs.data, hs.data.Len())
+
 }
 func (hs *Httpserver) WriteString(str string) {
 	hs.Out.Reset()
@@ -315,8 +346,8 @@ var (
 	http1head200 = []byte("HTTP/1.1 200 OK\r\nserver: gnet by luyu6056\r\n")
 	http1head206 = []byte("HTTP/1.1 206 Partial Content\r\nserver: gnet by luyu6056\r\n")
 	http1head304 = []byte("HTTP/1.1 304 Not Modified\r\nserver: gnet by luyu6056\r\n")
-	http1deflate = []byte("\r\nContent-encoding: deflate")
-	http1gzip    = []byte("\r\nContent-encoding: gzip")
+	http1deflate = []byte("Content-encoding: deflate\r\n")
+	http1gzip    = []byte("Content-encoding: gzip\r\n")
 	http404b, _  = ioutil.ReadFile(static_patch + "/404.html")
 	http1cache   = []byte("Cache-Control: max-age=86400\r\n")
 	http1nocache = []byte("Cache-Control: no-store, no-cache, must-revalidate, max-age=0, s-maxage=0\r\nPragma: no-cache\r\n")
@@ -368,13 +399,15 @@ func (hs *Httpserver) StaticHandler() gnet.Action {
 			hs.Out.Write(http1head200)
 			hs.Out.WriteString("Content-Type: ")
 			hs.Out.WriteString(f_cache.content_type)
+			hs.Out.WriteString("\r\n")
 			hs.Out.Write(http1deflate)
 			hs.data.Reset(f_cache.deflatefile)
 		} else if isgzip && f_cache.iscompress { //gzip可压缩资源
 			hs.Out.Write(http1head200)
 			hs.Out.WriteString("Content-Type: ")
 			hs.Out.WriteString(f_cache.content_type)
-			hs.Out.Write(http1deflate)
+			hs.Out.WriteString("\r\n")
+			hs.Out.Write(http1gzip)
 			g := gzippool.Get().(*gzip.Writer)
 			buf := msgbufpool.Get().(*libraries.MsgBuffer)
 			defer msgbufpool.Put(buf)
@@ -383,15 +416,15 @@ func (hs *Httpserver) StaticHandler() gnet.Action {
 			g.Reset(buf)
 			g.Write(f_cache.file)
 			g.Flush()
-			hs.Out.Write(http1gzip)
 			hs.data.Reset(buf.Bytes())
 		} else { //非压缩资源
 			hs.Out.Write(http1head200)
 			hs.Out.WriteString("Content-Type: ")
 			hs.Out.WriteString(f_cache.content_type)
+			hs.Out.WriteString("\r\n")
 			hs.data.Reset(f_cache.file)
 		}
-		hs.Out.WriteString("\r\nEtag: ")
+		hs.Out.WriteString("Etag: ")
 		hs.Out.WriteString(f_cache.etag)
 		hs.Out.WriteString("\r\n")
 		hs.httpsfinish(hs.data, hs.data.Len())
@@ -468,7 +501,6 @@ func (hs *Httpserver) httpsfinish(b io.Reader, l int) {
 	hs.Out.WriteString("\r\nContent-Length: ")
 	hs.Out.WriteString(strconv.Itoa(l))
 	hs.Out.WriteString("\r\n\r\n")
-
 	for msglen := l; msglen > 0; msglen = l {
 		if msglen > http2initialMaxFrameSize-hs.Out.Len() { //切分为一个tls包
 			msglen = http2initialMaxFrameSize - hs.Out.Len()
@@ -611,7 +643,14 @@ func (hs *Httpserver) GetAllPost() (res map[string][]string) {
 	}
 	return res
 }
-
+func (hs *Httpserver) GetAllQuery() (res map[string][]string) {
+	hs.getQueryCache()
+	res = make(map[string][]string, len(hs.Request.QueryCache))
+	for k, v := range hs.Request.QueryCache {
+		res[k] = v
+	}
+	return res
+}
 func (hs *Httpserver) PostForm(key string) string {
 	hs.Request.getFormCache()
 	if values := hs.Request.FormCache[key]; len(values) > 0 {

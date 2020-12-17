@@ -19,6 +19,7 @@ type HttpRequest interface {
 	Query(key string) string
 	Post(key string) string
 	GetAllPost() map[string][]string
+	GetAllQuery() map[string][]string
 	Cookie(key string) string
 	Session() *cache.Hashvalue
 	Header(name string) string
@@ -53,7 +54,6 @@ func HttpHandler(ws HttpRequest) gnet.Action {
 			data := global_data.Init(ws)
 			_, ok := data.App["user"].(protocol.MSG_USER_INFO_cache)
 			if !ok {
-				libraries.DebugLog("%s,%s", ws.Path(), ws.Cookie("sessionID"))
 				if !strings.Contains("/user/login|/user/getsalt", ws.Path()) {
 					ws.Redirect(createLink("user", "login", nil))
 					return gnet.None

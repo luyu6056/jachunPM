@@ -135,6 +135,7 @@ func (client *RpcClient) reg() {
 	data.No = client.No
 	data.Time = time.Now().Unix()
 	data.Token = libraries.SHA256_S(client.tokenKey + strconv.Itoa(int(data.Time)))
+	client.window = DefaultWindowSize //强制刷新到默认窗口,避免多个reg消息导致common不知道以哪个为准
 	data.Window = client.window
 	client.SendMsg(0, 0, 0, data)
 	data.Put()

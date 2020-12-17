@@ -1,6 +1,7 @@
 </div>
 <script>
 $.initSidebar();
+{{getTemplateJs .App.TemplateName}}
 </script>
 <iframe frameborder='0' name='hiddenwin' id='hiddenwin' scrolling='no' class='debugwin hidden'></iframe>
 {{if eq .App.onlybody ""}}
@@ -24,5 +25,6 @@ $.initSidebar();
 {{end}}
 {{if .Data.pageJS}}{{.Data.pageJS}}{{end}}
 {{importFooterHook .}}
+
 </body>
 </html>

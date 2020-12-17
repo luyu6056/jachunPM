@@ -59,7 +59,7 @@
                     <li class='dropdown-submenu'>
                     <a href='javascript:;'>{{.Lang.common.lang}}</a>
                       <ul class='dropdown-menu pull-left'>
-                      {{range $value := .Config.langs}}
+                      {{range $value := .Config.common.langs}}
                         <li {{if eq (cookie $ "lang") $value.Key}}class='selected'{{end}}><a href='javascript:selectLang("{{$value.Key}}");'>{{$value.Value}}</a></li>
                       {{end}}
                       </ul>

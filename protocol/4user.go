@@ -23,6 +23,8 @@ const (
 	CMD_MSG_USER_Pairs = 679671812
 	CMD_MSG_USER_getDeptUserPairs = -334914812
 	CMD_MSG_USER_getDeptUserPairs_result = -867223292
+	CMD_MSG_USER_getCompanyUsers = 390890500
+	CMD_MSG_USER_getCompanyUsers_result = 2081476612
 )
 
 type MSG_USER_GET_LoginSalt struct {
@@ -133,6 +135,7 @@ type MSG_USER_INFO_cache struct {
 	Mobile string
 	Join int64
 	Visits int32
+	QQ int64
 	Ip string
 	Last int64
 	Fails int8
@@ -164,6 +167,7 @@ func (data *MSG_USER_INFO_cache) Put() {
 	data.Mobile = ``
 	data.Join = 0
 	data.Visits = 0
+	data.QQ = 0
 	data.Ip = ``
 	data.Last = 0
 	data.Fails = 0
@@ -190,6 +194,7 @@ func WRITE_MSG_USER_INFO_cache(data *MSG_USER_INFO_cache, buf *libraries.MsgBuff
 	WRITE_string(data.Mobile, buf)
 	WRITE_int64(data.Join, buf)
 	WRITE_int32(data.Visits, buf)
+	WRITE_int64(data.QQ, buf)
 	WRITE_string(data.Ip, buf)
 	WRITE_int64(data.Last, buf)
 	WRITE_int8(data.Fails, buf)
@@ -217,6 +222,7 @@ func (data *MSG_USER_INFO_cache) read(buf *libraries.MsgBuffer) {
 	data.Mobile = READ_string(buf)
 	data.Join = READ_int64(buf)
 	data.Visits = READ_int32(buf)
+	data.QQ = READ_int64(buf)
 	data.Ip = READ_string(buf)
 	data.Last = READ_int64(buf)
 	data.Fails = READ_int8(buf)
@@ -1013,6 +1019,139 @@ func (data *MSG_USER_getDeptUserPairs_result) getQueryResultID() uint32 {
 	return data.QueryResultID
 }
 func (data *MSG_USER_getDeptUserPairs_result) setQueryResultID(id uint32) {
+	data.QueryResultID = id
+}
+
+type MSG_USER_getCompanyUsers struct {
+	QueryID uint32
+	Type string
+	Query string
+	DeptID int32
+	Sort string
+	Page int
+	PerPage int
+	Total int
+}
+
+var pool_MSG_USER_getCompanyUsers = sync.Pool{New: func() interface{} { return &MSG_USER_getCompanyUsers{} }}
+
+func GET_MSG_USER_getCompanyUsers() *MSG_USER_getCompanyUsers {
+	return pool_MSG_USER_getCompanyUsers.Get().(*MSG_USER_getCompanyUsers)
+}
+
+func (data *MSG_USER_getCompanyUsers) cmd() int32 {
+	return CMD_MSG_USER_getCompanyUsers
+}
+
+func (data *MSG_USER_getCompanyUsers) Put() {
+	data.QueryID = 0
+	data.Type = ``
+	data.Query = ``
+	data.DeptID = 0
+	data.Sort = ``
+	data.Page = 0
+	data.PerPage = 0
+	data.Total = 0
+	pool_MSG_USER_getCompanyUsers.Put(data)
+}
+func (data *MSG_USER_getCompanyUsers) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_getCompanyUsers,buf)
+	WRITE_MSG_USER_getCompanyUsers(data, buf)
+}
+
+func WRITE_MSG_USER_getCompanyUsers(data *MSG_USER_getCompanyUsers, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_string(data.Type, buf)
+	WRITE_string(data.Query, buf)
+	WRITE_int32(data.DeptID, buf)
+	WRITE_string(data.Sort, buf)
+	WRITE_int(data.Page, buf)
+	WRITE_int(data.PerPage, buf)
+	WRITE_int(data.Total, buf)
+}
+
+func READ_MSG_USER_getCompanyUsers(buf *libraries.MsgBuffer) *MSG_USER_getCompanyUsers {
+	data := pool_MSG_USER_getCompanyUsers.Get().(*MSG_USER_getCompanyUsers)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_getCompanyUsers) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	data.Type = READ_string(buf)
+	data.Query = READ_string(buf)
+	data.DeptID = READ_int32(buf)
+	data.Sort = READ_string(buf)
+	data.Page = READ_int(buf)
+	data.PerPage = READ_int(buf)
+	data.Total = READ_int(buf)
+
+}
+func (data *MSG_USER_getCompanyUsers) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_USER_getCompanyUsers) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_USER_getCompanyUsers_result struct {
+	QueryResultID uint32
+	List []*MSG_USER_INFO_cache
+	Total int
+}
+
+var pool_MSG_USER_getCompanyUsers_result = sync.Pool{New: func() interface{} { return &MSG_USER_getCompanyUsers_result{} }}
+
+func GET_MSG_USER_getCompanyUsers_result() *MSG_USER_getCompanyUsers_result {
+	return pool_MSG_USER_getCompanyUsers_result.Get().(*MSG_USER_getCompanyUsers_result)
+}
+
+func (data *MSG_USER_getCompanyUsers_result) cmd() int32 {
+	return CMD_MSG_USER_getCompanyUsers_result
+}
+
+func (data *MSG_USER_getCompanyUsers_result) Put() {
+	data.QueryResultID = 0
+	for _,v := range data.List {
+		v.Put()
+	}
+	data.List = data.List[:0]
+	data.Total = 0
+	pool_MSG_USER_getCompanyUsers_result.Put(data)
+}
+func (data *MSG_USER_getCompanyUsers_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_getCompanyUsers_result,buf)
+	WRITE_MSG_USER_getCompanyUsers_result(data, buf)
+}
+
+func WRITE_MSG_USER_getCompanyUsers_result(data *MSG_USER_getCompanyUsers_result, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryResultID, buf)
+	WRITE_int32(int32(len(data.List)), buf)
+	for _, v := range data.List{
+		WRITE_MSG_USER_INFO_cache(v, buf)
+	}
+	WRITE_int(data.Total, buf)
+}
+
+func READ_MSG_USER_getCompanyUsers_result(buf *libraries.MsgBuffer) *MSG_USER_getCompanyUsers_result {
+	data := pool_MSG_USER_getCompanyUsers_result.Get().(*MSG_USER_getCompanyUsers_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_getCompanyUsers_result) read(buf *libraries.MsgBuffer) {
+	data.QueryResultID = READ_uint32(buf)
+	List_len := int(READ_int32(buf))
+	for i := 0; i < List_len; i++ {
+		data.List = append(data.List, READ_MSG_USER_INFO_cache(buf))
+	}
+	data.Total = READ_int(buf)
+
+}
+func (data *MSG_USER_getCompanyUsers_result) getQueryResultID() uint32 {
+	return data.QueryResultID
+}
+func (data *MSG_USER_getCompanyUsers_result) setQueryResultID(id uint32) {
 	data.QueryResultID = id
 }
 

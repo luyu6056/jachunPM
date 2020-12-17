@@ -37,6 +37,8 @@ func Handler(in *protocol.Msg) {
 		in.SendResult(out)
 	case *protocol.MSG_USER_Dept_delete:
 		dept_delete(data, in)
+	case *protocol.MSG_USER_getCompanyUsers:
+		user_getCompanyUsers(data, in)
 	default:
 		libraries.ReleaseLog("未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 	}

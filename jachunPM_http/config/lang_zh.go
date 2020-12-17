@@ -22,7 +22,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["common"]["detail"] = "详情"
 	Lang[protocol.ZH_CN]["common"]["month"] = "月"
 	Lang[protocol.ZH_CN]["common"]["create"] = "新建"
-	Lang[protocol.ZH_CN]["common"]["icons['report-file']"] = "file-powerpoint"
+
 	Lang[protocol.ZH_CN]["common"]["pasteImgUploading"] = "正在上传图片，请稍后..."
 	Lang[protocol.ZH_CN]["common"]["pasteImgFail"] = "贴图失败，请稍后重试。"
 	Lang[protocol.ZH_CN]["common"]["noticePasteImg"] = "可以在编辑器直接贴图。"
@@ -2662,6 +2662,7 @@ func LangZH_CNInit() {
 		"unlock":             "unlock-alt",
 		"confirmStoryChange": "search",
 		"score":              "tint",
+		"report-file":        "file-powerpoint",
 	}
 	Lang[protocol.ZH_CN]["my"]["subMenu"] = []protocol.HtmlKeyValueInterface{
 		{"calendar", []protocol.HtmlMenu{
@@ -6195,11 +6196,13 @@ func LangZH_CNInit() {
 		"service":   "客服",
 		"operation": "运营",
 		"support":   "技术支持",
+		"leading":   "组长",
+		"member":    "组员",
 	}
 
-	Lang[protocol.ZH_CN]["user"]["genderList"] = map[string]string{
-		"m": "男",
-		"f": "女",
+	Lang[protocol.ZH_CN]["user"]["genderList"] = map[int8]string{
+		0: "男",
+		1: "女",
 	}
 
 	Lang[protocol.ZH_CN]["user"]["thirdPerson"] = map[string]string{

@@ -43,7 +43,7 @@ func get_dept_browse(data *TemplateData) gnet.Action {
 			return gnet.None
 		}
 	}
-	data.Data["depts"], err = dept_getTreeMenu(data, 0)
+	data.Data["depts"], err = dept_getTreeMenu(data, 0, dept_createManageLink)
 	if err != nil {
 		ws.OutErr(err)
 		return gnet.None
@@ -54,7 +54,7 @@ func get_dept_browse(data *TemplateData) gnet.Action {
 		return gnet.None
 	}
 	getDataStructure := protocol.GET_MSG_USER_Dept_getDataStructure()
-	getDataStructure.RootDeptID = 0
+	getDataStructure.RootDeptID = int32(deptID)
 	res, err := msg.SendMsgWaitResult(0, getDataStructure)
 	if r, ok := res.(*protocol.MSG_USER_Dept_getDataStructure_result); ok {
 		data.Data["tree"] = r.List
@@ -69,7 +69,7 @@ func get_dept_browse(data *TemplateData) gnet.Action {
 	templateOut("dept.browse.html", data, ws)
 	return gnet.None
 }
-func dept_getTreeMenu(data *TemplateData, rootDeptId int32) (template.HTML, error) {
+func dept_getTreeMenu(data *TemplateData, rootDeptId int32, createLink func(data *TemplateData, deptinfo *protocol.MSG_USER_Dept_cache, buf *libraries.MsgBuffer)) (template.HTML, error) {
 	var deptList []*protocol.MSG_USER_Dept_cache
 
 	var deptInfo protocol.MSG_USER_Dept_cache
@@ -111,6 +111,7 @@ func dept_getTreeMenu(data *TemplateData, rootDeptId int32) (template.HTML, erro
 			}
 		}
 	}
+
 	var deptMenu = make(map[int32]*libraries.MsgBuffer)
 	for _, dept := range deptList {
 		if _buf, ok := deptMenu[dept.Id]; ok {
@@ -120,7 +121,7 @@ func dept_getTreeMenu(data *TemplateData, rootDeptId int32) (template.HTML, erro
 				deptMenu[dept.Parent] = buf
 			}
 			buf.WriteString("<li>")
-			dept_createManageLink(data, dept, buf)
+			createLink(data, dept, buf)
 			buf.WriteString("<ul>")
 			buf.Write(_buf.Bytes())
 			buf.WriteString("</ul>\n")
@@ -131,13 +132,16 @@ func dept_getTreeMenu(data *TemplateData, rootDeptId int32) (template.HTML, erro
 				deptMenu[dept.Parent] = buf
 			}
 			buf.WriteString("<li>")
-			dept_createManageLink(data, dept, buf)
+			createLink(data, dept, buf)
 			buf.WriteString("\n")
 		}
 		deptMenu[dept.Parent].WriteString("</li>\n")
 	}
 	buf.Reset()
 	buf.WriteString("<ul class='tree' data-ride='tree' data-name='tree-dept'>")
+	if v, ok := deptMenu[0]; ok {
+		buf.Write(v.Bytes())
+	}
 	for _, dept := range deptList {
 		if _buf, ok := deptMenu[dept.Id]; ok {
 			buf.Write(_buf.Bytes())
@@ -176,25 +180,29 @@ func dept_getSons(deptId int32) (deptList []*protocol.MSG_USER_Dept_cache, err e
 }
 func dept_createManageLink(data *TemplateData, dept *protocol.MSG_USER_Dept_cache, buf *libraries.MsgBuffer) {
 	buf.WriteString(dept.Name)
-	if hasPriv(data.ws, "dept", "edit") {
+	if hasPriv(data, "dept", "edit") {
 		buf.WriteString(" ")
 		buf.WriteString(html_a(createLink("dept", "edit", "deptid="+strconv.Itoa(int(dept.Id))), data.Lang["common"]["edit"].(string), "", "data-toggle='modal' data-type='ajax'"))
 	}
-	if hasPriv(data.ws, "dept", "browse") {
+	if hasPriv(data, "dept", "browse") {
 		buf.WriteString(" ")
 		buf.WriteString(html_a(createLink("dept", "browse", "deptid="+strconv.Itoa(int(dept.Id))), data.Lang["dept"]["manageChild"].(string)))
 	}
-	if hasPriv(data.ws, "dept", "delete") {
+	if hasPriv(data, "dept", "delete") {
 		buf.WriteString(" ")
 		buf.WriteString(html_a(createLink("dept", "delete", "deptid="+strconv.Itoa(int(dept.Id))), data.Lang["common"]["delete"].(string), "hiddenwin"))
 	}
-	if hasPriv(data.ws, "dept", "updateOrder") {
+	if hasPriv(data, "dept", "updateOrder") {
 		buf.WriteString(" ")
 		buf.WriteString(html_input("orders["+strconv.Itoa(int(dept.Id))+"]", strconv.Itoa(int(dept.Order)), "style='width:30px;text-align:center'"))
 	}
 	return
 }
-
+func dept_createMemberLink(data *TemplateData, dept *protocol.MSG_USER_Dept_cache, buf *libraries.MsgBuffer) {
+	id := strconv.Itoa(int(dept.Id))
+	buf.WriteString(html_a(createLink("company", "browse", "dept="+id), dept.Name, "_self", "id='dept"+id+"'"))
+	return
+}
 func post_dept_updateOrder(data *TemplateData) gnet.Action {
 	ws := data.ws
 	post := ws.GetAllPost()
@@ -355,9 +363,8 @@ func get_dept_delete(data *TemplateData) gnet.Action {
 	return gnet.None
 }
 func get_dept_edit(data *TemplateData) gnet.Action {
-	var deptinfo *protocol.MSG_USER_Dept_cache
 	deptid, _ := strconv.Atoi(data.ws.Query("deptid"))
-	err := HostConn.CacheGet(protocol.UserServerNo, protocol.PATH_USER_DEPT_CACHE, data.ws.Query("deptid"), &deptinfo)
+	deptinfo, err := dept_getCacheById(int32(deptid))
 	if err != nil || deptinfo == nil {
 		data.ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrDeptInfoDeptID"], deptid) + js.Reload("parent"))
 		return gnet.None
@@ -383,9 +390,9 @@ func get_dept_edit(data *TemplateData) gnet.Action {
 	return gnet.None
 }
 func post_dept_edit(data *TemplateData) gnet.Action {
-	var deptinfo *protocol.MSG_USER_Dept_cache
+
 	deptid, _ := strconv.Atoi(data.ws.Query("deptid"))
-	err := HostConn.CacheGet(protocol.UserServerNo, protocol.PATH_USER_DEPT_CACHE, data.ws.Query("deptid"), &deptinfo)
+	deptinfo, err := dept_getCacheById(int32(deptid))
 	if err != nil || deptinfo == nil {
 		data.ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrDeptInfoDeptID"], deptid) + js.Reload("parent"))
 		return gnet.None
@@ -418,4 +425,8 @@ func post_dept_edit(data *TemplateData) gnet.Action {
 	}
 	data.ws.WriteString(js.Alert(data.Lang["dept"]["successSave"].(string)) + js.Reload("parent"))
 	return gnet.None
+}
+func dept_getCacheById(deptId int32) (deptinfo *protocol.MSG_USER_Dept_cache, err error) {
+	err = HostConn.CacheGet(protocol.UserServerNo, protocol.PATH_USER_DEPT_CACHE, strconv.Itoa(int(deptId)), &deptinfo)
+	return
 }

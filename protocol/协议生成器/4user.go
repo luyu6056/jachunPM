@@ -15,11 +15,12 @@ type MSG_USER_INFO_cache struct {
 	Role       string
 	Realname   string
 	Commiter   string
-	Gender     int8 // 0=f,1=m,
+	Gender     int8 // 0男，1女
 	Email      string
 	Mobile     string
 	Join       int64
-	Visits     int32  //访问次数
+	Visits     int32 //访问次数
+	QQ         int64
 	Ip         string //上次登录ip
 	Last       int64  //上次登录时间
 	Fails      int8   //密码错误次数
@@ -107,4 +108,20 @@ type MSG_USER_getDeptUserPairs struct {
 type MSG_USER_getDeptUserPairs_result struct {
 	QueryResultID uint32
 	List          []*MSG_USER_Pairs
+}
+type MSG_USER_getCompanyUsers struct {
+	QueryID uint32
+	Type    string
+	Query   string
+	DeptID  int32
+	Sort    string
+	Page    int
+	PerPage int
+	Total   int
+}
+
+type MSG_USER_getCompanyUsers_result struct {
+	QueryResultID uint32
+	List          []*MSG_USER_INFO_cache
+	Total         int
 }

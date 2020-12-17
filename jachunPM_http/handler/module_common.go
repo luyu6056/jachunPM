@@ -22,7 +22,7 @@ type moduleMenu struct {
 	alias  []string
 }
 
-func hasPriv(ws HttpRequest, module, method string) bool {
+func hasPriv(data *TemplateData, module, method string) bool {
 	return true
 }
 func commonModelFuncs() {
@@ -40,7 +40,7 @@ func commonModelFuncs() {
 	global_Funcs["string"] = func(i interface{}) string {
 		return fmt.Sprint(i)
 	}
-	global_Funcs["common_hasPriv"] = func(data *TemplateData, module, method string) bool { return hasPriv(data.ws, module, method) }
+	global_Funcs["common_hasPriv"] = func(data *TemplateData, module, method string) bool { return hasPriv(data, module, method) }
 	//global_Funcs["common_printBreadMenu"] = func(server, name string) bool { return true }
 	global_Funcs["loadConfig"] = func(data *TemplateData, server string) int { return 0 }
 	global_Funcs["multiply"] = func(a, b interface{}) int64 {
@@ -294,7 +294,7 @@ func commonModelFuncs() {
 		if len(v) > 3 {
 			misc = v[3]
 		}
-		if hasPriv(data.ws, module, method) {
+		if !hasPriv(data, module, method) {
 			return template.HTML("")
 		}
 
@@ -353,6 +353,116 @@ func commonModelFuncs() {
 			res = append(res, fmt.Sprint(s))
 		}
 		return
+	}
+	global_Funcs["common_printIcon"] = func(data *TemplateData, module, method, vars string, object interface{}, typ, icon string, extvalue ...string) template.HTML { //($target = '', $extraClass = '', $onlyBody = false, $misc = '', $title = '')
+		target := ""
+		extraClass := ""
+		misc := ""
+		title := ""
+		if len(extvalue) > 0 {
+			target = extvalue[0]
+			if len(extvalue) > 1 {
+				if data.ws.Query("isonlybody") == "yes" {
+					if strings.Index(extvalue[1], "showinonlybody") == -1 {
+						return template.HTML("")
+					}
+					extvalue[1] = strings.ReplaceAll(extvalue[1], "iframe", "")
+				}
+				extraClass = extvalue[1]
+			}
+			if len(extvalue) > 2 {
+				misc = extvalue[2]
+			}
+			if len(extvalue) > 3 {
+				title = extvalue[3]
+			}
+		}
+
+		switch module {
+		case "story":
+			if method == "createcase" {
+				module = "testcase"
+				method = "create"
+			}
+		case "bug":
+			if method == "tostory" {
+				module = "story"
+				method = "create"
+			}
+			if method == "createcase" {
+				module = "testcase"
+				method = "create"
+			}
+		}
+		if !hasPriv(data, module, method) {
+			return template.HTML("")
+		}
+		clickable := true
+		if object != nil {
+			if f_interface, ok := global_Funcs[reflect.ValueOf(object).Elem().Type().Name()+"_isClickable"]; ok {
+				if f, ok := f_interface.(func(*TemplateData, interface{}, string) bool); ok {
+					clickable = f(data, object, method)
+				}
+			}
+		}
+		link := createLink(module, method, vars)
+		if title == "" {
+			title = method
+			if method == "create" && icon == "copy" {
+				method = "copy"
+			}
+			if icon == "toStory" {
+				title = data.Lang["bug"]["toStory"].(string)
+			} else if icon == "createBug" {
+				title = data.Lang["testtask"]["createBug"].(string)
+			} else {
+				if str, ok := data.Lang["common"][method].(string); ok {
+					title = str
+				}
+				if str, ok := data.Lang[module][method].(string); ok {
+					title = str
+				}
+			}
+		}
+
+		if icon == "" {
+			if v, ok := data.Lang["common"]["icons"].(map[string]string)[method]; ok {
+				icon = v
+			} else {
+				icon = method
+			}
+		}
+		for _, v := range []string{"edit", "copy", "report", "export", "delete"} {
+			if v == method {
+				module = "common"
+			}
+
+		}
+		class := fmt.Sprintf("icon-%s-%s", module, method)
+		if !clickable {
+			class += " disabled"
+		}
+		if icon != "" {
+			class += " icon-" + icon
+		}
+		if clickable {
+
+			if typ == "button" {
+				if method != "edit" && method != "copy" && method != "delete" {
+					return template.HTML(html_a(link, "<i class='"+class+"'></i> "+"<span class='text'>"+title+"</span>", target, "class='btn btn-link "+extraClass+"' "+misc))
+				} else {
+					return template.HTML(html_a(link, "<i class='"+class+"'></i>", target, "class='btn btn-link "+extraClass+"' title='"+title+"' "+misc))
+				}
+			} else {
+				return template.HTML(html_a(link, "<i class='"+class+"'></i>", target, "class='btn "+extraClass+"' title='"+title+"' "+misc) + "\n")
+			}
+		} else {
+			if typ == "list" {
+				return template.HTML("<button type='button' class='disabled btn " + extraClass + "'><i class='" + class + "' title='" + title + "' " + misc + "></i></button>\n")
+			}
+		}
+
+		return template.HTML("")
 	}
 }
 func getModuleMenu(module string, data *TemplateData) (menu []moduleMenu) {

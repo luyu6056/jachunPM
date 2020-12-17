@@ -59,7 +59,8 @@ func (c *RpcCache) Set(name, path string, value []byte, expire int64) error {
 	data := GET_MSG_COMMON_CACHE_SET()
 	data.Path = path
 	data.Name = name
-	data.Value = value
+	data.Value = make([]byte, len(value))
+	copy(data.Value, value)
 	data.Expire = expire
 	c.Svr.SendMsg(0, 0, 0, data)
 	data.Put()
