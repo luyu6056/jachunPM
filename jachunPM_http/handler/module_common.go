@@ -150,14 +150,16 @@ func commonModelFuncs() {
 	global_Funcs["getValue"] = func(i, key interface{}) interface{} {
 		switch r := i.(type) {
 		case []protocol.HtmlKeyValueStr:
-			if k, ok := key.(string); ok {
-				for _, v := range r {
-					if v.Key == k {
-						return v.Value
-					}
-				}
-				return nil
+			k, ok := key.(string)
+			if !ok {
+				k = fmt.Sprint(key)
 			}
+			for _, v := range r {
+				if v.Key == k {
+					return v.Value
+				}
+			}
+			return nil
 		}
 		r := reflect.ValueOf(i)
 		k := reflect.ValueOf(key)
@@ -337,11 +339,12 @@ func commonModelFuncs() {
 	global_Funcs["date"] = func(layout string, timestamp int64) string {
 		return time.Unix(timestamp, 0).Format(layout)
 	}
-	global_Funcs["genlist"] = func(n interface{}) []string {
-		num, _ := strconv.Atoi(fmt.Sprint(n))
-		ret := make([]string, num)
-		for i := 0; i < num; i++ {
-			ret[i] = strconv.Itoa(i)
+	global_Funcs["genlist"] = func(star, num interface{}) []string {
+		n, _ := strconv.Atoi(fmt.Sprint(num))
+		s, _ := strconv.Atoi(fmt.Sprint(star))
+		ret := make([]string, n)
+		for i := 0; i < n; i++ {
+			ret[i] = strconv.Itoa(i + s)
 		}
 		return ret
 	}
@@ -463,6 +466,12 @@ func commonModelFuncs() {
 		}
 
 		return template.HTML("")
+	}
+	global_Funcs["json_marshal"] = func(i interface{}) string {
+		return libraries.JsonMarshalToString(i)
+	}
+	global_Funcs["str2js"] = func(s string) template.JS {
+		return template.JS(s)
 	}
 }
 func getModuleMenu(module string, data *TemplateData) (menu []moduleMenu) {

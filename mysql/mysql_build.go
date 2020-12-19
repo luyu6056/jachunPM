@@ -1194,3 +1194,31 @@ func (this *Mysql_RawBuild) QueryMap() (res []map[string]string, err error) {
 	}
 	return res, err
 }
+
+type Buffer interface {
+	WriteString(string)
+	Write([]byte) (int, error)
+	Truncate(int)
+	Len() int
+	WriteByte(byte)
+}
+
+func MysqlBuild_in_value(value interface{}, buf Buffer) {
+	ref := reflect.ValueOf(value)
+	if ref.Kind() != reflect.Slice {
+		return
+	}
+	if ref.Len() == 0 {
+		buf.WriteString("= NULL")
+		return
+	}
+	buf.Write([]byte{32, 73, 78, 32, 40}) // IN (
+
+	for i := 0; i < ref.Len(); i++ {
+		buf.WriteString(Getvalue(ref.Index(i).Interface()))
+		buf.WriteByte(44) //,
+	}
+
+	buf.Truncate(buf.Len() - 1)
+	buf.WriteByte(41) //)
+}

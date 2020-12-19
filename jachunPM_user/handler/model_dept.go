@@ -130,7 +130,6 @@ func dept_getAllChildID(deptID int32) (res []int32, err error) {
 	}
 	buf.Reset()
 	protocol.BufPoolPut(buf)
-
 	return res, nil
 }
 func dept_delete(data *protocol.MSG_USER_Dept_delete, in *protocol.Msg) {

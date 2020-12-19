@@ -69,3 +69,6 @@ type MSG_COMMON_QueryErr struct {
 	Err           string
 	Stack         []byte
 }
+type MSG_COMMON_ResetWindow struct {
+	Window int32
+}

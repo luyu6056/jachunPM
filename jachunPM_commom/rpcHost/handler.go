@@ -29,7 +29,7 @@ func SendMsgToRemote(ctx *server.Context, c gnet.Conn) error {
 		}
 	}()
 	b := ctx.In.Next(1)
-	msgnum := b[0] & 127
+	msgnum := b[0]
 	var n int
 	for ctx.In.Len() > 0 {
 		n++
@@ -55,6 +55,7 @@ func SendMsgToRemote(ctx *server.Context, c gnet.Conn) error {
 			if !ok {
 				return errors.New("收到非rpcserver消息")
 			} else if in.Local != uint16(svr.ServerNo)|uint16(svr.Id)<<8 { //检查local
+				fmt.Println(in.Cmd)
 				return errors.New(fmt.Sprintf("消息的local来源不对,in.Local%d,local%d", in.Local, uint16(svr.ServerNo)|uint16(svr.Id)<<8))
 			}
 
@@ -224,6 +225,8 @@ func HostServerHandler() {
 				if data.No != svr.ServerNo {
 					libraries.DebugLog("注册的serverNo不对，注册%d,实际%d", data.No, svr.ServerNo)
 				}
+			case *protocol.MSG_COMMON_ResetWindow:
+				svr.window = data.Window
 			default:
 				libraries.ReleaseLog("host未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 			}

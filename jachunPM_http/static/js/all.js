@@ -9402,7 +9402,7 @@ function(a) {
 		};
 	Y() || G(Y), G.toggleQueryBox = function(b, a) {
 		var c = G(a || "#queryBox");
-		c.length && (void 0 === b && (b = !c.hasClass("show")), c.toggleClass("show", !! b), c.data("init") || (c.addClass("load-indicator loading").data("init", 1), G.get(G.createLink("search", "buildForm"), function(d) {
+		c.length && (void 0 === b && (b = !c.hasClass("show")), c.toggleClass("show", !! b), c.data("init") || (c.addClass("load-indicator loading").data("init", 1), G.get(G.createLink("search", "buildForm",{module:config.currentModule,method:config.currentMethod,queryID:(config.queryID?config.queryID:'')}), function(d) {
 			c.html(d).removeClass("loading")
 		})), G(".querybox-toggle").toggleClass("querybox-opened", b))
 	}, G(function() {

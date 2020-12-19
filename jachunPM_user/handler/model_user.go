@@ -134,45 +134,35 @@ func user_getCompanyUsers(data *protocol.MSG_USER_getCompanyUsers, in *protocol.
 		in.SendResult(out)
 		return
 	}
+	data.Sort = strings.Replace(data.Sort, "_", " ", 1)
+	var where interface{}
 	if data.Type == "bydept" {
-		where := map[string]interface{}{}
 		if data.DeptID > 0 {
 			ids, err := dept_getAllChildID(data.DeptID)
 			if err != nil {
 				in.WriteErr(err)
 				return
 			}
-			where["dept"] = ids
+			where = map[string]interface{}{"dept": ids}
 		}
-
-		err := db.DB.Table(db.TABLE_USER).Where(where).Order("deleted asc,"+data.Sort).Limit(data.PerPage*(data.Page-1), data.Page*data.PerPage).Select(&out.List)
+	} else {
+		if data.Where == "" {
+			data.Where = "1 = 1"
+		}
+		where = data.Where
+	}
+	err := db.DB.Table(db.TABLE_USER).Where(where).Order("deleted asc,"+data.Sort).Limit(data.PerPage*(data.Page-1), data.Page*data.PerPage).Select(&out.List)
+	if err != nil {
+		in.WriteErr(err)
+		return
+	}
+	if data.Total <= 0 {
+		out.Total, err = db.DB.Table(db.TABLE_USER).Where(where).Count()
 		if err != nil {
 			in.WriteErr(err)
 			return
 		}
-		if data.Total <= 0 {
-			out.Total, err = db.DB.Table(db.TABLE_USER).Where(where).Count()
-			if err != nil {
-				in.WriteErr(err)
-				return
-			}
-		}
-		in.SendResult(out)
-		return
-	} else {
-		/*if($queryID)
-		  {
-		      $query = $this->loadModel('search')->getQuery($queryID);
-		      if($query)
-		      {
-		          $this->session->set('userQuery', $query->sql);
-		          $this->session->set('userForm', $query->form);
-		      }
-		      else
-		      {
-		          $this->session->set('userQuery', ' 1 = 1');
-		      }
-		  }
-		  return $this->loadModel('user')->getByQuery($this->session->userQuery, $pager, $sort);*/
 	}
+	in.SendResult(out)
+	return
 }

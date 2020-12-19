@@ -38,7 +38,7 @@
                 {{range $sonDept := .Data.sons}}
                     {{html_input (string $sonDept.Id) $sonDept.Name "class='form-control' autocomplete='off'"}}
                 {{end}}
-                {{range genlist 5}}{{html_input "0" "" "class='form-control' autocomplete='off'"}}{{end}}
+                {{range genlist 0 5}}{{html_input "0" "" "class='form-control' autocomplete='off'"}}{{end}}
               </td>
               <td></td>
             </tr>
@@ -75,7 +75,8 @@ $(function()
         },
         itemCreator: function($li, item)
         {
-            var link = item.Id !== undefined ? ('<a href="' + createLink('dept', 'browse', 'dept={0}'.format(item.Id)) + '">' + item.Name + '</a>') : ('<span class="tree-toggle">' + item.Name + '</span>');
+            console.log(item)
+            var link = item.Id !== undefined ? ('<a href="' + createLink('dept', 'browse', {'deptID':item.Id}) + '">' + item.Name + '</a>') : ('<span class="tree-toggle">' + item.Name + '</span>');
             var $toggle = $('<span class="dept-name module-name" data-id="' + item.Id + '">' + link + '</span>');
             if(item.Manager)
             {

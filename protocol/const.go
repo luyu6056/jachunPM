@@ -19,7 +19,7 @@ const (
 	DefaultWindowSize       = 20        //默认窗口值，为msg消息数量，窗口值允许为负值
 	RpcTickDefaultTime      = 1         //单位秒
 	MsgTimeOut              = 300       //单位秒
-	SessionTempExpires      = 86400     //临时session
+	SessionTempExpires      = 8 * 3600  //临时session
 	SessionKeepLoginExpires = 7 * 86400 //keepLogin的session
 )
 
@@ -75,4 +75,10 @@ const (
 	PATH_USER_COMPANY_CACHE = "company_cache"
 	PATH_USER_DEPT_CACHE    = "dept_cache"
 	PATH_CONFIG_CACHE       = "config_cache"
+)
+
+//格式化时间定义
+const (
+	TIMEFORMAT_MYSQLTIME = "2006-01-02 15:04:05"
+	TIMEFORMAT_MYSQLDATE = "2006-01-02"
 )

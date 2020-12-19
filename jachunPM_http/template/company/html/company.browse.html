@@ -14,8 +14,8 @@
     <a class="btn btn-link querybox-toggle" id='bysearchTab'><i class="icon icon-search muted"></i> {{.Lang.user.search}}</a>
   </div>
   <div class='btn-toolbar pull-right'>
-    {{common_printLink . "user" "batchCreate" (strAdd "dept=" .Data.deptID) "<i class='icon icon-plus'></i> "  .Lang.user.batchCreate "" "class='btn btn-secondary'"}}
-    {{common_printLink . "user" "create" (strAdd "dept=" .Data.deptID) "<i class='icon icon-plus'></i> " .Lang.user.create "" "class='btn btn-primary'"}}
+    {{common_printLink . "user" "batchCreate" (strAdd "dept=" .Data.deptID) (strAdd "<i class='icon icon-plus'></i> "  .Lang.user.batchCreate) "" "class='btn btn-secondary'"}}
+    {{common_printLink . "user" "create" (strAdd "dept=" .Data.deptID) (strAdd "<i class='icon icon-plus'></i> " .Lang.user.create) "" "class='btn btn-primary'"}}
   </div>
 </div>
 <div id='mainContent' class='main-row fade'>

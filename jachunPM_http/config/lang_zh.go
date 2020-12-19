@@ -5608,13 +5608,6 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["reportList"]["staff"] = []string{"员工负载表|report|workload", "任务完成汇总表|report|worksummary", "任务指派汇总表|report|workAssignSummary", "Bug解决汇总表|report|bugsummary", "Bug指派汇总表|report|bugAssignSummary"}
 	Lang[protocol.ZH_CN]["search"] = make(map[string]interface{})
 	Lang[protocol.ZH_CN]["search"]["null"] = "空"
-	Lang[protocol.ZH_CN]["search"]["operators['<"] = "]         = '<="
-	Lang[protocol.ZH_CN]["search"]["operators['<']"] = "<"
-	Lang[protocol.ZH_CN]["search"]["operators['>"] = "]         = '>="
-	Lang[protocol.ZH_CN]["search"]["operators['>']"] = ">"
-	Lang[protocol.ZH_CN]["search"]["operators['!"] = "]         = '!="
-	Lang[protocol.ZH_CN]["search"]["operators['"] = "]          = '="
-	Lang[protocol.ZH_CN]["search"]["shortcut"] = Lang[protocol.ZH_CN]["search"]["onMenuBar"]
 	Lang[protocol.ZH_CN]["search"]["sql"] = "SQL条件"
 	Lang[protocol.ZH_CN]["search"]["form"] = "表单字段"
 	Lang[protocol.ZH_CN]["search"]["title"] = "名称"
@@ -5622,6 +5615,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["search"]["account"] = "用户名"
 	Lang[protocol.ZH_CN]["search"]["custom"] = "自定义"
 	Lang[protocol.ZH_CN]["search"]["onMenuBar"] = "显示在菜单栏"
+	Lang[protocol.ZH_CN]["search"]["shortcut"] = Lang[protocol.ZH_CN]["search"]["onMenuBar"]
 	Lang[protocol.ZH_CN]["search"]["noQuery"] = "还没有保存查询！"
 	Lang[protocol.ZH_CN]["search"]["me"] = "自己"
 	Lang[protocol.ZH_CN]["search"]["select"] = "需求/任务筛选"
@@ -5636,15 +5630,24 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["search"]["saveQuery"] = "保存"
 	Lang[protocol.ZH_CN]["search"]["reset"] = "重置"
 	Lang[protocol.ZH_CN]["search"]["common"] = "搜索"
-	Lang[protocol.ZH_CN]["search"]["operators"] = map[string]string{
-		"include":    "包含",
-		"between":    "介于",
-		"notinclude": "不包含",
-		"belong":     "从属于",
+	Lang[protocol.ZH_CN]["search"]["operators"] = []protocol.HtmlKeyValueStr{
+		{"=", "="},
+		{"!=", "!="},
+		{">", ">"},
+		{">=", ">="},
+		{"<", "<"},
+		{"<=", "<="},
+		{"include", "包含"},
+		{"between", "介于"},
+		{"notinclude", "不包含"},
+		{"belong", "从属于"},
 	}
-	Lang[protocol.ZH_CN]["search"]["andor"] = map[string]string{
-		"and": "并且",
-		"or":  "或者",
+	Lang[protocol.ZH_CN]["search"]["andor"] = []protocol.HtmlKeyValueStr{
+		{"and", "并且"},
+		{"or", "或者"},
+	}
+	Lang[protocol.ZH_CN]["search"]["error"] = map[string]string{
+		"notFoundParamsFunc": "没有找到%s/%s的搜索参数初始化方法",
 	}
 	Lang[protocol.ZH_CN]["story"]["useList"] = []string{"不使用", `使用`}
 	Lang[protocol.ZH_CN]["story"]["statusList"] = map[string]string{
@@ -6181,28 +6184,28 @@ func LangZH_CNInit() {
 		"egress": "外出",
 	}
 
-	Lang[protocol.ZH_CN]["user"]["roleList"] = map[string]string{
-		"":          "",
-		"dev":       "研发",
-		"qa":        "测试",
-		"pm":        "项目经理",
-		"po":        "产品经理",
-		"td":        "研发主管",
-		"pd":        "产品主管",
-		"qd":        "测试主管",
-		"top":       "高层管理",
-		"others":    "其他",
-		"market":    "市场",
-		"service":   "客服",
-		"operation": "运营",
-		"support":   "技术支持",
-		"leading":   "组长",
-		"member":    "组员",
+	Lang[protocol.ZH_CN]["user"]["roleList"] = []protocol.HtmlKeyValueStr{
+		{"", ""},
+		{"dev", "研发"},
+		{"qa", "测试"},
+		{"pm", "项目经理"},
+		{"po", "产品经理"},
+		{"td", "研发主管"},
+		{"pd", "产品主管"},
+		{"qd", "测试主管"},
+		{"top", "高层管理"},
+		{"others", "其他"},
+		{"market", "市场"},
+		{"service", "客服"},
+		{"operation", "运营"},
+		{"support", "技术支持"},
+		{"leading", "组长"},
+		{"member", "组员"},
 	}
 
-	Lang[protocol.ZH_CN]["user"]["genderList"] = map[int8]string{
-		0: "男",
-		1: "女",
+	Lang[protocol.ZH_CN]["user"]["genderList"] = []protocol.HtmlKeyValueStr{
+		{"0", "男"},
+		{"1", "女"},
 	}
 
 	Lang[protocol.ZH_CN]["user"]["thirdPerson"] = map[string]string{

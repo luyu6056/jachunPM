@@ -312,6 +312,7 @@ func (data *MSG_USER_CheckPasswd_result) cmd() int32 {
 func (data *MSG_USER_CheckPasswd_result) Put() {
 	data.QueryResultID = 0
 	data.UserId = 0
+	data.Result = 0
 	pool_MSG_USER_CheckPasswd_result.Put(data)
 }
 func (data *MSG_USER_CheckPasswd_result) write(buf *libraries.MsgBuffer) {
@@ -433,7 +434,7 @@ type MSG_USER_Dept_cache struct {
 	Order int8
 	Manager int32
 	ManagerName string
-	Children []*MSG_USER_Dept_cache
+	Children []*MSG_USER_Dept_cache `json:"children"`
 }
 
 var pool_MSG_USER_Dept_cache = sync.Pool{New: func() interface{} { return &MSG_USER_Dept_cache{} }}
@@ -841,6 +842,7 @@ func (data *MSG_USER_Dept_delete_result) cmd() int32 {
 
 func (data *MSG_USER_Dept_delete_result) Put() {
 	data.QueryResultID = 0
+	data.Result = 0
 	pool_MSG_USER_Dept_delete_result.Put(data)
 }
 func (data *MSG_USER_Dept_delete_result) write(buf *libraries.MsgBuffer) {
@@ -1030,6 +1032,7 @@ type MSG_USER_getCompanyUsers struct {
 	Sort string
 	Page int
 	PerPage int
+	Where string
 	Total int
 }
 
@@ -1051,6 +1054,7 @@ func (data *MSG_USER_getCompanyUsers) Put() {
 	data.Sort = ``
 	data.Page = 0
 	data.PerPage = 0
+	data.Where = ``
 	data.Total = 0
 	pool_MSG_USER_getCompanyUsers.Put(data)
 }
@@ -1067,6 +1071,7 @@ func WRITE_MSG_USER_getCompanyUsers(data *MSG_USER_getCompanyUsers, buf *librari
 	WRITE_string(data.Sort, buf)
 	WRITE_int(data.Page, buf)
 	WRITE_int(data.PerPage, buf)
+	WRITE_string(data.Where, buf)
 	WRITE_int(data.Total, buf)
 }
 
@@ -1084,6 +1089,7 @@ func (data *MSG_USER_getCompanyUsers) read(buf *libraries.MsgBuffer) {
 	data.Sort = READ_string(buf)
 	data.Page = READ_int(buf)
 	data.PerPage = READ_int(buf)
+	data.Where = READ_string(buf)
 	data.Total = READ_int(buf)
 
 }

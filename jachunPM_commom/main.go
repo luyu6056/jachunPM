@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/luyu6056/cache"
 	"github.com/luyu6056/gnet"
 )
 
@@ -35,6 +36,7 @@ var Context_pool = sync.Pool{New: func() interface{} {
 }}
 
 func main() {
+	cache.StartWebServer("0.0.0.0:807")
 	go http.ListenAndServe("0.0.0.0:8100", nil)
 	rpcSvr := &rpcServer{addr: config.Config.ListenRpc}
 

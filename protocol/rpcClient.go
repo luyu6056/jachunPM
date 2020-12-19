@@ -56,8 +56,8 @@ type RpcClient struct {
 	inchan                   chan *Msg
 	outchan                  chan *libraries.MsgBuffer
 	conn                     net.Conn
-	reconnect, regSusessData chan []byte
-	wait, regSusess          chan bool
+	reconnect, reconnectData chan []byte
+	wait                     chan bool
 	waitshutdown             sync.WaitGroup
 	window                   int32 //接收窗口
 	tokenKey                 string
@@ -79,16 +79,16 @@ func NewClient(no uint8, hostAddr string, tokenKey string) (*RpcClient, error) {
 		CloseChan:     make(chan bool, 1),
 		ErrChan:       make(chan string),
 		reconnect:     make(chan []byte, Rpcmsgnum),
-		regSusessData: make(chan []byte, Rpcmsgnum),
+		reconnectData: make(chan []byte, Rpcmsgnum),
 		wait:          make(chan bool),
-		regSusess:     make(chan bool),
-		No:            no,
-		Addr:          hostAddr,
-		conn:          conn,
-		window:        DefaultWindowSize,
-		Status:        RpcClientStatuShutdown,
-		tokenKey:      tokenKey,
-		Tick:          time.NewTicker(RpcTickDefaultTime * time.Second),
+
+		No:       no,
+		Addr:     hostAddr,
+		conn:     conn,
+		window:   DefaultWindowSize,
+		Status:   RpcClientStatuShutdown,
+		tokenKey: tokenKey,
+		Tick:     time.NewTicker(RpcTickDefaultTime * time.Second),
 	}
 	cache := &RpcClient{
 		inchan:        make(chan *Msg, rpcHanleMsgNum),
@@ -96,17 +96,17 @@ func NewClient(no uint8, hostAddr string, tokenKey string) (*RpcClient, error) {
 		CloseChan:     make(chan bool, 1),
 		ErrChan:       make(chan string),
 		reconnect:     make(chan []byte, Rpcmsgnum),
-		regSusessData: make(chan []byte, Rpcmsgnum),
+		reconnectData: make(chan []byte, Rpcmsgnum),
 		wait:          make(chan bool),
-		regSusess:     make(chan bool),
-		No:            no + 128,
-		Addr:          hostAddr,
-		conn:          cacheConn,
-		window:        DefaultWindowSize,
-		Status:        RpcClientStatuShutdown,
-		tokenKey:      tokenKey,
-		Tick:          time.NewTicker(RpcTickDefaultTime * time.Second),
-		HandleMsg:     HandleCache,
+
+		No:        no + 128,
+		Addr:      hostAddr,
+		conn:      cacheConn,
+		window:    DefaultWindowSize,
+		Status:    RpcClientStatuShutdown,
+		tokenKey:  tokenKey,
+		Tick:      time.NewTicker(RpcTickDefaultTime * time.Second),
+		HandleMsg: HandleCache,
 	}
 	client.cache = &RpcCache{Svr: cache}
 	return client, nil
@@ -135,7 +135,14 @@ func (client *RpcClient) reg() {
 	data.No = client.No
 	data.Time = time.Now().Unix()
 	data.Token = libraries.SHA256_S(client.tokenKey + strconv.Itoa(int(data.Time)))
-	client.window = DefaultWindowSize //强制刷新到默认窗口,避免多个reg消息导致common不知道以哪个为准
+	data.Window = client.window
+	client.SendMsg(0, 0, 0, data)
+	data.Put()
+}
+func (client *RpcClient) resetWindow() {
+	//重置窗口，请不要在其他地方调用，下面在conn.wait卡住的情况下调用了，保证窗口的唯一性
+	data := GET_MSG_COMMON_ResetWindow()
+	client.window = DefaultWindowSize
 	data.Window = client.window
 	client.SendMsg(0, 0, 0, data)
 	data.Put()
@@ -187,8 +194,9 @@ func (client *RpcClient) handleWrite() {
 		} else {
 			if msgNum > CompressMinNum || out.Len()+o.Len() > CompressMinLen {
 				compress = true
+				zstdWriter.Reset(zstdbuf)
 				zstdWriter.Write(out.Bytes())
-				out.Reset()
+				//out.Reset()
 				zstdWriter.Write(o.Bytes())
 			} else {
 				out.Write(o.Bytes())
@@ -196,6 +204,7 @@ func (client *RpcClient) handleWrite() {
 		}
 	}
 	writeAllMsg := func() {
+
 		for i := 0; i < len(client.outchan) && i < MaxMsgNum-1; i++ {
 			o1 := <-client.outchan
 			if msglen+o1.Len() > MaxOutLen {
@@ -205,7 +214,7 @@ func (client *RpcClient) handleWrite() {
 			msgNum++
 			writeToBuf(o1)
 			o1.Reset()
-			BufPoolPut(o1)
+			//BufPoolPut(o1)
 
 		}
 		if compress {
@@ -260,7 +269,7 @@ func (client *RpcClient) handleWrite() {
 			writeToBuf(o)
 			msgNum = 1
 			o.Reset()
-			BufPoolPut(o)
+			//BufPoolPut(o)
 
 			writeAllMsg()
 		case data := <-client.reconnect: //重连
@@ -285,32 +294,28 @@ func (client *RpcClient) handleWrite() {
 			}
 			libraries.ReleaseLog("重连ok")
 			//连接成功后，把发送失败的消息重新发一遍
-			client.regSusessData <- data
+			client.reconnectData <- data
 			for i := 0; i < len(client.reconnect); i++ {
-				client.regSusessData <- <-client.reconnect
+				client.reconnectData <- <-client.reconnect
 			}
 			client.reg()
-			client.wait <- true
-		case <-client.regSusess:
-			if client.cache != nil {
-				libraries.ReleaseLog("连接host成功，本服务ID%d", client.Id)
-			} else {
-				libraries.ReleaseLog("连接host_cache成功,cacheId%d", client.Id)
-			}
 
 			//重新把之前发送失败的消息，发一遍
-			for i := 0; i < len(client.regSusessData); i++ {
-				data := <-client.regSusessData
+			for i := 0; i < len(client.reconnectData); i++ {
+				data := <-client.reconnectData
 				if data != nil {
 					_, err := client.conn.Write(data)
 					if err != nil {
-						libraries.ReleaseLog("regSusess消息，发消息错误%v", err)
+						libraries.ReleaseLog("reconnectSusess消息，发消息错误%v", err)
 						client.reconnect <- data
 					}
 				}
 
 			}
-
+			//重置窗口，避免发送失败的消息增加到不对的窗口值
+			client.resetWindow()
+			//让handleRead继续工作
+			client.wait <- true
 		case <-client.CloseChan:
 			writeAllMsg()
 			close(client.outchan)
@@ -329,7 +334,8 @@ func (client *RpcClient) handleRead() {
 	}
 	var in *libraries.MsgBuffer
 	buf := &libraries.MsgBuffer{}
-	decodebuf := &libraries.MsgBuffer{}
+	decodebuf1 := &libraries.MsgBuffer{}
+	decodebuf2 := &libraries.MsgBuffer{}
 	decoder, _ := zstd.NewReader(nil)
 	lenbuf := make([]byte, 5)
 	for {
@@ -368,11 +374,11 @@ func (client *RpcClient) handleRead() {
 		}
 		//解压缩
 		if compress {
-			decodebuf.Reset()
-			decoder.Read(b)
-			decoder.Close()
-			in = decodebuf
-
+			decodebuf1.Reset()
+			decodebuf1.Write(b)
+			decoder.Reset(decodebuf1)
+			io.Copy(decodebuf2, decoder)
+			in = decodebuf2
 		} else {
 			in = buf
 		}
@@ -422,7 +428,11 @@ func (client *RpcClient) handleMsg() {
 			case *MSG_COMMON_regServer_result:
 				client.Id = data.Id
 				client.Status |= RpcClientStatuNormal
-				client.regSusess <- true
+				if client.cache != nil {
+					libraries.ReleaseLog("连接host成功，本服务ID%d", client.Id)
+				} else {
+					libraries.ReleaseLog("连接host_cache成功,cacheId%d", client.Id)
+				}
 			case *MSG_COMMON_StartTicker:
 				client.IsMaster = true
 				client.Status |= RpcTickStatusFirst

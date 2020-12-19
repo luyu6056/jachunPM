@@ -35,7 +35,7 @@ func loadFuncs() {
 
 func createLink(moduleName string, methodName string, vars interface{}) string {
 	buf := bufpool.Get().(*libraries.MsgBuffer)
-	buf.WriteString(config.Config.Origin)
+	buf.WriteString(config.Server.Origin)
 	buf.WriteString("/")
 	buf.WriteString(moduleName)
 	buf.WriteString("/")
@@ -169,7 +169,7 @@ func htmlFuncs() {
 		buf.WriteString(url)
 		buf.WriteString(mark)
 		buf.WriteString("v=")
-		buf.WriteString(config.Config.Version)
+		buf.WriteString(config.Server.Version)
 		buf.WriteString("'></script>")
 		res := buf.String()
 		buf.Reset()
@@ -184,7 +184,7 @@ func htmlFuncs() {
 		buf.WriteString(url)
 
 		buf.WriteString("?v=")
-		buf.WriteString(config.Config.Version)
+		buf.WriteString(config.Server.Version)
 		buf.WriteString("' type='text/css' media='screen'")
 		if len(attrib) == 1 {
 			buf.WriteString(" ")
@@ -258,21 +258,21 @@ func htmlFuncs() {
 		bufpool.Put(buf)
 		return template.HTML(res)
 	}
-	global_Funcs["html_select"] = func(name string, options []protocol.HtmlKeyValueStr, selectedItems []string, attrib string, isappend ...bool) template.HTML {
+	global_Funcs["html_select"] = func(name string, options []protocol.HtmlKeyValueStr, selectedItem string, attrib string, isappend ...bool) template.HTML {
 
 		if len(isappend) > 0 && isappend[0] {
-			for _, item := range selectedItems {
-				find := false
-				for _, v := range options {
-					if v.Key == item {
-						find = true
-						break
-					}
-				}
-				if !find {
-					options = append(options, protocol.HtmlKeyValueStr{item, item})
+			//for _, item := range selectedItems {
+			find := false
+			for _, v := range options {
+				if v.Key == selectedItem {
+					find = true
+					break
 				}
 			}
+			if !find {
+				options = append(options, protocol.HtmlKeyValueStr{selectedItem, selectedItem})
+			}
+			//}
 
 		}
 		if len(options) == 0 {
@@ -280,8 +280,6 @@ func htmlFuncs() {
 		}
 
 		buf := bufpool.Get().(*libraries.MsgBuffer)
-		/* The begin. */
-
 		buf.WriteString("<select name='")
 		buf.WriteString(name)
 		buf.WriteString("' ")
@@ -302,12 +300,12 @@ func htmlFuncs() {
 			buf.WriteString("<option value='")
 			buf.WriteString(key)
 			buf.WriteString("'")
-			for _, v := range selectedItems {
-				if key == v {
-					buf.WriteString(" selected='selected'")
-					break
-				}
+			//for _, v := range selectedItems {
+			if key == selectedItem {
+				buf.WriteString(" selected='selected'")
+				//break
 			}
+			//}
 			buf.WriteString(">")
 			buf.WriteString(option.Value)
 			buf.WriteString("</option>\n")
@@ -356,6 +354,31 @@ func htmlFuncs() {
 			//parent::show($align, $type);
 		}
 		return template.HTML("")
+	}
+	global_Funcs["html_commonButton"] = func(label string, value ...string) template.HTML { //$class = 'btn', $misc = '', $icon = '')
+		buf := bufpool.Get().(*libraries.MsgBuffer)
+		buf.WriteString("<button type='button'")
+		if len(value) > 0 {
+			buf.WriteString(" class='")
+			buf.WriteString(value[0]) //class
+			buf.WriteString("'")
+		}
+		if len(value) > 1 {
+			buf.WriteString(" ")
+			buf.WriteString(value[1]) //misc
+		}
+		buf.WriteString(">")
+		if len(value) > 2 {
+			buf.WriteString("<i class='icon-")
+			buf.WriteString(value[2]) //icon
+			buf.WriteString("'></i>")
+		}
+		buf.WriteString(label)
+		buf.WriteString("</button>")
+		res := buf.String()
+		buf.Reset()
+		bufpool.Put(buf)
+		return template.HTML(res)
 	}
 }
 func hookFuncs() {
@@ -451,10 +474,7 @@ func html_input(name string, value ...string) string { // value  attrib
 func isClickableFuncs() {
 	global_Funcs["MSG_USER_INFO_cache_isClickable"] = func(data *TemplateData, obj interface{}, action string) bool {
 		v := obj.(*protocol.MSG_USER_INFO_cache)
-		lockMinutes := 0
-		if str, ok := data.Config["user"]["lockMinutes"].(string); ok {
-			lockMinutes, _ = strconv.Atoi(str)
-		}
+		lockMinutes, _ := data.Config["user"]["common"]["lockMinutes"].(int)
 		if action == "unlock" && data.Time.Unix()-v.Locked >= int64(lockMinutes)*60 {
 			return false
 		}

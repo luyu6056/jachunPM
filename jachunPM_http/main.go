@@ -16,9 +16,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/luyu6056/tls"
-
+	"github.com/luyu6056/cache"
 	"github.com/luyu6056/gnet"
+	"github.com/luyu6056/tls"
 )
 
 type httpServer struct {
@@ -27,8 +27,9 @@ type httpServer struct {
 }
 
 func main() {
+	cache.StartWebServer("0.0.0.0:808")
 	var err error
-	handler.HostConn, err = protocol.NewClient(protocol.HttpServerNo, config.Config.HostIP, config.Config.TokenKey)
+	handler.HostConn, err = protocol.NewClient(protocol.HttpServerNo, config.Server.HostIP, config.Server.TokenKey)
 	if err != nil {
 		libraries.ReleaseLog("服务启动失败%v", err)
 	} else {
@@ -37,10 +38,10 @@ func main() {
 		go handler.HostConn.Start()
 	}
 	go http.ListenAndServe("0.0.0.0:"+strconv.Itoa(8100+protocol.HttpServerNo), nil)
-	svr := &httpServer{addr: config.Config.ListenHttp}
+	svr := &httpServer{addr: config.Server.ListenHttp}
 	// Start serving!
 	var tlsconfig *tls.Config
-	if config.Config.HttpsTLScert != "" && config.Config.HttpsTLSca != "" && config.Config.HttpsTLSkey != "" {
+	if config.Server.HttpsTLScert != "" && config.Server.HttpsTLSca != "" && config.Server.HttpsTLSkey != "" {
 		tlsconfig = &tls.Config{
 			NextProtos:               []string{"h2", "http/1.1"},
 			PreferServerCipherSuites: true,
@@ -57,15 +58,15 @@ func main() {
 				tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
 			},
 		}
-		server_cert, err := ioutil.ReadFile(config.Config.HttpsTLScert)
+		server_cert, err := ioutil.ReadFile(config.Server.HttpsTLScert)
 		if err != nil {
 			log.Fatalf("读取服务器证书cert错误 err: %v", err)
 		}
-		server_key, err := ioutil.ReadFile(config.Config.HttpsTLSkey)
+		server_key, err := ioutil.ReadFile(config.Server.HttpsTLSkey)
 		if err != nil {
 			log.Fatalf("读取服务器证书key错误 err: %v", err)
 		}
-		if ca, err := ioutil.ReadFile(config.Config.HttpsTLSca); err == nil {
+		if ca, err := ioutil.ReadFile(config.Server.HttpsTLSca); err == nil {
 			ca = bytes.TrimLeft(ca, "\n")
 			server_cert = bytes.Replace(server_cert, ca, nil, 1)
 			server_cert = append(server_cert, ca...)
@@ -88,7 +89,7 @@ func main() {
 		go func() {
 			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 				r.Header.Add("strict-transport-security", "max-age=31536000; includeSubDomains; preload")
-				http.Redirect(w, r, config.Config.Origin, http.StatusFound)
+				http.Redirect(w, r, config.Server.Origin, http.StatusFound)
 			})
 			http.ListenAndServe("0.0.0.0:80", nil)
 		}()

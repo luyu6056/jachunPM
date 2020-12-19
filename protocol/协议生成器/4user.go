@@ -64,7 +64,7 @@ type MSG_USER_Dept_cache struct {
 	Order       int8
 	Manager     int32
 	ManagerName string
-	Children    []*MSG_USER_Dept_cache
+	Children    []*MSG_USER_Dept_cache `json:"children"` //部门管理前端的js需要小写
 }
 type MSG_USER_Dept_getParents struct {
 	QueryID uint32
@@ -117,6 +117,7 @@ type MSG_USER_getCompanyUsers struct {
 	Sort    string
 	Page    int
 	PerPage int
+	Where   string //注意转入原生的语句要防sql注入
 	Total   int
 }
 

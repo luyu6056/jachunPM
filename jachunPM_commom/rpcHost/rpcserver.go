@@ -2,6 +2,7 @@ package rpcHost
 
 import (
 	"errors"
+	"io"
 	"jachunPM_commom/db"
 	"libraries"
 	"protocol"
@@ -56,11 +57,12 @@ func MsgnoInit() {
 }
 
 type RpcServer struct {
-	ServerNo            uint8 //服务序号
-	Id                  int16 //服务Id，有效值0-255
-	ServerConn          gnet.Conn
-	zstdDecoder         *zstd.Decoder        //codec解压相关
-	zstdDecodeBuf       *libraries.MsgBuffer //codec解压相关
+	ServerNo                       uint8 //服务序号
+	Id                             int16 //服务Id，有效值0-255
+	ServerConn                     gnet.Conn
+	zstdDecoder                    *zstd.Decoder        //codec解压相关
+	zstdDecodeBuf1, zstdDecodeBuf2 *libraries.MsgBuffer //codec解压相关
+
 	setStatusOpenChan   chan string
 	closeChan           chan int
 	outChan             chan *libraries.MsgBuffer //指定本服务接收的消息
@@ -85,8 +87,9 @@ func (svr *RpcServer) SendMsg(remote uint16, msgno uint32, ttl uint8, out protoc
 func (svr *RpcServer) Start(no uint8, ipport string, window int32) {
 	svr.ServerNo = no
 	svr.Ip = ipport
-	svr.zstdDecodeBuf = &libraries.MsgBuffer{}
-	svr.zstdDecoder, _ = zstd.NewReader(svr.zstdDecodeBuf)
+	svr.zstdDecodeBuf1 = &libraries.MsgBuffer{}
+	svr.zstdDecodeBuf2 = &libraries.MsgBuffer{}
+	svr.zstdDecoder, _ = zstd.NewReader(svr.zstdDecodeBuf1)
 	svr.outChan = make(chan *libraries.MsgBuffer, protocol.Rpcmsgnum)
 	svr.closeChan = make(chan int, 1)
 	svr.setStatusOpenChan = make(chan string)
@@ -184,6 +187,7 @@ func (svr *RpcServer) handleMsgOut(outChan chan *libraries.MsgBuffer) {
 		} else {
 			if msgNum > protocol.CompressMinNum || out.Len()+o.Len() > protocol.CompressMinLen {
 				compress = true
+				zstdWriter.Reset(zstdbuf)
 				zstdWriter.Write(out.Bytes())
 				out.Reset()
 				zstdWriter.Write(o.Bytes())
@@ -326,10 +330,13 @@ func (code RpcCodec) Decode(c gnet.Conn) (data []byte, err error) {
 		if data[4]>>7 == 1 {
 			if ctx, ok := c.Context().(*RpcServer); ok {
 				if decoder := ctx.zstdDecoder; decoder != nil {
-					ctx.zstdDecodeBuf.Reset()
-					decoder.Read(data[5 : msglen+5])
-					decoder.Close()
-					return ctx.zstdDecodeBuf.Bytes(), nil
+					ctx.zstdDecodeBuf1.Reset()
+					ctx.zstdDecodeBuf1.Write(data[5 : msglen+5])
+					ctx.zstdDecodeBuf2.Reset()
+					ctx.zstdDecodeBuf2.WriteByte(data[4] - 128)
+					decoder.Reset(ctx.zstdDecodeBuf1)
+					io.Copy(ctx.zstdDecodeBuf2, decoder)
+					return ctx.zstdDecodeBuf2.Bytes(), nil
 				}
 			}
 			return nil, errRpcContext

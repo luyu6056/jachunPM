@@ -15,12 +15,13 @@ import (
 )
 
 type TemplateData struct {
-	App, Data    map[string]interface{}
-	Config, Lang map[string]map[string]interface{}
-	ws           HttpRequest
-	Msg          *protocol.Msg
-	Time         time.Time
-	Page         struct {
+	App, Data map[string]interface{}
+	Config    map[string]map[string]map[string]interface{}
+	Lang      map[string]map[string]interface{}
+	ws        HttpRequest
+	Msg       *protocol.Msg
+	Time      time.Time
+	Page      struct {
 		Total      int
 		Page       int
 		PerPage    int
@@ -31,12 +32,10 @@ type TemplateData struct {
 
 var templateLock sync.RWMutex
 var global_t = template.New("jachun")
-var global_data = &TemplateData{}
 
 func init() {
 	loadFuncs()
 	loadAlltemplate()
-	loadTemplateData()
 }
 
 var T *template.Template
@@ -82,25 +81,13 @@ func loadAlltemplate() {
 		}
 	}()
 }
-func loadTemplateData() {
-	global_data.Config = make(map[string]map[string]interface{})
-	global_data.Config["common"] = make(map[string]interface{})
-	global_data.Config["common"]["debug"] = config.Config.Debug
-	global_data.Config["common"]["webRoot"] = config.Config.Origin + "/"
-	global_data.Config["common"]["jsRoot"] = config.Config.Origin + "/js/"
-	global_data.Config["common"]["themeRoot"] = config.Config.Origin + "/theme/"
-	global_data.Config["common"]["defaultTheme"] = config.Config.Origin + "/theme/default/"
-	global_data.Config["common"]["langs"] = []protocol.HtmlKeyValueStr{{string(protocol.ZH_CN), protocol.ZH_CN.String()}}
-	global_data.Config["user"] = make(map[string]interface{})
-}
-func (data *TemplateData) Init(ws HttpRequest) *TemplateData {
+
+func templateDataInit(ws HttpRequest) *TemplateData {
 	d := &TemplateData{
-		Config: data.Config,
-		Lang:   config.Lang[protocol.ZH_CN],
-		App:    make(map[string]interface{}),
-		Data:   make(map[string]interface{}),
-		ws:     ws,
-		Time:   time.Now(),
+		App:  make(map[string]interface{}),
+		Data: make(map[string]interface{}),
+		ws:   ws,
+		Time: time.Now(),
 	}
 	if ws.Cookie("sessionID") == "" {
 		d.App["ClientLang"] = string(protocol.DefaultLang)
@@ -114,16 +101,17 @@ func (data *TemplateData) Init(ws HttpRequest) *TemplateData {
 			session.Set("ClientTheme", "default")
 		}
 		if uid := session.Load_str("UserId"); uid != "" {
-			var u protocol.MSG_USER_INFO_cache
+			var u *protocol.MSG_USER_INFO_cache
 			err := HostConn.CacheGet(protocol.UserServerNo, protocol.PATH_USER_INFO_CACHE, uid, &u)
-			if err == nil {
-				d.App["user"] = u
+			if err == nil && u != nil {
+				d.App["user"] = *u
 			} else {
-				libraries.ReleaseLog("读取user_info缓存错误%s", err)
+				libraries.ReleaseLog("读取user_info缓存错误%v", err)
 			}
 		}
 	}
-
+	d.Config = config.Config[protocol.CountryNo(d.App["ClientLang"].(string))]
+	d.Lang = config.Lang[protocol.CountryNo(d.App["ClientLang"].(string))]
 	names := strings.Split(ws.Path(), "/")
 	if len(names) > 2 {
 		d.App["moduleName"] = names[1]
@@ -155,7 +143,7 @@ func (data *TemplateData) Init(ws HttpRequest) *TemplateData {
 
 	d.App["ClientLangString"] = protocol.CountryNo(d.App["ClientLang"].(string)).String()
 	d.App["company"] = getCompanyInfo()
-	d.Config["common"]["langTheme"] = global_data.Config["common"]["themeRoot"].(string) + "lang/" + d.App["ClientLang"].(string) + ".css"
+	d.Config["common"]["common"]["langTheme"] = d.Config["common"]["common"]["themeRoot"].(string) + "lang/" + d.App["ClientLang"].(string) + ".css"
 	d.App["onlybody"] = ws.Query("onlybody")
 
 	return d
@@ -166,7 +154,7 @@ func (data *TemplateData) onlybody() bool {
 	}
 	return false
 }
-func templateOut(name string, data *TemplateData, ws HttpRequest) {
+func templateOut(name string, data *TemplateData) {
 	templateLock.RLock()
 	buf := bufpool.Get().(*libraries.MsgBuffer)
 	defer func() {
@@ -174,7 +162,6 @@ func templateOut(name string, data *TemplateData, ws HttpRequest) {
 		bufpool.Put(buf)
 		templateLock.RUnlock()
 	}()
-	data.ws = ws
 	data.App["TemplateName"] = name
 
 	if data.Data["title"] == nil {
@@ -182,9 +169,9 @@ func templateOut(name string, data *TemplateData, ws HttpRequest) {
 	}
 	err := T.ExecuteTemplate(buf, name, data)
 	if err != nil {
-		ws.OutErr(err)
+		data.ws.OutErr(err)
 	} else {
-		ws.Write(buf)
+		data.ws.Write(buf)
 	}
 
 }

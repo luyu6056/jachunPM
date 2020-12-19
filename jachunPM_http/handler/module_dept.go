@@ -7,6 +7,7 @@ import (
 	"protocol"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/luyu6056/gnet"
 )
@@ -31,17 +32,13 @@ func get_dept_browse(data *TemplateData) gnet.Action {
 	if int32(deptID) > 0 {
 		getParents := protocol.GET_MSG_USER_Dept_getParents()
 		getParents.Id = int32(deptID)
-		res, err := msg.SendMsgWaitResult(0, getParents)
-		if r, ok := res.(*protocol.MSG_USER_Dept_getParents_result); ok {
-			data.Data["parentDepts"] = r.List
-		} else {
-			libraries.DebugLog("GET_MSG_USER_Dept_getParents返回结果不对%s", reflect.TypeOf(res).Elem().String())
-		}
-		getParents.Put()
+		res, err := dept_getParents(int32(deptID))
 		if err != nil {
 			ws.OutErr(err)
 			return gnet.None
 		}
+		data.Data["parentDepts"] = res
+
 	}
 	data.Data["depts"], err = dept_getTreeMenu(data, 0, dept_createManageLink)
 	if err != nil {
@@ -54,7 +51,7 @@ func get_dept_browse(data *TemplateData) gnet.Action {
 		return gnet.None
 	}
 	getDataStructure := protocol.GET_MSG_USER_Dept_getDataStructure()
-	getDataStructure.RootDeptID = int32(deptID)
+	getDataStructure.RootDeptID = int32(0)
 	res, err := msg.SendMsgWaitResult(0, getDataStructure)
 	if r, ok := res.(*protocol.MSG_USER_Dept_getDataStructure_result); ok {
 		data.Data["tree"] = r.List
@@ -66,35 +63,29 @@ func get_dept_browse(data *TemplateData) gnet.Action {
 		ws.OutErr(err)
 		return gnet.None
 	}
-	templateOut("dept.browse.html", data, ws)
+	templateOut("dept.browse.html", data)
 	return gnet.None
 }
-func dept_getTreeMenu(data *TemplateData, rootDeptId int32, createLink func(data *TemplateData, deptinfo *protocol.MSG_USER_Dept_cache, buf *libraries.MsgBuffer)) (template.HTML, error) {
-	var deptList []*protocol.MSG_USER_Dept_cache
-
-	var deptInfo protocol.MSG_USER_Dept_cache
+func dept_getTree(rootDeptId int32) (deptList []*protocol.MSG_USER_Dept_cache, err error) {
 	res, err := HostConn.CacheGetPath(protocol.UserServerNo, protocol.PATH_USER_DEPT_CACHE)
 	if err != nil {
-		return template.HTML(""), err
+		return deptList, err
 	}
+	var deptInfo *protocol.MSG_USER_Dept_cache
 	buf := bufpool.Get().(*libraries.MsgBuffer)
 	for _, b := range res {
 		buf.Reset()
 		buf.Write(b)
 		if v, ok := protocol.READ_MSG_DATA(buf).(*protocol.MSG_USER_Dept_cache); ok {
 			deptList = append(deptList, v)
+			if v.Id == rootDeptId {
+				deptInfo = v
+			}
 		}
 	}
-
-	if len(deptList) > 0 {
-		protocol.Order_dept(deptList, func(a, b *protocol.MSG_USER_Dept_cache) bool {
-			if a.Grade == b.Grade {
-				return a.Order < b.Order
-			}
-			return a.Grade > b.Grade
-		})
-	}
-	if rootDeptId > 0 {
+	buf.Reset()
+	bufpool.Put(buf)
+	if deptInfo != nil {
 		for i := len(deptList) - 1; i >= 0; i-- {
 			has := false
 		out:
@@ -108,10 +99,25 @@ func dept_getTreeMenu(data *TemplateData, rootDeptId int32, createLink func(data
 			}
 			if !has {
 				deptList = append(deptList[:i], deptList[i+1:]...)
+				deptList[i].Put()
 			}
 		}
 	}
-
+	if len(deptList) > 0 {
+		protocol.Order_dept(deptList, func(a, b *protocol.MSG_USER_Dept_cache) bool {
+			if a.Grade == b.Grade {
+				return a.Order < b.Order
+			}
+			return a.Grade > b.Grade
+		})
+	}
+	return
+}
+func dept_getTreeMenu(data *TemplateData, rootDeptId int32, createLink func(data *TemplateData, deptinfo *protocol.MSG_USER_Dept_cache, buf *libraries.MsgBuffer)) (template.HTML, error) {
+	deptList, err := dept_getTree(rootDeptId)
+	if err != nil {
+		return template.HTML(""), err
+	}
 	var deptMenu = make(map[int32]*libraries.MsgBuffer)
 	for _, dept := range deptList {
 		if _buf, ok := deptMenu[dept.Id]; ok {
@@ -137,6 +143,7 @@ func dept_getTreeMenu(data *TemplateData, rootDeptId int32, createLink func(data
 		}
 		deptMenu[dept.Parent].WriteString("</li>\n")
 	}
+	buf := bufpool.Get().(*libraries.MsgBuffer)
 	buf.Reset()
 	buf.WriteString("<ul class='tree' data-ride='tree' data-name='tree-dept'>")
 	if v, ok := deptMenu[0]; ok {
@@ -167,8 +174,12 @@ func dept_getSons(deptId int32) (deptList []*protocol.MSG_USER_Dept_cache, err e
 	for _, b := range res {
 		buf.Reset()
 		buf.Write(b)
-		if v, ok := protocol.READ_MSG_DATA(buf).(*protocol.MSG_USER_Dept_cache); ok && v.Parent == deptId {
-			deptList = append(deptList, v)
+		if v, ok := protocol.READ_MSG_DATA(buf).(*protocol.MSG_USER_Dept_cache); ok {
+			if v.Parent == deptId {
+				deptList = append(deptList, v)
+			} else {
+				v.Put()
+			}
 		}
 	}
 	buf.Reset()
@@ -284,12 +295,12 @@ func post_dept_manageChild(data *TemplateData) gnet.Action {
 	buf.Reset()
 	bufpool.Put(buf)
 	grade := int8(1)
-	var parentPath []int32
+
 	parentDeptID, _ := strconv.Atoi(ws.Post("parentDeptID"))
 	parentDept, ok := m[int32(parentDeptID)]
 	if ok {
 		grade = parentDept.Grade + 1
-		parentPath = parentDept.Path
+
 	}
 
 	update := protocol.GET_MSG_USER_Dept_update()
@@ -307,6 +318,8 @@ func post_dept_manageChild(data *TemplateData) gnet.Action {
 					if parentDept != nil {
 						insert.Parent = parentDept.Id
 						insert.Grade = grade
+						parentPath := make([]int32, len(parentDept.Path))
+						copy(parentPath, parentDept.Path)
 						insert.Path = append(parentPath, insert.Id)
 					} else {
 						insert.Grade = 1
@@ -386,7 +399,7 @@ func get_dept_edit(data *TemplateData) gnet.Action {
 		}
 		data.Data["users"] = users
 	}
-	templateOut("dept.edit.html", data, data.ws)
+	templateOut("dept.edit.html", data)
 	return gnet.None
 }
 func post_dept_edit(data *TemplateData) gnet.Action {
@@ -428,5 +441,85 @@ func post_dept_edit(data *TemplateData) gnet.Action {
 }
 func dept_getCacheById(deptId int32) (deptinfo *protocol.MSG_USER_Dept_cache, err error) {
 	err = HostConn.CacheGet(protocol.UserServerNo, protocol.PATH_USER_DEPT_CACHE, strconv.Itoa(int(deptId)), &deptinfo)
+	return
+}
+func dept_getOptionMenu(rootDeptID int32) ([]protocol.HtmlKeyValueStr, error) {
+	deptlist, err := dept_getTree(rootDeptID)
+	if err != nil {
+		return nil, err
+	}
+	res := []protocol.HtmlKeyValueStr{{"0", "/"}}
+	for _, dept := range deptlist {
+
+		var deptNames []string
+		for _, parentDeptID := range dept.Path {
+			for _, parent := range deptlist {
+				if parent.Id == parentDeptID {
+					deptNames = append(deptNames, dept.Name)
+					break
+				}
+			}
+
+		}
+		res = append(res, protocol.HtmlKeyValueStr{strconv.Itoa(int(dept.Id)), "/" + strings.Join(deptNames, "/")})
+	}
+	return res, nil
+}
+func dept_getAllChildID(deptID int32) (res []int32, err error) {
+	if deptID < 0 {
+		return nil, nil
+	}
+	result, err := HostConn.CacheGetPath(protocol.UserServerNo, protocol.PATH_USER_DEPT_CACHE)
+	if err != nil {
+		return nil, err
+	}
+	buf := protocol.BufPoolGet()
+	for _, b := range result {
+		buf.Reset()
+		buf.Write(b)
+		if v, ok := protocol.READ_MSG_DATA(buf).(*protocol.MSG_USER_Dept_cache); ok {
+			for _, id := range v.Path {
+				if id == deptID {
+					res = append(res, v.Id)
+				}
+			}
+			v.Put()
+		}
+	}
+	buf.Reset()
+	protocol.BufPoolPut(buf)
+	return res, nil
+}
+func dept_getParents(deptID int32) (deptList []*protocol.MSG_USER_Dept_cache, err error) {
+	res, err := HostConn.CacheGetPath(protocol.UserServerNo, protocol.PATH_USER_DEPT_CACHE)
+	if err != nil {
+		return deptList, err
+	}
+	deptMap := map[int32]*protocol.MSG_USER_Dept_cache{}
+	var deptInfo *protocol.MSG_USER_Dept_cache
+	buf := bufpool.Get().(*libraries.MsgBuffer)
+	for _, b := range res {
+		buf.Reset()
+		buf.Write(b)
+		if v, ok := protocol.READ_MSG_DATA(buf).(*protocol.MSG_USER_Dept_cache); ok {
+			deptMap[v.Id] = v
+			if v.Id == deptID {
+				deptInfo = v
+			}
+		}
+	}
+	buf.Reset()
+	bufpool.Put(buf)
+	if deptInfo != nil {
+		for _, parentId := range deptInfo.Path {
+			if v, ok := deptMap[parentId]; ok {
+				deptList = append(deptList, v)
+				delete(deptMap, parentId)
+			}
+		}
+	}
+	for _, v := range deptMap {
+		v.Put()
+	}
 	return
 }

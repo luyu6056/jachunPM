@@ -65,3 +65,6 @@ func Confirm(message, okURL, cancleURL string, okcancleTarget ...string) string 
 	protocol.BufPoolPut(buf)
 	return res
 }
+func Location(str string, window string) string {
+	return "<script>" + window + ".location.href=\"" + strings.ReplaceAll(str, `"`, `\"`) + "\"</script>"
+}

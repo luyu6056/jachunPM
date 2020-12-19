@@ -22,6 +22,7 @@ const (
 	CMD_MSG_COMMON_GET_Msgno = -26660096
 	CMD_MSG_COMMON_GET_Msgno_result = -1751634176
 	CMD_MSG_COMMON_QueryErr = 714684672
+	CMD_MSG_COMMON_ResetWindow = 988600064
 )
 
 type MSG_COMMON_regServer struct {
@@ -743,5 +744,43 @@ func (data *MSG_COMMON_QueryErr) getQueryResultID() uint32 {
 }
 func (data *MSG_COMMON_QueryErr) setQueryResultID(id uint32) {
 	data.QueryResultID = id
+}
+
+type MSG_COMMON_ResetWindow struct {
+	Window int32
+}
+
+var pool_MSG_COMMON_ResetWindow = sync.Pool{New: func() interface{} { return &MSG_COMMON_ResetWindow{} }}
+
+func GET_MSG_COMMON_ResetWindow() *MSG_COMMON_ResetWindow {
+	return pool_MSG_COMMON_ResetWindow.Get().(*MSG_COMMON_ResetWindow)
+}
+
+func (data *MSG_COMMON_ResetWindow) cmd() int32 {
+	return CMD_MSG_COMMON_ResetWindow
+}
+
+func (data *MSG_COMMON_ResetWindow) Put() {
+	data.Window = 0
+	pool_MSG_COMMON_ResetWindow.Put(data)
+}
+func (data *MSG_COMMON_ResetWindow) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_COMMON_ResetWindow,buf)
+	WRITE_MSG_COMMON_ResetWindow(data, buf)
+}
+
+func WRITE_MSG_COMMON_ResetWindow(data *MSG_COMMON_ResetWindow, buf *libraries.MsgBuffer) {
+	WRITE_int32(data.Window, buf)
+}
+
+func READ_MSG_COMMON_ResetWindow(buf *libraries.MsgBuffer) *MSG_COMMON_ResetWindow {
+	data := pool_MSG_COMMON_ResetWindow.Get().(*MSG_COMMON_ResetWindow)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_COMMON_ResetWindow) read(buf *libraries.MsgBuffer) {
+	data.Window = READ_int32(buf)
+
 }
 

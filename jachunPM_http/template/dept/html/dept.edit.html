@@ -9,7 +9,7 @@
       <table class='table table-form' style='width:100%'>
         <tr>
           <th class='w-80px'>{{.Lang.dept.parent}}</th>
-          <td>{{html_select "parent" .Data.optionMenu (appendStr .Data.dept.Parent) "class='form-control chosen'"}}</td>
+          <td>{{html_select "parent" .Data.optionMenu .Data.dept.Parent "class='form-control chosen'"}}</td>
         </tr>
         <tr>
           <th class='w-80px'>{{.Lang.dept.name}}</th>
@@ -17,7 +17,7 @@
         </tr>
         <tr>
           <th class='w-80px'>{{.Lang.dept.manager}}</th>
-          <td>{{html_select "manager" .Data.users (appendStr .Data.dept.Manager) "class='form-control chosen'" true}}</td>
+          <td>{{html_select "manager" .Data.users .Data.dept.Manager "class='form-control chosen'" true}}</td>
         </tr>
         <tr>
           <td colspan='2' class='text-center'>

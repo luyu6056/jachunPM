@@ -9,6 +9,7 @@ import (
 var HostConn *protocol.RpcClient
 
 func Handler(in *protocol.Msg) {
+
 	switch data := in.Data.(type) {
 	case *protocol.MSG_USER_GET_LoginSalt:
 		getLoginSalt(data, in)

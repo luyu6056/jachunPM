@@ -22,6 +22,7 @@ type HttpRequest interface {
 	GetAllQuery() map[string][]string
 	Cookie(key string) string
 	Session() *cache.Hashvalue
+
 	Header(name string) string
 	Method() string
 	//writer部分
@@ -33,6 +34,7 @@ type HttpRequest interface {
 	Write(*libraries.MsgBuffer)
 	WriteString(string)
 	Redirect(url string)
+	DelSession()
 }
 
 var httpHandlerMap = map[string]map[string]func(data *TemplateData) gnet.Action{
@@ -51,7 +53,7 @@ func HttpHandler(ws HttpRequest) gnet.Action {
 	if m, ok := httpHandlerMap[ws.Method()]; ok {
 		if f, ok := m[ws.Path()]; ok {
 			//检查是否登录
-			data := global_data.Init(ws)
+			data := templateDataInit(ws)
 			_, ok := data.App["user"].(protocol.MSG_USER_INFO_cache)
 			if !ok {
 				if !strings.Contains("/user/login|/user/getsalt", ws.Path()) {

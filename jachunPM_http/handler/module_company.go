@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"jachunPM_http/config"
 	"libraries"
 	"protocol"
 	"strconv"
@@ -33,6 +34,7 @@ func get_company_browse(data *TemplateData) gnet.Action {
 			return gnet.None
 		}
 		data.Data["dept"] = deptinfo
+		param = strconv.Itoa(deptID)
 	}
 	/*msg, err := HostConn.GetMsg()
 	if err != nil {
@@ -57,6 +59,7 @@ func get_company_browse(data *TemplateData) gnet.Action {
 	getCompanyUser.PerPage = data.Page.PerPage
 	getCompanyUser.DeptID = int32(deptID)
 	getCompanyUser.Total = data.Page.Total
+	getCompanyUser.Where = ws.Session().Load_str("company/browse/Query")
 	getCompanyUser.Page = data.Page.Page
 	res, err := HostConn.SendMsgWaitResultToDefault(getCompanyUser)
 	if err != nil {
@@ -69,8 +72,13 @@ func get_company_browse(data *TemplateData) gnet.Action {
 			data.Page.Total = v.Total
 		}
 	}
-	data.Data["vars"] = "param=" + param + "&type=" + TYPE + "&orderBy=" + data.Data["orderBy"].(string) + "&recTotal=" + strconv.Itoa(data.Page.Total) + "&recPerPage=" + strconv.Itoa(data.Page.PerPage)
-	templateOut("company.browse.html", data, ws)
+	data.Data["queryID"], _ = strconv.Atoi(param)
+	if TYPE == "bydept" {
+		data.Data["queryID"] = 0
+	}
+
+	data.Data["vars"] = "param=" + param + "&type=" + TYPE + "&orderBy=%s" + "&recTotal=" + strconv.Itoa(data.Page.Total) + "&recPerPage=" + strconv.Itoa(data.Page.PerPage)
+	templateOut("company.browse.html", data)
 	return gnet.None
 }
 func getCompanyInfo() protocol.MSG_USER_Company_cache {
@@ -81,4 +89,18 @@ func getCompanyInfo() protocol.MSG_USER_Company_cache {
 		libraries.ReleaseLog("获取Company缓存失败%+v", err)
 	}
 	return c
+}
+func init() {
+	searchParamsFunc["company/browse"] = func(data *TemplateData) map[string]interface{} {
+		search := data.Config["company"]["browse"]["search"].(map[string]interface{})
+		search["actionURL"] = createLink("company", "browse", "param=myQueryID&type=bysearch")
+		dept := search["params"].(map[string]config.ConfigSearchParams)["dept"]
+		dept.Values = dept.Values[:0]
+		dept.Values = append(dept.Values, protocol.HtmlKeyValueStr{"", ""})
+		list, _ := dept_getOptionMenu(0)
+		dept.Values = append(dept.Values, list...)
+		search["params"].(map[string]config.ConfigSearchParams)["dept"] = dept
+		data.ws.Session().Store("company/browse", search)
+		return search
+	}
 }

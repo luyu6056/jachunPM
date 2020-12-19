@@ -544,18 +544,32 @@ var sessionID = uint64(rand.NewSource(time.Now().Unix()).Int63())
 func (hs *Httpserver) Session() *cache.Hashvalue {
 	if hs.session == nil {
 		//检查sessionID
-		if sessionIdKey := hs.Cookie("sessionID"); sessionIdKey != "" {
-			hs.session = cache.Hget(sessionIdKey, "session")
-		} else {
-			//生成一个session
-			b := make([]byte, 8)
-			binary.LittleEndian.PutUint64(b, atomic.AddUint64(&sessionID, 1))
-			sessionIdKey := libraries.MD5_S(strconv.FormatInt(time.Now().UnixNano(), 10)) + hex.EncodeToString(b)
+		var has bool
+		sessionIdKey := hs.Cookie("sessionID")
+		if sessionIdKey != "" {
+			hs.session, has = cache.Has(sessionIdKey, "session")
+		}
+		//不存在则创建一个
+		if !has {
+			has = true
+			//循环检查到一个没用过的sessionIdKey
+			for has {
+				b := make([]byte, 8)
+				binary.LittleEndian.PutUint64(b, atomic.AddUint64(&sessionID, 1))
+				sessionIdKey = strings.TrimRight(libraries.SHA256_URL_BASE64(strconv.FormatInt(time.Now().UnixNano(), 10)+string(b)), "=")
+				_, has = cache.Has(sessionIdKey, "session")
+			}
 			hs.SetCookie("sessionID", sessionIdKey, protocol.SessionTempExpires)
 			hs.session = cache.Hget(sessionIdKey, "session")
+			hs.session.Expire(3600) //给个临时session
 		}
 	}
 	return hs.session
+}
+func (hs *Httpserver) DelSession() {
+	if hs.session != nil {
+		hs.session.Hdel()
+	}
 }
 func (hs *Httpserver) Body() []byte {
 	return hs.Request.Body.Bytes()

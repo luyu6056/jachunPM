@@ -1,5 +1,5 @@
 {{template "header.lite.html" .}}
-{{js_import (strAdd .Config.common.jsRoot  "aes.js")}}
+{{js_import (strAdd .Config.common.common.jsRoot  "aes.js")}}
 <main id="main" class="fade no-padding">
   <div class="container" id="login">
     <div id="loginPanel">
@@ -8,7 +8,7 @@
         <div class="actions dropdown dropdown-hover" id='langs'>
           <button type='button' class='btn' title='Change Language/更换语言/更換語言'>{{.App.ClientLangString}} <span class="caret"></span></button>
           <ul class="dropdown-menu pull-right">
-            {{range $value:=.Config.common.langs}}
+            {{range $value:=.Config.common.common.langs}}
             <li><a class="switch-lang" data-value="{{$value.Key}}">{{$value.Value}}</a></li>
             {{end}}
           </ul>
@@ -16,7 +16,7 @@
       </header>
       <div class="table-row">
         <div class="col-4 text-center" id='logo-box'>
-          <img src="{{.Config.common.webRoot}}theme/default/images/main/{{.Lang.common.logoImg}}" />
+          <img src="{{.Config.common.common.webRoot}}theme/default/images/main/{{.Lang.common.logoImg}}" />
         </div>
         <div class="col-8">
           <form method='post' target='hiddenwin'>

@@ -83,7 +83,8 @@ func main() {
 				val[2] = strings.Trim(val[2], h)
 				if len(val[2]) > 5 {
 					for _, filed_s := range strings.Split(val[2], h) {
-						if _m, err := Preg_match_result(`\s*([^\s]+)\s+([^\n/]+)`, filed_s, 1); len(_m) > 0 {
+
+						if _m, err := Preg_match_result(`\s*([^\s]+)\s+([^\n/]+?)\s*(`+"`"+"[^`]+`"+`)?\s*(\/\/[^\n]+)?$`, filed_s, 1); len(_m) > 0 {
 							if err != nil {
 								DEBUG(err)
 							}
@@ -94,8 +95,9 @@ func main() {
 
 							_struct.field = append(_struct.field, struct {
 								name string
+								tag  string
 								typ  string
-							}{name: _m[0][1], typ: strings.Trim(_m[0][2], " ")})
+							}{name: _m[0][1], typ: strings.Trim(_m[0][2], " "), tag: _m[0][3]})
 						} else {
 							Log(name+"匹配结构体 %s 成员%s错误", val[1], filed_s)
 							continue
@@ -137,6 +139,10 @@ func main() {
 					out.WriteString(f.name)
 					out.WriteString(" ")
 					out.WriteString(f.typ)
+					if f.tag != "" {
+						out.WriteString(" ")
+						out.WriteString(f.tag)
+					}
 					out.WriteString(h)
 				}
 				out.WriteString("}\n\n")
@@ -188,7 +194,7 @@ func main() {
 						}
 					} else {
 						switch f.typ {
-						case "int", "int8", "int16", "int32", "int64", "uint", "uint8", "uint16", "uint32", "uint64":
+						case "int", "int8", "int16", "int32", "int64", "uint", "uint8", "uint16", "uint32", "uint64", "ErrCode":
 							out.WriteString("	data.")
 							out.WriteString(f.name)
 							out.WriteString(" = 0\n")
@@ -587,6 +593,7 @@ type go_struct struct {
 	cmd   string
 	field []struct {
 		name string
+		tag  string
 		typ  string
 	}
 }

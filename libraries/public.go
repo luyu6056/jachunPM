@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"crypto/sha256"
+	"encoding/base64"
 	"log"
 	"math/rand"
 	"unsafe"
@@ -1453,6 +1454,10 @@ func SHA256_S(str string) string {
 		dst[k*2+1] = hextable[v&0x0f]
 	}
 	return Bytes2str(dst)
+}
+func SHA256_URL_BASE64(str string) string {
+	b := sha256.Sum256(Str2bytes(str))
+	return base64.URLEncoding.EncodeToString(b[:])
 }
 func GetFileModTime(path string) int64 {
 	f, err := os.Open(path)
