@@ -14,7 +14,6 @@
     <a class="btn btn-link querybox-toggle" id='bysearchTab'><i class="icon icon-search muted"></i> {{.Lang.user.search}}</a>
   </div>
   <div class='btn-toolbar pull-right'>
-    {{common_printLink . "user" "batchCreate" (strAdd "dept=" .Data.deptID) (strAdd "<i class='icon icon-plus'></i> "  .Lang.user.batchCreate) "" "class='btn btn-secondary'"}}
     {{common_printLink . "user" "create" (strAdd "dept=" .Data.deptID) (strAdd "<i class='icon icon-plus'></i> " .Lang.user.create) "" "class='btn btn-primary'"}}
   </div>
 </div>
@@ -50,7 +49,7 @@
           <th class="c-url">{{common_printOrderLink . "email" .Data.orderBy .Data.vars .Lang.user.email}}</th>
           <th class="c-type">{{common_printOrderLink . "gender" .Data.orderBy .Data.vars .Lang.user.gender}}</th>
           <th>{{common_printOrderLink . "phone" .Data.orderBy .Data.vars .Lang.user.phone}}</th>
-          <th>{{common_printOrderLink . "qq" .Data.orderBy .Data.vars .Lang.user.qq}}</th>
+          <th>{{common_printOrderLink . "qq" .Data.orderBy .Data.vars .Lang.user.QQ}}</th>
           <th class="c-date">{{common_printOrderLink . "last" .Data.orderBy .Data.vars .Lang.user.last}}</th>
           <th class="w-90px">{{common_printOrderLink . "visits" .Data.orderBy .Data.vars .Lang.user.visits}}</th>
           <th class='c-actions'>{{.Lang.common.actions}}</th>
@@ -81,7 +80,7 @@
             {{if $user.Deleted}}
               {{common_printIcon $ "user" "restore" (strAdd "userID=" $user.Id) nil "list" "restart" }}
             {{else}}
-              {{common_printIcon $ "user" "delete" (strAdd "userID=" $user.Id) nil "list" "close" }}
+              {{common_printIcon $ "user" "delete" (strAdd "userID=" $user.Id) nil "list" "close" "" "iframe" }}
             {{end}}
           </td>
 

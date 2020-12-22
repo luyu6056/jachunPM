@@ -196,7 +196,7 @@ func (client *RpcClient) handleWrite() {
 				compress = true
 				zstdWriter.Reset(zstdbuf)
 				zstdWriter.Write(out.Bytes())
-				//out.Reset()
+				out.Reset()
 				zstdWriter.Write(o.Bytes())
 			} else {
 				out.Write(o.Bytes())
@@ -336,7 +336,7 @@ func (client *RpcClient) handleRead() {
 	buf := &libraries.MsgBuffer{}
 	decodebuf1 := &libraries.MsgBuffer{}
 	decodebuf2 := &libraries.MsgBuffer{}
-	decoder, _ := zstd.NewReader(nil)
+	decoder, _ := zstd.NewReader(decodebuf1)
 	lenbuf := make([]byte, 5)
 	for {
 		n, err := io.ReadFull(client.conn, lenbuf)
@@ -494,7 +494,6 @@ func (client *RpcClient) CacheGet(serverNo uint8, path, key string, value interf
 		buf := BufPoolGet()
 		defer func() {
 			if r := recover(); r != nil {
-				fmt.Println(r)
 				err = errors.New("cache反序列化错误" + fmt.Sprint(r))
 			}
 			buf.Reset()
@@ -509,16 +508,19 @@ func (client *RpcClient) CacheGet(serverNo uint8, path, key string, value interf
 		} else {
 			r := reflect.ValueOf(value)
 			if r.Elem().IsNil() {
-				r.Elem().Set(reflect.New(r.Type().Elem().Elem()))
-				if v, ok := r.Elem().Interface().(MSG_DATA); ok {
-					if cmd == v.cmd() {
-						v.read(buf)
+				if f, ok := cmdMapFunc[cmd]; ok {
+					v := reflect.ValueOf(f(buf))
+					if v.Kind() == r.Elem().Kind() {
+						r.Elem().Set(v)
 						return
 					}
 				}
 			}
-		}
 
+		}
+		return errors.New("找不到反序列化方法或者cmd值不对")
+	} else {
+		return errors.New("消息不够长，不足以读取一条缓存")
 	}
 	return err
 }

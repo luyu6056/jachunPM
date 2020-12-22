@@ -11,6 +11,7 @@ import (
 
 func init() {
 	httpHandlerMap["GET"]["/company/browse"] = get_company_browse
+	httpHandlerMap["POST"]["/company/browse"] = get_company_browse
 }
 func get_company_browse(data *TemplateData) gnet.Action {
 	ws := data.ws
@@ -59,7 +60,14 @@ func get_company_browse(data *TemplateData) gnet.Action {
 	getCompanyUser.PerPage = data.Page.PerPage
 	getCompanyUser.DeptID = int32(deptID)
 	getCompanyUser.Total = data.Page.Total
-	getCompanyUser.Where = ws.Session().Load_str("company/browse/Query")
+	if TYPE == "bysearch" {
+		getCompanyUser.Where, err = post_search_buildQuery(data)
+		if err != nil {
+			ws.OutErr(err)
+			return gnet.None
+		}
+	}
+
 	getCompanyUser.Page = data.Page.Page
 	res, err := HostConn.SendMsgWaitResultToDefault(getCompanyUser)
 	if err != nil {

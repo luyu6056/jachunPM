@@ -213,6 +213,10 @@ func main() {
 								out.WriteString(" = data.")
 								out.WriteString(f.name)
 								out.WriteString("[:0]\n")
+							} else if len(f.typ) > 4 && f.typ[:4] == "map[" {
+								out.WriteString("	data.")
+								out.WriteString(f.name)
+								out.WriteString(" = nil\n")
 							} else {
 								DEBUG(_struct.name, f.name, "put未设置类型'", f.typ, "'")
 							}
@@ -264,6 +268,10 @@ func main() {
 						out.WriteString(strings.Replace(f.typ[2:], "*", "", 1))
 						out.WriteString("(v, buf)\n")
 						out.WriteString("	}\n")
+					case len(f.typ) > 4 && f.typ[:4] == "map[":
+						out.WriteString("	WRITE_map(data.")
+						out.WriteString(f.name)
+						out.WriteString(",buf)\n")
 					default:
 						if strings.Contains(f.typ, "*") {
 							out.WriteString("	if data.")
@@ -349,6 +357,10 @@ func main() {
 						out.WriteString(strings.Replace(f.typ[2:], "*", "", 1))
 						out.WriteString("(buf))\n")
 						out.WriteString("	}\n")
+					case len(f.typ) > 4 && f.typ[:4] == "map[":
+						out.WriteString("	READ_map(&data.")
+						out.WriteString(f.name)
+						out.WriteString(",buf)\n")
 					default:
 
 						if strings.Contains(f.typ, "*") {

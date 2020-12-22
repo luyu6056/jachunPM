@@ -7,7 +7,7 @@ import (
 )
 
 func AesCFBEncrypt(data []byte, key []byte, iv []byte) []byte {
-	b, _ := aes.NewCipher(key)
+	b, _ := aes.NewCipher(key[:32])
 	if len(iv) < 16 {
 		_m := md5.Sum(iv)
 		iv = make([]byte, 16)
@@ -23,7 +23,7 @@ func AesCFBEncrypt(data []byte, key []byte, iv []byte) []byte {
 }
 
 func AesCFBDecrypt(data []byte, key []byte, iv []byte) []byte {
-	a, _ := aes.NewCipher(key)
+	a, _ := aes.NewCipher(key[:32])
 	if len(iv) < 16 {
 		_m := md5.Sum(iv)
 		iv = make([]byte, 16)

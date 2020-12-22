@@ -1962,13 +1962,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["user"]["noticeReset"] = "请联系管理员重置密码"
 	Lang[protocol.ZH_CN]["user"]["resetSuccess"] = "重置密码成功，请用新密码登录。"
 	Lang[protocol.ZH_CN]["user"]["resetFail"] = "重置密码失败，检查用户名是否存在！"
-	Lang[protocol.ZH_CN]["user"]["errorWeak"] = "密码不能使用【%s】这些常用弱口令。"
-	Lang[protocol.ZH_CN]["user"]["weakPassword"] = "您的密码强度小于系统设定。"
-	Lang[protocol.ZH_CN]["user"]["loginLocked"] = "密码尝试次数太多，请联系管理员解锁，或%s分钟后重试。"
-	Lang[protocol.ZH_CN]["user"]["lockWarning"] = "您还有%s次尝试机会。"
 
-	Lang[protocol.ZH_CN]["user"]["errorView"] = "抱歉，您无权访问『<b>%s</b>』视图。请联系管理员获取权限。点击后退返回上页。"
-	Lang[protocol.ZH_CN]["user"]["errorDeny"] = "抱歉，您无权访问『<b>%s</b>』模块的『<b>%s</b>』功能。请联系管理员获取权限。点击后退返回上页。"
 	Lang[protocol.ZH_CN]["user"]["caseByHim"] = "%s建的用例"
 	Lang[protocol.ZH_CN]["user"]["case2Him"] = "给%s的用例"
 	Lang[protocol.ZH_CN]["user"]["testTask2Him"] = "%s负责的版本"
@@ -2038,10 +2032,10 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["user"]["whatsapp"] = "WhatsApp"
 	Lang[protocol.ZH_CN]["user"]["slack"] = "Slack"
 	Lang[protocol.ZH_CN]["user"]["dingding"] = "钉钉"
-	Lang[protocol.ZH_CN]["user"]["weixin"] = "微信"
+	Lang[protocol.ZH_CN]["user"]["Weixin"] = "微信"
 	Lang[protocol.ZH_CN]["user"]["phone"] = "电话"
-	Lang[protocol.ZH_CN]["user"]["mobile"] = "手机"
-	Lang[protocol.ZH_CN]["user"]["qq"] = "QQ"
+	Lang[protocol.ZH_CN]["user"]["Mobile"] = "手机"
+	Lang[protocol.ZH_CN]["user"]["QQ"] = "QQ"
 	Lang[protocol.ZH_CN]["user"]["skype"] = "Skype"
 	Lang[protocol.ZH_CN]["user"]["contactInfo"] = "联系信息"
 	Lang[protocol.ZH_CN]["user"]["verify"] = "安全验证"
@@ -2528,8 +2522,6 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["error"]["noData"] = "没有数据"
 	Lang[protocol.ZH_CN]["error"]["pasteImg"] = "您的浏览器不支持粘贴图片！"
 	Lang[protocol.ZH_CN]["error"]["accessDenied"] = "您没有访问权限"
-	Lang[protocol.ZH_CN]["error"]["passwordrule"] = "密码应该符合规则，长度至少为六位。"
-	Lang[protocol.ZH_CN]["error"]["passwordsame"] = "两次密码应当相等。"
 	Lang[protocol.ZH_CN]["error"]["account"] = "『%s』只能是字母和数字的组合三位以上。"
 	Lang[protocol.ZH_CN]["error"]["code"] = "『%s』应当为字母或数字的组合。"
 	Lang[protocol.ZH_CN]["error"]["datetime"] = "『%s』应当为合法的日期。"
@@ -5647,7 +5639,7 @@ func LangZH_CNInit() {
 		{"or", "或者"},
 	}
 	Lang[protocol.ZH_CN]["search"]["error"] = map[string]string{
-		"notFoundParamsFunc": "没有找到%s/%s的搜索参数初始化方法",
+		"notFoundParamsFunc": "没有找到%s/%s的搜索参数初始化方法，请返回首页刷新重试",
 	}
 	Lang[protocol.ZH_CN]["story"]["useList"] = []string{"不使用", `使用`}
 	Lang[protocol.ZH_CN]["story"]["statusList"] = map[string]string{
@@ -6253,22 +6245,36 @@ func LangZH_CNInit() {
 	}
 
 	Lang[protocol.ZH_CN]["user"]["error"] = map[string]string{
-		"account":             "【ID %s】的用户名应该为：三位以上的英文、数字或下划线的组合",
-		"accountDupl":         "【ID %s】的用户名已经存在",
-		"realname":            "【ID %s】的真实姓名必须填写",
-		"accountrealnameDupl": "用户名或者真实姓名已经存在",
-		"password":            "【ID %s】的密码必须为六位以上",
-		"mail":                "【ID %s】的邮箱地址不正确",
-		"reserved":            "【ID %s】的用户名已被系统预留",
-		"weakPassword":        "【ID %s】的密码强度小于系统设定。",
-		"dangerPassword":      "【ID %s】的密码不能使用【%s】这些常用若口令。",
-		"ErrPassword":         "验证失败，请检查您的系统登录密码是否正确",
-		"originalPassword":    "原密码不正确",
-		"repeat":              "%s，因为用户名重复，不能添加！，请修改用户名后再添加",
-		"illaccount":          "%s，因为用户名不合法，添加失败！，请修改用户名后再添加",
-		"userLimit":           "人数已经达到授权的上限，不能从LDAP导入新用户！",
-		"duplicated":          "重复关联账号",
-		"role":                "%s，职位不能为空。",
+		"account":                "【ID %s】的用户名应该为：三位以上的英文、数字或下划线的组合",
+		"accountDupl":            "【ID %s】的用户名已经存在",
+		"realname":               "【ID %s】的真实姓名必须填写",
+		"accountrealnameDupl":    "用户名或者真实姓名已经存在",
+		"password":               "【ID %s】的密码必须为六位以上",
+		"mail":                   "【ID %s】的邮箱地址不正确",
+		"reserved":               "【ID %s】的用户名已被系统预留",
+		"dangerPassword":         "【ID %s】的密码不能使用【%s】这些常用若口令。",
+		"ErrPassword":            "验证失败，请检查您的系统登录密码是否正确",
+		"originalPassword":       "原密码不正确",
+		"repeat":                 "%s，因为用户名重复，不能添加！，请修改用户名后再添加",
+		"illaccount":             "%s，因为用户名不合法，添加失败！，请修改用户名后再添加",
+		"userLimit":              "人数已经达到授权的上限，不能从LDAP导入新用户！",
+		"duplicated":             "重复关联账号",
+		"role":                   "%s，职位不能为空。",
+		"Week":                   "密码不能使用【%s】这些常用弱口令。",
+		"weakPasswordlen":        "您的密码长度小于系统设定。最少要求%d位",
+		"weakPasswordLowerUpper": "密码必须包含大小写",
+		"weakPasswordSpecial":    "密码必须包含特殊字符",
+		"weakPasswordNum":        "密码必须包含数字",
+		"loginLocked":            "密码尝试次数太多，请联系管理员解锁，或%s分钟后重试。",
+		"lockWarning":            "您还有%s次尝试机会。",
+		"errorView":              "抱歉，您无权访问『<b>%s</b>』视图。请联系管理员获取权限。点击后退返回上页。",
+		"errorDeny":              "抱歉，您无权访问『<b>%s</b>』模块的『<b>%s</b>』功能。请联系管理员获取权限。点击后退返回上页。",
+		"NotFoundUserInfo":       "没有找到该用户信息",
+		"passwordrule":           "密码应该符合规则，长度至少为六位。",
+		"passwordsame":           "两次密码应当相等。",
+		"ErrUpdate":              "更新失败，错误%v",
+		"ErrCheckaccount":        "检查账号是否存在失败，错误%v",
+		"UserAccountIsexist":     "该账号已存在，请更换其他账号",
 	}
 
 	Lang[protocol.ZH_CN]["user"]["contacts"] = map[string]string{
@@ -6293,10 +6299,10 @@ func LangZH_CNInit() {
 	}
 	Lang[protocol.ZH_CN]["user"]["contactFieldList"] = map[string]string{
 		"phone":    Lang[protocol.ZH_CN]["user"]["phone"].(string),
-		"mobile":   Lang[protocol.ZH_CN]["user"]["mobile"].(string),
-		"qq":       Lang[protocol.ZH_CN]["user"]["qq"].(string),
+		"mobile":   Lang[protocol.ZH_CN]["user"]["Mobile"].(string),
+		"qq":       Lang[protocol.ZH_CN]["user"]["QQ"].(string),
 		"dingding": Lang[protocol.ZH_CN]["user"]["dingding"].(string),
-		"weixin":   Lang[protocol.ZH_CN]["user"]["weixin"].(string),
+		"weixin":   Lang[protocol.ZH_CN]["user"]["Weixin"].(string),
 		"skype":    Lang[protocol.ZH_CN]["user"]["skype"].(string),
 		"slack":    Lang[protocol.ZH_CN]["user"]["slack"].(string),
 		"whatsapp": Lang[protocol.ZH_CN]["user"]["whatsapp"].(string),

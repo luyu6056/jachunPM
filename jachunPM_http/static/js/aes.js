@@ -5,12 +5,5 @@ function aes_encrypt(word,key,iv){
 	iv=16>iv.length?CryptoJS.MD5(iv).toString().substr(0,16):iv.substr(0,16);
 	iv=CryptoJS.enc.Utf8.parse(iv);
 	word=CryptoJS.enc.Utf8.parse(word);
-	var wordArray=CryptoJS.AES.encrypt(word,key,{iv:iv,mode:CryptoJS.mode.CFB,padding:CryptoJS.pad.NoPadding}).ciphertext;
-	var words = wordArray.words;
-    var sigBytes = wordArray.sigBytes;
-    var r=[];
-	for (var i = 0; i < sigBytes; i++) {
-        r.push((words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff);
-    }
-    return r;
+    return CryptoJS.AES.encrypt(word,key,{iv:iv,mode:CryptoJS.mode.CFB,padding:CryptoJS.pad.NoPadding}).toString();
 }

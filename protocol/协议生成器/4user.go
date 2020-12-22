@@ -14,6 +14,7 @@ type MSG_USER_INFO_cache struct {
 	Account    string
 	Role       string
 	Realname   string
+	Group      []int32
 	Commiter   string
 	Gender     int8 // 0男，1女
 	Email      string
@@ -28,15 +29,18 @@ type MSG_USER_INFO_cache struct {
 	ClientLang string
 	AttendNo   int32 //打卡机编号
 	Deleted    bool
+	Weixin     string
+	Address    string
 }
 
 //检查密码是否正确，有Id优先查询Id，Id为0，Name查询account，realname，Mobile
 type MSG_USER_CheckPasswd struct {
-	QueryID uint32
-	UserId  int32
-	Name    string
-	Rand    int64
-	Passwd  string
+	QueryID  uint32
+	UserId   int32
+	Name     string
+	Rand     int64
+	Passwd   string
+	DeleteID int32 //附加功能，删除user时用到
 }
 type MSG_USER_CheckPasswd_result struct {
 	QueryResultID uint32
@@ -125,4 +129,28 @@ type MSG_USER_getCompanyUsers_result struct {
 	QueryResultID uint32
 	List          []*MSG_USER_INFO_cache
 	Total         int
+}
+type MSG_USER_Group_cache struct {
+	Id          int32
+	Name        string
+	Role        string
+	Desc        string
+	Acl         []string
+	AclProducts []int32
+	AclProjects []int32
+	Developer   int8
+	Priv        map[string]map[string]bool
+}
+type MSG_USER_INFO_updateByID struct {
+	QueryID uint32
+	UserID  int32
+	Update  map[string]string
+}
+type MSG_USER_CheckAccount struct {
+	QueryID uint32
+	Account string
+}
+type MSG_USER_CheckAccount_result struct {
+	QueryResultID uint32
+	Result        ErrCode
 }

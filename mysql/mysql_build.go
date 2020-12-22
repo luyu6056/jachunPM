@@ -66,6 +66,7 @@ func (this *Mysql_Build) Reset(db *MysqlDB) {
 	this.sql.on.Reset()
 	this.sql.order.Reset()
 	this.sql.table.Reset()
+	this.sql.table.WriteByte('`')
 	this.sql.table.Write(Tablepre)
 	this.sql.field.WriteByte(42)
 	this.sql.totle_count = -1
@@ -85,6 +86,7 @@ func (db *MysqlDB) Table(tablename string) *Mysql_Build {
 	build := buildPool.Get().(*Mysql_Build)
 	build.Reset(db)
 	build.sql.table.WriteString(tablename)
+	build.sql.table.WriteByte('`')
 	return build
 }
 

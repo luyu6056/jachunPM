@@ -31,11 +31,13 @@ func configInit(local protocol.CountryNo) {
 	}
 	Config[local]["user"] = make(map[string]map[string]interface{})
 	Config[local]["user"]["common"] = map[string]interface{}{
-		"contactField": "mobile,phone,qq,dingding,weixin,skype,whatsapp,slack",
-		"failTimes":    6,
-		"lockMinutes":  10,
-		"batchCreate":  10,
-		"showDeleted":  1,
+		"contactField":     []string{"Mobile", "QQ", "Weixin"},
+		"failTimes":        6,
+		"lockMinutes":      10,
+		"batchCreate":      10,
+		"showDeleted":      1,
+		"weakPasswordlen":  6,
+		"weakPasswordtype": protocol.CONIFG_weakPasswordAny,
 	}
 
 	Config[local]["company"] = make(map[string]map[string]interface{})
@@ -53,7 +55,7 @@ func configInit(local protocol.CountryNo) {
 				{"id", Lang[local]["user"]["id"].(string)},
 				{"commiter", Lang[local]["user"]["commiter"].(string)},
 				{"gender", Lang[local]["user"]["gender"].(string)},
-				{"qq", Lang[local]["user"]["qq"].(string)},
+				{"qq", Lang[local]["user"]["QQ"].(string)},
 				//{"skype", Lang[local]["user"]["skype"].(string)},
 				//{"yahoo", Lang[local]["user"]["yahoo"].(string)},
 				//{"gtalk", Lang[local]["user"]["gtalk"].(string)},

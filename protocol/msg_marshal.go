@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"libraries"
+	"reflect"
 	"unsafe"
 )
 
@@ -72,6 +73,65 @@ func WRITE_bool(b bool, buf *libraries.MsgBuffer) {
 		buf.WriteByte(0)
 	}
 }
+func WRITE_map(i interface{}, buf *libraries.MsgBuffer) {
+	r := reflect.ValueOf(i)
+	if r.Kind() != reflect.Map && r.Kind() != reflect.Invalid {
+		panic("WRITE_map传入" + r.Kind().String())
+	}
+	if r.IsNil() || r.Len() == 0 {
+		WRITE_uint32(0, buf)
+		return
+	} else if r.Len() < 65535 {
+		WRITE_uint32(uint32(r.Len()), buf)
+	} else {
+		//这么大的map就不要传来传去或者分批传
+		panic("WRITE_map写入len大于65535")
+	}
+	for _, key := range r.MapKeys() {
+		v := r.MapIndex(key)
+		write_reflect(key, buf)
+		write_reflect(v, buf)
+	}
+}
+func write_reflect(v reflect.Value, buf *libraries.MsgBuffer) {
+	switch v.Kind() {
+	case reflect.Int, reflect.Uint, reflect.Uint64, reflect.Int64:
+		WRITE_int64(v.Int(), buf)
+	case reflect.Int8:
+		WRITE_int8(v.Interface().(int8), buf)
+	case reflect.Int16:
+		WRITE_int16(v.Interface().(int16), buf)
+	case reflect.Int32:
+		WRITE_int32(v.Interface().(int32), buf)
+	case reflect.Uint8:
+		WRITE_int8(int8(v.Interface().(uint8)), buf)
+	case reflect.Uint16:
+		WRITE_int16(int16(v.Interface().(uint16)), buf)
+	case reflect.Uint32:
+		WRITE_int32(int32(v.Interface().(uint32)), buf)
+	case reflect.String:
+		WRITE_string(v.String(), buf)
+	case reflect.Bool:
+		WRITE_bool(v.Bool(), buf)
+	case reflect.Map:
+		WRITE_map(v.Interface(), buf)
+	case reflect.Slice:
+		if vv, ok := v.Interface().([]byte); ok {
+			WRITE_int32(int32(len(vv)), buf)
+			buf.Write(vv)
+		} else {
+			WRITE_int32(int32(v.Len()), buf)
+			for i := 0; i < v.Len(); i++ {
+				write_reflect(v.Index(i), buf)
+			}
+		}
+	default:
+
+		panic("无法处理的map写入类型" + v.Kind().String())
+
+	}
+}
+
 func READ_int8(buf *libraries.MsgBuffer) int8 {
 	b := buf.Next(1)
 	if len(b) == 1 {
@@ -134,4 +194,67 @@ func READ_MSG_DATA(buf *libraries.MsgBuffer) MSG_DATA {
 		return f(buf)
 	}
 	return nil
+}
+func READ_map(i interface{}, buf *libraries.MsgBuffer) {
+	l := READ_uint32(buf)
+	if l == 0 {
+		return
+	}
+	r := reflect.ValueOf(i)
+	if r.Kind() != reflect.Ptr {
+		panic("WRITE_map传入" + r.Kind().String())
+	}
+	r = r.Elem()
+	r.Set(reflect.MakeMap(r.Type()))
+	for i := 0; i < int(l); i++ {
+		r.SetMapIndex(read_reflect(r.Type().Key(), buf), read_reflect(r.Type().Elem(), buf))
+	}
+}
+func read_reflect(v reflect.Type, buf *libraries.MsgBuffer) reflect.Value {
+	switch v.Kind() {
+	case reflect.Int:
+		return reflect.ValueOf(READ_int(buf))
+	case reflect.Int64:
+		return reflect.ValueOf(READ_int64(buf))
+	case reflect.Int8:
+		return reflect.ValueOf(READ_int8(buf))
+	case reflect.Int16:
+		return reflect.ValueOf(READ_int16(buf))
+	case reflect.Int32:
+		return reflect.ValueOf(READ_int32(buf))
+	case reflect.Uint:
+		return reflect.ValueOf(READ_uint(buf))
+	case reflect.Uint8:
+		return reflect.ValueOf(READ_uint8(buf))
+	case reflect.Uint16:
+		return reflect.ValueOf(READ_uint16(buf))
+	case reflect.Uint32:
+		return reflect.ValueOf(READ_uint32(buf))
+	case reflect.Uint64:
+		return reflect.ValueOf(READ_uint64(buf))
+	case reflect.String:
+		return reflect.ValueOf(READ_string(buf))
+	case reflect.Bool:
+		return reflect.ValueOf(READ_bool(buf))
+	case reflect.Map:
+		r := reflect.New(v).Elem()
+		READ_map(r.Interface(), buf)
+		return r
+	case reflect.Slice:
+		l := READ_int32(buf)
+		if v.Elem().Kind() == reflect.Uint8 {
+			b := make([]byte, l)
+			copy(b, buf.Next(int(l)))
+			return reflect.ValueOf(b)
+		} else {
+			r := reflect.MakeSlice(v, int(l), int(l))
+			for i := 0; i < int(l); i++ {
+				ii := r.Index(i)
+				ii.Set(read_reflect(v.Elem(), buf))
+			}
+			return r
+		}
+	default:
+		panic("无法处理的map读取类型" + v.Kind().String())
+	}
 }

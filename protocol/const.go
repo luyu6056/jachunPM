@@ -75,10 +75,19 @@ const (
 	PATH_USER_COMPANY_CACHE = "company_cache"
 	PATH_USER_DEPT_CACHE    = "dept_cache"
 	PATH_CONFIG_CACHE       = "config_cache"
+	PATH_USER_GROUP_CACHE   = "group_cache"
 )
 
 //格式化时间定义
 const (
 	TIMEFORMAT_MYSQLTIME = "2006-01-02 15:04:05"
 	TIMEFORMAT_MYSQLDATE = "2006-01-02"
+)
+
+//config相关杂项
+const (
+	CONIFG_weakPasswordAny        = 0
+	CONIFG_weakPasswordLowerUpper = 1 << 1 //包含大小写
+	CONIFG_weakPasswordSpecial    = 1 << 2 //包含特殊字符
+	CONIFG_weakPasswordNum        = 1 << 3 //包含数字
 )

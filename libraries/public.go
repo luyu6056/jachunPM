@@ -1497,3 +1497,38 @@ func ReleaseLog(format string, v ...interface{}) {
 	fmt.Printf("%s "+format+"\r\n", v...)
 
 }
+func I2S(i interface{}) (result string) {
+	switch v := i.(type) {
+	case string:
+		result = v
+	case uint64:
+		result = strconv.FormatUint(v, 10)
+	case uint32:
+		result = strconv.FormatUint(uint64(v), 10)
+	case uint16:
+		result = strconv.FormatUint(uint64(v), 10)
+	case uint8:
+		result = strconv.FormatUint(uint64(v), 10)
+	case uint:
+		result = strconv.FormatUint(uint64(v), 10)
+	case int64:
+		result = strconv.FormatInt(v, 10)
+	case int32:
+		result = strconv.FormatInt(int64(v), 10)
+	case int16:
+		result = strconv.FormatInt(int64(v), 10)
+	case int8:
+		result = strconv.FormatInt(int64(v), 10)
+	case int:
+		result = strconv.FormatInt(int64(v), 10)
+	case float32:
+		result = Number_format(v, 10)
+	case float64:
+		//精度10位小数
+		result = Number_format(v, 10)
+	default:
+		result = fmt.Sprint(i)
+	}
+
+	return
+}

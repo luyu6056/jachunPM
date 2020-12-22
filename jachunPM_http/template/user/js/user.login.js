@@ -47,7 +47,6 @@ $(document).ready(function()
                     alert(data.error);
                     return
                 }
-                console.log(CryptoJS.SHA256(password+data.salt).toString())
                 var pwd = CryptoJS.SHA256(CryptoJS.SHA256(password+data.salt).toString()+data.rand).toString();
                 $.ajax
                 ({

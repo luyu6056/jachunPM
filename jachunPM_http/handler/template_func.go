@@ -258,21 +258,29 @@ func htmlFuncs() {
 		bufpool.Put(buf)
 		return template.HTML(res)
 	}
-	global_Funcs["html_select"] = func(name string, options []protocol.HtmlKeyValueStr, selectedItem string, attrib string, isappend ...bool) template.HTML {
-
+	global_Funcs["html_select"] = func(name string, options []protocol.HtmlKeyValueStr, selectedItem interface{}, attrib string, isappend ...bool) template.HTML {
+		var selectedItems []string
+		r := reflect.ValueOf(selectedItem)
+		if r.Kind() == reflect.Slice {
+			for i := 0; i < r.Len(); i++ {
+				selectedItems = append(selectedItems, libraries.I2S(r.Index(i).Interface()))
+			}
+		} else {
+			selectedItems = []string{libraries.I2S(selectedItem)}
+		}
 		if len(isappend) > 0 && isappend[0] {
-			//for _, item := range selectedItems {
-			find := false
-			for _, v := range options {
-				if v.Key == selectedItem {
-					find = true
-					break
+			for _, item := range selectedItems {
+				find := false
+				for _, v := range options {
+					if v.Key == item {
+						find = true
+						break
+					}
+				}
+				if !find {
+					options = append(options, protocol.HtmlKeyValueStr{item, item})
 				}
 			}
-			if !find {
-				options = append(options, protocol.HtmlKeyValueStr{selectedItem, selectedItem})
-			}
-			//}
 
 		}
 		if len(options) == 0 {
@@ -300,12 +308,12 @@ func htmlFuncs() {
 			buf.WriteString("<option value='")
 			buf.WriteString(key)
 			buf.WriteString("'")
-			//for _, v := range selectedItems {
-			if key == selectedItem {
-				buf.WriteString(" selected='selected'")
-				//break
+			for _, v := range selectedItems {
+				if key == v {
+					buf.WriteString(" selected='selected'")
+					break
+				}
 			}
-			//}
 			buf.WriteString(">")
 			buf.WriteString(option.Value)
 			buf.WriteString("</option>\n")
@@ -379,6 +387,72 @@ func htmlFuncs() {
 		buf.Reset()
 		bufpool.Put(buf)
 		return template.HTML(res)
+	}
+	global_Funcs["html_radio"] = func(name string, options []protocol.HtmlKeyValueStr, checked_i interface{}, value ...string) template.HTML { //( $attrib = '', $type = 'inline')
+		if len(options) == 0 {
+			return template.HTML("")
+		}
+		var isBlock bool
+		if len(value) == 2 {
+			isBlock = value[1] == "block"
+		}
+		checked := libraries.I2S(checked_i)
+		buf := bufpool.Get().(*libraries.MsgBuffer)
+		for _, option := range options {
+			if isBlock {
+				buf.WriteString("<div class='radio'><label>")
+			} else {
+				buf.WriteString("<label class='radio-inline'>")
+			}
+			buf.WriteString("<input type='radio' name='")
+			buf.WriteString(name)
+			buf.WriteString("' value='")
+			buf.WriteString(option.Key)
+			buf.WriteString("' ")
+			if option.Key == checked {
+				buf.WriteString(" checked ='checked' ")
+			}
+			if len(value) > 0 {
+				buf.WriteString(value[0])
+			}
+			buf.WriteString(" id='")
+			buf.WriteString(name)
+			buf.WriteString(option.Key)
+			buf.WriteString("' /> ")
+			buf.WriteString(option.Value)
+			if isBlock {
+				buf.WriteString("</label></div>")
+			} else {
+				buf.WriteString("</label>")
+			}
+		}
+		res := buf.String()
+		buf.Reset()
+		bufpool.Put(buf)
+		return template.HTML(res)
+	}
+	global_Funcs["html_password"] = func(name string, value ...string) template.HTML { //($value = "", $attrib = "")
+		buf := bufpool.Get().(*libraries.MsgBuffer)
+		buf.WriteString("<input type='password' name='")
+		buf.WriteString(name)
+		buf.WriteString("' id='")
+		buf.WriteString(name)
+		if len(value) > 0 {
+			buf.WriteString("' value='")
+			buf.WriteString(value[0])
+		}
+		if len(value) > 1 {
+			buf.WriteString("' ")
+			buf.WriteString(value[1])
+		} else {
+			buf.WriteString("' ")
+		}
+		buf.WriteString("/>\n")
+		res := buf.String()
+		buf.Reset()
+		bufpool.Put(buf)
+		return template.HTML(res)
+
 	}
 }
 func hookFuncs() {

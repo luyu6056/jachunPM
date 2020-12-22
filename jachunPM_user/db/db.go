@@ -11,6 +11,7 @@ const (
 	TABLE_USER    = "user"
 	TABLE_COMPANY = "company"
 	TABLE_DEPT    = "dept"
+	TABLE_GROUP   = "group"
 )
 
 var DB *mysql.MysqlDB
@@ -28,20 +29,22 @@ func Init() {
 		new(User),
 		new(Company),
 		new(Dept),
+		new(Group),
 	)
 	if errs != nil {
-		log.Fatal("数据库启动失败%v", errs)
+		log.Fatalf("数据库启动失败%v", errs)
 	}
 }
 
 type User struct {
-	Id         int32     `db:"auto_increment;pk"`
-	Dept       int32     `db:"default(0)"`
-	Account    string    `db:"type:varchar(30)"`
-	Salt       string    `db:"type:varchar(64)"`
-	Password   string    `db:"type:varchar(64)"`
-	Role       string    `db:"type:varchar(10)"`
-	Realname   string    `db:"type:varchar(100)"`
+	Id         int32  `db:"auto_increment;pk"`
+	Dept       int32  `db:"default(0)"`
+	Account    string `db:"type:varchar(30)"`
+	Salt       string `db:"type:varchar(64)"`
+	Password   string `db:"type:varchar(64)"`
+	Role       string `db:"type:varchar(10)"`
+	Realname   string `db:"type:varchar(100)"`
+	Group      []int32
 	Commiter   string    `db:"type:varchar(100)"`
 	Gender     int8      `db:"default(0)"` // 0男，1女
 	Email      string    `db:"type:varchar(90)"`
@@ -113,4 +116,22 @@ type Dept struct {
 
 func (*Dept) TableName() string {
 	return TABLE_DEPT
+}
+
+type Group struct {
+	Id          int32                      `db:"auto_increment;pk"`
+	Name        string                     `db:"type:varchar(30)"`
+	Role        string                     `db:"type:varchar(30)"`
+	Desc        string                     `db:"type:tinytext"`
+	Acl         []string                   `db:"type:tinytext"`
+	AclProducts []int32                    //允许访问的产品
+	AclProjects []int32                    //允许访问的项目
+	Developer   int8                       `db:"default(1)"` // 0=0,1=1,
+	Priv        map[string]map[string]bool //访问权限map[Module][Method]
+	TimeStamp   int64                      //更新时间戳
+
+}
+
+func (*Group) TableName() string {
+	return TABLE_GROUP
 }

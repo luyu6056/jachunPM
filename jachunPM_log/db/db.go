@@ -26,7 +26,7 @@ func Init() {
 		new(Log_msg),
 	)
 	if errs != nil {
-		log.Fatal("数据库启动失败%v", errs)
+		log.Fatalf("数据库启动失败%v", errs)
 	}
 }
 

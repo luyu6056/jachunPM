@@ -1,10 +1,13 @@
 package handler
 
 import (
+	"html"
 	"html/template"
+	"io/ioutil"
 	"jachunPM_http/config"
 	"libraries"
 	"os"
+	"path/filepath"
 	"protocol"
 	"strconv"
 	"strings"
@@ -48,12 +51,24 @@ func loadAlltemplate() {
 
 	dir, _ := os.Getwd()
 	list, _ := libraries.ListDirAll(dir+"/template", "")
+	importTemplate := func(filename string) (*template.Template, error) {
+		//js文件进行特殊转义
+		if filename[len(filename)-3:] == ".js" {
+			b, err := ioutil.ReadFile(filename)
+			if err != nil {
+				return nil, err
+			}
+			newt := global_t.New(filepath.Base(filename))
+			return newt.Parse(html.EscapeString(string(b)))
+		}
+		return global_t.ParseFiles(filename)
+	}
 	for _, name := range list {
 		if iswatcher {
 			watcher.Add(name)
 		}
 		var err error
-		global_t, err = global_t.ParseFiles(name)
+		global_t, err = importTemplate(name)
 		if err != nil {
 			panic(err)
 		}
@@ -66,7 +81,7 @@ func loadAlltemplate() {
 			select {
 			case event := <-watcher.Events:
 				templateLock.Lock()
-				new_t, err := global_t.ParseFiles(event.Name)
+				new_t, err := importTemplate(event.Name)
 				if err == nil {
 					global_t = new_t
 					T, _ = global_t.Clone()
@@ -174,4 +189,29 @@ func templateOut(name string, data *TemplateData) {
 		data.ws.Write(buf)
 	}
 
+}
+
+//ajaxForm组件返回
+func (data *TemplateData) ajaxResult(result bool, message interface{}, locateAndcallback ...string) {
+	buf := bufpool.Get().(*libraries.MsgBuffer)
+	if result {
+		buf.WriteString(`{"result":"success","message":`)
+	} else {
+		buf.WriteString(`{"result":"fail","message":`)
+	}
+	buf.Write(libraries.JsonMarshal(message))
+	if len(locateAndcallback) > 0 {
+		buf.WriteString(`,"locate":"`)
+		buf.WriteString(strings.ReplaceAll(locateAndcallback[0], `"`, `\"`))
+		buf.WriteByte('"')
+	}
+	if len(locateAndcallback) > 1 {
+		buf.WriteString(`,"callback":"`)
+		buf.WriteString(strings.ReplaceAll(locateAndcallback[1], `"`, `\"`))
+		buf.WriteByte('"')
+	}
+	buf.WriteString("}")
+	data.ws.WriteString(buf.String())
+	buf.Reset()
+	bufpool.Put(buf)
 }

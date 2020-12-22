@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"jachunPM_http/config"
 	"jachunPM_http/js"
@@ -18,7 +19,6 @@ import (
 
 func init() {
 	httpHandlerMap["GET"]["/search/buildForm"] = get_search_buildForm
-	httpHandlerMap["POST"]["/search/buildQuery"] = post_search_buildQuery
 }
 
 var searchParamsFunc = map[string]func(*TemplateData) map[string]interface{}{}
@@ -104,14 +104,13 @@ func search_setDefaultParams(data *TemplateData, fields []protocol.HtmlKeyValueS
 
 	return params
 }
-func post_search_buildQuery(data *TemplateData) (action gnet.Action) {
+func post_search_buildQuery(data *TemplateData) (querystr string, err error) {
 
 	var param map[string]interface{}
 	module := data.ws.Post("module")
 	method := data.ws.Post("method")
-	if ok := data.ws.Session().Get(module+"/"+method, &param); !ok {
-		data.ws.WriteString(js.Alert(data.Lang["search"]["error"].(map[string]string)["notFoundParamsFunc"], module, method))
-		return gnet.None
+	if ok := data.ws.Session().Get(module+"/"+method, &param); !ok || param == nil {
+		return "", errors.New(fmt.Sprintf(data.Lang["search"]["error"].(map[string]string)["notFoundParamsFunc"], module, method))
 	}
 	where := bufpool.Get().(*libraries.MsgBuffer)
 	condition := bufpool.Get().(*libraries.MsgBuffer)
@@ -249,8 +248,8 @@ func post_search_buildQuery(data *TemplateData) (action gnet.Action) {
 					deptID, _ := strconv.Atoi(value)
 					allDepts, err := dept_getAllChildID(int32(deptID))
 					if err != nil {
-						data.ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrDeptInfo"], err))
-						return
+
+						return "", errors.New(fmt.Sprintf(data.Lang["dept"]["error"].(map[string]string)["ErrDeptInfo"], err))
 					}
 					mysql.MysqlBuild_in_value(allDepts, condition)
 				} else {
@@ -285,9 +284,5 @@ func post_search_buildQuery(data *TemplateData) (action gnet.Action) {
 		}
 	}
 	where.WriteString(" ))")
-	fmt.Println(where.String())
-	data.ws.Session().Store(module+"/"+method+"/Query", where.String())
-	data.ws.Session().Store(module+"/"+method+"/From", data.ws.GetAllPost())
-	data.ws.WriteString(js.Location(data.ws.Post("actionURL"), "parent"))
-	return
+	return where.String(), nil
 }

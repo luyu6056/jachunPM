@@ -13,8 +13,10 @@ const (
 	Err_Password           ErrCode = -5 //密码错误
 	Err_DeptDeleteHasSons  ErrCode = -6
 	Err_DeptDeletehasUsers ErrCode = -7
-	Err_DeptNotFount       ErrCode = -8
-	Err_DeptNotFountID     ErrCode = -9
+	Err_DeptNotFound       ErrCode = -8
+	Err_DeptNotFoundID     ErrCode = -9
+	Err_UserInfoNotFound   ErrCode = -10
+	Err_UserAccountIsexist ErrCode = -19
 )
 
 func (err ErrCode) String() string {
@@ -22,7 +24,9 @@ func (err ErrCode) String() string {
 		Err_Password:           "ErrPassword",
 		Err_DeptDeleteHasSons:  "hasSons",
 		Err_DeptDeletehasUsers: "hasUsers",
-		Err_DeptNotFount:       "ErrDeptInfo",
-		Err_DeptNotFountID:     "ErrDeptInfoDeptID",
+		Err_DeptNotFound:       "ErrDeptInfo",
+		Err_DeptNotFoundID:     "ErrDeptInfoDeptID",
+		Err_UserInfoNotFound:   "NotFoundUserInfo",
+		Err_UserAccountIsexist: "UserAccountIsexist",
 	}[err]
 }

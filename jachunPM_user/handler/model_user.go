@@ -166,3 +166,53 @@ func user_getCompanyUsers(data *protocol.MSG_USER_getCompanyUsers, in *protocol.
 	in.SendResult(out)
 	return
 }
+func user_updateMap(where map[string]interface{}, update map[string]interface{}) error {
+	res, err := db.DB.Table(db.TABLE_USER).Where(where).Update(update)
+	if res {
+		var users []*db.User
+		db.DB.Table(db.TABLE_USER).Where(where).Limit(0).Select(&users)
+		for _, user := range users {
+			user_setCache(user)
+		}
+	}
+	return err
+}
+func user_setCache(user *db.User) {
+	cache := protocol.GET_MSG_USER_INFO_cache()
+	cache.Account = user.Account
+	cache.AttendNo = user.AttendNo
+	cache.ClientLang = user.ClientLang
+	cache.Commiter = user.Commiter
+	cache.Dept = user.Dept
+	cache.Email = user.Email
+	cache.Fails = user.Fails
+	cache.Gender = user.Gender
+	cache.Id = user.Id
+	cache.Ip = user.Ip
+	cache.Join = user.Join.Unix()
+	cache.Last = user.Last.Unix()
+	cache.Locked = user.Locked.Unix()
+	cache.Mobile = user.Mobile
+	cache.Realname = user.Realname
+	cache.Role = user.Role
+	cache.Visits = user.Visits
+	cache.Deleted = user.Deleted
+	cache.QQ = user.QQ
+	cache.Group = user.Group
+	cache.Weixin = user.Weixin
+	cache.Address = user.Address
+	HostConn.CacheSet(protocol.PATH_USER_INFO_CACHE, strconv.Itoa(int(user.Id)), cache, 0)
+	cache.Put()
+}
+func user_insertMap(insert map[string]interface{}) error {
+	id, err := db.DB.Table(db.TABLE_USER).Insert(insert)
+	if id > 0 {
+		user, _ := getUserInfoByID(int32(id))
+		user_setCache(user)
+	}
+	return err
+}
+func user_getUserInfo(where map[string]interface{}) (users []*db.User, err error) {
+	err = db.DB.Table(db.TABLE_USER).Where(where).Limit(0).Select(&users)
+	return
+}

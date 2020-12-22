@@ -35,13 +35,13 @@ var (
 	errMsgDataLen = errors.New("消息长度不够解析data")
 )
 
-func ReadOneMsg(buf *libraries.MsgBuffer) (*Msg, error) {
+func ReadOneMsg(buf *libraries.MsgBuffer) (msg *Msg, err error) {
 
 	data := buf.Bytes()
 	if len(data) < MsgHeadLen {
 		return nil, errMsgLen
 	}
-	msg := &Msg{}
+	msg = &Msg{}
 	msg.Msgno = uint32(data[0]) | uint32(data[1])<<8 | uint32(data[2])<<16 | uint32(data[3])<<24
 	msg.Ttl = data[4]
 	msg.Local = uint16(data[5]) | uint16(data[6])<<8
@@ -57,6 +57,12 @@ func ReadOneMsg(buf *libraries.MsgBuffer) (*Msg, error) {
 	return msg, nil
 }
 func (m *Msg) ReadData() {
+	defer func() {
+		if e := recover(); e != nil {
+			libraries.DebugLog(fmt.Sprint(e))
+			debug.PrintStack()
+		}
+	}()
 	if f, ok := cmdMapFunc[m.Cmd]; ok {
 		m.buf.Next(MsgHeadLen)
 		buf := BufPoolGet()
@@ -68,6 +74,12 @@ func (m *Msg) ReadData() {
 	return
 }
 func (m *Msg) ReadDataWithCopy() {
+	defer func() {
+		if e := recover(); e != nil {
+			libraries.DebugLog(fmt.Sprint(e))
+			debug.PrintStack()
+		}
+	}()
 	if f, ok := cmdMapFunc[m.Cmd]; ok {
 		buf := BufPoolGet()
 		buf.Write(m.buf.Bytes()[MsgHeadLen+4 : MsgHeadLen+m.datalen])

@@ -16,6 +16,7 @@ github.com/klauspost/compress v1.11.2 h1:MiK62aErc3gIiVEtyzKfeOHgW7atJb5g/KNX5m3
 github.com/klauspost/compress v1.11.2/go.mod h1:aoV0uJVorq1K+umq18yTdKaF57EivdYsUV+/s2qKfXs=
 github.com/luyu6056/cache v1.0.1 h1:9EL0IW5d53JGh2zvoCDqhgyrJLMDS3BTDR8oa6zZ8ac=
 github.com/luyu6056/cache v1.0.1/go.mod h1:AboJLuhFlejC5l0fCBQZcVufgUiLUuYe57DHlo1vDIM=
+github.com/luyu6056/cache v1.1.1/go.mod h1:AboJLuhFlejC5l0fCBQZcVufgUiLUuYe57DHlo1vDIM=
 github.com/luyu6056/gnet v1.2.8 h1:5aWdLlBjeQzd4UhbhF2m742LDFvTQ+R809mlWFL/WQk=
 github.com/luyu6056/gnet v1.2.8/go.mod h1:hz3iz0j1ufNJiQgWzaYHCUeZLPcJbTrDgM+qYKx/SSA=
 github.com/luyu6056/tls v0.15.1 h1:mKvNqP7ZDPtee1dleBu5XL8LbN9pbpX46Pv27Gm6yQI=

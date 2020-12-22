@@ -14,6 +14,7 @@ func HandleTick(t time.Time) {
 	var users []*db.User
 	var company *db.Company
 	var deptlist []*db.Dept
+	var groups []*db.Group
 	firstFlag := protocol.RpcTickStatusFirst
 
 	if HostConn.Status&firstFlag == firstFlag {
@@ -58,7 +59,10 @@ func HandleTick(t time.Time) {
 		if err != nil {
 			panic("检查dept失败" + err.Error())
 		}
-
+		err = db.DB.Table(db.TABLE_GROUP).Limit(0).Select(&groups)
+		if err != nil {
+			panic("检查group失败" + err.Error())
+		}
 	} else {
 		//检查是否需要更新缓存
 		err := db.DB.Table(db.TABLE_USER).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&users)
@@ -73,35 +77,16 @@ func HandleTick(t time.Time) {
 		if err != nil {
 			libraries.ReleaseLog("检查dept刷新缓存失败%v", err)
 		}
+		err = db.DB.Table(db.TABLE_GROUP).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&groups)
+		if err != nil {
+			libraries.ReleaseLog("检查dept刷新缓存失败%v", err)
+		}
 	}
 
 	//同步缓存
-	if len(users) > 0 {
-		cache := protocol.GET_MSG_USER_INFO_cache()
-		for _, user := range users {
 
-			cache.Account = user.Account
-			cache.AttendNo = user.AttendNo
-			cache.ClientLang = user.ClientLang
-			cache.Commiter = user.Commiter
-			cache.Dept = user.Dept
-			cache.Email = user.Email
-			cache.Fails = user.Fails
-			cache.Gender = user.Gender
-			cache.Id = user.Id
-			cache.Ip = user.Ip
-			cache.Join = user.Join.Unix()
-			cache.Last = user.Last.Unix()
-			cache.Locked = user.Locked.Unix()
-			cache.Mobile = user.Mobile
-			cache.Realname = user.Realname
-			cache.Role = user.Role
-			cache.Visits = user.Visits
-			cache.Deleted = user.Deleted
-			cache.QQ = user.QQ
-			HostConn.CacheSet(protocol.PATH_USER_INFO_CACHE, strconv.Itoa(int(user.Id)), cache, 0)
-		}
-		cache.Put()
+	for _, user := range users {
+		user_setCache(user)
 	}
 
 	if company != nil {
@@ -123,5 +108,20 @@ func HandleTick(t time.Time) {
 	for _, dept := range deptlist {
 		dept_setCache(dept)
 	}
-
+	if len(groups) > 0 {
+		cache := protocol.GET_MSG_USER_Group_cache()
+		for _, group := range groups {
+			cache.Acl = group.Acl
+			cache.Desc = group.Desc
+			cache.Developer = group.Developer
+			cache.Id = group.Id
+			cache.Name = group.Name
+			cache.Priv = group.Priv
+			cache.Role = group.Role
+			cache.AclProducts = group.AclProducts
+			cache.AclProjects = group.AclProjects
+			HostConn.CacheSet(protocol.PATH_USER_GROUP_CACHE, strconv.Itoa(int(group.Id)), cache, 0)
+		}
+		cache.Put()
+	}
 }

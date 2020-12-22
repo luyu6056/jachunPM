@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"html"
 	"html/template"
 	"libraries"
 	"protocol"
@@ -12,14 +13,15 @@ import (
 )
 
 type moduleMenu struct {
-	name   string
-	text   string
-	module string
-	method string
-	class  string
-	vars   []protocol.HtmlKeyValueStr
-	hidden bool
-	alias  []string
+	name      string
+	text      string
+	module    string
+	method    string
+	class     string
+	vars      []protocol.HtmlKeyValueStr
+	hidden    bool
+	alias     []string
+	subModule []string
 }
 
 func hasPriv(data *TemplateData, module, method string) bool {
@@ -38,7 +40,7 @@ func commonModelFuncs() {
 		return res
 	}
 	global_Funcs["string"] = func(i interface{}) string {
-		return fmt.Sprint(i)
+		return libraries.I2S(i)
 	}
 	global_Funcs["common_hasPriv"] = func(data *TemplateData, module, method string) bool { return hasPriv(data, module, method) }
 	//global_Funcs["common_printBreadMenu"] = func(server, name string) bool { return true }
@@ -92,13 +94,13 @@ func commonModelFuncs() {
 			buf.Reset()
 			bufpool.Put(buf)
 		}()
+		s := strings.Split(name, ".")
+		T.ExecuteTemplate(buf, s[0]+".common.js", nil)
 		err := T.ExecuteTemplate(buf, strings.Replace(name, ".html", ".js", 1), nil)
 		if err != nil {
 			libraries.DebugLog("加载%s的js失败,%v", name, err)
 		} else {
-			res := buf.String()
-
-			return template.JS(res)
+			return template.JS(html.UnescapeString(buf.String()))
 		}
 		return template.JS("")
 	}
@@ -162,6 +164,9 @@ func commonModelFuncs() {
 			return nil
 		}
 		r := reflect.ValueOf(i)
+		for r.Kind() == reflect.Ptr {
+			r = r.Elem()
+		}
 		k := reflect.ValueOf(key)
 		if r.Type().Kind() == reflect.Map {
 			value := r.MapIndex(k)
@@ -175,6 +180,11 @@ func commonModelFuncs() {
 				return nil
 			}
 			return value.Interface()
+		} else if r.Type().Kind() == reflect.Struct {
+			value := r.FieldByName(libraries.I2S(key))
+			if value.Kind() != reflect.Invalid {
+				return value.Interface()
+			}
 		}
 		return nil
 	}
@@ -219,12 +229,12 @@ func commonModelFuncs() {
 			}
 
 			active := ``
-			/*for _, s := range menuItem.subModule {
+			for _, s := range menuItem.subModule {
 				if s == currentModule {
 					active = `active`
 					break
 				}
-			}*/
+			}
 
 			if moduleName == currentModule {
 				for _, a := range menuItem.alias {
@@ -336,8 +346,14 @@ func commonModelFuncs() {
 		}
 		return
 	}
-	global_Funcs["date"] = func(layout string, timestamp int64) string {
-		return time.Unix(timestamp, 0).Format(layout)
+	//格式化输出时间戳，允许不输入timestamp，则为当前时间
+	global_Funcs["date"] = func(layout string, timestamp ...int64) (res string) {
+		if len(timestamp) == 1 {
+			res = time.Unix(timestamp[0], 0).Format(layout)
+		} else {
+			res = time.Now().Format(layout)
+		}
+		return
 	}
 	global_Funcs["genlist"] = func(star, num interface{}) []string {
 		n, _ := strconv.Atoi(fmt.Sprint(num))
@@ -473,6 +489,12 @@ func commonModelFuncs() {
 	global_Funcs["str2js"] = func(s string) template.JS {
 		return template.JS(s)
 	}
+	global_Funcs["strings_split"] = func(s, sep string) []string {
+		return strings.Split(s, sep)
+	}
+	global_Funcs["rem"] = func(i, k int) int {
+		return i % k
+	}
 }
 func getModuleMenu(module string, data *TemplateData) (menu []moduleMenu) {
 
@@ -491,9 +513,9 @@ func getModuleMenu(module string, data *TemplateData) (menu []moduleMenu) {
 				if alias, ok := v.Value["alias"]; ok {
 					menuItem.alias = strings.Split(alias, ",")
 				}
-				/*if subModule, ok := v.Value["subModule"]; ok {
+				if subModule, ok := v.Value["subModule"]; ok {
 					menuItem.subModule = strings.Split(subModule, ",")
-				}*/
+				}
 				if len(l) == 4 {
 					for _, vars := range strings.Split(l[3], "&") {
 						s := strings.Split(vars, "=")

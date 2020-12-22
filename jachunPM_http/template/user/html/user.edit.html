@@ -1,0 +1,104 @@
+{{template "header.html" .}}{{$user:=.Data.user}}
+{{js_import (strAdd .Config.common.common.jsRoot  "aes.js")}}
+<div id="mainContent" class="main-content">
+  <div class="center-block">
+    <div class="main-header">
+      <h2>
+        <span class="label label-id">{{$user.Id}}</span>
+        <strong>{{if common_hasPriv . "user" "view"}}{{common_printLink . "user" "view" (strAdd "account=" $user.Account) $user.Realname}}{{else}}{{$user.Realname}}{{end}} <small>({{$user.Account}})</small></strong>
+        <small>{{.Lang.common.arrow}}{{.Lang.user.edit}}</small>
+      </h2>
+    </div>
+    <form class="load-indicator main-form form-ajax" id="createForm" method="post" target='hiddenwin'>
+      <table align='center' class="table table-form">
+        <caption class='text-left text-muted'>{{.Lang.user.basicInfo}}</caption>
+        <tr>
+          <th class='w-140px'>{{.Lang.user.realname}}</th>
+          <td class='w-p40'>{{html_input "realname" $user.Realname "class='form-control'"}}</td>
+          <th class='w-130px'>{{.Lang.user.join}}</th>
+          <td>{{html_input "join" (date "2006-01-02" $user.Join) "class='form-control form-date'"}}</td>  
+        </tr>
+        <tr>
+          <th class='w-140px'>{{.Lang.user.dept}}</th>
+          <td class='w-p40'>{{html_select "dept" .Data.depts (string $user.Dept) "class='form-control chosen'"}}</td>
+          <th>{{.Lang.user.role}}</th>
+          <td>{{html_select "role" .Lang.user.roleList $user.Role "class='form-control'"}}</td>
+        </tr>
+        <tr>
+          <th>{{.Lang.group.priv}}</th>
+          <td colspan='3'>{{html_select "groups" .Data.groups .Data.userGroups "size=3 multiple=multiple class='form-control chosen'"}}</td>
+        </tr>
+        <tr>
+          <th>{{.Lang.user.gender}}</th>
+          <td colspan="3">{{html_radio "gender" .Lang.user.genderList $user.Gender}}</td>
+        </tr>
+      </table>
+      <table align='center' class='table table-form'>
+        <caption class='text-left text-muted'>{{.Lang.user.accountInfo}}</caption>
+        <tr>
+          <th class='w-140px'>{{.Lang.user.account}}</th>
+          <td class='w-p40'>{{html_input "oldaccount" $user.Account "class='form-control' disabled='disabled'"}}</td>
+          <th class='w-130px'>{{.Lang.user.email}}</th>
+          <td>
+            {{html_input "email" $user.Email "class='form-control'"}}
+            <input type='text' style="display:none"> <!-- Disable input account by browser automatically. -->
+          </td>
+        </tr>
+        <tr>
+          <th>{{.Lang.user.password}}</th>
+          <td>
+            <input type='password' style="display:none"> <!-- Disable input password by browser automatically. -->
+            <span class='input-group'>
+              {{html_password "password1" "" "class='form-control disabled-ie-placeholder' onmouseup='checkPassword(this.value)' onkeyup='checkPassword(this.value)' placeholder=''"}}
+              <span class='input-group-addon' id='passwordStrength'></span>
+            </span>
+          </td>
+          <th>{{.Lang.user.password2}}</th>
+          <td>{{html_password "password2" "" "class='form-control'"}}</td>
+        </tr>
+        <tr>
+          <th>{{.Lang.user.commiter}}</th>
+          <td>{{html_input "commiter" $user.Commiter "class='form-control'"}}</td>
+          <th>{{.Lang.user.attendNo}}</th>
+          <td>{{html_input "attendNo" (string $user.AttendNo) "class='form-control'"}}</td>
+        </tr>
+      </table>
+      <table align='center' class='table table-form'>
+        <caption class='text-left text-muted'>{{.Lang.user.contactInfo}}</caption>
+        {{if .Config.user.common.contactField}}
+        {{range $i,$field := .Config.user.common.contactField}}
+        {{if eq (rem $i 2) 0}}<tr>{{end}}
+          <th {{if eq (rem $i 2) 0}}class='w-130px'{{else}}class='w-140px'{{end}}>{{getValue $.Lang.user $field}}</th>
+          <td {{if ne (rem $i 2) 0}}class='w-p40'{{end}}>{{html_input $field (string (getValue $user $field)) "class='form-control'"}}</td>
+        {{if eq (rem $i 2) 0}}</tr>{{end}}
+        {{end}}
+        {{end}}
+        <tr>
+          <th>{{.Lang.user.address}}</th>
+          <td>{{html_input "address" $user.Address "class='form-control'"}}</td>
+        </tr>
+      </table>
+      <table align='center' class='table table-form'>
+        <caption class='text-left text-muted'>{{.Lang.user.verify}}</caption>
+        <tr>
+          <th class='w-140px'>{{.Lang.user.verifyPassword}}</th>
+          <td>
+            <div class="required required-wrapper"></div>
+            {{html_password "verifyPassword" "" (strAdd "class='form-control disabled-ie-placeholder' placeholder='" .Lang.user.placeholder.verify "'")}}
+          </td>
+          <th class='w-130px'></th>
+          <td></td>
+        </tr>
+        <tr>
+          <td colspan='2' class='text-center form-actions'>
+            {{html_hidden "userID" (string $user.Id)}}
+            {{html_submitButton .}}
+            {{html_backButton .}}
+          </td>
+        </tr>
+      </table>
+    </form>
+  </div>
+</div>
+<script>var passwordStrengthList={{.Lang.user.passwordStrengthList}},salt={{.Data.salt}},rand={{.Data.rand}}</script>
+{{template "footer.html" .}}

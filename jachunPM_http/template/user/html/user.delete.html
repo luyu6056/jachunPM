@@ -1,0 +1,29 @@
+{{template "header.lite.html" .}}
+{{js_import (strAdd .Config.common.common.jsRoot  "aes.js")}}
+<div id='mainContent' class='main-content'>
+  <div class='main-header'>
+    <h2>{{.Lang.user.delete}}</h2>
+  </div>
+  <form method='post' id='dataform' class='form-ajax' target='hiddenwin' style='padding: 20px 5% 40px'>
+    <table class='w-p100 table-form'>
+      <tr>
+        <th class='w-120px text-right'>
+          {{.Lang.user.verifyPassword}}
+        </th>
+        <td>
+          <div class="required required-wrapper"></div>
+          {{html_password "verifyPassword" "" (strAdd "class='form-control disabled-ie-placeholder' placeholder='" .Lang.user.placeholder.verify "'")}}
+        </td>
+      </tr>
+      <tr>
+        <th></th>
+        <td>{{html_submitButton . .Lang.common.delete}}</td>
+      </tr>
+    </table>
+  </form>
+</div>
+<script type="text/javascript">
+  salt={{.Data.salt}}
+  rand={{.Data.rand}}
+</script>
+{{template "footer.lite.html" .}}

@@ -25,6 +25,10 @@ const (
 	CMD_MSG_USER_getDeptUserPairs_result = -867223292
 	CMD_MSG_USER_getCompanyUsers = 390890500
 	CMD_MSG_USER_getCompanyUsers_result = 2081476612
+	CMD_MSG_USER_Group_cache = -1780358652
+	CMD_MSG_USER_INFO_updateByID = -198630396
+	CMD_MSG_USER_CheckAccount = 295929604
+	CMD_MSG_USER_CheckAccount_result = 953841924
 )
 
 type MSG_USER_GET_LoginSalt struct {
@@ -129,6 +133,7 @@ type MSG_USER_INFO_cache struct {
 	Account string
 	Role string
 	Realname string
+	Group []int32
 	Commiter string
 	Gender int8
 	Email string
@@ -143,6 +148,8 @@ type MSG_USER_INFO_cache struct {
 	ClientLang string
 	AttendNo int32
 	Deleted bool
+	Weixin string
+	Address string
 }
 
 var pool_MSG_USER_INFO_cache = sync.Pool{New: func() interface{} { return &MSG_USER_INFO_cache{} }}
@@ -161,6 +168,7 @@ func (data *MSG_USER_INFO_cache) Put() {
 	data.Account = ``
 	data.Role = ``
 	data.Realname = ``
+	data.Group = data.Group[:0]
 	data.Commiter = ``
 	data.Gender = 0
 	data.Email = ``
@@ -175,6 +183,8 @@ func (data *MSG_USER_INFO_cache) Put() {
 	data.ClientLang = ``
 	data.AttendNo = 0
 	data.Deleted = false
+	data.Weixin = ``
+	data.Address = ``
 	pool_MSG_USER_INFO_cache.Put(data)
 }
 func (data *MSG_USER_INFO_cache) write(buf *libraries.MsgBuffer) {
@@ -188,6 +198,10 @@ func WRITE_MSG_USER_INFO_cache(data *MSG_USER_INFO_cache, buf *libraries.MsgBuff
 	WRITE_string(data.Account, buf)
 	WRITE_string(data.Role, buf)
 	WRITE_string(data.Realname, buf)
+	WRITE_int32(int32(len(data.Group)), buf)
+	for _, v := range data.Group{
+		WRITE_int32(v, buf)
+	}
 	WRITE_string(data.Commiter, buf)
 	WRITE_int8(data.Gender, buf)
 	WRITE_string(data.Email, buf)
@@ -202,6 +216,8 @@ func WRITE_MSG_USER_INFO_cache(data *MSG_USER_INFO_cache, buf *libraries.MsgBuff
 	WRITE_string(data.ClientLang, buf)
 	WRITE_int32(data.AttendNo, buf)
 	WRITE_bool(data.Deleted, buf)
+	WRITE_string(data.Weixin, buf)
+	WRITE_string(data.Address, buf)
 }
 
 func READ_MSG_USER_INFO_cache(buf *libraries.MsgBuffer) *MSG_USER_INFO_cache {
@@ -216,6 +232,10 @@ func (data *MSG_USER_INFO_cache) read(buf *libraries.MsgBuffer) {
 	data.Account = READ_string(buf)
 	data.Role = READ_string(buf)
 	data.Realname = READ_string(buf)
+	Group_len := int(READ_int32(buf))
+	for i := 0; i < Group_len; i++ {
+		data.Group = append(data.Group, READ_int32(buf))
+	}
 	data.Commiter = READ_string(buf)
 	data.Gender = READ_int8(buf)
 	data.Email = READ_string(buf)
@@ -230,6 +250,8 @@ func (data *MSG_USER_INFO_cache) read(buf *libraries.MsgBuffer) {
 	data.ClientLang = READ_string(buf)
 	data.AttendNo = READ_int32(buf)
 	data.Deleted = READ_bool(buf)
+	data.Weixin = READ_string(buf)
+	data.Address = READ_string(buf)
 
 }
 
@@ -239,6 +261,7 @@ type MSG_USER_CheckPasswd struct {
 	Name string
 	Rand int64
 	Passwd string
+	DeleteID int32
 }
 
 var pool_MSG_USER_CheckPasswd = sync.Pool{New: func() interface{} { return &MSG_USER_CheckPasswd{} }}
@@ -257,6 +280,7 @@ func (data *MSG_USER_CheckPasswd) Put() {
 	data.Name = ``
 	data.Rand = 0
 	data.Passwd = ``
+	data.DeleteID = 0
 	pool_MSG_USER_CheckPasswd.Put(data)
 }
 func (data *MSG_USER_CheckPasswd) write(buf *libraries.MsgBuffer) {
@@ -270,6 +294,7 @@ func WRITE_MSG_USER_CheckPasswd(data *MSG_USER_CheckPasswd, buf *libraries.MsgBu
 	WRITE_string(data.Name, buf)
 	WRITE_int64(data.Rand, buf)
 	WRITE_string(data.Passwd, buf)
+	WRITE_int32(data.DeleteID, buf)
 }
 
 func READ_MSG_USER_CheckPasswd(buf *libraries.MsgBuffer) *MSG_USER_CheckPasswd {
@@ -284,6 +309,7 @@ func (data *MSG_USER_CheckPasswd) read(buf *libraries.MsgBuffer) {
 	data.Name = READ_string(buf)
 	data.Rand = READ_int64(buf)
 	data.Passwd = READ_string(buf)
+	data.DeleteID = READ_int32(buf)
 
 }
 func (data *MSG_USER_CheckPasswd) getQueryID() uint32 {
@@ -1158,6 +1184,242 @@ func (data *MSG_USER_getCompanyUsers_result) getQueryResultID() uint32 {
 	return data.QueryResultID
 }
 func (data *MSG_USER_getCompanyUsers_result) setQueryResultID(id uint32) {
+	data.QueryResultID = id
+}
+
+type MSG_USER_Group_cache struct {
+	Id int32
+	Name string
+	Role string
+	Desc string
+	Acl []string
+	AclProducts []int32
+	AclProjects []int32
+	Developer int8
+	Priv map[string]map[string]bool
+}
+
+var pool_MSG_USER_Group_cache = sync.Pool{New: func() interface{} { return &MSG_USER_Group_cache{} }}
+
+func GET_MSG_USER_Group_cache() *MSG_USER_Group_cache {
+	return pool_MSG_USER_Group_cache.Get().(*MSG_USER_Group_cache)
+}
+
+func (data *MSG_USER_Group_cache) cmd() int32 {
+	return CMD_MSG_USER_Group_cache
+}
+
+func (data *MSG_USER_Group_cache) Put() {
+	data.Id = 0
+	data.Name = ``
+	data.Role = ``
+	data.Desc = ``
+	data.Acl = data.Acl[:0]
+	data.AclProducts = data.AclProducts[:0]
+	data.AclProjects = data.AclProjects[:0]
+	data.Developer = 0
+	data.Priv = nil
+	pool_MSG_USER_Group_cache.Put(data)
+}
+func (data *MSG_USER_Group_cache) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_Group_cache,buf)
+	WRITE_MSG_USER_Group_cache(data, buf)
+}
+
+func WRITE_MSG_USER_Group_cache(data *MSG_USER_Group_cache, buf *libraries.MsgBuffer) {
+	WRITE_int32(data.Id, buf)
+	WRITE_string(data.Name, buf)
+	WRITE_string(data.Role, buf)
+	WRITE_string(data.Desc, buf)
+	WRITE_int32(int32(len(data.Acl)), buf)
+	for _, v := range data.Acl{
+		WRITE_string(v, buf)
+	}
+	WRITE_int32(int32(len(data.AclProducts)), buf)
+	for _, v := range data.AclProducts{
+		WRITE_int32(v, buf)
+	}
+	WRITE_int32(int32(len(data.AclProjects)), buf)
+	for _, v := range data.AclProjects{
+		WRITE_int32(v, buf)
+	}
+	WRITE_int8(data.Developer, buf)
+	WRITE_map(data.Priv,buf)
+}
+
+func READ_MSG_USER_Group_cache(buf *libraries.MsgBuffer) *MSG_USER_Group_cache {
+	data := pool_MSG_USER_Group_cache.Get().(*MSG_USER_Group_cache)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_Group_cache) read(buf *libraries.MsgBuffer) {
+	data.Id = READ_int32(buf)
+	data.Name = READ_string(buf)
+	data.Role = READ_string(buf)
+	data.Desc = READ_string(buf)
+	Acl_len := int(READ_int32(buf))
+	for i := 0; i < Acl_len; i++ {
+		data.Acl = append(data.Acl, READ_string(buf))
+	}
+	AclProducts_len := int(READ_int32(buf))
+	for i := 0; i < AclProducts_len; i++ {
+		data.AclProducts = append(data.AclProducts, READ_int32(buf))
+	}
+	AclProjects_len := int(READ_int32(buf))
+	for i := 0; i < AclProjects_len; i++ {
+		data.AclProjects = append(data.AclProjects, READ_int32(buf))
+	}
+	data.Developer = READ_int8(buf)
+	READ_map(&data.Priv,buf)
+
+}
+
+type MSG_USER_INFO_updateByID struct {
+	QueryID uint32
+	UserID int32
+	Update map[string]string
+}
+
+var pool_MSG_USER_INFO_updateByID = sync.Pool{New: func() interface{} { return &MSG_USER_INFO_updateByID{} }}
+
+func GET_MSG_USER_INFO_updateByID() *MSG_USER_INFO_updateByID {
+	return pool_MSG_USER_INFO_updateByID.Get().(*MSG_USER_INFO_updateByID)
+}
+
+func (data *MSG_USER_INFO_updateByID) cmd() int32 {
+	return CMD_MSG_USER_INFO_updateByID
+}
+
+func (data *MSG_USER_INFO_updateByID) Put() {
+	data.QueryID = 0
+	data.UserID = 0
+	data.Update = nil
+	pool_MSG_USER_INFO_updateByID.Put(data)
+}
+func (data *MSG_USER_INFO_updateByID) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_INFO_updateByID,buf)
+	WRITE_MSG_USER_INFO_updateByID(data, buf)
+}
+
+func WRITE_MSG_USER_INFO_updateByID(data *MSG_USER_INFO_updateByID, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_int32(data.UserID, buf)
+	WRITE_map(data.Update,buf)
+}
+
+func READ_MSG_USER_INFO_updateByID(buf *libraries.MsgBuffer) *MSG_USER_INFO_updateByID {
+	data := pool_MSG_USER_INFO_updateByID.Get().(*MSG_USER_INFO_updateByID)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_INFO_updateByID) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	data.UserID = READ_int32(buf)
+	READ_map(&data.Update,buf)
+
+}
+func (data *MSG_USER_INFO_updateByID) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_USER_INFO_updateByID) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_USER_CheckAccount struct {
+	QueryID uint32
+	Account string
+}
+
+var pool_MSG_USER_CheckAccount = sync.Pool{New: func() interface{} { return &MSG_USER_CheckAccount{} }}
+
+func GET_MSG_USER_CheckAccount() *MSG_USER_CheckAccount {
+	return pool_MSG_USER_CheckAccount.Get().(*MSG_USER_CheckAccount)
+}
+
+func (data *MSG_USER_CheckAccount) cmd() int32 {
+	return CMD_MSG_USER_CheckAccount
+}
+
+func (data *MSG_USER_CheckAccount) Put() {
+	data.QueryID = 0
+	data.Account = ``
+	pool_MSG_USER_CheckAccount.Put(data)
+}
+func (data *MSG_USER_CheckAccount) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_CheckAccount,buf)
+	WRITE_MSG_USER_CheckAccount(data, buf)
+}
+
+func WRITE_MSG_USER_CheckAccount(data *MSG_USER_CheckAccount, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_string(data.Account, buf)
+}
+
+func READ_MSG_USER_CheckAccount(buf *libraries.MsgBuffer) *MSG_USER_CheckAccount {
+	data := pool_MSG_USER_CheckAccount.Get().(*MSG_USER_CheckAccount)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_CheckAccount) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	data.Account = READ_string(buf)
+
+}
+func (data *MSG_USER_CheckAccount) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_USER_CheckAccount) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_USER_CheckAccount_result struct {
+	QueryResultID uint32
+	Result ErrCode
+}
+
+var pool_MSG_USER_CheckAccount_result = sync.Pool{New: func() interface{} { return &MSG_USER_CheckAccount_result{} }}
+
+func GET_MSG_USER_CheckAccount_result() *MSG_USER_CheckAccount_result {
+	return pool_MSG_USER_CheckAccount_result.Get().(*MSG_USER_CheckAccount_result)
+}
+
+func (data *MSG_USER_CheckAccount_result) cmd() int32 {
+	return CMD_MSG_USER_CheckAccount_result
+}
+
+func (data *MSG_USER_CheckAccount_result) Put() {
+	data.QueryResultID = 0
+	data.Result = 0
+	pool_MSG_USER_CheckAccount_result.Put(data)
+}
+func (data *MSG_USER_CheckAccount_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_CheckAccount_result,buf)
+	WRITE_MSG_USER_CheckAccount_result(data, buf)
+}
+
+func WRITE_MSG_USER_CheckAccount_result(data *MSG_USER_CheckAccount_result, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryResultID, buf)
+	WRITE_ErrCode(data.Result, buf)
+}
+
+func READ_MSG_USER_CheckAccount_result(buf *libraries.MsgBuffer) *MSG_USER_CheckAccount_result {
+	data := pool_MSG_USER_CheckAccount_result.Get().(*MSG_USER_CheckAccount_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_CheckAccount_result) read(buf *libraries.MsgBuffer) {
+	data.QueryResultID = READ_uint32(buf)
+	data.Result = READ_ErrCode(buf)
+
+}
+func (data *MSG_USER_CheckAccount_result) getQueryResultID() uint32 {
+	return data.QueryResultID
+}
+func (data *MSG_USER_CheckAccount_result) setQueryResultID(id uint32) {
 	data.QueryResultID = id
 }
 

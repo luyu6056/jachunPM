@@ -1,0 +1,87 @@
+{{template "header.html" .}}
+{{js_import (strAdd .Config.common.common.jsRoot  "aes.js")}}
+<div id="mainContent" class="main-content">
+  <div class="center-block">
+    <div class="main-header">
+      <h2><i class='icon icon-plus'></i> {{.Lang.user.create}}</h2>
+    </div>
+    <form class="load-indicator main-form form-ajax" id="createForm" method="post" target='hiddenwin'>
+      <table align='center' class="table table-form">
+        <tr>
+          <th class='{{if eq .App.ClientLang "CN_ZH"}}w-verifyPassword{{else}}w-enVerifyPassword{{end}}'>{{.Lang.user.dept}}</th>
+          <td class='w-p40'>{{html_select "dept" .Data.depts .Data.deptID "class='form-control chosen'"}}</td>
+        </tr>
+        <tr>
+          <th>{{.Lang.user.account}}</th>
+          <td>{{html_input "account" "" "class='form-control'"}}</td>
+        </tr>
+        <tr>
+          <th>{{.Lang.user.password}}</th>
+          <td>
+            <input type='password' style="display:none"> <!-- for disable autocomplete all browser -->
+            <span class='input-group'>
+              {{html_password "password1" "" "class='form-control' onmouseup='checkPassword(this.value)' onkeyup='checkPassword(this.value)'"}}
+              <span class='input-group-addon' id='passwordStrength'></span>
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <th>{{.Lang.user.password2}}</th>
+          <td>{{html_password "password2" "" "class='form-control'"}}</td>
+        </tr>
+        <tr>
+          <th>{{.Lang.user.realname}}</th>
+          <td>{{html_input "realname" "" "class='form-control'"}}</td>
+        </tr>
+        <tr>
+          <th>{{.Lang.user.join}}</th>
+          <td>{{html_input "join" (date "2006-01-02") "class='form-control form-date'"}}</td>
+        </tr>
+        <tr>
+          <th>{{.Lang.user.role}}</th>
+          <td>{{html_select "role" .Lang.user.roleList "" "class='form-control' onchange='changeGroup(this.value)'"}}</td>
+          <td>{{.Lang.user.placeholder.role}}</td>
+        </tr>
+        <tr>
+          <th>{{.Lang.user.group}}</th>
+          <td>{{html_select "group" .Data.groupList "" "class='form-control chosen'"}}</td>
+          <td>{{.Lang.user.placeholder.group}}</td>
+        </tr>
+        <tr>
+          <th>{{.Lang.user.email}}</th>
+          <td>{{html_input "email" "" "class='form-control'"}}</td>
+        </tr>
+        <tr>
+          <th>{{.Lang.user.commiter}}</th>
+          <td>{{html_input "commiter" "" "class='form-control'"}}</td>
+        </tr>
+        <tr>
+          <th>{{.Lang.user.gender}}</th>
+          <td>{{html_radio "gender" .Lang.user.genderList "0"}}</td>
+        </tr>
+        <tr>
+          <th>{{.Lang.user.verifyPassword}}</th>
+          <td>
+            <div class="required required-wrapper"></div>
+            {{html_password "verifyPassword" "" (strAdd "class='form-control disabled-ie-placeholder' placeholder='" .Lang.user.placeholder.verify "'")}}
+          </td>
+        </tr>
+        <tr>
+          <th></th>
+          <td colspan='2' class='text-left form-actions'>
+            {{html_submitButton .}}
+            {{html_backButton .}}
+          </td>
+        </tr>
+      </table>
+    </form>
+  </div>
+</div>
+<script type="text/javascript">
+  passwordStrengthList={{.Lang.user.passwordStrengthList}}
+  holders={{.Lang.user.placeholder}}
+  roleGroup={{.Data.roleGroup}}
+  salt={{.Data.salt}}
+  rand={{.Data.rand}}
+</script>
+{{template "footer.html" .}}

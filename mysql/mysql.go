@@ -1194,7 +1194,7 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 					return
 				}
 			} else {
-				res, err = db.QueryString(`desc ` + table_name)
+				res, err = db.QueryString("desc `" + table_name + "`")
 				if err != nil {
 					errs = append(errs, errors.New(table_name+":"+err.Error()))
 					return
@@ -1722,7 +1722,7 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 					}
 				}
 				if len(sql) > 0 {
-					s := "ALTER TABLE " + table_name + " " + strings.Join(sql, ",")
+					s := "ALTER TABLE `" + table_name + "` " + strings.Join(sql, ",")
 					DEBUG(s)
 					err := Exec(Str2bytes(s), nil, db, &Transaction{})
 					if err != nil {
@@ -1739,7 +1739,7 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 				if res[0]["ENGINE"] != db.storeEngine.name {
 
 					res[0]["CREATE_OPTIONS"] = ""
-					err = Exec([]byte("ALTER TABLE "+table_name+" ENGINE = "+db.storeEngine.name+" transactional=default,row_format=default,checksum=0"), nil, db, &Transaction{})
+					err = Exec([]byte("ALTER TABLE `"+table_name+"` ENGINE = "+db.storeEngine.name+" transactional=default,row_format=default,checksum=0"), nil, db, &Transaction{})
 					if err != nil {
 						errs = append(errs, errors.New(table_name+":"+err.Error()))
 						return
@@ -1773,7 +1773,7 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 					}
 				}
 				if sql != nil {
-					sql_str := "ALTER TABLE " + table_name + " " + strings.Join(sql, ",")
+					sql_str := "ALTER TABLE `" + table_name + "` " + strings.Join(sql, ",")
 					DEBUG(sql_str)
 					err := Exec([]byte(sql_str), nil, db, &Transaction{})
 					if err != nil {
@@ -1784,7 +1784,7 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 			}
 			if len(index) > 0 {
 
-				res, err = db.QueryString(`show index from ` + table_name)
+				res, err = db.QueryString("show index from `" + table_name + "`")
 				if err != nil {
 					errs = append(errs, errors.New(table_name+":"+err.Error()))
 					return
@@ -1799,9 +1799,9 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 				for k := range index {
 					if !keys[k] {
 						buf.Reset()
-						buf.WriteString("ALTER TABLE ")
+						buf.WriteString("ALTER TABLE `")
 						buf.WriteString(table_name)
-						buf.WriteString(" ADD INDEX ")
+						buf.WriteString("` ADD INDEX ")
 						buf.WriteString(k)
 						buf.WriteString(" (`")
 						buf.WriteString(k)
@@ -1886,6 +1886,9 @@ func Getvalue(str_i interface{}) string {
 }
 func marsha1Tostring(i interface{}) (str string) {
 	r := reflect.TypeOf(i)
+	if r == nil {
+		return ""
+	}
 	for r.Kind() == reflect.Ptr {
 		r = r.Elem()
 	}
