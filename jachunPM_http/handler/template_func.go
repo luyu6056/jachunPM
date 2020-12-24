@@ -61,8 +61,11 @@ func createLink(moduleName string, methodName string, vars interface{}) string {
 
 		}
 	case string:
-		buf.WriteByte('?')
-		buf.WriteString(v)
+		if v != "" {
+			buf.WriteByte('?')
+			buf.WriteString(v)
+		}
+
 	case nil:
 	default:
 		libraries.DebugLog("createLink不识别类型%s\r\n%s", reflect.TypeOf(v).String(), string(debug.Stack()))
@@ -83,9 +86,9 @@ func htmlFuncs() {
 			key := strings.ReplaceAll(option.Key, "item", "")
 			value := option.Value
 			buf.WriteString("<div class='checkbox-primary'>")
-			buf.WriteString("<input type='checkbox' name='{")
+			buf.WriteString("<input type='checkbox' name='")
 			buf.WriteString(name)
-			buf.WriteString("}[]' value='")
+			buf.WriteString("' value='")
 			buf.WriteString(key)
 			buf.WriteString("' ")
 			if strings.Index(checked, ","+key+",") > -1 {
@@ -441,11 +444,9 @@ func htmlFuncs() {
 			buf.WriteString("' value='")
 			buf.WriteString(value[0])
 		}
+		buf.WriteString("' ")
 		if len(value) > 1 {
-			buf.WriteString("' ")
 			buf.WriteString(value[1])
-		} else {
-			buf.WriteString("' ")
 		}
 		buf.WriteString("/>\n")
 		res := buf.String()
@@ -453,6 +454,85 @@ func htmlFuncs() {
 		bufpool.Put(buf)
 		return template.HTML(res)
 
+	}
+	global_Funcs["html_textarea"] = func(name string, value ...string) template.HTML { //($value = "", $attrib = "")
+		buf := bufpool.Get().(*libraries.MsgBuffer)
+		buf.WriteString("<textarea name='")
+		buf.WriteString(name)
+		buf.WriteString("' id='")
+		buf.WriteString(name)
+		buf.WriteString("' ")
+		if len(value) > 1 {
+			buf.WriteString(value[1])
+		}
+		buf.WriteString(">")
+		if len(value) > 0 {
+			buf.WriteString(value[0])
+		}
+		buf.WriteString("</textarea>\n")
+		res := buf.String()
+		buf.Reset()
+		bufpool.Put(buf)
+		return template.HTML(res)
+
+	}
+	global_Funcs["html_checkbox"] = func(name string, options []protocol.HtmlKeyValueStr, value ...interface{}) template.HTML { //$checked = "", $attrib = "", $type = 'inline'){
+		if len(options) == 0 {
+			return template.HTML("")
+		}
+		var checked []string
+		if len(value) > 0 {
+			r := reflect.ValueOf(value[0])
+			if r.Kind() == reflect.Slice {
+				for i := 0; i < r.Len(); i++ {
+					checked = append(checked, libraries.I2S(r.Index(i).Interface()))
+				}
+			} else {
+				checked = []string{libraries.I2S(value[0])}
+			}
+		}
+		var isBlock bool
+		if len(value) == 3 {
+			isBlock = value[2].(string) == "block"
+		}
+
+		buf := bufpool.Get().(*libraries.MsgBuffer)
+		for _, option := range options {
+			key := strings.ReplaceAll(option.Key, "item", "")
+			if isBlock {
+				buf.WriteString("<div class='checkbox-primary'>")
+			} else {
+				buf.WriteString("<div class='checkbox-primary checkbox-inline'>")
+			}
+			buf.WriteString("<input type='checkbox' name='")
+			buf.WriteString(name)
+			buf.WriteString("' value='")
+			buf.WriteString(key)
+			buf.WriteString("' ")
+			for _, c := range checked {
+				if c == key {
+					buf.WriteString("checked ='checked' ")
+					break
+				}
+			}
+			if len(value) > 1 {
+				buf.WriteString(libraries.I2S(value[1])) //$attrib
+			}
+			buf.WriteString(" id='")
+			buf.WriteString(name)
+			buf.WriteString(key)
+			buf.WriteString("' />")
+			buf.WriteString("<label for='")
+			buf.WriteString(name)
+			buf.WriteString(key)
+			buf.WriteString("'>")
+			buf.WriteString(option.Value)
+			buf.WriteString("</label></div>")
+		}
+		res := buf.String()
+		buf.Reset()
+		bufpool.Put(buf)
+		return template.HTML(res)
 	}
 }
 func hookFuncs() {

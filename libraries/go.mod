@@ -3,6 +3,7 @@ module libraries
 go 1.15
 
 require (
+	github.com/chai2010/webp v1.1.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/dlclark/regexp2 v1.4.0
 	github.com/json-iterator/go v1.1.10

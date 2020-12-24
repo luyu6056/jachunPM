@@ -32,14 +32,16 @@ type Httpserver struct {
 	//ClientFd [4]byte //用户的fd标识
 	Request Request
 	//IsServer bool
-	c         gnet.Conn
-	Out       *libraries.MsgBuffer
-	Ws        *WSconn
-	data      *bytes.Reader
-	ishttps   bool
-	Origin    string
-	OutHeader map[string]string
-	OutCookie map[string]httpcookie
+	c              gnet.Conn
+	Out            *libraries.MsgBuffer
+	Ws             *WSconn
+	data           *bytes.Reader
+	OutCode        int
+	OutContentType string
+	ishttps        bool
+	Origin         string
+	OutHeader      map[string]string
+	OutCookie      map[string]httpcookie
 }
 type httpcookie struct {
 	value   string
@@ -88,9 +90,22 @@ func (hs *Httpserver) BeginRequest(route string, c *Context) {
 }
 func (hs *Httpserver) Write(b *libraries.MsgBuffer) {
 	hs.Out.Reset()
-	hs.Out.Write(http1head200)
+	if hs.OutCode != 0 && httpCode(hs.OutCode).String() != "" {
+		hs.Out.WriteString("HTTP/1.1 ")
+		hs.Out.WriteString(httpCode(hs.OutCode).String())
+		hs.Out.WriteString("\r\n")
+	} else {
+		hs.Out.Write(http1head200)
+	}
 	hs.Out.Write(http1nocache)
-	hs.Out.WriteString("Content-Type: text/html;charset=utf-8\r\n")
+	if hs.OutContentType != "" {
+		hs.Out.WriteString("Content-Type: ")
+		hs.Out.WriteString(hs.OutContentType)
+		hs.Out.WriteString("\r\n")
+	} else {
+		hs.Out.WriteString("Content-Type: text/html;charset=utf-8\r\n")
+	}
+
 	hs.data.Reset(b.Bytes())
 	if b.Len() > 4096 {
 		isdeflate := strings.Contains(hs.Request.GetHeader("Accept-Encoding"), "deflate")
@@ -125,8 +140,21 @@ func (hs *Httpserver) Write(b *libraries.MsgBuffer) {
 }
 func (hs *Httpserver) WriteString(str string) {
 	hs.Out.Reset()
-	hs.Out.Write(http1head200)
+	if hs.OutCode != 0 && httpCode(hs.OutCode).String() != "" {
+		hs.Out.WriteString("HTTP/1.1 ")
+		hs.Out.WriteString(httpCode(hs.OutCode).String())
+		hs.Out.WriteString("\r\n")
+	} else {
+		hs.Out.Write(http1head200)
+	}
 	hs.Out.Write(http1nocache)
+	if hs.OutContentType != "" {
+		hs.Out.WriteString("Content-Type: ")
+		hs.Out.WriteString(hs.OutContentType)
+		hs.Out.WriteString("\r\n")
+	} else {
+		hs.Out.WriteString("Content-Type: text/html;charset=utf-8\r\n")
+	}
 	buf := msgbufpool.Get().(*libraries.MsgBuffer)
 	defer msgbufpool.Put(buf)
 	buf.Reset()
@@ -521,12 +549,21 @@ func (hs *Httpserver) Out404() {
 	hs.Out.Write(http404b)
 	hs.c.AsyncWrite(hs.Out.Bytes())
 }
+
+var Errfunc func(i interface{}, err error) bool
+
 func (hs *Httpserver) OutErr(err error) {
+	if Errfunc != nil {
+		if Errfunc(hs, err) {
+			return
+		}
+	}
 	hs.Out.WriteString("HTTP/1.1 500 Internal Server Error\r\nContent-Length: ")
 	hs.Out.WriteString(strconv.Itoa(len(err.Error())))
 	hs.Out.WriteString("\r\n\r\n")
 	hs.Out.WriteString(err.Error())
 	hs.c.AsyncWrite(hs.Out.Bytes())
+
 }
 
 func init() {
@@ -613,6 +650,8 @@ func (hs *Httpserver) Recovery() {
 	hs.Request.QueryCache = nil
 	hs.Request.PostForm = nil
 	hs.Request.Form = nil
+	hs.OutCode = 0
+	hs.OutContentType = ""
 }
 func (hs *Httpserver) Cookie(name string) string {
 	if cookieHead, ok := hs.Request.Header["Cookie"]; ok {
@@ -664,6 +703,22 @@ func (hs *Httpserver) GetAllQuery() (res map[string][]string) {
 		res[k] = v
 	}
 	return res
+}
+func (hs *Httpserver) AddQuery(name, value string) {
+	hs.getQueryCache()
+	for k, _ := range hs.Request.QueryCache {
+		if k == name {
+			hs.Request.QueryCache[k] = []string{value}
+			return
+		}
+	}
+	hs.Request.QueryCache[name] = []string{value}
+}
+func (hs *Httpserver) SetCode(code int) {
+	hs.OutCode = code
+}
+func (hs *Httpserver) SetContentType(ContentType string) {
+	hs.OutContentType = ContentType
 }
 func (hs *Httpserver) PostForm(key string) string {
 	hs.Request.getFormCache()
@@ -851,3 +906,67 @@ var (
 	// compare errors against this variable.
 	ErrMissingContentLength = &ProtocolError{"missing ContentLength in HEAD response"}
 )
+
+type httpCode int
+
+func (code httpCode) String() string {
+	return map[int]string{
+		100: "100 Continue",
+		101: "101 Switching Protocols",
+		102: "102 Processing",
+		200: "200 OK",
+		201: "201 Created",
+		202: "202 Accepted",
+		203: "203 Non-Authoritative Information",
+		204: "204 No Content",
+		205: "205 Reset Content",
+		206: "206 Partial Content",
+		207: "207 Multi-Status",
+		300: "300 Multiple Choices",
+		301: "301 Moved Permanently",
+		302: "302 Move Temporarily",
+		303: "303 See Other",
+		304: "304 Not Modified",
+		305: "305 Use Proxy",
+		306: "306 Switch Proxy",
+		307: "307 Temporary Redirect",
+		400: "400 Bad Request",
+		401: "401 Unauthorized",
+		402: "402 Payment Required",
+		403: "403 Forbidden",
+		404: "404 Not Found",
+		405: "405 Method Not Allowed",
+		406: "406 Not Acceptable",
+		407: "407 Proxy Authentication Required",
+		408: "408 Request Timeout",
+		409: "409 Conflict",
+		410: "410 Gone",
+		411: "411 Length Required",
+		412: "412 Precondition Failed",
+		413: "413 Request Entity Too Large",
+		414: "414 Request-URI Too Long",
+		415: "415 Unsupported Media Type",
+		416: "416 Requested Range Not Satisfiable",
+		417: "417 Expectation Failed",
+		418: "418 I'm a teapot",
+		421: "421 Misdirected Request",
+		422: "422 Unprocessable Entity",
+		423: "423 Locked",
+		424: "424 Failed Dependency",
+		425: "425 Too Early",
+		426: "426 Upgrade Required",
+		449: "449 Retry With",
+		451: "451 Unavailable For Legal Reasons",
+		500: "500 Internal Server Error",
+		501: "501 Not Implemented",
+		502: "502 Bad Gateway",
+		503: "503 Service Unavailable",
+		504: "504 Gateway Timeout",
+		505: "505 HTTP Version Not Supported",
+		506: "506 Variant Also Negotiates",
+		507: "507 Insufficient Storage",
+		509: "509 Bandwidth Limit Exceeded",
+		510: "510 Not Extended",
+		600: "600 Unparseable Response Headers",
+	}[int(code)]
+}

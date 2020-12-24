@@ -1,0 +1,70 @@
+{{template "header.html" .}}
+{{template "kindeditor.html" .}}
+<div id="mainContent" class="main-content">
+  <div class="center-block">
+    <div class="main-header">
+      <h2>{{.Lang.product.create}}</h2>
+    </div>
+    <form class="load-indicator main-form form-ajax" id="createForm" method="post" target='hiddenwin'>
+      <table class="table table-form">
+        <tbody>
+          <tr>
+            <th>{{.Lang.product.name}}</th>
+            <td>{{html_input "name" "" "class='form-control input-product-title' autocomplete='off' required"}}</td><td></td>
+          </tr>  
+          <tr>
+            <th>{{.Lang.product.code}}</th>
+            <td>{{html_input "code" "" "class='form-control input-product-code' autocomplete='off' required"}}</td><td></td>
+          </tr>  
+          <tr>
+            <th>{{.Lang.product.line}}</th>
+            <td>
+              <div class='input-group' id='lineIdBox'>
+                {{html_select "line" .Data.lines "" "class='form-control chosen'"}}
+                <span class='input-group-addon'>{{html_a (helper_createLink "tree" "browse" (strAdd "rootID=" .Data.rootID "&view=line")) .Lang.tree.manageLine "" "class='text-primary' data-toggle='modal' data-type='iframe' data-width='95%'"}}</span>
+              </div>
+              <div class='hidden'>{{html_a "javascript:void(0)" .Lang.common.refresh "" (strAdd "class='refresh' onclick='loadProductLines(" .Data.rootID ")'")}}</div>
+            </td>
+          </tr>
+          <tr>
+            <th>{{.Lang.product.PO}}</th>
+            <td>{{html_select "PO" .Data.poUsers .App.user.Account "class='form-control chosen'"}}</td><td></td>
+          </tr>  
+          <tr>
+            <th>{{.Lang.product.QD}}</th>
+            <td>{{html_select "QD" .Data.qdUsers "" "class='form-control chosen'"}}</td><td></td>
+          </tr>  
+          <tr>
+            <th>{{.Lang.product.RD}}</th>
+            <td>{{html_select "RD" .Data.rdUsers "" "class='form-control chosen'"}}</td><td></td>
+          </tr>  
+          <tr>
+            <th>{{.Lang.product.type}}</th>
+            <td>
+              {{html_select "type" .Data.productTypeList "normal" "class='form-control'"}}
+            </td><td></td>
+          </tr>  
+          <tr>
+            <th>{{.Lang.product.desc}}</th>
+            <td colspan='2'>{{html_textarea "desc" "" "rows='8' class='form-control kindeditor' hidefocus='true' tabindex=''"}}</td>
+          </tr>  
+          <tr>
+            <th>{{.Lang.product.acl}}</th>
+            <td colspan='2'>{{html_radio "acl" .Lang.product.aclList "private" "onclick='setWhite(this.value)'" "block"}}</td>
+          </tr>  
+          <tr id='whitelistBox' class='hidden'>
+            <th>{{.Lang.product.whitelist}}</th>
+            <td colspan='2'>{{html_checkbox "whitelist" .Data.groups}}</td>
+          </tr>  
+          <tr>
+            <td colspan='3' class='text-center form-actions'>
+              {{html_submitButton .}}
+              {{html_backButton .}}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </form>
+  </div>
+</div>
+{{template "footer.html" .}}

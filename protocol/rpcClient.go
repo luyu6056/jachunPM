@@ -557,14 +557,17 @@ func (client *RpcClient) GetMsg() (*Msg, error) {
 	}
 	return nil, errors.New("期望返回的结果是MSG_COMMON_GET_Msgno_result，实际返回" + reflect.TypeOf(res).Elem().String())
 }
-func (client *RpcClient) LoadConfig(key string) (res map[string]interface{}, err error) {
+func (client *RpcClient) LoadConfig(key string) (res map[string]map[string]interface{}, err error) {
 	b, err := client.cache.Get(key, PATH_CONFIG_CACHE)
 	if err != nil {
 		return nil, err
 	}
+	if len(b) == 0 {
+		return
+	}
 	err = libraries.JsonUnmarshal(b, &res)
 	return res, err
 }
-func (client *RpcClient) SetConfig(key string, config map[string]interface{}) (err error) {
+func (client *RpcClient) SetConfig(key string, config map[string]map[string]interface{}) (err error) {
 	return client.cache.Set(key, PATH_CONFIG_CACHE, libraries.JsonMarshal(config), 0)
 }

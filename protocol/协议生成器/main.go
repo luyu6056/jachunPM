@@ -15,6 +15,10 @@ import (
 )
 
 type ErrCode int16
+type HtmlKeyValueStr struct {
+	Key   string
+	Value string
+}
 
 //本代码是给msg加入chan bytes.Buffer
 var msg = make(map[int32]string)
@@ -61,7 +65,7 @@ func main() {
 	h := "\n" //换行符
 
 	out := new(bytes.Buffer)
-	for serverid, name := range []string{"0common.go", "", "", "", "4user.go"} {
+	for serverid, name := range []string{"0common.go", "", "", "", "4user.go", "5project.go"} {
 		func() {
 			name = BASE_ROOT_PATH + DS + name
 			fmt.Println(name)

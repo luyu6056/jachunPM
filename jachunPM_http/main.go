@@ -27,7 +27,7 @@ type httpServer struct {
 }
 
 func main() {
-	cache.StartWebServer("0.0.0.0:808")
+	cache.StartWebServer("0.0.0.0:809")
 	var err error
 	handler.HostConn, err = protocol.NewClient(protocol.HttpServerNo, config.Server.HostIP, config.Server.TokenKey)
 	if err != nil {
@@ -37,6 +37,10 @@ func main() {
 		handler.HostConn.HandleMsg = handler.Handler
 		go handler.HostConn.Start()
 	}
+	for key, config := range config.Config[protocol.DefaultLang] {
+		handler.HostConn.SetConfig(key, config)
+	}
+
 	go http.ListenAndServe("0.0.0.0:"+strconv.Itoa(8100+protocol.HttpServerNo), nil)
 	svr := &httpServer{addr: config.Server.ListenHttp}
 	// Start serving!

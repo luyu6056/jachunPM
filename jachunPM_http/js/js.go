@@ -66,5 +66,8 @@ func Confirm(message, okURL, cancleURL string, okcancleTarget ...string) string 
 	return res
 }
 func Location(str string, window string) string {
+	if str == "back" {
+		return "<script>history.back()</script>"
+	}
 	return "<script>" + window + ".location.href=\"" + strings.ReplaceAll(str, `"`, `\"`) + "\"</script>"
 }

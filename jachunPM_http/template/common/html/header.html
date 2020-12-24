@@ -21,7 +21,7 @@
         {{else if or (eq .App.moduleName "my") (eq .App.moduleName  "user")}}
             {{$searchObject = .App.methodName}}
         {{end}}
-        {{- if eq (getValue .Lang.common.searchObjects $searchObject) nil}}{{$searchObject = "bug"}}{{end}}
+        {{- if getValue .Lang.common.searchObjects $searchObject}}{{else}}{{$searchObject = "bug"}}{{end}}
         <div id='searchbox'>
         <div class='input-group'>
         <div class='input-group-btn'>

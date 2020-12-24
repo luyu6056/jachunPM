@@ -149,7 +149,7 @@ func LangZH_CNInit() {
 		{"qa", map[string]string{`link`: "测试|qa|index"}},
 		{"doc", map[string]string{`link`: "文档|doc|index"}},
 		{"report", map[string]string{`link`: "统计|report|index"}},
-		{"company", map[string]string{`link`: "组织|company|index"}},
+		{"company", map[string]string{`link`: "组织|company|browse"}},
 		{"admin", map[string]string{`link`: "后台|admin|index"}},
 	}
 	Lang[protocol.ZH_CN]["common"]["searchObjects"] = map[string]string{
@@ -308,7 +308,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["product"]["noModule"] = "<div>您现在还没有模块信息</div><div>请维护产品模块</div>"
 	Lang[protocol.ZH_CN]["product"]["checkedSummary"] = "选中 <strong>%total%</strong> 个需求，预计 <strong>%estimate%</strong> 个工时，用例覆盖率 <strong>%rate%</strong>。"
 	Lang[protocol.ZH_CN]["product"]["storySummary"] = "本页共 <strong>%s</strong> 个需求，预计 <strong>%s</strong> 个工时，用例覆盖率 <strong>%s</strong>。"
-	Lang[protocol.ZH_CN]["product"]["statusList['']"] = ""
+
 	Lang[protocol.ZH_CN]["product"]["typeList['']"] = ""
 	Lang[protocol.ZH_CN]["product"]["allProductsOfProject"] = `全部关联` + Lang[protocol.ZH_CN]["common"]["productCommon"].(string)
 	Lang[protocol.ZH_CN]["product"]["allProduct"] = `全部` + Lang[protocol.ZH_CN]["common"]["productCommon"].(string)
@@ -399,7 +399,7 @@ func LangZH_CNInit() {
 		{"project", map[string]string{`link`: Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "|product|project|status=all&productID=%s"}},
 		{"dynamic", map[string]string{`link`: "动态|product|dynamic|productID=%s"}},
 		{"doc", map[string]string{`link`: `文档|doc|objectLibs|type=product&objectID=%s&from=product`, `subModule`: `doc`}},
-		{"branch", map[string]string{`link`: "@branch@|branch|manage|productID=%s"}},
+		//{"branch", map[string]string{`link`: "@branch@|branch|manage|productID=%s"}},
 		{"module", map[string]string{`link`: "模块|tree|browse|productID=%s&view=story"}},
 		{"view", map[string]string{`link`: `概况|product|view|productID=%s`, `alias`: `edit`}},
 	}
@@ -451,11 +451,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["story"]["legendRelated"] = "相关信息"
 	Lang[protocol.ZH_CN]["story"]["legendLifeTime"] = "需求的一生"
 	Lang[protocol.ZH_CN]["story"]["legendBasicInfo"] = "基本信息"
-	Lang[protocol.ZH_CN]["story"]["priList[]"] = ""
-	Lang[protocol.ZH_CN]["story"]["sourceList['']"] = ""
 	Lang[protocol.ZH_CN]["story"]["reviewResultList['']"] = ""
-	Lang[protocol.ZH_CN]["story"]["reasonList['']"] = ""
-	Lang[protocol.ZH_CN]["story"]["stageList['']"] = ""
 	Lang[protocol.ZH_CN]["story"]["statusList['']"] = ""
 	Lang[protocol.ZH_CN]["story"]["dittoNotice"] = "该需求与上一需求不属于同一产品！"
 	Lang[protocol.ZH_CN]["story"]["ditto"] = "同上"
@@ -5147,10 +5143,10 @@ func LangZH_CNInit() {
 		"pass":   "通过",
 		"reject": "拒绝",
 	}
-	Lang[protocol.ZH_CN]["product"]["typeList"] = map[string]string{
-		"normal":   "正常",
-		"branch":   "多分支",
-		"platform": "多平台",
+	Lang[protocol.ZH_CN]["product"]["typeList"] = []protocol.HtmlKeyValueStr{
+		{"normal", "正常"},
+		{"branch", "多分支"},
+		{"platform", "多平台"},
 	}
 	Lang[protocol.ZH_CN]["product"]["typeTips"] = map[string]string{
 		"branch":   "(适用于客户定制场景)",
@@ -5161,13 +5157,14 @@ func LangZH_CNInit() {
 		"branch":   "分支",
 		"platform": "平台",
 	}
-	Lang[protocol.ZH_CN]["product"]["statusList"] = map[string]string{
-		"normal": "正常",
-		"closed": "结束",
+	Lang[protocol.ZH_CN]["product"]["statusList"] = []protocol.HtmlKeyValueStr{
+		{"", ""},
+		{"normal", "正常"},
+		{"closed", "结束"},
 	}
-	Lang[protocol.ZH_CN]["product"]["aclList"] = map[string]string{
-		"private": "私有" + Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "(只有" + Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "相关负责人和" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "团队成员才能访问)",
-		"custom":  "自定义白名单(团队成员和白名单的成员可以访问)",
+	Lang[protocol.ZH_CN]["product"]["aclList"] = []protocol.HtmlKeyValueStr{
+		{"private", "私有" + Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "(只有" + Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "相关负责人和" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "团队成员才能访问)"},
+		{"custom", "自定义白名单(团队成员和白名单的成员可以访问)"},
 	}
 	Lang[protocol.ZH_CN]["product"]["featureBar"] = map[string]map[string]string{
 		"browse": map[string]string{
@@ -5642,32 +5639,34 @@ func LangZH_CNInit() {
 		"notFoundParamsFunc": "没有找到%s/%s的搜索参数初始化方法，请返回首页刷新重试",
 	}
 	Lang[protocol.ZH_CN]["story"]["useList"] = []string{"不使用", `使用`}
-	Lang[protocol.ZH_CN]["story"]["statusList"] = map[string]string{
-		"draft":   "草稿",
-		"active":  "激活",
-		"closed":  "已关闭",
-		"changed": "已变更",
+	Lang[protocol.ZH_CN]["story"]["statusList"] = []protocol.HtmlKeyValueStr{
+		{"draft", "草稿"},
+		{"active", "激活"},
+		{"closed", "已关闭"},
+		{"changed", "已变更"},
 	}
-	Lang[protocol.ZH_CN]["story"]["stageList"] = map[string]string{
-		"wait":       "未开始",
-		"planned":    "已计划",
-		"projected":  "已立项",
-		"developing": "研发中",
-		"developed":  "研发完毕",
-		"testing":    "测试中",
-		"tested":     "测试完毕",
-		"verified":   "已验收",
-		"released":   "已发布",
-		"closed":     "已关闭",
+	Lang[protocol.ZH_CN]["story"]["stageList"] = []protocol.HtmlKeyValueStr{
+		{"", ""},
+		{"wait", "未开始"},
+		{"planned", "已计划"},
+		{"projected", "已立项"},
+		{"developing", "研发中"},
+		{"developed", "研发完毕"},
+		{"testing", "测试中"},
+		{"tested", "测试完毕"},
+		{"verified", "已验收"},
+		{"released", "已发布"},
+		{"closed", "已关闭"},
 	}
-	Lang[protocol.ZH_CN]["story"]["reasonList"] = map[string]string{
-		"done":       "已完成",
-		"subdivided": "已细分",
-		"duplicate":  "重复",
-		"postponed":  "延期",
-		"willnotdo":  "不做",
-		"cancel":     "已取消",
-		"bydesign":   "设计如此",
+	Lang[protocol.ZH_CN]["story"]["reasonList"] = []protocol.HtmlKeyValueStr{
+		{"", ""},
+		{"done", "已完成"},
+		{"subdivided", "已细分"},
+		{"duplicate", "重复"},
+		{"postponed", "延期"},
+		{"willnotdo", "不做"},
+		{"cancel", "已取消"},
+		{"bydesign", "设计如此"},
 	}
 	Lang[protocol.ZH_CN]["story"]["reviewResultList"] = map[string]string{
 		"pass":    "确认通过",
@@ -5676,22 +5675,23 @@ func LangZH_CNInit() {
 		"reject":  "拒绝",
 	}
 	Lang[protocol.ZH_CN]["story"]["reviewList"] = []string{"否", `是`}
-	Lang[protocol.ZH_CN]["story"]["sourceList"] = map[string]string{
-		"customer":   "客户",
-		"user":       "用户",
-		"po":         Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "经理",
-		"market":     "市场",
-		"service":    "客服",
-		"operation":  "运营",
-		"support":    "技术支持",
-		"competitor": "竞争对手",
-		"partner":    "合作伙伴",
-		"dev":        "开发人员",
-		"tester":     "测试人员",
-		"bug":        "Bug",
-		"other":      "其他",
+	Lang[protocol.ZH_CN]["story"]["sourceList"] = []protocol.HtmlKeyValueStr{
+		{"", ""},
+		{"customer", "客户"},
+		{"user", "用户"},
+		{"po", Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "经理"},
+		{"market", "市场"},
+		{"service", "客服"},
+		{"operation", "运营"},
+		{"support", "技术支持"},
+		{"competitor", "竞争对手"},
+		{"partner", "合作伙伴"},
+		{"dev", "开发人员"},
+		{"tester", "测试人员"},
+		{"bug", "Bug"},
+		{"other", "其他"},
 	}
-	Lang[protocol.ZH_CN]["story"]["priList"] = []string{"1", `2`, `3`, `4`}
+	Lang[protocol.ZH_CN]["story"]["priList"] = []protocol.HtmlKeyValueStr{{"", ""}, {"1", "1"}, {"2", "2"}, {"3", "3"}, {"4", "4"}}
 	Lang[protocol.ZH_CN]["story"]["form"] = map[string]string{
 		"area":     "该需求所属范围",
 		"desc":     "描述及标准，什么需求？如何验收？",
@@ -6321,5 +6321,8 @@ func LangZH_CNInit() {
 	}
 	Lang[protocol.ZH_CN]["common"]["error"] = map[string]string{
 		"ErrGetMsg": "初始化失败，请联系管理员，错误%v",
+	}
+	Lang[protocol.ZH_CN]["file"]["error"] = map[string]string{
+		"ErrImgType": "上传图片失败，格式识别错误",
 	}
 }

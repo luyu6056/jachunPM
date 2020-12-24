@@ -25,6 +25,8 @@ github.com/klauspost/compress v1.11.2 h1:MiK62aErc3gIiVEtyzKfeOHgW7atJb5g/KNX5m3
 github.com/klauspost/compress v1.11.2/go.mod h1:aoV0uJVorq1K+umq18yTdKaF57EivdYsUV+/s2qKfXs=
 github.com/klauspost/compress v1.11.3 h1:dB4Bn0tN3wdCzQxnS8r06kV74qN/TAfaIS0bVE8h3jc=
 github.com/klauspost/compress v1.11.3/go.mod h1:aoV0uJVorq1K+umq18yTdKaF57EivdYsUV+/s2qKfXs=
+github.com/klauspost/compress v1.11.4 h1:kz40R/YWls3iqT9zX9AHN3WoVsrAWVyui5sxuLqiXqU=
+github.com/klauspost/compress v1.11.4/go.mod h1:aoV0uJVorq1K+umq18yTdKaF57EivdYsUV+/s2qKfXs=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
@@ -44,6 +46,8 @@ github.com/luyu6056/cache v1.1.0 h1:Yim8xczbF73cthGIWpOgZc65NWyyZqKwpPQVM2PlBuk=
 github.com/luyu6056/cache v1.1.0/go.mod h1:AboJLuhFlejC5l0fCBQZcVufgUiLUuYe57DHlo1vDIM=
 github.com/luyu6056/cache v1.1.1 h1:pS3n1qIZFVYlm+rQD64hcdsiDQ1rcKlqWp3KH4FDcLU=
 github.com/luyu6056/cache v1.1.1/go.mod h1:AboJLuhFlejC5l0fCBQZcVufgUiLUuYe57DHlo1vDIM=
+github.com/luyu6056/cache v1.1.2 h1:7EKw6c4YvQ5e/l2JRei5TfHCWShKJA3XuUvkpukDhj8=
+github.com/luyu6056/cache v1.1.2/go.mod h1:qohfWfwbyHaIPW6fkyqQcymSuLuG04iFrKxYvcvmKdA=
 github.com/luyu6056/gnet v1.2.8 h1:5aWdLlBjeQzd4UhbhF2m742LDFvTQ+R809mlWFL/WQk=
 github.com/luyu6056/gnet v1.2.8/go.mod h1:hz3iz0j1ufNJiQgWzaYHCUeZLPcJbTrDgM+qYKx/SSA=
 github.com/luyu6056/tls v0.15.1 h1:mKvNqP7ZDPtee1dleBu5XL8LbN9pbpX46Pv27Gm6yQI=

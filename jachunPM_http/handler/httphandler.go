@@ -5,6 +5,7 @@ import (
 	"libraries"
 	"protocol"
 	"runtime/debug"
+	"server"
 	"strings"
 
 	"github.com/luyu6056/cache"
@@ -20,13 +21,15 @@ type HttpRequest interface {
 	Post(key string) string
 	GetAllPost() map[string][]string
 	GetAllQuery() map[string][]string
+	AddQuery(name, value string)
 	Cookie(key string) string
 	Session() *cache.Hashvalue
 
 	Header(name string) string
 	Method() string
 	//writer部分
-	//SetCode(int)
+	SetCode(int)
+	SetContentType(string)
 	SetCookie(name, value string, max_age uint32)
 	SetHeader(name, value string)
 	StaticHandler() gnet.Action
@@ -79,4 +82,30 @@ func getClientLang(ws HttpRequest) protocol.CountryNo {
 		client = protocol.DefaultLang
 	}
 	return client
+}
+func init() {
+	server.Errfunc = func(i interface{}, err error) bool {
+		ws, ok := i.(HttpRequest)
+		if ok {
+			data := templateDataInit(ws)
+			data.Data["err"] = err.Error()
+			templateLock.RLock()
+			buf := bufpool.Get().(*libraries.MsgBuffer)
+			defer func() {
+				buf.Reset()
+				bufpool.Put(buf)
+				templateLock.RUnlock()
+			}()
+			name := "error.html"
+			data.App["TemplateName"] = name
+			data.Data["title"] = "无法访问"
+			err := T.ExecuteTemplate(buf, name, data)
+			if err != nil {
+				libraries.ReleaseLog("%+v", err)
+			} else {
+				data.ws.Write(buf)
+			}
+		}
+		return ok
+	}
 }

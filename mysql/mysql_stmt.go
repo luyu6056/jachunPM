@@ -183,12 +183,6 @@ func (stmt *Database_mysql_stmt) Exec(args []interface{}) error {
 				return err
 			}
 		}
-		if err != nil {
-			stmt.conn.Status = false
-			stmt.conn.Close()
-			return err
-		}
-
 	}
 
 	return err

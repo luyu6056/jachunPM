@@ -35,12 +35,11 @@ type MSG_USER_INFO_cache struct {
 
 //检查密码是否正确，有Id优先查询Id，Id为0，Name查询account，realname，Mobile
 type MSG_USER_CheckPasswd struct {
-	QueryID  uint32
-	UserId   int32
-	Name     string
-	Rand     int64
-	Passwd   string
-	DeleteID int32 //附加功能，删除user时用到
+	QueryID uint32
+	UserId  int32
+	Name    string
+	Rand    int64
+	Passwd  string
 }
 type MSG_USER_CheckPasswd_result struct {
 	QueryResultID uint32
@@ -153,4 +152,13 @@ type MSG_USER_CheckAccount struct {
 type MSG_USER_CheckAccount_result struct {
 	QueryResultID uint32
 	Result        ErrCode
+}
+type MSG_USER_getPairs struct {
+	QueryID         uint32
+	Params          string
+	UsersToAppended int32
+}
+type MSG_USER_getPairs_result struct {
+	QueryResultID uint32
+	List          []HtmlKeyValueStr
 }

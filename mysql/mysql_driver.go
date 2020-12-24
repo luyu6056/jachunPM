@@ -24,6 +24,7 @@ const (
 	max_packet_size      = 16777215
 	Default_MaxOpenConns = 20 //默认连接数
 	Default_MaxIdleConns = 10 //默认空链接
+
 )
 
 //capabilities定义
@@ -129,13 +130,10 @@ func (mysqldb *MysqlDB) Ping() error {
 		if err != nil || conn == nil {
 			continue
 		}
-		if conn.Status != true {
+		if !conn.Status {
 			continue
 		}
 		mysqldb.Conn_chan <- conn
-		mysqldb.Conn_num++
-		mysqldb.Conn_m.Store(conn.Thread_id, conn)
-
 	}
 
 	if len(mysqldb.Conn_chan) == 0 {
@@ -162,9 +160,8 @@ func (mysqldb *MysqlDB) ping() {
 				if v == nil {
 					DEBUG("致命错误,range出现nil")
 					mysqldb.Lock.Lock()
-					if _, ok := mysqldb.Conn_m.Load(key); ok {
-						mysqldb.Conn_m.Delete(key)
-						atomic.AddInt32(&mysqldb.Conn_num, -1)
+					if _, ok := mysqldb.Conn_m.LoadAndDelete(key); ok {
+						mysqldb.Conn_num--
 					}
 					mysqldb.Lock.Unlock()
 				}
@@ -172,11 +169,10 @@ func (mysqldb *MysqlDB) ping() {
 			})
 		pingfor:
 			for {
-				var conn *Mysql_Conn
 				var conn2List []*Mysql_Conn
 				select {
-				case conn = <-mysqldb.Conn_chan: //优先处理Conn1并且把结果放到conn2去
-					if conn = conn.ping(now.Unix(), mysqldb); conn != nil {
+				case conn := <-mysqldb.Conn_chan: //优先处理Conn1并且把结果放到conn2去
+					if conn.ping(now.Unix()) {
 						select {
 						case mysqldb.Conn_chan2 <- conn:
 						default:
@@ -186,8 +182,8 @@ func (mysqldb *MysqlDB) ping() {
 				default:
 					for {
 						select {
-						case conn = <-mysqldb.Conn_chan2: //从conn2拿出来，不会二次ping
-							if conn = conn.ping(now.Unix(), mysqldb); conn != nil {
+						case conn := <-mysqldb.Conn_chan2: //从conn2拿出来，不会二次ping
+							if conn.ping(now.Unix()) {
 								select {
 								case mysqldb.Conn_chan <- conn: //优先放回conn
 								default:
@@ -210,16 +206,17 @@ func (mysqldb *MysqlDB) ping() {
 				go func() {
 					for i := int32(0); i < mysqldb.MaxIdleConns; i++ { //避免连接失败一直重试
 						conn, err := mysqldb.connect_new()
-						if err == nil && conn != nil && conn.Status {
-							mysqldb.Conn_m.Store(conn.Thread_id, conn)
-							atomic.AddInt32(&mysqldb.Conn_num, 1)
+						if err == nil {
 							select {
 							case mysqldb.Conn_chan <- conn:
 							case mysqldb.Conn_chan2 <- conn:
 							default:
+								mysqldb.Lock.Lock()
 								DEBUG("发生致命错误,mysql conn_num不足，无法新增入库")
-								mysqldb.Conn_m.Delete(conn.Thread_id)
-								atomic.AddInt32(&mysqldb.Conn_num, -1)
+								if _, ok := mysqldb.Conn_m.LoadAndDelete(conn.Thread_id); ok {
+									mysqldb.Conn_num--
+								}
+								mysqldb.Lock.Unlock()
 							}
 
 						}
@@ -237,69 +234,54 @@ func (mysqldb *MysqlDB) ping() {
 	}
 
 }
-func (conn *Mysql_Conn) ping(now int64, db *MysqlDB) *Mysql_Conn {
-	if conn.Status == false {
-		conn.Status = false
-		db.Lock.Lock()
-
-		if _, ok := db.Conn_m.Load(conn.Thread_id); ok {
-			db.Conn_m.Delete(conn.Thread_id)
-			atomic.AddInt32(&db.Conn_num, -1)
-		}
-		db.Lock.Unlock()
+func (conn *Mysql_Conn) ping(now int64) bool {
+	if !conn.Status {
 		conn.Close()
-		return nil
+		return false
 	}
 
 	if now > conn.pingtime {
 		conn.msg_no = 255
 		err := conn.writemsg([]byte{0xe})
 		if err != nil {
-			conn.Status = false
 			conn.Close()
-			db.Lock.Lock()
-			if _, ok := db.Conn_m.Load(conn.Thread_id); ok {
-				db.Conn_m.Delete(conn.Thread_id)
-				atomic.AddInt32(&db.Conn_num, -1)
-			}
-			db.Lock.Unlock()
-			return nil
+			return false
 		}
 
 		_, _, result, _, err := conn.readmsg()
 		if err != nil || result != 0 { //非ok报文或者出错
-			conn.Status = false
 			conn.Close()
-			db.Lock.Lock()
-			if _, ok := db.Conn_m.Load(conn.Thread_id); ok {
-				db.Conn_m.Delete(conn.Thread_id)
-				atomic.AddInt32(&db.Conn_num, -1)
-			}
-			db.Lock.Unlock()
-			return nil
+			return false
 		}
 		conn.pingtime += pingadd
 	}
-	return conn
+	return true
 }
 func (mysql *Mysql_Conn) Close() error {
-	if mysql != nil && mysql.conn != nil {
-		mysql.writeBuffer.Reset()
-		b := mysql.writeBuffer.Make(7)
-		b[0] = 1
-		b[1] = 0
-		b[2] = 0
-		b[3] = 0
-		b[4] = 1 //COM_QUIT
-		b[5] = 0
-		b[6] = 1
+	if mysql != nil {
+		if mysql.conn != nil {
+			conn := mysql.conn
+			mysql.conn = nil
+			mysql.writeBuffer.Reset()
+			b := mysql.writeBuffer.Make(7)
+			b[0] = 1
+			b[1] = 0
+			b[2] = 0
+			b[3] = 0
+			b[4] = 1 //COM_QUIT
+			b[5] = 0
+			b[6] = 1
+			conn.Write(b)
+			conn.Close()
 
-		mysql.conn.Write(b)
-
-		mysql.conn.Close()
-		mysql.conn = nil
+		}
+		mysql.db.Lock.Lock()
+		if _, ok := mysql.db.Conn_m.LoadAndDelete(mysql.Thread_id); ok {
+			atomic.AddInt32(&mysql.db.Conn_num, -1)
+		}
+		mysql.db.Lock.Unlock()
+		mysql.Status = false
 	}
-	mysql.Status = false
 	return nil
 }
 func (mysqldb *MysqlDB) connect_new() (*Mysql_Conn, error) {
@@ -343,84 +325,66 @@ func (mysqldb *MysqlDB) connect_new() (*Mysql_Conn, error) {
 	}
 	err = new_connect.handshakeResponse(seed, seed2, mysqldb.username, mysqldb.passwd, mysqldb.database, mysqldb.charset, mysqldb.tlsConfig)
 	if err != nil {
-		new_connect.Status = false
-	} else {
-		_, offset := time.Now().In(new_connect.loc).Zone()
-		var time_zone string
-		if offset >= 0 {
-			time_zone = "+" + strconv.Itoa(offset/3600) + ":00"
-		} else {
-			time_zone = strconv.Itoa(offset/3600) + ":00"
-		}
-		_, _, err = new_connect.Exec([]byte("set time_zone='" + time_zone + "'"))
+		return nil, err
 	}
-	return new_connect, err
+	_, offset := time.Now().In(new_connect.loc).Zone()
+	var time_zone string
+	if offset >= 0 {
+		time_zone = "+" + strconv.Itoa(offset/3600) + ":00"
+	} else {
+		time_zone = strconv.Itoa(offset/3600) + ":00"
+	}
+	_, _, err = new_connect.Exec([]byte("set time_zone='" + time_zone + "'"))
+	if err != nil {
+		return nil, err
+	}
+	mysqldb.Lock.Lock()
+	if _, ok := mysqldb.Conn_m.LoadOrStore(new_connect.Thread_id, new_connect); !ok {
+		mysqldb.Conn_num++
+	} else {
+		mysqldb.Conn_m.Store(new_connect.Thread_id, new_connect)
+	}
+	mysqldb.Lock.Unlock()
+	return new_connect, nil
 }
 func (mysqldb *MysqlDB) GET() (conn *Mysql_Conn, err error) {
 Loop:
 	for conn == nil {
 		select {
 		case conn = <-mysqldb.Conn_chan:
-			if conn == nil || !conn.Status {
-				conn = nil
-				DEBUG("从正常池子取出问题conn")
-				Log("%+v", conn)
-				continue Loop
-			}
 		case conn = <-mysqldb.Conn_chan2:
-			if conn == nil || !conn.Status {
-				conn = nil
-				DEBUG("从池子2取出问题conn")
-				Log("%+v", conn)
-				continue Loop
-			}
 		default: //缓冲为空尝试新建
 			if mysqldb.Conn_num < mysqldb.MaxOpenConns {
-				atomic.AddInt32(&mysqldb.Conn_num, 1)
 				conn, err = mysqldb.connect_new()
-				if err == nil && conn != nil && conn.Status {
-					mysqldb.Conn_m.Store(conn.Thread_id, conn)
-				} else {
-					atomic.AddInt32(&mysqldb.Conn_num, -1)
-					conn = nil
+				if err != nil {
 					continue Loop
 				}
 				//DEBUG("创建连接")
 			} else { //连接已满，强制等待
 				select {
 				case conn = <-mysqldb.Conn_chan:
-					if conn == nil || !conn.Status {
-						conn = nil
-						continue Loop
-					}
 				case conn = <-mysqldb.Conn_chan2:
-					if conn == nil || !conn.Status {
-						conn = nil
-						continue Loop
-					}
 				}
 			}
 		}
-		if conn == nil {
-			DEBUG("取出空的连接")
-			err = errors.New("取出空的mysql连接")
+		if conn == nil || !conn.Status {
+			DEBUG("取出空的或者状态不正常的连接")
+			err = errors.New("取出空的或者状态不正常的连接")
 			return
 		}
 	}
-	//DEBUG("GET", conn.Thread_id)
 	return
 }
 func (mysqldb *MysqlDB) Query(sql []byte, row *MysqlRows, prepare_arg []interface{}) (columns []MysqlColumn, err error) {
 	conn, err := mysqldb.GET()
+	defer func() {
+		if err != nil {
+			conn.Close()
+		}
+		mysqldb.Put(conn)
+	}()
 	if err != nil {
 		return nil, err
-	}
-	if conn == nil || conn.Status == false {
-		DEBUG("取出问题conn")
-	}
-	defer mysqldb.Put(conn)
-	if conn.readBuffer.Len() > 0 {
-		panic("readBuff大于0")
 	}
 	if prepare_arg != nil {
 		var stmt *Database_mysql_stmt
@@ -436,15 +400,14 @@ func (mysqldb *MysqlDB) Query(sql []byte, row *MysqlRows, prepare_arg []interfac
 }
 func (mysqldb *MysqlDB) Exec(sql []byte, prepare_arg []interface{}) (lastInsertId, rowsAffected int64, err error) {
 	conn, err := mysqldb.GET()
+	defer func() {
+		if err != nil {
+			conn.Close()
+		}
+		mysqldb.Put(conn)
+	}()
 	if err != nil {
 		return 0, 0, err
-	}
-	if conn == nil || conn.Status == false {
-		DEBUG("取出问题conn")
-	}
-	defer mysqldb.Put(conn)
-	if conn.readBuffer.Len() > 0 {
-		panic("readBuff大于0")
 	}
 	if prepare_arg != nil {
 		var stmt *Database_mysql_stmt
@@ -480,14 +443,11 @@ func (mysqldb *MysqlDB) EndTransaction(conn *Mysql_Conn) {
 func (mysqldb *MysqlDB) Put(conn *Mysql_Conn) {
 	//DEBUG("Put", conn.Thread_id)
 	if mysqldb == nil || conn == nil {
-		DEBUG("mysqldb", mysqldb)
-		DEBUG("conn", conn)
 		return
 	}
-	if conn.Status {
-		if _, ok := mysqldb.Conn_m.LoadOrStore(conn.Thread_id, conn); !ok {
-			atomic.AddInt32(&mysqldb.Conn_num, 1)
-		}
+	if !conn.Status {
+		conn.Close()
+	} else {
 		select {
 		case mysqldb.Conn_chan <- conn:
 		default: //缓冲池已满
@@ -495,25 +455,10 @@ func (mysqldb *MysqlDB) Put(conn *Mysql_Conn) {
 			case mysqldb.Conn_chan2 <- conn:
 			default: ////两个池都满 不大可能
 				DEBUG("池子总量", mysqldb.Conn_num)
-				conn.Status = false
-				mysqldb.Lock.Lock()
-				if _, ok := mysqldb.Conn_m.Load(conn.Thread_id); ok {
-					mysqldb.Conn_m.Delete(conn.Thread_id)
-					atomic.AddInt32(&mysqldb.Conn_num, -1)
-				}
-				mysqldb.Lock.Unlock()
 				conn.Close()
 				DEBUG("池子总量", mysqldb.Conn_num)
 			}
 		}
-	} else {
-		mysqldb.Lock.Lock()
-		if _, ok := mysqldb.Conn_m.Load(conn.Thread_id); ok {
-			mysqldb.Conn_m.Delete(conn.Thread_id)
-			atomic.AddInt32(&mysqldb.Conn_num, -1)
-		}
-		mysqldb.Lock.Unlock()
-		conn.Close()
 	}
 
 }
@@ -539,7 +484,6 @@ func (mysql *Mysql_Conn) Query(sql []byte, row *MysqlRows) (columns []MysqlColum
 		if strings.Contains(err.Error(), "connection reset by peer") {
 			err = errors.New("EOF")
 		}
-		mysql.Status = false
 		mysql.Close()
 		return
 	}
@@ -555,13 +499,11 @@ func (mysql *Mysql_Conn) Query(sql []byte, row *MysqlRows) (columns []MysqlColum
 		}
 	}
 	if err != nil {
-		mysql.Status = false
 		mysql.Close()
 		return
 	}
 	columns, err = row.Columns(mysql)
 	if err != nil {
-		mysql.Status = false
 		mysql.Close()
 		return
 	}
@@ -590,7 +532,6 @@ func (mysql *Mysql_Conn) Exec(sql []byte) (lastInsertId int64, rowsAffected int6
 		if strings.Contains(err.Error(), "connection reset by peer") {
 			err = errors.New("EOF")
 		}
-		mysql.Status = false
 		mysql.Close()
 		return
 	}
@@ -604,7 +545,6 @@ func (mysql *Mysql_Conn) Exec(sql []byte) (lastInsertId int64, rowsAffected int6
 		}
 	}
 	if err != nil {
-		mysql.Status = false
 		mysql.Close()
 		return
 	}
@@ -899,7 +839,6 @@ func (mysql *Mysql_Conn) writemsg(msg []byte) error {
 
 	_, err := mysql.conn.Write(mysql.writeBuffer.Bytes())
 	if err != nil {
-		mysql.Status = false
 		mysql.Close()
 		return err
 	}

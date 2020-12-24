@@ -15,6 +15,8 @@ github.com/klauspost/compress v1.10.7/go.mod h1:aoV0uJVorq1K+umq18yTdKaF57EivdYs
 github.com/klauspost/compress v1.11.1/go.mod h1:aoV0uJVorq1K+umq18yTdKaF57EivdYsUV+/s2qKfXs=
 github.com/klauspost/compress v1.11.2 h1:MiK62aErc3gIiVEtyzKfeOHgW7atJb5g/KNX5m3c2nQ=
 github.com/klauspost/compress v1.11.2/go.mod h1:aoV0uJVorq1K+umq18yTdKaF57EivdYsUV+/s2qKfXs=
+github.com/klauspost/compress v1.11.4 h1:kz40R/YWls3iqT9zX9AHN3WoVsrAWVyui5sxuLqiXqU=
+github.com/klauspost/compress v1.11.4/go.mod h1:aoV0uJVorq1K+umq18yTdKaF57EivdYsUV+/s2qKfXs=
 github.com/luyu6056/cache v1.0.1 h1:9EL0IW5d53JGh2zvoCDqhgyrJLMDS3BTDR8oa6zZ8ac=
 github.com/luyu6056/cache v1.0.1/go.mod h1:AboJLuhFlejC5l0fCBQZcVufgUiLUuYe57DHlo1vDIM=
 github.com/luyu6056/cache v1.0.3 h1:wugJNMYSuYZAU/LPd3XeubOdlBw4wXxtvCODKPc7Rcs=
@@ -25,6 +27,8 @@ github.com/luyu6056/cache v1.0.5 h1:43KfGdavRn5qJl2PwulqwZf6tK3SBB+MyKZT8EPK9rY=
 github.com/luyu6056/cache v1.0.5/go.mod h1:AboJLuhFlejC5l0fCBQZcVufgUiLUuYe57DHlo1vDIM=
 github.com/luyu6056/cache v1.0.6 h1:Xo/niuV+fQExgUj+QqRIfd3d30YHLE1eJ+y8Omgndx4=
 github.com/luyu6056/cache v1.0.6/go.mod h1:AboJLuhFlejC5l0fCBQZcVufgUiLUuYe57DHlo1vDIM=
+github.com/luyu6056/cache v1.1.2 h1:7EKw6c4YvQ5e/l2JRei5TfHCWShKJA3XuUvkpukDhj8=
+github.com/luyu6056/cache v1.1.2/go.mod h1:qohfWfwbyHaIPW6fkyqQcymSuLuG04iFrKxYvcvmKdA=
 github.com/luyu6056/gnet v1.2.8 h1:5aWdLlBjeQzd4UhbhF2m742LDFvTQ+R809mlWFL/WQk=
 github.com/luyu6056/gnet v1.2.8/go.mod h1:hz3iz0j1ufNJiQgWzaYHCUeZLPcJbTrDgM+qYKx/SSA=
 github.com/luyu6056/tls v0.15.1 h1:mKvNqP7ZDPtee1dleBu5XL8LbN9pbpX46Pv27Gm6yQI=
@@ -42,6 +46,11 @@ github.com/rubenfonseca/fastimage v0.0.0-20170112075114-7e006a27a95b/go.mod h1:z
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
+github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
+github.com/vmihailenco/msgpack/v5 v5.1.0 h1:+od5YbEXxW95SPlW6beocmt8nOtlh83zqat5Ip9Hwdc=
+github.com/vmihailenco/msgpack/v5 v5.1.0/go.mod h1:C5gboKD0TJPqWDTVTtrQNfRbiBwHZGo8UTqP/9/XvLI=
+github.com/vmihailenco/tagparser v0.1.2 h1:gnjoVuB/kljJ5wICEEOpx98oXMWPLj22G67Vbd1qPqc=
+github.com/vmihailenco/tagparser v0.1.2/go.mod h1:OeAg3pn3UbLjkWt+rN9oFYB6u/cQgqMEUPoW2WPyhdI=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
 golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897 h1:pLI5jrR7OSLijeIDcmRxNmw2api+jEfxLoykJVice/E=
@@ -65,3 +74,4 @@ golang.org/x/tools v0.0.0-20180917221912-90fa682c2a6e/go.mod h1:n7NCudcB/nEzxVGm
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.2.7/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
+gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=

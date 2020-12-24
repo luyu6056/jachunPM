@@ -89,7 +89,7 @@ func main() {
 		str = strings.ReplaceAll(str, "common_printOrderLink ", "common_printOrderLink . ")
 		str = strings.ReplaceAll(str, "{{html::submitButton()}}", "{{html_submitButton .}}")
 		str = strings.ReplaceAll(str, "{{html::backButton()}}", "{{html_backButton .}}")
-
+		str = strings.ReplaceAll(str, "{{include '../../common/view/kindeditor.html.php'}}", `{{template "kindeditor.html" .}}`)
 		newname := strings.Replace(name, ".php", "", 1)
 		newname = strings.Replace(newname, ".hook", "", 1)
 		os.Remove(newname)

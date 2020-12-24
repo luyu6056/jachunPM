@@ -30,7 +30,7 @@ $(document).ready(function()
         var referer   = $('#referer').val();
         var link1     = createLink('user', 'getsalt');
         var link2     = createLink('user', 'login');
-        var keepLogin = $('#keepLoginon').attr('checked') == 'checked' ? 1 : 0;
+        var keepLogin = $('#keepLoginon').prop('checked') == true ? 1 : 0;
        
         $.ajax
         ({

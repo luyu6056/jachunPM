@@ -57,12 +57,6 @@ func ReadOneMsg(buf *libraries.MsgBuffer) (msg *Msg, err error) {
 	return msg, nil
 }
 func (m *Msg) ReadData() {
-	defer func() {
-		if e := recover(); e != nil {
-			libraries.DebugLog(fmt.Sprint(e))
-			debug.PrintStack()
-		}
-	}()
 	if f, ok := cmdMapFunc[m.Cmd]; ok {
 		m.buf.Next(MsgHeadLen)
 		buf := BufPoolGet()
@@ -74,12 +68,6 @@ func (m *Msg) ReadData() {
 	return
 }
 func (m *Msg) ReadDataWithCopy() {
-	defer func() {
-		if e := recover(); e != nil {
-			libraries.DebugLog(fmt.Sprint(e))
-			debug.PrintStack()
-		}
-	}()
 	if f, ok := cmdMapFunc[m.Cmd]; ok {
 		buf := BufPoolGet()
 		buf.Write(m.buf.Bytes()[MsgHeadLen+4 : MsgHeadLen+m.datalen])

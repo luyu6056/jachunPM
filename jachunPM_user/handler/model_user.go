@@ -59,7 +59,7 @@ func getUserInfoByIDS(ids []int32) (users []*db.User, err error) {
 
 }
 func user_getPairs(params string, usersToAppended int32) ([]protocol.HtmlKeyValueStr, error) {
-	fields := "account, realname, deleted"
+	fields := "Account, Realname, Deleted"
 	if strings.Index(params, "pofirst") > -1 {
 		fields += ", INSTR(',pd,po,', role) AS roleOrder"
 	}
@@ -87,13 +87,14 @@ func user_getPairs(params string, usersToAppended int32) ([]protocol.HtmlKeyValu
 		return nil, err
 	}
 	var userList []*db.User
-	var conditions map[string]interface{}
-	if strings.Index(params, "nodeleted") > -1 || !userconfig["showDeleted"].(bool) {
+	var conditions = make(map[string]interface{})
+	if strings.Index(params, "nodeleted") > -1 || !userconfig["common"]["showDeleted"].(bool) {
 		conditions["Deleted"] = false
 	}
 	if usersToAppended > 0 {
 		conditions["account"] = usersToAppended
 	}
+
 	err = db.DB.Table(db.TABLE_USER).Field(fields).WhereOr(conditions).Order(orderBy).Select(&userList)
 	if err != nil {
 		return nil, err
@@ -103,16 +104,17 @@ func user_getPairs(params string, usersToAppended int32) ([]protocol.HtmlKeyValu
 	for _, user := range userList {
 		//firstLetter = ucfirst(substr(account, 0, 1)) . ":";
 		//if((strpos(params, "noletter") !== false) or (isset(this->config->isINT) and this->config->isINT)) firstLetter =  "";
+		value := strings.ToUpper(user.Account[:1]) + ":"
 		if user.Deleted && strings.Index(params, "realname") == -1 {
-			res = append(res, protocol.HtmlKeyValueStr{user.Account, user.Account})
+			value += user.Account
 		} else {
 			if user.Realname == "" {
-				res = append(res, protocol.HtmlKeyValueStr{user.Account, user.Account})
+				value += user.Account
 			} else {
-				res = append(res, protocol.HtmlKeyValueStr{user.Account, user.Realname})
+				value += user.Realname
 			}
 		}
-
+		res = append(res, protocol.HtmlKeyValueStr{user.Account, value})
 	}
 
 	if strings.Index(params, "noempty") == -1 {
@@ -126,6 +128,9 @@ func user_getPairs(params string, usersToAppended int32) ([]protocol.HtmlKeyValu
 func user_getCompanyUsers(data *protocol.MSG_USER_getCompanyUsers, in *protocol.Msg) {
 	if data.Page < 1 {
 		data.Page = 1
+	}
+	if data.PerPage < 1 {
+		data.PerPage = 1
 	}
 	out := protocol.GET_MSG_USER_getCompanyUsers_result()
 	defer out.Put()
@@ -151,7 +156,7 @@ func user_getCompanyUsers(data *protocol.MSG_USER_getCompanyUsers, in *protocol.
 		}
 		where = data.Where
 	}
-	err := db.DB.Table(db.TABLE_USER).Where(where).Order("deleted asc,"+data.Sort).Limit(data.PerPage*(data.Page-1), data.Page*data.PerPage).Select(&out.List)
+	err := db.DB.Table(db.TABLE_USER).Where(where).Order("deleted asc,"+data.Sort).Limit(data.PerPage*(data.Page-1), data.PerPage).Select(&out.List)
 	if err != nil {
 		in.WriteErr(err)
 		return

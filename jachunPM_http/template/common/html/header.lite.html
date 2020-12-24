@@ -33,8 +33,11 @@ var lang={};
 lang.submitting = '{{.Lang.common.loading}}';
 lang.save       = '{{.Lang.common.save}}';
 lang.timeout    = '{{.Lang.common.timeout}}';
-window.closetrigger=function(){
+window.closetrigger=function(reload){
   $('#triggerModal').data('zui.modaltrigger').close()
+  if(reload){
+    window.location.reload();
+  }
 }
 </script>
 </head>

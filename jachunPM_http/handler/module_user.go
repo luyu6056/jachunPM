@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"jachunPM_http/config"
+	"jachunPM_http/js"
 	"libraries"
 	"math/rand"
 	"protocol"
@@ -27,6 +28,7 @@ func init() {
 	httpHandlerMap["POST"]["/user/create"] = post_user_edit
 	httpHandlerMap["GET"]["/user/delete"] = get_user_delete
 	httpHandlerMap["POST"]["/user/delete"] = post_user_delete
+	httpHandlerMap["GET"]["/user/restore"] = get_user_restore
 }
 func get_user_login(data *TemplateData) gnet.Action {
 	//检查是否登录
@@ -201,7 +203,6 @@ func get_user_edit(data *TemplateData) (action gnet.Action) {
 	return
 }
 func user_getGroupOptionMenu() (optionList []protocol.HtmlKeyValueStr, err error) {
-	optionList = []protocol.HtmlKeyValueStr{{"", ""}}
 	res, err := HostConn.CacheGetPath(protocol.UserServerNo, protocol.PATH_USER_GROUP_CACHE)
 	if err != nil {
 		return optionList, err
@@ -381,24 +382,55 @@ func get_user_delete(data *TemplateData) (action gnet.Action) {
 	return
 }
 func post_user_delete(data *TemplateData) (action gnet.Action) {
+	msg, err := HostConn.GetMsg()
+	if err != nil {
+		data.ajaxResult(false, map[string]string{"verifyPassword": fmt.Sprintf(data.Lang["common"]["error"].(map[string]string)["ErrGetMsg"], err)}, "")
+		return
+	}
 	out := protocol.GET_MSG_USER_CheckPasswd()
 	out.UserId = data.App["user"].(protocol.MSG_USER_INFO_cache).Id
 	out.Passwd = data.ws.Post("verifyPassword")
 	session := data.ws.Session()
 	out.Rand = session.Load_int64("delete_rand")
 	deleteId, _ := strconv.Atoi(data.ws.Query("userID"))
-	out.DeleteID = int32(deleteId)
-	res, err := HostConn.SendMsgWaitResultToDefault(out)
+	res, err := msg.SendMsgWaitResult(0, out)
 	out.Put()
 	if err == nil {
 		if resdata, ok := res.(*protocol.MSG_USER_CheckPasswd_result); ok {
 			if resdata.Result == protocol.Success {
+				outupdate := protocol.GET_MSG_USER_INFO_updateByID()
+				outupdate.UserID = int32(deleteId)
+				outupdate.Update = map[string]string{
+					"Deleted": "1",
+				}
+				_, err := msg.SendMsgWaitResult(0, outupdate)
+				if err != nil {
+					data.ajaxResult(false, map[string]string{"verifyPassword": fmt.Sprintf(data.Lang["user"]["error"].(map[string]string)["ErrUpdate"], err)}, "")
+					return
+				}
+				outupdate.Put()
 				session.Delete("delete_rand")
-				data.ajaxResult(true, "", "", `top.closetrigger()`)
+				data.ajaxResult(true, "", "", `top.closetrigger(true)`)
 				return
 			}
 		}
 	}
 
+	return
+}
+func get_user_restore(data *TemplateData) (action gnet.Action) {
+	userID, _ := strconv.Atoi(data.ws.Query("userID"))
+	outupdate := protocol.GET_MSG_USER_INFO_updateByID()
+	outupdate.UserID = int32(userID)
+	outupdate.Update = map[string]string{
+		"Deleted": "0",
+	}
+	_, err := HostConn.SendMsgWaitResultToDefault(outupdate)
+	if err != nil {
+		data.ws.OutErr(err)
+		return
+	}
+	outupdate.Put()
+	data.ws.WriteString(js.Location("back", "_self"))
 	return
 }

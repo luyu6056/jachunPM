@@ -1,0 +1,19 @@
+{{template "header.lite.html" .}}
+<div class='container'>
+  <div class='modal-dialog'>
+    <div class='modal-header'><strong>当前页面出错无法访问</strong></div>
+    <div class='modal-body'>
+      <div class='alert with-icon alert-pure'>
+        <i class='icon-exclamation-sign'></i>
+        <div class='content'>
+        {{.Data.err}}
+        </div>
+      </div>
+    </div>
+    <div class='modal-footer'>
+    {{html_a (helper_createLink "user" "login") .Lang.my.common (and .App.onlybody "" "_parent") "class='btn'"}}
+    </div>
+  </div>
+</div>
+</body>
+</html>

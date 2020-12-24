@@ -1,0 +1,9 @@
+{{template "header.html" .}}
+{{if $.Data.products}}
+{{fetch . "block" "dashboard" "module=product"}}
+{{else}}
+<div class="table-empty-tip">
+  <p><span class="text-muted">{{.Lang.product.noProduct}}</span> {{common_printLink . "product" "create" "" (strAdd "<i class='icon icon-plus'></i> " .Lang.product.create) "" "class='btn btn-info'"}}</p>
+</div>
+{{end}}
+{{template "footer.html" .}}

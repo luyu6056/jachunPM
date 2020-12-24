@@ -29,6 +29,8 @@ const (
 	CMD_MSG_USER_INFO_updateByID = -198630396
 	CMD_MSG_USER_CheckAccount = 295929604
 	CMD_MSG_USER_CheckAccount_result = 953841924
+	CMD_MSG_USER_getPairs = 338636804
+	CMD_MSG_USER_getPairs_result = -1261518588
 )
 
 type MSG_USER_GET_LoginSalt struct {
@@ -261,7 +263,6 @@ type MSG_USER_CheckPasswd struct {
 	Name string
 	Rand int64
 	Passwd string
-	DeleteID int32
 }
 
 var pool_MSG_USER_CheckPasswd = sync.Pool{New: func() interface{} { return &MSG_USER_CheckPasswd{} }}
@@ -280,7 +281,6 @@ func (data *MSG_USER_CheckPasswd) Put() {
 	data.Name = ``
 	data.Rand = 0
 	data.Passwd = ``
-	data.DeleteID = 0
 	pool_MSG_USER_CheckPasswd.Put(data)
 }
 func (data *MSG_USER_CheckPasswd) write(buf *libraries.MsgBuffer) {
@@ -294,7 +294,6 @@ func WRITE_MSG_USER_CheckPasswd(data *MSG_USER_CheckPasswd, buf *libraries.MsgBu
 	WRITE_string(data.Name, buf)
 	WRITE_int64(data.Rand, buf)
 	WRITE_string(data.Passwd, buf)
-	WRITE_int32(data.DeleteID, buf)
 }
 
 func READ_MSG_USER_CheckPasswd(buf *libraries.MsgBuffer) *MSG_USER_CheckPasswd {
@@ -309,7 +308,6 @@ func (data *MSG_USER_CheckPasswd) read(buf *libraries.MsgBuffer) {
 	data.Name = READ_string(buf)
 	data.Rand = READ_int64(buf)
 	data.Passwd = READ_string(buf)
-	data.DeleteID = READ_int32(buf)
 
 }
 func (data *MSG_USER_CheckPasswd) getQueryID() uint32 {
@@ -1420,6 +1418,112 @@ func (data *MSG_USER_CheckAccount_result) getQueryResultID() uint32 {
 	return data.QueryResultID
 }
 func (data *MSG_USER_CheckAccount_result) setQueryResultID(id uint32) {
+	data.QueryResultID = id
+}
+
+type MSG_USER_getPairs struct {
+	QueryID uint32
+	Params string
+	UsersToAppended int32
+}
+
+var pool_MSG_USER_getPairs = sync.Pool{New: func() interface{} { return &MSG_USER_getPairs{} }}
+
+func GET_MSG_USER_getPairs() *MSG_USER_getPairs {
+	return pool_MSG_USER_getPairs.Get().(*MSG_USER_getPairs)
+}
+
+func (data *MSG_USER_getPairs) cmd() int32 {
+	return CMD_MSG_USER_getPairs
+}
+
+func (data *MSG_USER_getPairs) Put() {
+	data.QueryID = 0
+	data.Params = ``
+	data.UsersToAppended = 0
+	pool_MSG_USER_getPairs.Put(data)
+}
+func (data *MSG_USER_getPairs) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_getPairs,buf)
+	WRITE_MSG_USER_getPairs(data, buf)
+}
+
+func WRITE_MSG_USER_getPairs(data *MSG_USER_getPairs, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_string(data.Params, buf)
+	WRITE_int32(data.UsersToAppended, buf)
+}
+
+func READ_MSG_USER_getPairs(buf *libraries.MsgBuffer) *MSG_USER_getPairs {
+	data := pool_MSG_USER_getPairs.Get().(*MSG_USER_getPairs)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_getPairs) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	data.Params = READ_string(buf)
+	data.UsersToAppended = READ_int32(buf)
+
+}
+func (data *MSG_USER_getPairs) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_USER_getPairs) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_USER_getPairs_result struct {
+	QueryResultID uint32
+	List []HtmlKeyValueStr
+}
+
+var pool_MSG_USER_getPairs_result = sync.Pool{New: func() interface{} { return &MSG_USER_getPairs_result{} }}
+
+func GET_MSG_USER_getPairs_result() *MSG_USER_getPairs_result {
+	return pool_MSG_USER_getPairs_result.Get().(*MSG_USER_getPairs_result)
+}
+
+func (data *MSG_USER_getPairs_result) cmd() int32 {
+	return CMD_MSG_USER_getPairs_result
+}
+
+func (data *MSG_USER_getPairs_result) Put() {
+	data.QueryResultID = 0
+	data.List = data.List[:0]
+	pool_MSG_USER_getPairs_result.Put(data)
+}
+func (data *MSG_USER_getPairs_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_getPairs_result,buf)
+	WRITE_MSG_USER_getPairs_result(data, buf)
+}
+
+func WRITE_MSG_USER_getPairs_result(data *MSG_USER_getPairs_result, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryResultID, buf)
+	WRITE_int32(int32(len(data.List)), buf)
+	for _, v := range data.List{
+		WRITE_HtmlKeyValueStr(v, buf)
+	}
+}
+
+func READ_MSG_USER_getPairs_result(buf *libraries.MsgBuffer) *MSG_USER_getPairs_result {
+	data := pool_MSG_USER_getPairs_result.Get().(*MSG_USER_getPairs_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_getPairs_result) read(buf *libraries.MsgBuffer) {
+	data.QueryResultID = READ_uint32(buf)
+	List_len := int(READ_int32(buf))
+	for i := 0; i < List_len; i++ {
+		data.List = append(data.List, READ_HtmlKeyValueStr(buf))
+	}
+
+}
+func (data *MSG_USER_getPairs_result) getQueryResultID() uint32 {
+	return data.QueryResultID
+}
+func (data *MSG_USER_getPairs_result) setQueryResultID(id uint32) {
 	data.QueryResultID = id
 }
 

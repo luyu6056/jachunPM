@@ -68,6 +68,16 @@ func Handler(in *protocol.Msg) {
 		}
 		in.SendResult(out)
 		out.Put()
+	case *protocol.MSG_USER_getPairs:
+		list, err := user_getPairs(data.Params, data.UsersToAppended)
+		if err != nil {
+			in.WriteErr(err)
+			return
+		}
+		out := protocol.GET_MSG_USER_getPairs_result()
+		out.List = list
+		in.SendResult(out)
+		out.Put()
 	default:
 		libraries.ReleaseLog("未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 	}

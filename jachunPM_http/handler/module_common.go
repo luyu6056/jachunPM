@@ -9,7 +9,10 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
+
+	"github.com/luyu6056/cache"
 )
 
 type moduleMenu struct {
@@ -24,6 +27,12 @@ type moduleMenu struct {
 	subModule []string
 }
 
+var generateUid uint32
+var commoncache = cache.Hget("common", "global")
+
+func init() {
+	generateUid = uint32(commoncache.Load_uint64("generateUid"))
+}
 func hasPriv(data *TemplateData, module, method string) bool {
 	return true
 }
@@ -76,15 +85,13 @@ func commonModelFuncs() {
 			buf.Reset()
 			bufpool.Put(buf)
 		}()
+		s := strings.Split(name, ".")
+		T.ExecuteTemplate(buf, s[0]+".common.css", nil)
 		err := T.ExecuteTemplate(buf, strings.Replace(name, ".html", ".css", 1), nil)
 		if err != nil {
 			libraries.DebugLog("加载%s的css失败,%v", name, err)
-		} else {
-			res := buf.String()
-
-			return template.CSS(res)
 		}
-		return template.CSS("")
+		return template.CSS(buf.String())
 	}
 	global_Funcs["getTemplateJs"] = func(name string) template.JS {
 		buf := bufpool.Get().(*libraries.MsgBuffer)
@@ -99,10 +106,8 @@ func commonModelFuncs() {
 		err := T.ExecuteTemplate(buf, strings.Replace(name, ".html", ".js", 1), nil)
 		if err != nil {
 			libraries.DebugLog("加载%s的js失败,%v", name, err)
-		} else {
-			return template.JS(html.UnescapeString(buf.String()))
 		}
-		return template.JS("")
+		return template.JS(html.UnescapeString(buf.String()))
 	}
 	global_Funcs["printMainmenu"] = func(data *TemplateData) template.HTML {
 
@@ -221,10 +226,12 @@ func commonModelFuncs() {
 			if isMobile && menuItem.name == "" {
 				continue
 			}
-			for _, v := range data.Lang["common"]["dividerMenu"].([]string) {
-				if v == menuItem.name {
-					buf.WriteString("<li class='divider'></li>")
-					break
+			if dividerMenu, ok := data.Lang[moduleName]["dividerMenu"].([]string); ok {
+				for _, v := range dividerMenu {
+					if v == menuItem.name {
+						buf.WriteString("<li class='divider'></li>")
+						break
+					}
 				}
 			}
 
@@ -495,7 +502,25 @@ func commonModelFuncs() {
 	global_Funcs["rem"] = func(i, k int) int {
 		return i % k
 	}
+	global_Funcs["fetch"] = func(data *TemplateData, module, method, varstr string) int {
+		if f, ok := httpHandlerMap["GET"][module+"/"+method]; ok {
+			for _, vars := range strings.Split(varstr, "&") {
+				s := strings.Split(vars, "=")
+				if len(s) == 2 {
+					data.ws.AddQuery(s[0], s[1])
+				}
+			}
+			f(data)
+		}
+		return 0
+	}
+	global_Funcs["generateUid"] = func() string {
+		id := atomic.AddUint32(&generateUid, 1)
+		commoncache.INCRBY("generateUid", 1)
+		return strconv.FormatUint(uint64(id), 10)
+	}
 }
+
 func getModuleMenu(module string, data *TemplateData) (menu []moduleMenu) {
 
 	if i, ok := data.Lang[module]["menu"]; ok {
@@ -520,7 +545,7 @@ func getModuleMenu(module string, data *TemplateData) (menu []moduleMenu) {
 					for _, vars := range strings.Split(l[3], "&") {
 						s := strings.Split(vars, "=")
 						if len(s) == 2 {
-							menuItem.vars = append(menuItem.vars, protocol.HtmlKeyValueStr{s[0], fmt.Sprintf(s[1], data.ws.Session().Load_str(s[0]))})
+							menuItem.vars = append(menuItem.vars, protocol.HtmlKeyValueStr{s[0], s[1]})
 						}
 
 					}

@@ -258,3 +258,15 @@ func read_reflect(v reflect.Type, buf *libraries.MsgBuffer) reflect.Value {
 		panic("无法处理的map读取类型" + v.Kind().String())
 	}
 }
+
+//特殊增加的
+func WRITE_HtmlKeyValueStr(kv HtmlKeyValueStr, buf *libraries.MsgBuffer) {
+	WRITE_string(kv.Key, buf)
+	WRITE_string(kv.Value, buf)
+}
+func READ_HtmlKeyValueStr(buf *libraries.MsgBuffer) HtmlKeyValueStr {
+	return HtmlKeyValueStr{
+		Key:   READ_string(buf),
+		Value: READ_string(buf),
+	}
+}
