@@ -68,9 +68,8 @@ func post_file_ajaxPasteImage(data *TemplateData) (action gnet.Action) {
 	return
 }
 func get_file_tmpimg(data *TemplateData) (action gnet.Action) {
-	img := cache.Hget(data.ws.Query("fileID"), "tmpfile")
-	var b []byte
-	if ok := img.Get("img", &b); !ok {
+	b, ok := file_getTempFile(data.ws.Query("fileID"))
+	if !ok {
 		data.ws.SetCode(404)
 		data.ws.WriteString("img Not Found")
 		return
@@ -124,5 +123,10 @@ func getimageTypeAndSizefastimage(data []byte) (imagetype fastimage.ImageType, s
 			}
 		}
 	}
+	return
+}
+func file_getTempFile(fileID string) (b []byte, ok bool) {
+	img := cache.Hget(fileID, "tmpfile")
+	ok = img.Get("img", &b)
 	return
 }

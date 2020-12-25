@@ -19,6 +19,7 @@ import (
 
 type TemplateData struct {
 	App, Data map[string]interface{}
+	User      *protocol.MSG_USER_INFO_cache
 	Config    map[string]map[string]map[string]interface{}
 	Lang      map[string]map[string]interface{}
 	ws        HttpRequest
@@ -115,14 +116,8 @@ func templateDataInit(ws HttpRequest) *TemplateData {
 			d.App["ClientTheme"] = "default"
 			session.Set("ClientTheme", "default")
 		}
-		if uid := session.Load_str("UserId"); uid != "" {
-			var u *protocol.MSG_USER_INFO_cache
-			err := HostConn.CacheGet(protocol.UserServerNo, protocol.PATH_USER_INFO_CACHE, uid, &u)
-			if err == nil && u != nil {
-				d.App["user"] = *u
-			} else {
-				libraries.ReleaseLog("读取user_info缓存错误%v", err)
-			}
+		if uid := session.Load_int32("UserId"); uid > 0 {
+			d.User = HostConn.GetUserCacheById(uid)
 		}
 	}
 	d.Config = config.Config[protocol.CountryNo(d.App["ClientLang"].(string))]

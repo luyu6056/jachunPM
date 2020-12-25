@@ -81,7 +81,7 @@ func (m *Msg) Next() []byte {
 
 type MsgServer interface {
 	SendMsg(remote uint16, msgno uint32, ttl uint8, out MSG_DATA)
-	SendMsgWaitResult(remote uint16, msgno uint32, ttl uint8, out MSG_DATA, timeout ...time.Duration) (res RpcQueryResult, err error)
+	SendMsgWaitResult(remote uint16, msgno uint32, ttl uint8, out MSG_DATA, result interface{}, timeout ...time.Duration) (err error)
 }
 
 //实现msg读写,由msg发出的消息，继承msgno和ttl
@@ -94,8 +94,8 @@ func (m *Msg) SetServer(svr MsgServer) {
 func (m *Msg) SendMsg(remote uint16, out MSG_DATA) {
 	m.svr.SendMsg(remote, m.Msgno, m.Ttl, out)
 }
-func (m *Msg) SendMsgWaitResult(remote uint16, out MSG_DATA, timeout ...time.Duration) (res RpcQueryResult, err error) {
-	return m.svr.SendMsgWaitResult(remote, m.Msgno, m.Ttl, out, timeout...)
+func (m *Msg) SendMsgWaitResult(remote uint16, out MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
+	return m.svr.SendMsgWaitResult(remote, m.Msgno, m.Ttl, out, result, timeout...)
 }
 
 //原路返回
@@ -113,6 +113,9 @@ func (m *Msg) WriteErr(err error) {
 	data := GET_MSG_COMMON_QueryErr()
 	if in, ok := m.Data.(RpcQuery); ok {
 		data.QueryResultID = in.getQueryID()
+	}
+	if data.QueryResultID == 0 && err != nil {
+		libraries.DebugLog("返回queryID=0的err", err)
 	}
 	if err != nil {
 		data.Err = err.Error()
@@ -162,15 +165,20 @@ func (m *Msg) Cache_Del(key string) error {
 func MSG_DATA_Write(data MSG_DATA, buf *libraries.MsgBuffer) {
 	data.write(buf)
 }
-func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint8, out MSG_DATA, outchan chan *libraries.MsgBuffer, timeout ...time.Duration) (res RpcQueryResult, err error) {
+
+//result可以传入nil，但是返回非MSG_COMMON_QueryErr就会报错
+func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint8, out MSG_DATA, result interface{}, outchan chan *libraries.MsgBuffer, timeout ...time.Duration) (err error) {
 	query, ok := out.(RpcQuery)
 	if !ok {
-		return nil, RpcClientQueryErrType
+		return errors.New(fmt.Sprintf("out结构体%s不含QueryID无法使用Result模式", reflect.TypeOf(out).Elem().Name()))
 	}
 	id := atomic.AddUint32(&RpcClientQueryId, 1)
+	if id == 0 { //不允许为0
+		id = atomic.AddUint32(&RpcClientQueryId, 1)
+	}
 	query.setQueryID(id)
-	result := make(chan RpcQueryResult, 1)
-	RpcClientQueryMap[id] = result
+	resultchan := make(chan RpcQueryResult, 1)
+	RpcClientQueryMap[id] = resultchan
 	buf := BufPoolGet()
 	b := buf.Make(MsgHeadLen)
 	b[0] = byte(msgno)
@@ -185,7 +193,7 @@ func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint8, out MSG_DA
 	out.write(buf)
 	if buf.Len() > MaxMsgLen {
 		libraries.ReleaseLog("消息发送失败，包体超过限制" + string(debug.Stack()))
-		return nil, errors.New("消息发送失败，包体超过限制" + string(debug.Stack()))
+		return errors.New("消息发送失败，包体超过限制" + string(debug.Stack()))
 	} else {
 		b = buf.Bytes()
 		msglen := buf.Len() - MsgHeadLen
@@ -198,35 +206,54 @@ func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint8, out MSG_DA
 	if len(timeout) == 1 {
 		_timeout = timeout[0]
 	}
+	checkAndSetResult := func(resultmsg RpcQueryResult) error {
+		r1 := reflect.ValueOf(result)
+		if r1.Kind() != reflect.Ptr {
+			return RpcClientQueryResultErrType
+		}
+		r2 := reflect.ValueOf(resultmsg)
+		r1 = r1.Elem()
+		if r1.Type().Elem().Name() != r2.Elem().Type().Name() {
+			return errors.New(fmt.Sprintf("实际返回的结果为%s,与请求的%s不相符", r2.Elem().Type().Name(), r1.Type().Elem().Name()))
+		}
+		r1.Set(r2)
+		return nil
+	}
 	select {
-	case r := <-result:
+	case r := <-resultchan:
 		if err, ok := r.(*MSG_COMMON_QueryErr); ok {
 			if err.Err != "" {
-				return nil, errors.New(err.Err)
+				return errors.New(err.Err)
+			} else if result == nil {
+				return nil
 			} else {
-				return nil, nil
+				r1 := reflect.ValueOf(result)
+				return errors.New(fmt.Sprintf("实际返回的结果为MSG_COMMON_QueryErr,与请求的%s不相符", r1.Elem().Elem().Type().Name()))
 			}
 		}
-		return r, nil
+		return checkAndSetResult(r)
 	case <-time.After(_timeout):
 		RpcClientQueryLock.Lock()
 		defer RpcClientQueryLock.Unlock()
 		delete(RpcClientQueryMap, id)
 		select {
-		case r := <-result:
+		case r := <-resultchan:
 			defer r.(MSG_DATA).Put()
 			if err, ok := r.(*MSG_COMMON_QueryErr); ok {
 				if err.Err != "" {
-					return nil, errors.New(err.Err)
+					return errors.New(err.Err)
+				} else if result == nil {
+					return nil
 				} else {
-					return nil, nil
+					r1 := reflect.ValueOf(result)
+					return errors.New(fmt.Sprintf("实际返回的结果为MSG_COMMON_QueryErr,与请求的%s不相符", r1.Elem().Elem().Type().Name()))
 				}
 			}
-			return r, nil
+			return checkAndSetResult(r)
 		default:
 		}
 	}
-	return nil, RpcClientQueryTimeOutErr
+	return RpcClientQueryTimeOutErr
 
 }
 func SendMsg(local, remote uint16, msgno uint32, ttl uint8, out MSG_DATA, outchan chan *libraries.MsgBuffer) {

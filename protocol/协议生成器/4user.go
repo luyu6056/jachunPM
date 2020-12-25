@@ -9,28 +9,30 @@ type MSG_USER_GET_LoginSalt_result struct {
 	Salt          string
 }
 type MSG_USER_INFO_cache struct {
-	Id         int32
-	Dept       int32
-	Account    string
-	Role       string
-	Realname   string
-	Group      []int32
-	Commiter   string
-	Gender     int8 // 0男，1女
-	Email      string
-	Mobile     string
-	Join       int64
-	Visits     int32 //访问次数
-	QQ         int64
-	Ip         string //上次登录ip
-	Last       int64  //上次登录时间
-	Fails      int8   //密码错误次数
-	Locked     int64
-	ClientLang string
-	AttendNo   int32 //打卡机编号
-	Deleted    bool
-	Weixin     string
-	Address    string
+	Id          int32
+	Dept        int32
+	Account     string
+	Role        string
+	Realname    string
+	Group       []int32
+	Commiter    string
+	Gender      int8 // 0男，1女
+	Email       string
+	Mobile      string
+	Join        int64
+	Visits      int32 //访问次数
+	QQ          int64
+	Ip          string //上次登录ip
+	Last        int64  //上次登录时间
+	Fails       int8   //密码错误次数
+	Locked      int64
+	ClientLang  string
+	AttendNo    int32 //打卡机编号
+	Deleted     bool
+	Weixin      string
+	Address     string
+	AclProducts map[int32]bool //允许访问的产品
+	AclProjects map[int32]bool //允许访问的项目
 }
 
 //检查密码是否正确，有Id优先查询Id，Id为0，Name查询account，realname，Mobile
@@ -161,4 +163,11 @@ type MSG_USER_getPairs struct {
 type MSG_USER_getPairs_result struct {
 	QueryResultID uint32
 	List          []HtmlKeyValueStr
+}
+type MSG_USER_updateUserView struct {
+	QueryID   uint32
+	ProjectId int32
+	ProductId int32
+	UserIds   []int32
+	GroupIds  []int32
 }

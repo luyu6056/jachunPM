@@ -37,33 +37,35 @@ func Init() {
 }
 
 type User struct {
-	Id         int32  `db:"auto_increment;pk"`
-	Dept       int32  `db:"default(0)"`
-	Account    string `db:"type:varchar(30)"`
-	Salt       string `db:"type:varchar(64)"`
-	Password   string `db:"type:varchar(64)"`
-	Role       string `db:"type:varchar(10)"`
-	Realname   string `db:"type:varchar(100)"`
-	Group      []int32
-	Commiter   string    `db:"type:varchar(100)"`
-	Gender     int8      `db:"default(0)"` // 0男，1女
-	Email      string    `db:"type:varchar(90)"`
-	QQ         int64     `db:"type:varchar(20)"`
-	Mobile     string    `db:"type:varchar(11)"`
-	Phone      string    `db:"type:varchar(20)"`
-	Weixin     string    `db:"type:varchar(90)"`
-	Dingding   string    `db:"type:varchar(90)"`
-	Address    string    `db:"type:varchar(120)"`
-	Zipcode    string    `db:"type:varchar(10)"`
-	Join       time.Time `db:"not null;default('0000-00-00')"`
-	Visits     int32     `db:"default(0)"`            //访问次数
-	Ip         string    `db:"type:varchar(15)"`      //上次登录ip
-	Last       time.Time `db:"default('0000-00-00')"` //上次登录时间
-	Fails      int8      `db:"not null;default(0)"`   //密码错误次数
-	Locked     time.Time `db:"not null;default('0000-00-00 00:00:00')"`
-	Deleted    bool
-	ClientLang string `db:"default('zh-cn');type:varchar(10)"`
-	AttendNo   int32  `db:"null"` //打卡机编号
+	Id          int32  `db:"auto_increment;pk"`
+	Dept        int32  `db:"default(0)"`
+	Account     string `db:"type:varchar(30)"`
+	Salt        string `db:"type:varchar(64)"`
+	Password    string `db:"type:varchar(64)"`
+	Role        string `db:"type:varchar(10)"`
+	Realname    string `db:"type:varchar(100)"`
+	Group       []int32
+	Commiter    string    `db:"type:varchar(100)"`
+	Gender      int8      `db:"default(0)"` // 0男，1女
+	Email       string    `db:"type:varchar(90)"`
+	QQ          int64     `db:"type:varchar(20)"`
+	Mobile      string    `db:"type:varchar(11)"`
+	Phone       string    `db:"type:varchar(20)"`
+	Weixin      string    `db:"type:varchar(90)"`
+	Dingding    string    `db:"type:varchar(90)"`
+	Address     string    `db:"type:varchar(120)"`
+	Zipcode     string    `db:"type:varchar(10)"`
+	Join        time.Time `db:"not null;default('0000-00-00')"`
+	Visits      int32     `db:"default(0)"`            //访问次数
+	Ip          string    `db:"type:varchar(15)"`      //上次登录ip
+	Last        time.Time `db:"default('0000-00-00')"` //上次登录时间
+	Fails       int8      `db:"not null;default(0)"`   //密码错误次数
+	Locked      time.Time `db:"not null;default('0000-00-00 00:00:00')"`
+	Deleted     bool
+	ClientLang  string         `db:"default('zh-cn');type:varchar(10)"`
+	AclProducts map[int32]bool //允许访问的产品
+	AclProjects map[int32]bool //允许访问的项目
+	AttendNo    int32          `db:"null"` //打卡机编号
 	//Birthday     time.Time `db:"not null;default('0000-00-00')"`
 	//Skype        string    `db:"type:varchar(90)"`
 	//Yahoo        string    `db:"type:varchar(90)"`

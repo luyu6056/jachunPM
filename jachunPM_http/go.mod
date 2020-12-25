@@ -13,7 +13,7 @@ replace protocol => ../protocol
 require (
 	github.com/dlclark/regexp2 v1.4.0
 	github.com/fsnotify/fsnotify v1.4.9
-	github.com/luyu6056/cache v1.1.2
+	github.com/luyu6056/cache v1.1.3
 	github.com/luyu6056/gnet v1.2.8
 	github.com/luyu6056/tls v0.15.1
 	github.com/modern-go/reflect2 v1.0.1 // indirect

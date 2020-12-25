@@ -23,6 +23,12 @@ const (
 	CMD_MSG_COMMON_GET_Msgno_result = -1751634176
 	CMD_MSG_COMMON_QueryErr = 714684672
 	CMD_MSG_COMMON_ResetWindow = 988600064
+	CMD_MSG_FILE_upload = 1110878976
+	CMD_MSG_FILE_upload_result = -2057389056
+	CMD_MSG_FILE_getByID = -1871273216
+	CMD_MSG_FILE_getByID_result = -1484540160
+	CMD_MSG_FILE_updateByIDMap = -1777243392
+	CMD_MSG_FILE_DeleteByID = -1568529408
 )
 
 type MSG_COMMON_regServer struct {
@@ -782,5 +788,339 @@ func READ_MSG_COMMON_ResetWindow(buf *libraries.MsgBuffer) *MSG_COMMON_ResetWind
 func (data *MSG_COMMON_ResetWindow) read(buf *libraries.MsgBuffer) {
 	data.Window = READ_int32(buf)
 
+}
+
+type MSG_FILE_upload struct {
+	QueryID uint32
+	Name string
+	Data []byte
+	AddBy int32
+	ObjectType string
+	ObjectID int32
+	Code string
+	Type string
+}
+
+var pool_MSG_FILE_upload = sync.Pool{New: func() interface{} { return &MSG_FILE_upload{} }}
+
+func GET_MSG_FILE_upload() *MSG_FILE_upload {
+	return pool_MSG_FILE_upload.Get().(*MSG_FILE_upload)
+}
+
+func (data *MSG_FILE_upload) cmd() int32 {
+	return CMD_MSG_FILE_upload
+}
+
+func (data *MSG_FILE_upload) Put() {
+	data.QueryID = 0
+	data.Name = ``
+	data.Data = data.Data[:0]
+	data.AddBy = 0
+	data.ObjectType = ``
+	data.ObjectID = 0
+	data.Code = ``
+	data.Type = ``
+	pool_MSG_FILE_upload.Put(data)
+}
+func (data *MSG_FILE_upload) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_FILE_upload,buf)
+	WRITE_MSG_FILE_upload(data, buf)
+}
+
+func WRITE_MSG_FILE_upload(data *MSG_FILE_upload, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_string(data.Name, buf)
+	WRITE_int32(int32(len(data.Data)), buf)
+	buf.Write(data.Data)
+	WRITE_int32(data.AddBy, buf)
+	WRITE_string(data.ObjectType, buf)
+	WRITE_int32(data.ObjectID, buf)
+	WRITE_string(data.Code, buf)
+	WRITE_string(data.Type, buf)
+}
+
+func READ_MSG_FILE_upload(buf *libraries.MsgBuffer) *MSG_FILE_upload {
+	data := pool_MSG_FILE_upload.Get().(*MSG_FILE_upload)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_FILE_upload) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	data.Name = READ_string(buf)
+	Data_len := int(READ_int32(buf))
+	data.Data = make([]byte, Data_len)
+	copy(data.Data,buf.Next(Data_len))
+	data.AddBy = READ_int32(buf)
+	data.ObjectType = READ_string(buf)
+	data.ObjectID = READ_int32(buf)
+	data.Code = READ_string(buf)
+	data.Type = READ_string(buf)
+
+}
+func (data *MSG_FILE_upload) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_FILE_upload) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_FILE_upload_result struct {
+	QueryResultID uint32
+	FileID int64
+}
+
+var pool_MSG_FILE_upload_result = sync.Pool{New: func() interface{} { return &MSG_FILE_upload_result{} }}
+
+func GET_MSG_FILE_upload_result() *MSG_FILE_upload_result {
+	return pool_MSG_FILE_upload_result.Get().(*MSG_FILE_upload_result)
+}
+
+func (data *MSG_FILE_upload_result) cmd() int32 {
+	return CMD_MSG_FILE_upload_result
+}
+
+func (data *MSG_FILE_upload_result) Put() {
+	data.QueryResultID = 0
+	data.FileID = 0
+	pool_MSG_FILE_upload_result.Put(data)
+}
+func (data *MSG_FILE_upload_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_FILE_upload_result,buf)
+	WRITE_MSG_FILE_upload_result(data, buf)
+}
+
+func WRITE_MSG_FILE_upload_result(data *MSG_FILE_upload_result, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryResultID, buf)
+	WRITE_int64(data.FileID, buf)
+}
+
+func READ_MSG_FILE_upload_result(buf *libraries.MsgBuffer) *MSG_FILE_upload_result {
+	data := pool_MSG_FILE_upload_result.Get().(*MSG_FILE_upload_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_FILE_upload_result) read(buf *libraries.MsgBuffer) {
+	data.QueryResultID = READ_uint32(buf)
+	data.FileID = READ_int64(buf)
+
+}
+func (data *MSG_FILE_upload_result) getQueryResultID() uint32 {
+	return data.QueryResultID
+}
+func (data *MSG_FILE_upload_result) setQueryResultID(id uint32) {
+	data.QueryResultID = id
+}
+
+type MSG_FILE_getByID struct {
+	QueryID uint32
+	FileID int64
+}
+
+var pool_MSG_FILE_getByID = sync.Pool{New: func() interface{} { return &MSG_FILE_getByID{} }}
+
+func GET_MSG_FILE_getByID() *MSG_FILE_getByID {
+	return pool_MSG_FILE_getByID.Get().(*MSG_FILE_getByID)
+}
+
+func (data *MSG_FILE_getByID) cmd() int32 {
+	return CMD_MSG_FILE_getByID
+}
+
+func (data *MSG_FILE_getByID) Put() {
+	data.QueryID = 0
+	data.FileID = 0
+	pool_MSG_FILE_getByID.Put(data)
+}
+func (data *MSG_FILE_getByID) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_FILE_getByID,buf)
+	WRITE_MSG_FILE_getByID(data, buf)
+}
+
+func WRITE_MSG_FILE_getByID(data *MSG_FILE_getByID, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_int64(data.FileID, buf)
+}
+
+func READ_MSG_FILE_getByID(buf *libraries.MsgBuffer) *MSG_FILE_getByID {
+	data := pool_MSG_FILE_getByID.Get().(*MSG_FILE_getByID)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_FILE_getByID) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	data.FileID = READ_int64(buf)
+
+}
+func (data *MSG_FILE_getByID) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_FILE_getByID) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_FILE_getByID_result struct {
+	QueryResultID uint32
+	Name string
+	Ext string
+	Data []byte
+	Type string
+}
+
+var pool_MSG_FILE_getByID_result = sync.Pool{New: func() interface{} { return &MSG_FILE_getByID_result{} }}
+
+func GET_MSG_FILE_getByID_result() *MSG_FILE_getByID_result {
+	return pool_MSG_FILE_getByID_result.Get().(*MSG_FILE_getByID_result)
+}
+
+func (data *MSG_FILE_getByID_result) cmd() int32 {
+	return CMD_MSG_FILE_getByID_result
+}
+
+func (data *MSG_FILE_getByID_result) Put() {
+	data.QueryResultID = 0
+	data.Name = ``
+	data.Ext = ``
+	data.Data = data.Data[:0]
+	data.Type = ``
+	pool_MSG_FILE_getByID_result.Put(data)
+}
+func (data *MSG_FILE_getByID_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_FILE_getByID_result,buf)
+	WRITE_MSG_FILE_getByID_result(data, buf)
+}
+
+func WRITE_MSG_FILE_getByID_result(data *MSG_FILE_getByID_result, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryResultID, buf)
+	WRITE_string(data.Name, buf)
+	WRITE_string(data.Ext, buf)
+	WRITE_int32(int32(len(data.Data)), buf)
+	buf.Write(data.Data)
+	WRITE_string(data.Type, buf)
+}
+
+func READ_MSG_FILE_getByID_result(buf *libraries.MsgBuffer) *MSG_FILE_getByID_result {
+	data := pool_MSG_FILE_getByID_result.Get().(*MSG_FILE_getByID_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_FILE_getByID_result) read(buf *libraries.MsgBuffer) {
+	data.QueryResultID = READ_uint32(buf)
+	data.Name = READ_string(buf)
+	data.Ext = READ_string(buf)
+	Data_len := int(READ_int32(buf))
+	data.Data = make([]byte, Data_len)
+	copy(data.Data,buf.Next(Data_len))
+	data.Type = READ_string(buf)
+
+}
+func (data *MSG_FILE_getByID_result) getQueryResultID() uint32 {
+	return data.QueryResultID
+}
+func (data *MSG_FILE_getByID_result) setQueryResultID(id uint32) {
+	data.QueryResultID = id
+}
+
+type MSG_FILE_updateByIDMap struct {
+	QueryID uint32
+	FileID int64
+	Update map[string]string
+}
+
+var pool_MSG_FILE_updateByIDMap = sync.Pool{New: func() interface{} { return &MSG_FILE_updateByIDMap{} }}
+
+func GET_MSG_FILE_updateByIDMap() *MSG_FILE_updateByIDMap {
+	return pool_MSG_FILE_updateByIDMap.Get().(*MSG_FILE_updateByIDMap)
+}
+
+func (data *MSG_FILE_updateByIDMap) cmd() int32 {
+	return CMD_MSG_FILE_updateByIDMap
+}
+
+func (data *MSG_FILE_updateByIDMap) Put() {
+	data.QueryID = 0
+	data.FileID = 0
+	data.Update = nil
+	pool_MSG_FILE_updateByIDMap.Put(data)
+}
+func (data *MSG_FILE_updateByIDMap) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_FILE_updateByIDMap,buf)
+	WRITE_MSG_FILE_updateByIDMap(data, buf)
+}
+
+func WRITE_MSG_FILE_updateByIDMap(data *MSG_FILE_updateByIDMap, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_int64(data.FileID, buf)
+	WRITE_map(data.Update,buf)
+}
+
+func READ_MSG_FILE_updateByIDMap(buf *libraries.MsgBuffer) *MSG_FILE_updateByIDMap {
+	data := pool_MSG_FILE_updateByIDMap.Get().(*MSG_FILE_updateByIDMap)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_FILE_updateByIDMap) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	data.FileID = READ_int64(buf)
+	READ_map(&data.Update,buf)
+
+}
+func (data *MSG_FILE_updateByIDMap) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_FILE_updateByIDMap) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_FILE_DeleteByID struct {
+	QueryID uint32
+	FileID int64
+}
+
+var pool_MSG_FILE_DeleteByID = sync.Pool{New: func() interface{} { return &MSG_FILE_DeleteByID{} }}
+
+func GET_MSG_FILE_DeleteByID() *MSG_FILE_DeleteByID {
+	return pool_MSG_FILE_DeleteByID.Get().(*MSG_FILE_DeleteByID)
+}
+
+func (data *MSG_FILE_DeleteByID) cmd() int32 {
+	return CMD_MSG_FILE_DeleteByID
+}
+
+func (data *MSG_FILE_DeleteByID) Put() {
+	data.QueryID = 0
+	data.FileID = 0
+	pool_MSG_FILE_DeleteByID.Put(data)
+}
+func (data *MSG_FILE_DeleteByID) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_FILE_DeleteByID,buf)
+	WRITE_MSG_FILE_DeleteByID(data, buf)
+}
+
+func WRITE_MSG_FILE_DeleteByID(data *MSG_FILE_DeleteByID, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_int64(data.FileID, buf)
+}
+
+func READ_MSG_FILE_DeleteByID(buf *libraries.MsgBuffer) *MSG_FILE_DeleteByID {
+	data := pool_MSG_FILE_DeleteByID.Get().(*MSG_FILE_DeleteByID)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_FILE_DeleteByID) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	data.FileID = READ_int64(buf)
+
+}
+func (data *MSG_FILE_DeleteByID) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_FILE_DeleteByID) setQueryID(id uint32) {
+	data.QueryID = id
 }
 

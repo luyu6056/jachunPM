@@ -82,6 +82,14 @@ var buildPool = sync.Pool{New: func() interface{} {
 	return New_mysqlBuild()
 }}
 
+func (t *Transaction) Table(tablename string) *Mysql_Build {
+	build := buildPool.Get().(*Mysql_Build)
+	build.Reset(t.conn.db)
+	build.Transaction = t
+	build.sql.table.WriteString(tablename)
+	build.sql.table.WriteByte('`')
+	return build
+}
 func (db *MysqlDB) Table(tablename string) *Mysql_Build {
 	build := buildPool.Get().(*Mysql_Build)
 	build.Reset(db)
@@ -240,7 +248,7 @@ func (this *Mysql_Build) _where(key string, value interface{}) error {
 		ref := reflect.ValueOf(value)
 		if ref.Len() == 0 {
 			this.buffer.WriteString(Getkey(key))
-			this.buffer.WriteString("= NULL")
+			this.buffer.WriteString(" is null")
 			return nil
 		}
 		this.buffer.WriteString(Getkey(key))
@@ -263,6 +271,9 @@ func (this *Mysql_Build) _where(key string, value interface{}) error {
 		if this.err != nil {
 			return this.err
 		}
+	case nil:
+		this.buffer.WriteString(Getkey(key))
+		this.buffer.WriteString(" is null")
 	default:
 		t := reflect.TypeOf(value)
 		return errors.New(`where未设置类型` + t.Name())
@@ -283,7 +294,7 @@ func (this *Mysql_Build) _where_interface(key string, value interface{}) error {
 				ref := reflect.ValueOf(v)
 				if ref.Len() == 0 {
 					this.buffer.WriteString(Getkey(key))
-					this.buffer.WriteString("= NULL")
+					this.buffer.WriteString(" is null")
 					return nil
 				}
 				this.buffer.WriteString(Getkey(key))
@@ -1008,7 +1019,7 @@ func (this *Mysql_Build) Update(param interface{}, arg ...interface{}) (result b
 		return false, errors.New(`执行Update出错,必须要传入where参数，不允许全表修改`)
 	}
 	this.buffer.Reset()
-	this.buffer.Write([]byte{85, 80, 68, 65, 84, 69})
+	this.buffer.Write([]byte{85, 80, 68, 65, 84, 69, 32})
 	this.buffer.Write(this.sql.attr.Bytes())
 	this.buffer.Write(this.sql.table.Bytes())
 	this.buffer.Write([]byte{32, 83, 69, 84, 32})
@@ -1211,7 +1222,7 @@ func MysqlBuild_in_value(value interface{}, buf Buffer) {
 		return
 	}
 	if ref.Len() == 0 {
-		buf.WriteString("= NULL")
+		buf.WriteString(" is null")
 		return
 	}
 	buf.Write([]byte{32, 73, 78, 32, 40}) // IN (

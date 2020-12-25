@@ -1082,49 +1082,12 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 								default_str = " DEFAULT current_timestamp()"
 							}
 						default:
-
 							is_text = true
-							switch {
-							case strings.Contains(tag, "type:longblob"):
-								buf.WriteString("longblob")
-							case strings.Contains(tag, "type:mediumblob"):
-								buf.WriteString("mediumblob")
-							case strings.Contains(tag, "type:tinyblob"):
-								buf.WriteString("tinyblob")
-							case strings.Contains(tag, "type:blob"):
-								buf.WriteString("blob")
-							case strings.Contains(tag, "type:longtext"):
-								buf.WriteString("longtext")
-							case strings.Contains(tag, "type:mediumtext"):
-								buf.WriteString("mediumblob")
-							case strings.Contains(tag, "type:tinytext"):
-								buf.WriteString("tinytext")
-							default:
-								buf.WriteString("text")
-							}
-
+							buf.WriteString("json")
 						}
 					default:
 						is_text = true
-						switch {
-						case strings.Contains(tag, "type:longblob"):
-							buf.WriteString("longblob")
-						case strings.Contains(tag, "type:mediumblob"):
-							buf.WriteString("mediumblob")
-						case strings.Contains(tag, "type:tinyblob"):
-							buf.WriteString("tinyblob")
-						case strings.Contains(tag, "type:blob"):
-							buf.WriteString("blob")
-						case strings.Contains(tag, "type:longtext"):
-							buf.WriteString("longtext")
-						case strings.Contains(tag, "type:mediumtext"):
-							buf.WriteString("mediumblob")
-						case strings.Contains(tag, "type:tinytext"):
-							buf.WriteString("tinytext")
-						default:
-							buf.WriteString("text")
-						}
-
+						buf.WriteString("json")
 					}
 					if is_pk {
 						buf.WriteString(" NOT NULL")
@@ -1486,9 +1449,9 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 
 							default:
 								is_text = true
-								if !strings.Contains(sql_str[1], "text") {
+								if !strings.Contains(sql_str[1], "json") && !strings.Contains(sql_str[1], "longtext") {
 									is_change = 20
-									sql_str[1] = "text"
+									sql_str[1] = "json"
 								}
 								default_str = "NULL"
 							}
@@ -1502,9 +1465,9 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 								default_str = "NULL"
 							} else {
 								is_text = true
-								if !strings.Contains(sql_str[1], "text") {
+								if !strings.Contains(sql_str[1], "json") && !strings.Contains(sql_str[1], "longtext") {
 									is_change = 22
-									sql_str[1] = "text"
+									sql_str[1] = "json"
 								}
 								default_str = "NULL"
 							}
@@ -1629,45 +1592,48 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 								sql_str[3] = "Default current_timestamp()"
 							default:
 								is_text = true
-								sql_str[1] = "text"
+								sql_str[1] = "json"
 							}
 						default:
 							is_text = true
-							sql_str[1] = "text"
+							sql_str[1] = "json"
 						}
 						if strings.Contains(tag, "auto_increment") {
 							if !strings.Contains(value["Extra"], "auto_increment") {
 								sql_str[3] = " AUTO_INCREMENT"
 							}
 						}
-						switch {
-						case strings.Contains(tag, "type:longblob"):
-							sql_str[1] = "longblob"
-						case strings.Contains(tag, "type:mediumblob"):
-							sql_str[1] = "mediumblob"
-						case strings.Contains(tag, "type:tinyblob"):
-							sql_str[1] = "tinyblob"
-						case strings.Contains(tag, "type:blob"):
-							sql_str[1] = "blob"
-						case strings.Contains(tag, "type:longtext"):
-							sql_str[1] = "longtext"
-						case strings.Contains(tag, "type:mediumtext"):
-							sql_str[1] = "mediumtext"
-						case strings.Contains(tag, "type:tinytext"):
-							sql_str[1] = "tinytext"
-						case strings.Contains(tag, "type:text"):
-							sql_str[1] = "text"
+						if sql_str[1] != "json" {
+							switch {
+							case strings.Contains(tag, "type:longblob"):
+								sql_str[1] = "longblob"
+							case strings.Contains(tag, "type:mediumblob"):
+								sql_str[1] = "mediumblob"
+							case strings.Contains(tag, "type:tinyblob"):
+								sql_str[1] = "tinyblob"
+							case strings.Contains(tag, "type:blob"):
+								sql_str[1] = "blob"
+							case strings.Contains(tag, "type:longtext"):
+								sql_str[1] = "longtext"
+							case strings.Contains(tag, "type:mediumtext"):
+								sql_str[1] = "mediumtext"
+							case strings.Contains(tag, "type:tinytext"):
+								sql_str[1] = "tinytext"
+							case strings.Contains(tag, "type:text"):
+								sql_str[1] = "text"
 
-							sql_str[3] = strings.Replace(sql_str[3], " Default NULL", "", 1)
-						default:
-							if sc, _ := Preg_match_result(`type:(varchar\(\d+\))`, tag, 1); len(sc) > 0 {
-								sql_str[1] = sc[0][1]
-							} else {
-								if sc, _ := Preg_match_result(`type:(char\(\d+\))`, tag, 1); len(sc) > 0 {
+								sql_str[3] = strings.Replace(sql_str[3], " Default NULL", "", 1)
+							default:
+								if sc, _ := Preg_match_result(`type:(varchar\(\d+\))`, tag, 1); len(sc) > 0 {
 									sql_str[1] = sc[0][1]
+								} else {
+									if sc, _ := Preg_match_result(`type:(char\(\d+\))`, tag, 1); len(sc) > 0 {
+										sql_str[1] = sc[0][1]
+									}
 								}
 							}
 						}
+
 						if strings.Contains(tag, "notnull") || strings.Contains(tag, "not null") {
 							notnull = true
 						}

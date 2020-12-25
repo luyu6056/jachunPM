@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"jachunPM_commom/db"
 	"libraries"
+	"os"
 	"protocol"
 	"reflect"
 	"runtime/debug"
 	"server"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -17,6 +19,16 @@ import (
 	"github.com/luyu6056/gnet"
 )
 
+var filepath string
+
+func init() {
+	var err error
+	filepath, err = libraries.GetBaseRootPath()
+	if err != nil {
+		panic("获取运行根目录失败" + err.Error())
+	}
+	filepath += "/upload/"
+}
 func SendMsgToRemote(ctx *server.Context, c gnet.Conn) error {
 	defer func() {
 		if err := recover(); err != nil {
@@ -133,27 +145,34 @@ func HostServerHandler() {
 			} else {
 				svrNo := byte(in.Remote)
 				id := byte(in.Remote >> 8)
+				rpcLock.RLock()
 				if remoteSvr := rpcServerIdList[svrNo][id]; remoteSvr != nil {
 					remoteSvr.outChan <- buf
 				} else {
 					//服务挂壁了，转发到公共消息
 					rpcServerOutChan[svrNo] <- buf
 				}
+				rpcLock.RUnlock()
 			}
 			continue
 		}
 		func() {
-			defer func() {
-				buf.Reset()
-				protocol.BufPoolPut(buf)
-			}()
+			rpcLock.RLock()
+			defer rpcLock.RUnlock()
 			svr := rpcServerIdList[uint8(in.Local)][uint8(in.Local>>8)]
 			if svr == nil {
 				//可能服务掉线了,暂不处理
 				libraries.DebugLog("host收到不存在的svr,No%d,Id%d", uint8(in.Local), uint8(in.Local>>8))
+				return
 			}
 			in.ReadData()
+			in.SetServer(svr)
 			i := in.Data
+			defer func() {
+				i.Put()
+				buf.Reset()
+				protocol.BufPoolPut(buf)
+			}()
 			switch data := i.(type) {
 			case *protocol.MSG_COMMON_WINDOW_UPDATE:
 				if svr != nil {
@@ -227,36 +246,80 @@ func HostServerHandler() {
 				}
 			case *protocol.MSG_COMMON_ResetWindow:
 				svr.window = data.Window
+			case *protocol.MSG_FILE_upload:
+				var dir string
+				now := time.Now()
+				if data.Code != "" {
+					dir = data.Code + "/" + data.Type + "/" + now.Format("2006") + "/" + now.Format("01") + "/" + now.Format("02") + "/"
+				} else {
+					dir = now.Format("200601") + "/"
+				}
+				filedir := strings.ReplaceAll(filepath+dir, "/", string(os.PathSeparator))
+				exist, err := libraries.PathExists(filedir)
+				defer func() {
+					if err != nil {
+						in.WriteErr(err)
+					}
+				}()
+				if err != nil {
+					return
+				}
+				if !exist {
+					err = os.MkdirAll(filedir, os.ModePerm)
+					if err != nil {
+						return
+					}
+				}
+				var f *os.File
+				f, err = os.Create(filedir + data.Name)
+				if err != nil {
+					return
+				}
+				defer f.Close()
+				_, err = f.Write(data.Data)
+				if err != nil {
+					return
+				}
+				adduser, _ := Host.GetUserCacheById(data.AddBy)
+				var addedby string
+				if adduser != nil {
+					addedby = adduser.Account
+				}
+				var file = &db.File{
+					Pathname:   dir + data.Name,
+					Title:      data.Name,
+					Extension:  data.Name[strings.LastIndex(data.Name, ".")+1:],
+					Size:       len(data.Data),
+					ObjectType: data.ObjectType,
+					ObjectID:   data.ObjectID,
+					AddedBy:    addedby,
+					AddedDate:  now,
+					Type:       data.Type,
+				}
+				var id int64
+				id, err = db.DB.Table(db.TABLE_FILE).Insert(file)
+				if err != nil {
+					os.Remove(filepath + dir + data.Name)
+					return
+				}
+				out := protocol.GET_MSG_FILE_upload_result()
+				out.FileID = id
+				in.SendResult(out)
+				out.Put()
+			case *protocol.MSG_FILE_DeleteByID:
+				var file *db.File
+				err := db.DB.Table(db.TABLE_FILE).Prepare().Where("Id=?", data.FileID).Find(&file)
+				if err != nil {
+					in.WriteErr(err)
+					return
+				}
+				os.Remove(filepath + file.Pathname)
+				db.DB.Table(db.TABLE_FILE).Where("Id=?", data.FileID).Delete()
 			default:
 				libraries.ReleaseLog("host未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 			}
-			i.Put()
-
 		}()
 
 	}
 
-}
-
-type HostServer struct {
-}
-
-var Host HostServer
-
-func (HostServer) SendMsg(remote uint16, msgno uint32, ttl uint8, out protocol.MSG_DATA) {
-	protocol.SendMsg(0, remote, msgno, ttl, out, rpcServerOutChan[protocol.HostServerNo])
-}
-func (HostServer) SendMsgWaitResult(remote uint16, msgno uint32, ttl uint8, out protocol.MSG_DATA, timeout ...time.Duration) (res protocol.RpcQueryResult, err error) {
-	return protocol.SendMsgWaitResult(0, remote, msgno, ttl, out, rpcServerOutChan[protocol.HostServerNo], timeout...)
-}
-
-func GetOneMsg() *protocol.Msg {
-	m := &protocol.Msg{}
-	msgno := atomic.AddUint32(&globalMsgno, 1)
-	m.Msgno = msgno
-	ttl := int32(0)
-	msgnoTtl.Store(m.Msgno, &ttl)
-	time.AfterFunc(protocol.MsgTimeOut*time.Second, func() { msgnoTtl.Delete(msgno) })
-	m.SetServer(Host)
-	return m
 }

@@ -424,7 +424,7 @@ func (mysqldb *MysqlDB) Exec(sql []byte, prepare_arg []interface{}) (lastInsertI
 
 var start_transaction = []byte{115, 116, 97, 114, 116, 32, 116, 114, 97, 110, 115, 97, 99, 116, 105, 111, 110}
 
-func (mysqldb *MysqlDB) BeginTransaction() (*Mysql_Conn, error) {
+func (mysqldb *MysqlDB) BeginTransaction() (*Transaction, error) {
 	conn, err := mysqldb.GET()
 	if err != nil {
 		return nil, err
@@ -434,7 +434,7 @@ func (mysqldb *MysqlDB) BeginTransaction() (*Mysql_Conn, error) {
 		conn.Close()
 		return nil, err
 	}
-	return conn, nil
+	return &Transaction{conn: conn}, nil
 }
 func (mysqldb *MysqlDB) EndTransaction(conn *Mysql_Conn) {
 	mysqldb.Put(conn)

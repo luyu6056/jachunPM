@@ -32,7 +32,7 @@
 #queryBox.show {min-height: 66px;}
 {{end}}
 </style>
-<form method='post' action='{{helper_createLink "search" "buildQuery"}}' target='hiddenwin' id='{{.Data.formId}}' class='search-form{{if eq .Data.style "simple"}} search-form-simple{{end}}'>
+<form method='post' action='{{.Data.actionURL}}' id='{{.Data.formId}}' class='search-form{{if eq .Data.style "simple"}} search-form-simple{{end}}'>
 <div class='hidden'>
 {{range $fieldName , $param := .Data.fieldParams -}}
     <div id='box{{$fieldName}}'>
@@ -107,7 +107,6 @@
       <td colspan='3' class='text-center form-actions'>
         {{html_hidden "module" .Data.module}}
         {{html_hidden "method" .Data.method}}
-        {{html_hidden "actionURL" .Data.actionURL}}
         {{html_hidden "groupItems" (string .Data.groupItems)}}
         {{html_submitButton . .Lang.search.common  "btn btn-primary"}}
         {{if ne .Data.style "simple"}}

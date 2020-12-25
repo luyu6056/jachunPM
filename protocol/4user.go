@@ -31,6 +31,7 @@ const (
 	CMD_MSG_USER_CheckAccount_result = 953841924
 	CMD_MSG_USER_getPairs = 338636804
 	CMD_MSG_USER_getPairs_result = -1261518588
+	CMD_MSG_USER_updateUserView = 1131689476
 )
 
 type MSG_USER_GET_LoginSalt struct {
@@ -152,6 +153,8 @@ type MSG_USER_INFO_cache struct {
 	Deleted bool
 	Weixin string
 	Address string
+	AclProducts map[int32]bool
+	AclProjects map[int32]bool
 }
 
 var pool_MSG_USER_INFO_cache = sync.Pool{New: func() interface{} { return &MSG_USER_INFO_cache{} }}
@@ -187,6 +190,8 @@ func (data *MSG_USER_INFO_cache) Put() {
 	data.Deleted = false
 	data.Weixin = ``
 	data.Address = ``
+	data.AclProducts = nil
+	data.AclProjects = nil
 	pool_MSG_USER_INFO_cache.Put(data)
 }
 func (data *MSG_USER_INFO_cache) write(buf *libraries.MsgBuffer) {
@@ -220,6 +225,8 @@ func WRITE_MSG_USER_INFO_cache(data *MSG_USER_INFO_cache, buf *libraries.MsgBuff
 	WRITE_bool(data.Deleted, buf)
 	WRITE_string(data.Weixin, buf)
 	WRITE_string(data.Address, buf)
+	WRITE_map(data.AclProducts,buf)
+	WRITE_map(data.AclProjects,buf)
 }
 
 func READ_MSG_USER_INFO_cache(buf *libraries.MsgBuffer) *MSG_USER_INFO_cache {
@@ -254,6 +261,8 @@ func (data *MSG_USER_INFO_cache) read(buf *libraries.MsgBuffer) {
 	data.Deleted = READ_bool(buf)
 	data.Weixin = READ_string(buf)
 	data.Address = READ_string(buf)
+	READ_map(&data.AclProducts,buf)
+	READ_map(&data.AclProjects,buf)
 
 }
 
@@ -1525,5 +1534,77 @@ func (data *MSG_USER_getPairs_result) getQueryResultID() uint32 {
 }
 func (data *MSG_USER_getPairs_result) setQueryResultID(id uint32) {
 	data.QueryResultID = id
+}
+
+type MSG_USER_updateUserView struct {
+	QueryID uint32
+	ProjectId int32
+	ProductId int32
+	UserIds []int32
+	GroupIds []int32
+}
+
+var pool_MSG_USER_updateUserView = sync.Pool{New: func() interface{} { return &MSG_USER_updateUserView{} }}
+
+func GET_MSG_USER_updateUserView() *MSG_USER_updateUserView {
+	return pool_MSG_USER_updateUserView.Get().(*MSG_USER_updateUserView)
+}
+
+func (data *MSG_USER_updateUserView) cmd() int32 {
+	return CMD_MSG_USER_updateUserView
+}
+
+func (data *MSG_USER_updateUserView) Put() {
+	data.QueryID = 0
+	data.ProjectId = 0
+	data.ProductId = 0
+	data.UserIds = data.UserIds[:0]
+	data.GroupIds = data.GroupIds[:0]
+	pool_MSG_USER_updateUserView.Put(data)
+}
+func (data *MSG_USER_updateUserView) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_updateUserView,buf)
+	WRITE_MSG_USER_updateUserView(data, buf)
+}
+
+func WRITE_MSG_USER_updateUserView(data *MSG_USER_updateUserView, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_int32(data.ProjectId, buf)
+	WRITE_int32(data.ProductId, buf)
+	WRITE_int32(int32(len(data.UserIds)), buf)
+	for _, v := range data.UserIds{
+		WRITE_int32(v, buf)
+	}
+	WRITE_int32(int32(len(data.GroupIds)), buf)
+	for _, v := range data.GroupIds{
+		WRITE_int32(v, buf)
+	}
+}
+
+func READ_MSG_USER_updateUserView(buf *libraries.MsgBuffer) *MSG_USER_updateUserView {
+	data := pool_MSG_USER_updateUserView.Get().(*MSG_USER_updateUserView)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_updateUserView) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	data.ProjectId = READ_int32(buf)
+	data.ProductId = READ_int32(buf)
+	UserIds_len := int(READ_int32(buf))
+	for i := 0; i < UserIds_len; i++ {
+		data.UserIds = append(data.UserIds, READ_int32(buf))
+	}
+	GroupIds_len := int(READ_int32(buf))
+	for i := 0; i < GroupIds_len; i++ {
+		data.GroupIds = append(data.GroupIds, READ_int32(buf))
+	}
+
+}
+func (data *MSG_USER_updateUserView) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_USER_updateUserView) setQueryID(id uint32) {
+	data.QueryID = id
 }
 

@@ -282,9 +282,11 @@ func main() {
 							out.WriteString(f.name)
 							out.WriteString(" == nil {\n")
 							out.WriteString("		WRITE_int8(0, buf)\n")
-							out.WriteString("	} else {\n		WRITE_int8(1, buf)\n		data.")
+							out.WriteString("	} else {\n		WRITE_int8(1, buf)\n		WRITE_")
+							out.WriteString(f.typ[1:])
+							out.WriteString("(data.")
 							out.WriteString(f.name)
-							out.WriteString(".write(buf)\n")
+							out.WriteString(", buf)\n")
 							out.WriteString("	}\n")
 						} else {
 							out.WriteString("	WRITE_")

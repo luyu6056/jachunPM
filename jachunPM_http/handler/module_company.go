@@ -69,16 +69,15 @@ func get_company_browse(data *TemplateData) gnet.Action {
 	}
 
 	getCompanyUser.Page = data.Page.Page
-	res, err := HostConn.SendMsgWaitResultToDefault(getCompanyUser)
+	var res *protocol.MSG_USER_getCompanyUsers_result
+	err = HostConn.SendMsgWaitResultToDefault(getCompanyUser, &res)
 	if err != nil {
 		ws.OutErr(err)
 		return gnet.None
 	}
-	if v, ok := res.(*protocol.MSG_USER_getCompanyUsers_result); ok {
-		data.Data["users"] = v.List
-		if v.Total > 0 {
-			data.Page.Total = v.Total
-		}
+	data.Data["users"] = res.List
+	if res.Total > 0 {
+		data.Page.Total = res.Total
 	}
 	data.Data["queryID"], _ = strconv.Atoi(param)
 	if TYPE == "bydept" {

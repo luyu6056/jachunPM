@@ -32,7 +32,7 @@ const (
 var (
 	rpcServerIdList     = make(map[uint8][]*RpcServer)
 	rpcServerOutChan    = make(map[uint8]chan *libraries.MsgBuffer) //公共消息chan，实现均衡负载
-	rpcLock             sync.Mutex
+	rpcLock             sync.RWMutex
 	rpcPingTime                = time.Second * 10
 	rpcPingHalfOpenTime        = time.Second * 30 //ping响应超时
 	rpcServerCenterId          = make(map[uint8]uint8)
@@ -83,6 +83,9 @@ func NewRpcServer(c gnet.Conn) *RpcServer {
 }
 func (svr *RpcServer) SendMsg(remote uint16, msgno uint32, ttl uint8, out protocol.MSG_DATA) {
 	protocol.SendMsg(svr.local, remote, msgno, ttl, out, svr.outChan)
+}
+func (svr *RpcServer) SendMsgWaitResult(remote uint16, msgno uint32, ttl uint8, out protocol.MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
+	return protocol.SendMsgWaitResult(0, remote, msgno, ttl, out, result, rpcServerOutChan[protocol.HostServerNo], timeout...)
 }
 func (svr *RpcServer) Start(no uint8, ipport string, window int32) {
 	svr.ServerNo = no
@@ -136,11 +139,12 @@ func (svr *RpcServer) Close() {
 		default:
 		}
 	}
+	rpcLock.Lock()
+	defer rpcLock.Unlock()
 	if svr.Id > -1 && rpcServerIdList[svr.ServerNo] != nil {
 		libraries.DebugLog("服务%v，ID%v，关闭", svr.ServerNo, svr.Id)
 		rpcServerIdList[svr.ServerNo][svr.Id] = nil
 	}
-	rpcLock.Lock()
 	if svr.isCenter {
 		delete(rpcServerCenterId, svr.ServerNo)
 		//寻找一个正常的服务并将它设置为中心服务
@@ -151,7 +155,7 @@ func (svr *RpcServer) Close() {
 			}
 		}
 	}
-	rpcLock.Unlock()
+
 }
 
 func (svr *RpcServer) setCenter() {

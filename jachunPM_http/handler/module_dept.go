@@ -5,7 +5,6 @@ import (
 	"jachunPM_http/js"
 	"libraries"
 	"protocol"
-	"reflect"
 	"strconv"
 	"strings"
 
@@ -52,12 +51,13 @@ func get_dept_browse(data *TemplateData) gnet.Action {
 	}
 	getDataStructure := protocol.GET_MSG_USER_Dept_getDataStructure()
 	getDataStructure.RootDeptID = int32(0)
-	res, err := msg.SendMsgWaitResult(0, getDataStructure)
-	if r, ok := res.(*protocol.MSG_USER_Dept_getDataStructure_result); ok {
-		data.Data["tree"] = r.List
-	} else {
-		libraries.DebugLog("GET_MSG_USER_Dept_getDataStructure返回结果不对%s", reflect.TypeOf(res).Elem().String())
+	var res *protocol.MSG_USER_Dept_getDataStructure_result
+	err = msg.SendMsgWaitResult(0, getDataStructure, &res)
+	if err != nil {
+		ws.OutErr(err)
+		return gnet.None
 	}
+	data.Data["tree"] = res.List
 	getDataStructure.Put()
 	if err != nil {
 		ws.OutErr(err)
@@ -259,7 +259,7 @@ func post_dept_updateOrder(data *TemplateData) gnet.Action {
 		}
 	}
 
-	_, err = HostConn.SendMsgWaitResultToDefault(update)
+	err = HostConn.SendMsgWaitResultToDefault(update, nil)
 	update.Put()
 	if err != nil {
 		ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrUpdate"], err) + js.Reload("parent"))
@@ -342,7 +342,7 @@ func post_dept_manageChild(data *TemplateData) gnet.Action {
 		}
 	}
 
-	_, err = HostConn.SendMsgWaitResultToDefault(update)
+	err = HostConn.SendMsgWaitResultToDefault(update, nil)
 	update.Put()
 	if err != nil {
 		ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrUpdate"], err) + js.Reload("parent"))
@@ -360,17 +360,16 @@ func get_dept_delete(data *TemplateData) gnet.Action {
 	}
 	out := protocol.GET_MSG_USER_Dept_delete()
 	out.DeptId = int32(deptid)
-	res, err := HostConn.SendMsgWaitResultToDefault(out)
+	var res *protocol.MSG_USER_Dept_delete_result
+	err := HostConn.SendMsgWaitResultToDefault(out, &res)
 	out.Put()
 	if err != nil {
 		ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrUpdate"], err))
 		return gnet.None
 	}
-	if v, ok := res.(*protocol.MSG_USER_Dept_delete_result); ok {
-		if v.Result != protocol.Success {
-			ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)[v.Result.String()]) + js.Reload("parent"))
-			return gnet.None
-		}
+	if res.Result != protocol.Success {
+		ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)[res.Result.String()]) + js.Reload("parent"))
+		return gnet.None
 	}
 	ws.WriteString(js.Reload("parent"))
 	return gnet.None
@@ -385,20 +384,19 @@ func get_dept_edit(data *TemplateData) gnet.Action {
 	data.Data["dept"] = deptinfo
 	out := protocol.GET_MSG_USER_getDeptUserPairs()
 	out.DeptId = int32(deptid)
-	res, err := HostConn.SendMsgWaitResultToDefault(out)
+	var res *protocol.MSG_USER_getDeptUserPairs_result
+	err = HostConn.SendMsgWaitResultToDefault(out, &res)
 	out.Put()
 	if err != nil {
 		data.ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrGetDeptUser"], err) + js.Reload("parent"))
 		return gnet.None
 	}
-
-	if v, ok := res.(*protocol.MSG_USER_getDeptUserPairs_result); ok {
-		var users = []protocol.HtmlKeyValueStr{protocol.HtmlKeyValueStr{"0", ""}}
-		for _, v := range v.List {
-			users = append(users, protocol.HtmlKeyValueStr{strconv.Itoa(int(v.Id)), v.Realname})
-		}
-		data.Data["users"] = users
+	var users = []protocol.HtmlKeyValueStr{protocol.HtmlKeyValueStr{"0", ""}}
+	for _, v := range res.List {
+		users = append(users, protocol.HtmlKeyValueStr{strconv.Itoa(int(v.Id)), v.Realname})
 	}
+	data.Data["users"] = users
+
 	templateOut("dept.edit.html", data)
 	return gnet.None
 }
@@ -412,7 +410,7 @@ func post_dept_edit(data *TemplateData) gnet.Action {
 	}
 	manager, _ := strconv.Atoi(data.ws.Post("manager"))
 	if manager != 0 {
-		managerUser := getUserCacheById(int32(manager))
+		managerUser := HostConn.GetUserCacheById(int32(manager))
 		if managerUser == nil {
 			data.ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrManager"]) + js.Reload("parent"))
 			return gnet.None
@@ -430,7 +428,7 @@ func post_dept_edit(data *TemplateData) gnet.Action {
 	deptinfo.Name = data.ws.Post("name")
 	update := protocol.GET_MSG_USER_Dept_update()
 	update.List = []*protocol.MSG_USER_Dept_cache{deptinfo}
-	_, err = HostConn.SendMsgWaitResultToDefault(update)
+	err = HostConn.SendMsgWaitResultToDefault(update, nil)
 	update.Put()
 	if err != nil {
 		data.ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrUpdate"], err) + js.Reload("parent"))

@@ -78,6 +78,8 @@ func Handler(in *protocol.Msg) {
 		out.List = list
 		in.SendResult(out)
 		out.Put()
+	case *protocol.MSG_USER_updateUserView:
+		updateUserView(data, in)
 	default:
 		libraries.ReleaseLog("未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 	}

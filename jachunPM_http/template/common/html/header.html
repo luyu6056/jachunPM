@@ -37,13 +37,13 @@
           </div>
           <ul id="userNav" class="nav nav-default">
             <li><a class='dropdown-toggle' data-toggle='dropdown'>
-              <span class='user-name'>{{if eq .App.user.Realname ""}}{{.App.user.Account}}{{else}}{{.App.user.Realname}}{{end}}</span><span class='caret'></span></a>
+              <span class='user-name'>{{if eq .User.Realname ""}}{{.User.Account}}{{else}}{{.User.Realname}}{{end}}</span><span class='caret'></span></a>
                 <ul class='dropdown-menu pull-right'>
                   <li class="user-profile-item">
-                    <a href='{{helper_createLink "my" "profile"}}' class='{{if eq (getValue .Lang.user.roleList .App.user.Role) ""}} no-role{{end}}'>
-                    <div class='avatar avatar bg-secondary avatar-circle'>{{substr .App.user.Account 0 1}}</div>
-                    <div class="user-profile-name">{{if eq .App.user.Realname ""}}{{.App.user.Account}}{{else}}{{.App.user.Realname}}{{end}}</div>
-                    {{if getValue .Lang.user.roleList .App.user.Role}}<div class="user-profile-role">{{getValue .Lang.user.roleList .App.user.Role}}</div>{{end}}</a></li>
+                    <a href='{{helper_createLink "my" "profile"}}' class='{{if eq (getValue .Lang.user.roleList .User.Role) ""}} no-role{{end}}'>
+                    <div class='avatar avatar bg-secondary avatar-circle'>{{substr .User.Account 0 1}}</div>
+                    <div class="user-profile-name">{{if eq .User.Realname ""}}{{.User.Account}}{{else}}{{.User.Realname}}{{end}}</div>
+                    {{if getValue .Lang.user.roleList .User.Role}}<div class="user-profile-role">{{getValue .Lang.user.roleList .User.Role}}</div>{{end}}</a></li>
                     <li class="divider"></li>
                     <li>{{html_a (helper_createLink "my" "profile") .Lang.common.profile}}</li>
                     <li>{{html_a (helper_createLink "my" "changepassword") .Lang.common.changePassword "" "class='iframe' data-width='500'"}}</li>

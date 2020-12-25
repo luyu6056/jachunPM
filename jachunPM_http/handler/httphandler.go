@@ -19,6 +19,7 @@ type HttpRequest interface {
 	Path() string
 	Query(key string) string
 	Post(key string) string
+	PostSlice(key string) []string
 	GetAllPost() map[string][]string
 	GetAllQuery() map[string][]string
 	AddQuery(name, value string)
@@ -52,20 +53,22 @@ func HttpHandler(ws HttpRequest) gnet.Action {
 			debug.PrintStack()
 		}
 	}()
-
 	if m, ok := httpHandlerMap[ws.Method()]; ok {
 		if f, ok := m[ws.Path()]; ok {
 			//检查是否登录
 			data := templateDataInit(ws)
-			_, ok := data.App["user"].(protocol.MSG_USER_INFO_cache)
-			if !ok {
+			if data.User == nil {
 				if !strings.Contains("/user/login|/user/getsalt", ws.Path()) {
 					ws.Redirect(createLink("user", "login", nil))
 					return gnet.None
 				}
 			}
 			//检查权限
-			return f(data)
+			action := f(data)
+			if data.User != nil {
+				data.User.Put()
+			}
+			return action
 		}
 	}
 	return ws.StaticHandler()

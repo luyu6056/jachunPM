@@ -218,7 +218,7 @@ func post_search_buildQuery(data *TemplateData) (querystr string, err error) {
 			condition.WriteString(now.Format(protocol.TIMEFORMAT_MYSQLDATE))
 			condition.WriteString(" 23:59:59'")
 		case "$@me":
-			value = data.App["user"].(*protocol.MSG_USER_INFO_cache).Account
+			value = data.User.Account
 			break
 		default:
 			operator := data.ws.Post(operatorName)

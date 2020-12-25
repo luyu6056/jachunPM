@@ -9,6 +9,7 @@ import (
 
 const (
 	TABLE_LOG_MSG = "Log_msg"
+	TABLE_FILE    = "file"
 )
 
 var DB *mysql.MysqlDB
@@ -24,6 +25,7 @@ func Init() {
 	}
 	errs := DB.StoreEngine("TokuDB").Sync2(
 		new(Log_msg),
+		new(File),
 	)
 	if errs != nil {
 		log.Fatalf("数据库启动失败%v", errs)
@@ -46,4 +48,22 @@ type Log_msg struct {
 
 func (*Log_msg) TableName() string {
 	return TABLE_LOG_MSG
+}
+
+type File struct {
+	Id         int64     `db:"auto_increment;pk"`
+	Pathname   string    `db:"type:varchar(255)"`
+	Title      string    `db:"type:varchar(255)"`
+	Extension  string    `db:"type:varchar(30)"`
+	Size       int       `db:"default(0)"`
+	ObjectType string    `db:"type:varchar(30)"`
+	ObjectID   int32     `db:"not null"`
+	AddedBy    string    `db:"type:varchar(30)"`
+	AddedDate  time.Time `db:"not null"`
+	Deleted    bool      `db:"default(0)"` // 0=0,1=1,
+	Type       string    `db:"type:varchar(50)"`
+}
+
+func (*File) TableName() string {
+	return TABLE_FILE
 }

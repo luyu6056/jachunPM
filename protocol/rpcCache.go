@@ -27,14 +27,13 @@ func (c *RpcCache) Get(name, path string) (b []byte, err error) {
 	data.Path = path
 	data.Name = name
 	defer data.Put()
-	res, err := c.Svr.SendMsgWaitResult(0, 0, 0, data)
+	var resdata *MSG_COMMON_CACHE_GET_result
+	err = c.Svr.SendMsgWaitResult(0, 0, 0, data, &resdata)
 	if err != nil {
 		return nil, err
 	}
-	if resdata, ok := res.(*MSG_COMMON_CACHE_GET_result); ok {
-		return resdata.Value, nil
-	}
-	return nil, errors.New("期望返回的结果是MSG_COMMON_CACHE_GET_result，实际返回" + reflect.TypeOf(res).Elem().String())
+	return resdata.Value, nil
+
 }
 func (c *RpcCache) GetPath(path string) (value [][]byte, err error) {
 	if c.Svr == nil {
@@ -43,14 +42,12 @@ func (c *RpcCache) GetPath(path string) (value [][]byte, err error) {
 	data := GET_MSG_COMMON_CACHE_GETPATH()
 	data.Path = path
 	defer data.Put()
-	res, err := c.Svr.SendMsgWaitResult(0, 0, 0, data)
+	var resdata *MSG_COMMON_CACHE_GETPATH_result
+	err = c.Svr.SendMsgWaitResult(0, 0, 0, data, &resdata)
 	if err != nil {
 		return nil, err
 	}
-	if resdata, ok := res.(*MSG_COMMON_CACHE_GETPATH_result); ok {
-		return resdata.Value, nil
-	}
-	return nil, errors.New("期望返回的结果是MSG_COMMON_CACHE_GETPATH_result，实际返回" + reflect.TypeOf(res).Elem().String())
+	return resdata.Value, nil
 }
 func (c *RpcCache) Set(name, path string, value []byte, expire int64) error {
 	if c.Svr == nil {

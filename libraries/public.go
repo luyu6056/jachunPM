@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"log"
 	"math/rand"
+	"path/filepath"
 	"unsafe"
 
 	//"github.com/sillydong/fastimage"
@@ -1531,4 +1532,15 @@ func I2S(i interface{}) (result string) {
 	}
 
 	return
+}
+func GetBaseRootPath() (string, error) {
+	path, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		return path, err
+	}
+	DS := string(os.PathSeparator)
+	if strings.Count(path, "mp"+DS+"go-build") > 0 { //go run模式
+		path, err = os.Getwd()
+	}
+	return path, err
 }

@@ -18,7 +18,7 @@ const (
 	CompressMinNum          = 5         //最小压缩消息数
 	DefaultWindowSize       = 20        //默认窗口值，为msg消息数量，窗口值允许为负值
 	RpcTickDefaultTime      = 1         //单位秒
-	MsgTimeOut              = 300       //单位秒
+	MsgTimeOut              = 60        //单位秒
 	SessionTempExpires      = 8 * 3600  //临时session
 	SessionKeepLoginExpires = 7 * 86400 //keepLogin的session
 )
@@ -42,7 +42,7 @@ const (
 	MaxServerNoNum  = 7
 	HostServerNo    = 0
 	CommomServerNo  = 0 //hostServer别名
-	FileServerNo    = 1
+	FileServerNo    = 0 //file集成在网关内
 	HttpServerNo    = 2
 	LogServerNo     = 3
 	UserServerNo    = 4
@@ -71,11 +71,12 @@ func (c CountryNo) String() string {
 
 //cache Path定义
 const (
-	PATH_USER_INFO_CACHE    = "user_cache"
-	PATH_USER_COMPANY_CACHE = "company_cache"
-	PATH_USER_DEPT_CACHE    = "dept_cache"
-	PATH_CONFIG_CACHE       = "config_cache"
-	PATH_USER_GROUP_CACHE   = "group_cache"
+	PATH_USER_INFO_CACHE       = "user_cache"
+	PATH_USER_COMPANY_CACHE    = "company_cache"
+	PATH_USER_DEPT_CACHE       = "dept_cache"
+	PATH_CONFIG_CACHE          = "config_cache"
+	PATH_USER_GROUP_CACHE      = "group_cache"
+	PATH_PROJECT_PRODUCT_CACHE = "product_cache"
 )
 
 //格式化时间定义

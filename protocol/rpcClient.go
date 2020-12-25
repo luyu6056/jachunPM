@@ -33,12 +33,12 @@ type RpcQueryResult interface {
 }
 
 var (
-	RpcClientQueryErrType    = errors.New("该结构体消息不含QueryID无法使用Result模式")
-	RpcClientQueryTimeOutErr = errors.New("请求超时")
-	rpcHanleMsgNum           = runtime.NumCPU()
-	RpcClientQueryLock       sync.RWMutex
-	RpcClientQueryMap        = make(map[uint32]chan RpcQueryResult)
-	RpcClientQueryId         uint32
+	RpcClientQueryResultErrType = errors.New("result结构体必须为& *MSG_,并且包含QueryResultID")
+	RpcClientQueryTimeOutErr    = errors.New("请求超时")
+	rpcHanleMsgNum              = runtime.NumCPU()
+	RpcClientQueryLock          sync.RWMutex
+	RpcClientQueryMap           = make(map[uint32]chan RpcQueryResult)
+	RpcClientQueryId            uint32
 )
 
 type RpcClient struct {
@@ -115,6 +115,9 @@ func (client *RpcClient) Start() {
 	go client.handleWrite()
 	go client.runTick()
 	go client.handleRead()
+	for i := 0; i < rpcHanleMsgNum; i++ {
+		go client.handleMsg()
+	}
 	if client.cache != nil {
 		client.cache.Svr.(*RpcClient).Start()
 		client.waitshutdown.Add(6)
@@ -153,8 +156,8 @@ func (client *RpcClient) SendMsg(remote uint16, msgno uint32, ttl uint8, out MSG
 	SendMsg(uint16(client.No)|uint16(client.Id)<<8, remote, msgno, ttl, out, client.outchan)
 }
 
-func (client *RpcClient) SendMsgWaitResult(remote uint16, msgno uint32, ttl uint8, out MSG_DATA, timeout ...time.Duration) (res RpcQueryResult, err error) {
-	return SendMsgWaitResult(uint16(client.No)|uint16(client.Id)<<8, remote, msgno, ttl, out, client.outchan, timeout...)
+func (client *RpcClient) SendMsgWaitResult(remote uint16, msgno uint32, ttl uint8, out MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
+	return SendMsgWaitResult(uint16(client.No)|uint16(client.Id)<<8, remote, msgno, ttl, out, result, client.outchan, timeout...)
 }
 
 //没有remote,msgno,ttl发送
@@ -162,16 +165,14 @@ func (client *RpcClient) SendMsgToDefault(out MSG_DATA) {
 	SendMsg(uint16(client.No)|uint16(client.Id)<<8, 0, 0, 0, out, client.outchan)
 }
 
-func (client *RpcClient) SendMsgWaitResultToDefault(out MSG_DATA, timeout ...time.Duration) (res RpcQueryResult, err error) {
-	return SendMsgWaitResult(uint16(client.No)|uint16(client.Id)<<8, 0, 0, 0, out, client.outchan, timeout...)
+func (client *RpcClient) SendMsgWaitResultToDefault(out MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
+	return SendMsgWaitResult(uint16(client.No)|uint16(client.Id)<<8, 0, 0, 0, out, result, client.outchan, timeout...)
 }
 func (client *RpcClient) handleWrite() {
 	defer func() {
-		if libraries.IsRelease {
-			if err := recover(); err != nil {
-				client.ErrChan <- fmt.Sprint(err) + string(debug.Stack())
-				atomic.AddUint32(&client.ErrNum, 1)
-			}
+		if err := recover(); err != nil {
+			client.ErrChan <- fmt.Sprint(err) + string(debug.Stack())
+			atomic.AddUint32(&client.ErrNum, 1)
 		}
 		if client.outchan != nil {
 			go client.handleWrite()
@@ -328,10 +329,13 @@ func (client *RpcClient) handleWrite() {
 }
 
 func (client *RpcClient) handleRead() {
-
-	for i := 0; i < rpcHanleMsgNum; i++ {
-		go client.handleMsg()
-	}
+	defer func() {
+		if err := recover(); err != nil {
+			client.ErrChan <- fmt.Sprint(err) + string(debug.Stack())
+			atomic.AddUint32(&client.ErrNum, 1)
+			go client.handleRead()
+		}
+	}()
 	var in *libraries.MsgBuffer
 	buf := &libraries.MsgBuffer{}
 	decodebuf1 := &libraries.MsgBuffer{}
@@ -411,15 +415,15 @@ func (client *RpcClient) handleRead() {
 
 }
 func (client *RpcClient) handleMsg() {
-	if libraries.IsRelease {
-		defer func() {
-			if err := recover(); err != nil {
-				client.ErrChan <- fmt.Sprint(err) + string(debug.Stack())
-				atomic.AddUint32(&client.ErrNum, 1)
-				go client.handleMsg()
-			}
-		}()
-	}
+
+	defer func() {
+		if err := recover(); err != nil {
+			client.ErrChan <- fmt.Sprint(err) + string(debug.Stack())
+			atomic.AddUint32(&client.ErrNum, 1)
+			go client.handleMsg()
+		}
+	}()
+
 	for {
 		select {
 		case msg := <-client.inchan:
@@ -546,16 +550,14 @@ func (client *RpcClient) CacheDelPath(path string) error {
 func (client *RpcClient) GetMsg() (*Msg, error) {
 	data := GET_MSG_COMMON_GET_Msgno()
 	defer data.Put()
-	res, err := client.SendMsgWaitResult(0, 0, 0, data)
+	var resdata *MSG_COMMON_GET_Msgno_result
+	err := client.SendMsgWaitResult(0, 0, 0, data, &resdata)
 	if err != nil {
 		return nil, err
 	}
-	if resdata, ok := res.(*MSG_COMMON_GET_Msgno_result); ok {
-		msg := &Msg{Msgno: resdata.Msgno}
-		msg.SetServer(client)
-		return msg, nil
-	}
-	return nil, errors.New("期望返回的结果是MSG_COMMON_GET_Msgno_result，实际返回" + reflect.TypeOf(res).Elem().String())
+	msg := &Msg{Msgno: resdata.Msgno}
+	msg.SetServer(client)
+	return msg, nil
 }
 func (client *RpcClient) LoadConfig(key string) (res map[string]map[string]interface{}, err error) {
 	b, err := client.cache.Get(key, PATH_CONFIG_CACHE)
@@ -570,4 +572,11 @@ func (client *RpcClient) LoadConfig(key string) (res map[string]map[string]inter
 }
 func (client *RpcClient) SetConfig(key string, config map[string]map[string]interface{}) (err error) {
 	return client.cache.Set(key, PATH_CONFIG_CACHE, libraries.JsonMarshal(config), 0)
+}
+func (client *RpcClient) GetUserCacheById(id int32) (user *MSG_USER_INFO_cache) {
+	err := client.CacheGet(UserServerNo, PATH_USER_INFO_CACHE, strconv.Itoa(int(id)), &user)
+	if err != nil {
+		libraries.DebugLog("获取user缓存失败%+v", err)
+	}
+	return
 }

@@ -9,7 +9,6 @@ import (
 	"libraries"
 	"math/rand"
 	"protocol"
-	"reflect"
 	"strconv"
 	"strings"
 
@@ -33,7 +32,7 @@ func init() {
 func get_user_login(data *TemplateData) gnet.Action {
 	//检查是否登录
 	ws := data.ws
-	if data.App["user"] != nil {
+	if data.User != nil {
 		ws.Redirect(createLink("company", "browse", nil))
 		return gnet.None
 	}
@@ -58,23 +57,19 @@ func get_user_getsalt(data *TemplateData) gnet.Action {
 	}
 	out := protocol.GET_MSG_USER_GET_LoginSalt()
 	out.Name = name
-	res, err := HostConn.SendMsgWaitResultToDefault(out)
+	var resdata *protocol.MSG_USER_GET_LoginSalt_result
+	err := HostConn.SendMsgWaitResultToDefault(out, &resdata)
 	out.Put()
 	if err == nil {
-		if resdata, ok := res.(*protocol.MSG_USER_GET_LoginSalt_result); ok {
-			session := ws.Session()
-			r := rand.Int63()
-			session.Set("login_rand", r)
-			ws.WriteString(`{"salt":"` + resdata.Salt + `","rand":"` + strconv.Itoa(int(r)) + `"}`)
-		} else {
-			err = errors.New("login请求salt返回消息错误，返回" + reflect.TypeOf(res).Elem().String())
-		}
-	}
-	if err != nil {
+		session := ws.Session()
+		r := rand.Int63()
+		session.Set("login_rand", r)
+		ws.WriteString(`{"salt":"` + resdata.Salt + `","rand":"` + strconv.Itoa(int(r)) + `"}`)
+	} else {
 		libraries.ReleaseLog("login请求salt失败%v", err)
 		ws.WriteString(`{"error":"` + err.Error() + `"}`)
 	}
-
+	resdata.Put()
 	return gnet.None
 }
 func post_user_login(data *TemplateData) gnet.Action {
@@ -91,44 +86,35 @@ func post_user_login(data *TemplateData) gnet.Action {
 	session := ws.Session()
 	out.Rand = session.Load_int64("login_rand")
 	session.Delete("login_rand")
-	res, err := HostConn.SendMsgWaitResultToDefault(out)
+	var resdata *protocol.MSG_USER_CheckPasswd_result
+	err := HostConn.SendMsgWaitResultToDefault(out, &resdata)
 	out.Put()
 	if err == nil {
-		if resdata, ok := res.(*protocol.MSG_USER_CheckPasswd_result); ok {
-			if resdata.Result == protocol.Success {
+		if resdata.Result == protocol.Success {
 
-				session.Set("UserId", resdata.UserId)
-				keepLogin := ws.Post("keepLogin")
-				if keepLogin == "1" {
-					session.Expire(protocol.SessionKeepLoginExpires)
-				} else {
-					session.Expire(protocol.SessionTempExpires)
-				}
-				referer := ws.Post("referer")
-				if strings.Index(referer, config.Server.Origin) == -1 {
-					referer = createLink("company", "browse", nil)
-				}
-				ws.WriteString(`{"locate":"` + referer + `"}`)
-				return gnet.None
+			session.Set("UserId", resdata.UserId)
+			keepLogin := ws.Post("keepLogin")
+			if keepLogin == "1" {
+				session.Expire(protocol.SessionKeepLoginExpires)
 			} else {
-				err = errors.New(data.Lang["user"]["error"].(map[string]string)[resdata.Result.String()])
+				session.Expire(protocol.SessionTempExpires)
 			}
+			referer := ws.Post("referer")
+			if strings.Index(referer, config.Server.Origin) == -1 {
+				referer = createLink("company", "browse", nil)
+			}
+			ws.WriteString(`{"locate":"` + referer + `"}`)
+			return gnet.None
 		} else {
-			err = errors.New("login登录返回消息错误，返回" + reflect.TypeOf(res).Elem().String())
+			err = errors.New(data.Lang["user"]["error"].(map[string]string)[resdata.Result.String()])
 		}
-	}
-	if err != nil {
+	} else {
 		ws.WriteString(`{"error":"` + err.Error() + `"}`)
 	}
+	resdata.Put()
 	return gnet.None
 }
-func getUserCacheById(id int32) (user *protocol.MSG_USER_INFO_cache) {
-	err := HostConn.CacheGet(protocol.UserServerNo, protocol.PATH_USER_INFO_CACHE, strconv.Itoa(int(id)), &user)
-	if err != nil {
-		libraries.DebugLog("获取user缓存失败%+v", err)
-	}
-	return
-}
+
 func get_user_create(data *TemplateData) (action gnet.Action) {
 	deptList, err := dept_getOptionMenu(0)
 	if err != nil {
@@ -145,29 +131,27 @@ func get_user_create(data *TemplateData) (action gnet.Action) {
 	data.Data["deptID"] = data.ws.Query("dept")
 	data.Data["depts"] = deptList
 	out := protocol.GET_MSG_USER_GET_LoginSalt()
-	out.Name = data.App["user"].(protocol.MSG_USER_INFO_cache).Account
-	res, err := HostConn.SendMsgWaitResultToDefault(out)
+	out.Name = data.User.Account
+	var resdata *protocol.MSG_USER_GET_LoginSalt_result
+	err = HostConn.SendMsgWaitResultToDefault(out, &resdata)
 	out.Put()
 	if err == nil {
-		if resdata, ok := res.(*protocol.MSG_USER_GET_LoginSalt_result); ok {
-			session := data.ws.Session()
-			r := rand.Int63()
-			session.Set("edit_rand", r)
-			data.Data["salt"] = resdata.Salt
-			data.Data["rand"] = strconv.Itoa(int(r))
-		} else {
-			err = errors.New("请求salt返回消息错误，返回" + reflect.TypeOf(res).Elem().String())
-		}
-	}
-	if err != nil {
+		session := data.ws.Session()
+		r := rand.Int63()
+		session.Set("edit_rand", r)
+		data.Data["salt"] = resdata.Salt
+		data.Data["rand"] = strconv.Itoa(int(r))
+	} else {
 		data.ws.OutErr(err)
+		return
 	}
+	resdata.Put()
 	templateOut("user.create.html", data)
 	return
 }
 func get_user_edit(data *TemplateData) (action gnet.Action) {
 	userID, _ := strconv.Atoi(data.ws.Query("userID"))
-	userInfo := getUserCacheById(int32(userID))
+	userInfo := HostConn.GetUserCacheById(int32(userID))
 	if userInfo == nil {
 		data.ws.OutErr(errors.New(data.Lang["user"]["error"].(map[string]string)[protocol.Err_UserInfoNotFound.String()]))
 		return
@@ -182,23 +166,21 @@ func get_user_edit(data *TemplateData) (action gnet.Action) {
 	data.Data["depts"] = deptList
 	data.Data["user"] = userInfo
 	out := protocol.GET_MSG_USER_GET_LoginSalt()
-	out.Name = data.App["user"].(protocol.MSG_USER_INFO_cache).Account
-	res, err := HostConn.SendMsgWaitResultToDefault(out)
+	out.Name = data.User.Account
+	var resdata *protocol.MSG_USER_GET_LoginSalt_result
+	err = HostConn.SendMsgWaitResultToDefault(out, &resdata)
 	out.Put()
 	if err == nil {
-		if resdata, ok := res.(*protocol.MSG_USER_GET_LoginSalt_result); ok {
-			session := data.ws.Session()
-			r := rand.Int63()
-			session.Set("edit_rand", r)
-			data.Data["salt"] = resdata.Salt
-			data.Data["rand"] = strconv.Itoa(int(r))
-		} else {
-			err = errors.New("请求salt返回消息错误，返回" + reflect.TypeOf(res).Elem().String())
-		}
-	}
-	if err != nil {
+		session := data.ws.Session()
+		r := rand.Int63()
+		session.Set("edit_rand", r)
+		data.Data["salt"] = resdata.Salt
+		data.Data["rand"] = strconv.Itoa(int(r))
+	} else {
 		data.ws.OutErr(err)
+		return
 	}
+	resdata.Put()
 	templateOut("user.edit.html", data)
 	return
 }
@@ -257,80 +239,79 @@ func post_user_edit(data *TemplateData) (action gnet.Action) {
 		return
 	}
 	out := protocol.GET_MSG_USER_CheckPasswd()
-	out.UserId = data.App["user"].(protocol.MSG_USER_INFO_cache).Id
+	out.UserId = data.User.Id
 	out.Passwd = data.ws.Post("verifyPassword")
 	session := data.ws.Session()
 	out.Rand = session.Load_int64("edit_rand")
-	res, err := msg.SendMsgWaitResult(0, out)
+	var resdata *protocol.MSG_USER_CheckPasswd_result
+	err = msg.SendMsgWaitResult(0, out, &resdata)
 	out.Put()
 	if err == nil {
-		if resdata, ok := res.(*protocol.MSG_USER_CheckPasswd_result); ok {
-			if resdata.Result == protocol.Success {
-				update := make(map[string]string)
-				for k, v := range data.ws.GetAllPost() {
-					if k == "oldaccount" || k == "password1" || k == "password2" || k == "verifyPassword" || k == "passwordStrength" || k == "userID" {
-						continue
-					}
-					if k == "groups" {
-						var groups []int
-						for _, vv := range v {
-							id, _ := strconv.Atoi(vv)
-							groups = append(groups, id)
-						}
-						update["group"] = libraries.JsonMarshalToString(groups)
-						continue
-					}
-					update[k] = v[0]
+		if resdata.Result == protocol.Success {
+			update := make(map[string]string)
+			for k, v := range data.ws.GetAllPost() {
+				if k == "oldaccount" || k == "password1" || k == "password2" || k == "verifyPassword" || k == "passwordStrength" || k == "userID" {
+					continue
 				}
-				if len(password1) > 0 {
-					aesdata, _ := hex.DecodeString(password1)
-					newpwd := string(libraries.AesCFBDecrypt(aesdata, []byte(data.ws.Post("verifyPassword")), []byte("jachunPM")))
-					if !user_checkNewpasswd(newpwd, data) {
-						return
+				if k == "groups" {
+					var groups []int
+					for _, vv := range v {
+						id, _ := strconv.Atoi(vv)
+						groups = append(groups, id)
 					}
-					salt := libraries.SHA256_S(strconv.Itoa(rand.Int()))
-					update["salt"] = salt
-					update["password"] = libraries.SHA256_S(newpwd + salt)
+					update["group"] = libraries.JsonMarshalToString(groups)
+					continue
 				}
-				if update["account"] != "" {
-					checkaccount := protocol.GET_MSG_USER_CheckAccount()
-					checkaccount.Account = update["account"]
-					res, err := msg.SendMsgWaitResult(0, checkaccount)
-					result, ok := res.(*protocol.MSG_USER_CheckAccount_result)
-					if result.Result != protocol.Success {
-						data.ajaxResult(false, map[string]string{"account": data.Lang["user"]["error"].(map[string]string)[result.Result.String()]}, "")
-						return
-					}
-					if err != nil || !ok {
-						data.ajaxResult(false, map[string]string{"account": fmt.Sprintf(data.Lang["user"]["error"].(map[string]string)["ErrCheckaccount"], err)}, "")
-						return
-					}
-					checkaccount.Put()
-				}
-
-				outupdate := protocol.GET_MSG_USER_INFO_updateByID()
-				outupdate.UserID = int32(userID)
-				outupdate.Update = update
-				_, err := msg.SendMsgWaitResult(0, outupdate)
-				if err != nil {
-					data.ajaxResult(false, map[string]string{"verifyPassword": fmt.Sprintf(data.Lang["user"]["error"].(map[string]string)["ErrUpdate"], err)}, "")
+				update[k] = v[0]
+			}
+			if len(password1) > 0 {
+				aesdata, _ := hex.DecodeString(password1)
+				newpwd := string(libraries.AesCFBDecrypt(aesdata, []byte(data.ws.Post("verifyPassword")), []byte("jachunPM")))
+				if !user_checkNewpasswd(newpwd, data) {
 					return
 				}
-				outupdate.Put()
-				session.Delete("edit_rand")
-				data.ajaxResult(true, data.Lang["common"]["saveSuccess"], createLink("company", "browse", nil))
-				return
-			} else {
-				data.ajaxResult(false, map[string]string{"verifyPassword": data.Lang["user"]["error"].(map[string]string)[resdata.Result.String()]}, "")
+				salt := libraries.SHA256_S(strconv.Itoa(rand.Int()))
+				update["salt"] = salt
+				update["password"] = libraries.SHA256_S(newpwd + salt)
+			}
+			if update["account"] != "" {
+				checkaccount := protocol.GET_MSG_USER_CheckAccount()
+				checkaccount.Account = update["account"]
+				var result *protocol.MSG_USER_CheckAccount_result
+				err = msg.SendMsgWaitResult(0, checkaccount, &result)
+				if err != nil {
+					data.ajaxResult(false, map[string]string{"account": fmt.Sprintf(data.Lang["user"]["error"].(map[string]string)["ErrCheckaccount"], err)}, "")
+					return
+				}
+				if result.Result != protocol.Success {
+					data.ajaxResult(false, map[string]string{"account": data.Lang["user"]["error"].(map[string]string)[result.Result.String()]}, "")
+					return
+				}
+				checkaccount.Put()
+				result.Put()
+			}
+
+			outupdate := protocol.GET_MSG_USER_INFO_updateByID()
+			outupdate.UserID = int32(userID)
+			outupdate.Update = update
+			err := msg.SendMsgWaitResult(0, outupdate, nil)
+			if err != nil {
+				data.ajaxResult(false, map[string]string{"verifyPassword": fmt.Sprintf(data.Lang["user"]["error"].(map[string]string)["ErrUpdate"], err)}, "")
 				return
 			}
+			outupdate.Put()
+			session.Delete("edit_rand")
+			data.ajaxResult(true, data.Lang["common"]["saveSuccess"], createLink("company", "browse", nil))
+			return
 		} else {
-			err = errors.New("login登录返回消息错误，返回" + reflect.TypeOf(res).Elem().String())
+			data.ajaxResult(false, map[string]string{"verifyPassword": data.Lang["user"]["error"].(map[string]string)[resdata.Result.String()]}, "")
+			return
 		}
-	}
-	if err != nil {
+		resdata.Put()
+	} else {
 		data.ajaxResult(false, err.Error(), "")
 	}
+
 	return
 }
 func user_checkNewpasswd(newpwd string, data *TemplateData) bool {
@@ -361,22 +342,20 @@ func user_checkNewpasswd(newpwd string, data *TemplateData) bool {
 }
 func get_user_delete(data *TemplateData) (action gnet.Action) {
 	out := protocol.GET_MSG_USER_GET_LoginSalt()
-	out.Name = data.App["user"].(protocol.MSG_USER_INFO_cache).Account
-	res, err := HostConn.SendMsgWaitResultToDefault(out)
+	out.Name = data.User.Account
+	var resdata *protocol.MSG_USER_GET_LoginSalt_result
+	err := HostConn.SendMsgWaitResultToDefault(out, &resdata)
 	out.Put()
 	if err == nil {
-		if resdata, ok := res.(*protocol.MSG_USER_GET_LoginSalt_result); ok {
-			session := data.ws.Session()
-			r := rand.Int63()
-			session.Set("delete_rand", r)
-			data.Data["salt"] = resdata.Salt
-			data.Data["rand"] = strconv.Itoa(int(r))
-		} else {
-			err = errors.New("请求salt返回消息错误，返回" + reflect.TypeOf(res).Elem().String())
-		}
-	}
-	if err != nil {
+		session := data.ws.Session()
+		r := rand.Int63()
+		session.Set("delete_rand", r)
+		data.Data["salt"] = resdata.Salt
+		data.Data["rand"] = strconv.Itoa(int(r))
+		resdata.Put()
+	} else {
 		data.ws.OutErr(err)
+		return
 	}
 	templateOut("user.delete.html", data)
 	return
@@ -388,32 +367,34 @@ func post_user_delete(data *TemplateData) (action gnet.Action) {
 		return
 	}
 	out := protocol.GET_MSG_USER_CheckPasswd()
-	out.UserId = data.App["user"].(protocol.MSG_USER_INFO_cache).Id
+	out.UserId = data.User.Id
 	out.Passwd = data.ws.Post("verifyPassword")
 	session := data.ws.Session()
 	out.Rand = session.Load_int64("delete_rand")
 	deleteId, _ := strconv.Atoi(data.ws.Query("userID"))
-	res, err := msg.SendMsgWaitResult(0, out)
+	var resdata *protocol.MSG_USER_CheckPasswd_result
+	err = msg.SendMsgWaitResult(0, out, &resdata)
 	out.Put()
 	if err == nil {
-		if resdata, ok := res.(*protocol.MSG_USER_CheckPasswd_result); ok {
-			if resdata.Result == protocol.Success {
-				outupdate := protocol.GET_MSG_USER_INFO_updateByID()
-				outupdate.UserID = int32(deleteId)
-				outupdate.Update = map[string]string{
-					"Deleted": "1",
-				}
-				_, err := msg.SendMsgWaitResult(0, outupdate)
-				if err != nil {
-					data.ajaxResult(false, map[string]string{"verifyPassword": fmt.Sprintf(data.Lang["user"]["error"].(map[string]string)["ErrUpdate"], err)}, "")
-					return
-				}
-				outupdate.Put()
-				session.Delete("delete_rand")
-				data.ajaxResult(true, "", "", `top.closetrigger(true)`)
+		if resdata.Result == protocol.Success {
+			outupdate := protocol.GET_MSG_USER_INFO_updateByID()
+			outupdate.UserID = int32(deleteId)
+			outupdate.Update = map[string]string{
+				"Deleted": "1",
+			}
+			err := msg.SendMsgWaitResult(0, outupdate, nil)
+			if err != nil {
+				data.ajaxResult(false, map[string]string{"verifyPassword": fmt.Sprintf(data.Lang["user"]["error"].(map[string]string)["ErrUpdate"], err)}, "")
 				return
 			}
+			outupdate.Put()
+			session.Delete("delete_rand")
+			data.ajaxResult(true, "", "", `top.closetrigger(true)`)
+			return
 		}
+		resdata.Put()
+	} else {
+		data.ajaxResult(false, err.Error())
 	}
 
 	return
@@ -425,7 +406,7 @@ func get_user_restore(data *TemplateData) (action gnet.Action) {
 	outupdate.Update = map[string]string{
 		"Deleted": "0",
 	}
-	_, err := HostConn.SendMsgWaitResultToDefault(outupdate)
+	err := HostConn.SendMsgWaitResultToDefault(outupdate, nil)
 	if err != nil {
 		data.ws.OutErr(err)
 		return

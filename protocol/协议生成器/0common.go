@@ -72,3 +72,40 @@ type MSG_COMMON_QueryErr struct {
 type MSG_COMMON_ResetWindow struct {
 	Window int32
 }
+
+//小文件上传下载
+type MSG_FILE_upload struct {
+	QueryID    uint32 //请求id
+	Name       string
+	Data       []byte
+	AddBy      int32
+	ObjectType string
+	ObjectID   int32
+	Code       string //如果是项目的文件，需要“产品代号/项目代号”，会保存在对应的文件夹内
+	Type       string //bindingFile sourceFile feedbackFile finalFile processFile
+}
+type MSG_FILE_upload_result struct {
+	QueryResultID uint32 //返回请求id
+	FileID        int64
+}
+type MSG_FILE_getByID struct {
+	QueryID uint32 //请求id
+	FileID  int64
+}
+type MSG_FILE_getByID_result struct {
+	QueryResultID uint32 //返回请求id
+	Name          string
+	Ext           string
+	Data          []byte
+	Type          string
+}
+type MSG_FILE_updateByIDMap struct {
+	QueryID uint32 //请求id
+	FileID  int64
+	Update  map[string]string
+}
+
+type MSG_FILE_DeleteByID struct { //
+	QueryID uint32
+	FileID  int64
+}

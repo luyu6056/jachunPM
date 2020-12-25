@@ -681,12 +681,15 @@ func (hs *Httpserver) getQueryCache() {
 		hs.Request.QueryCache, _ = url.ParseQuery(hs.Request.query)
 	}
 }
-func (c *Httpserver) Post(key string) (value string) {
-	value = c.PostForm(key)
+func (hs *Httpserver) Post(key string) (value string) {
+	value = hs.PostForm(key)
 	if value == "" {
-		value = c.Query(key)
+		value = hs.Query(key)
 	}
 	return
+}
+func (hs *Httpserver) PostSlice(key string) []string {
+	return hs.Request.FormCache[key]
 }
 func (hs *Httpserver) GetAllPost() (res map[string][]string) {
 	hs.Request.getFormCache()

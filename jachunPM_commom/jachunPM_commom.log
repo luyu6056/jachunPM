@@ -1,0 +1,48 @@
+2020-12-24 12:34:00 /mysql/mysql.go,line 822: 2020-12-24 12:34:00连接据库root:123456@tcp(192.168.1.180:3306)/jachunPM_commom?charset=utf8&loc=Local
+2020-12-24 12:34:00 /jachunPM_commom/main.go,line 47: rpchost started on tcp://127.0.0.1:8000 (loops: 32)
+2020-12-24 12:34:32 /jachunPM_commom/rpcHost/rpcserver.go,line 124: 服务4，ID0,启动
+2020-12-24 12:34:32 /jachunPM_commom/rpcHost/rpcserver.go,line 124: 服务132，ID0,启动
+2020-12-24 12:39:14 /jachunPM_commom/rpcHost/handler.go,line 55: 未注册服务，host未设置消息MSG_COMMON_CACHE_SET处理
+2020-12-24 12:39:14 /jachunPM_commom/rpcHost/handler.go,line 55: 未注册服务，host未设置消息MSG_COMMON_CACHE_SET处理
+2020-12-24 12:39:14 /jachunPM_commom/rpcHost/rpcserver.go,line 124: 服务130，ID0,启动
+2020-12-24 12:39:14 /jachunPM_commom/rpcHost/rpcserver.go,line 124: 服务2，ID0,启动
+2020-12-24 12:39:25 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_GET_LoginSalt ,No4
+2020-12-24 12:39:25 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_CheckPasswd ,No4
+2020-12-24 12:39:25 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_getCompanyUsers ,No4
+2020-12-24 12:39:30 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_getCompanyUsers ,No4
+2020-12-24 12:39:31 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_getCompanyUsers ,No4
+2020-12-24 12:39:32 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_getCompanyUsers ,No4
+2020-12-24 12:39:33 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_getCompanyUsers ,No4
+2020-12-24 12:39:34 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_getCompanyUsers ,No4
+2020-12-24 12:39:34 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_getCompanyUsers ,No4
+2020-12-24 12:39:35 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_getCompanyUsers ,No4
+2020-12-24 12:39:35 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_getCompanyUsers ,No4
+2020-12-24 12:39:45 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_getCompanyUsers ,No4
+2020-12-24 12:39:47 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_getCompanyUsers ,No4
+2020-12-24 12:39:48 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_Dept_getDataStructure ,No4
+2020-12-24 12:39:49 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_getCompanyUsers ,No4
+2020-12-24 12:39:49 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_Dept_getDataStructure ,No4
+2020-12-24 12:39:53 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_Dept_getDataStructure ,No4
+2020-12-24 12:39:55 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_Dept_getDataStructure ,No4
+2020-12-24 12:39:57 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_Dept_getDataStructure ,No4
+2020-12-24 12:39:59 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_getPairs ,No4
+2020-12-24 12:39:59 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_getPairs ,No4
+2020-12-24 12:39:59 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_getPairs ,No4
+2020-12-24 12:39:59 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_PROJECT_tree_getLinePairs ,No5
+2020-12-24 12:40:09 /jachunPM_commom/rpcHost/rpcserver.go,line 270: 服务130，ID0，cache<nil>,ping响应超时，进入半开状态
+2020-12-24 12:40:09 /jachunPM_commom/rpcHost/rpcserver.go,line 298: 服务130，ID0，收到pong，进入正常状态
+2020-12-24 12:40:09 /jachunPM_commom/rpcHost/rpcserver.go,line 270: 服务4，ID0，cache<nil>,ping响应超时，进入半开状态
+2020-12-24 12:40:09 /jachunPM_commom/rpcHost/rpcserver.go,line 298: 服务4，ID0，收到pong，进入正常状态
+2020-12-24 12:40:09 /jachunPM_commom/rpcHost/rpcserver.go,line 270: 服务2，ID0，cache<nil>,ping响应超时，进入半开状态
+2020-12-24 12:40:09 /jachunPM_commom/rpcHost/rpcserver.go,line 298: 服务2，ID0，收到pong，进入正常状态
+2020-12-24 12:40:42 /jachunPM_commom/rpcHost/rpcserver.go,line 124: 服务5，ID0,启动
+2020-12-24 12:40:42 /jachunPM_commom/rpcHost/rpcserver.go,line 124: 服务133，ID0,启动
+2020-12-24 12:43:03 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_getCompanyUsers ,No4
+2020-12-24 12:43:04 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_Dept_getDataStructure ,No4
+2020-12-24 12:43:05 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_getCompanyUsers ,No4
+2020-12-24 12:43:10 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_Dept_getDataStructure ,No4
+2020-12-24 12:43:12 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_Dept_getDataStructure ,No4
+2020-12-24 12:43:14 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_getPairs ,No4
+2020-12-24 12:43:14 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_getPairs ,No4
+2020-12-24 12:43:14 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_USER_getPairs ,No4
+2020-12-24 12:43:14 /jachunPM_commom/rpcHost/handler.go,line 137: cmdMSG_PROJECT_tree_getLinePairs ,No5

@@ -1,0 +1,13 @@
+2020-12-24 12:39:14 /jachunPM_http/main.go,line 105: httpserver started on 0.0.0.0:8080 (loops: 16)
+2020-12-24 12:39:14 /protocol/rpcClient.go,line 434: 连接host_cache成功,cacheId0
+2020-12-24 12:39:14 /protocol/rpcClient.go,line 432: 连接host成功，本服务ID0
+2020-12-24 12:39:48 /jachunPM_http/handler/module_common.go,line 108: 加载dept.browse.html的js失败,html/template: "dept.browse.js" is undefined
+2020-12-24 12:39:49 /jachunPM_http/handler/module_common.go,line 108: 加载dept.browse.html的js失败,html/template: "dept.browse.js" is undefined
+2020-12-24 12:39:53 /jachunPM_http/handler/module_common.go,line 108: 加载dept.browse.html的js失败,html/template: "dept.browse.js" is undefined
+2020-12-24 12:39:55 /jachunPM_http/handler/module_common.go,line 108: 加载dept.browse.html的js失败,html/template: "dept.browse.js" is undefined
+2020-12-24 12:39:57 /jachunPM_http/handler/module_common.go,line 108: 加载dept.browse.html的js失败,html/template: "dept.browse.js" is undefined
+2020-12-24 12:40:42 /jachunPM_http/handler/module_common.go,line 92: 加载product.create.html的css失败,html/template: "product.create.css" is undefined
+2020-12-24 12:43:04 /jachunPM_http/handler/module_common.go,line 108: 加载dept.browse.html的js失败,html/template: "dept.browse.js" is undefined
+2020-12-24 12:43:10 /jachunPM_http/handler/module_common.go,line 108: 加载dept.browse.html的js失败,html/template: "dept.browse.js" is undefined
+2020-12-24 12:43:12 /jachunPM_http/handler/module_common.go,line 108: 加载dept.browse.html的js失败,html/template: "dept.browse.js" is undefined
+2020-12-24 12:43:14 /jachunPM_http/handler/module_common.go,line 92: 加载product.create.html的css失败,html/template: "product.create.css" is undefined

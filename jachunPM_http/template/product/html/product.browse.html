@@ -1,20 +1,6 @@
-<?php
-/**
- * The browse view file of product module of ZenTaoPMS.
- *
- * @copyright   Copyright 2009-2015 青岛易软天创网络科技有限公司(QingDao Nature Easy Soft Network Technology Co,LTD, www.cnezsoft.com)
- * @license     ZPL (http://zpl.pub/page/zplv12.html)
- * @author      Chunsheng Wang <chunsheng@cnezsoft.com>
- * @package     product
- * @version     $Id: browse.html.php 4909 2013-06-26 07:23:50Z chencongzhi520@gmail.com $
- * @link        http://www.zentao.net
- */
-?>
 {{template "header.html" .}}
-{{include '../../common/view/datatable.fix.html.php'}}
-{{js_set "browseType" $browseType}}
-{{js_set "productID" $productID}}
-{{js_set "branch" $branch}}
+{{template "datatable.fix.html"}}
+
 <div id="mainMenu" class="clearfix">
   <div id="sidebarHeader">
     <div class="title">
@@ -103,7 +89,7 @@
         ?>
       </ul>
     </div>
-    {{if common_hasPriv "story" "batchCreate')) html_a $this->createLink('story" "batchCreate" "productID=$productID&branch=$branch&moduleID=$moduleID" "<i class='icon icon-plus'></i> {.Lang.story.batchCreate}" '', "class='btn btn btn-secondary'"}}
+    {{if common_hasPriv . "story" "batchCreate"}}{{html_a (helper_createLink "story" "batchCreate" "productID=" .Data.productID "&branch=" .Data.branch "&moduleID=" .Data.moduleID) (strAdd "<i class='icon icon-plus'></i>" .Lang.story.batchCreate) "" "class='btn btn btn-secondary'"}}{{end}}
     <?php
     if(commonModel::isTutorialMode())
     {
@@ -123,33 +109,33 @@
   <div class="side-col" id="sidebar">
     <div class="sidebar-toggle"><i class="icon icon-angle-left"></i></div>
     <div class="cell">
-      {{if(!$moduleTree}}
+      {{if .Data.moduleTree}}{{else}}
       <hr class="space">
       <div class="text-center text-muted">
         {{.Lang.product.noModule}}
       </div>
       <hr class="space">
       {{end}}
-      {{$moduleTree}}
+      {{.Data.moduleTree}}
       <div class="text-center">
-        {{common_printLink "tree" "browse" "rootID=$productID&view=story" .Lang.tree.manage, '', "class='btn btn-info btn-wide'"}}
+        {{common_printLink . "tree" "browse" (strAdd "rootID=" .Data.productID "&view=story") .Lang.tree.manage "" "class='btn btn-info btn-wide'"}}
         <hr class="space-sm" />
       </div>
     </div>
   </div>
   <div class="main-col">
-    <div class="cell{{if $browseType == 'bysearch') ' show'}}" id="queryBox"></div>
-    {{if(empty($stories)}}
+    <div class="cell{{if eq .Data.browseType "bysearch"}} show{{end}}" id="queryBox"></div>
+    {{if eq len .Data.stories 0}}
     <div class="table-empty-tip">
       <p>
         <span class="text-muted">{{.Lang.story.noStory}}</span>
-        {{if common_hasPriv "story" "create"}}
+        {{if common_hasPriv . "story" "create"}}
         <span class="text-muted">{{.Lang.youCould}}</span>
-        {{html_a $this->createLink('story' "create" "productID={$productID}&branch={$branch}&moduleID={$moduleID}") "<i class='icon icon-plus'></i> " . .Lang.story.create, '', "class='btn btn-info'"}}
+        {{html_a (helper_createLink "story" "create" "productID=" .Data.productID "&branch=" .Data.branch "&moduleID=" .Data.moduleID) (strAdd "<i class='icon icon-plus'></i> "  .Lang.story.create) "" "class='btn btn-info'"}}
         {{end}}
       </p>
     </div>
-    {{else:}}
+    {{else}}
     <form class="main-table table-story skip-iframe-modal" method="post" id='productStoryForm'>
       <div class="table-header fixed-right">
         <nav class="btn-toolbar pull-right"></nav>
@@ -164,8 +150,8 @@
       $widths  = $this->datatable->setFixedFieldWidth($setting);
       $columns = 0;
       ?>
-      {{if !$useDatatable) '<div class="table-responsive">'}}
-      <table class='table has-sort-head{{if($useDatatable) ' datatable'}}' id='storyList' data-fixed-left-width='{{$widths['leftWidth']}}' data-fixed-right-width='{{$widths['rightWidth']}}'>
+      {{if eq .Data.useDatatable nil}}<div class="table-responsive">{{end}}
+      <table class='table has-sort-head{{if .Data.useDatatable}} datatable{{end}}' id='storyList' data-fixed-left-width='{{index .Data.widths "leftWidth"}}' data-fixed-right-width='{{index .Data.widths "rightWidth"}}'>
         <thead>
           <tr>
           <?php
@@ -181,14 +167,14 @@
           </tr>
         </thead>
         <tbody>
-          {{foreach($stories as $story}}
-          <tr data-id='{{$story->id}}' data-estimate='{{$story->estimate}}' data-cases='{{zget($storyCases, $story->id, 0)}}'>
-            {{foreach($setting as $key => $value) $this->story->printCell($value, $story, $users, $branches, $storyStages, $modulePairs, $storyTasks, $storyBugs, $storyCases, $useDatatable ? 'datatable' : 'table')}}
+          {{range $story := .Data.stories}}
+          <tr data-id='{{$story.Id}}' data-estimate='{{$story.Estimate}}' data-cases='{{index .Data.storyCases $story.Id}}'>
+            {{range  $key,$value := .Data.setting}} $this->story->printCell($value, $story, $users, $branches, $storyStages, $modulePairs, $storyTasks, $storyBugs, $storyCases, $useDatatable ? 'datatable' : 'table'){{end}}
           </tr>
           {{end}}
         </tbody>
       </table>
-      {{if !$useDatatable) '</div>'}}
+      {{if eq .Data.useDatatable}}</div>{{end}}
       <div class="table-footer">
         <div class="checkbox-primary check-all"><label>{{.Lang.selectAll}}</label></div>
         <div class="table-actions btn-toolbar">
@@ -286,19 +272,18 @@
             </ul>
           </div>
 
-          {{if(common_hasPriv "story" "batchChangeModule"}}
+          {{if common_hasPriv . "story" "batchChangeModule"}}
           <div class="btn-group dropup">
             <button data-toggle="dropdown" type="button" class="btn">{{.Lang.story.moduleAB}} <span class="caret"></span></button>
-            {{$withSearch = count($modules) > 8}}
-            <div class="dropdown-menu search-list{{if $withSearch) ' search-box-sink'}}" data-ride="searchList">
-              {{if($withSearch}}
+            {{$withSearch := gt (len .Data.modules) 8}}
+            <div class="dropdown-menu search-list{{and $withSearch " search-box-sink"}}" data-ride="searchList">
+              {{if $withSearch}}
               <div class="input-control search-box has-icon-left has-icon-right search-example">
                 <input id="moduleSearchBox" type="search" autocomplete="off" class="form-control search-input">
                 <label for="moduleSearchBox" class="input-control-icon-left search-icon"><i class="icon icon-search"></i></label>
                 <a class="input-control-icon-right search-clear-btn"><i class="icon icon-close icon-sm"></i></a>
               </div>
-              {{$modulesPinYin = common::convert2Pinyin($modules);
-              }}
+              $modulesPinYin = common::convert2Pinyin($modules)
               {{end}}
               <div class="list-group">
                 <?php
@@ -319,16 +304,16 @@
             <?php
             unset($plans['']);
             $plans      = array(0 => .Lang.null) + $plans;
-            $withSearch = count($plans) > 8;
+            {{$withSearch := gt (len .Data.plans) 8}}
             ?>
-            <div class="dropdown-menu search-list{{if $withSearch) ' search-box-sink'}}" data-ride="searchList">
-              {{if($withSearch}}
+            <div class="dropdown-menu search-list{{and $withSearch " search-box-sink"}}" data-ride="searchList">
+              {{if $withSearch}}
               <div class="input-control search-box has-icon-left has-icon-right search-example">
                 <input id="planSearchBox" type="search" autocomplete="off" class="form-control search-input">
                 <label for="planSearchBox" class="input-control-icon-left search-icon"><i class="icon icon-search"></i></label>
                 <a class="input-control-icon-right search-clear-btn"><i class="icon icon-close icon-sm"></i></a>
               </div>
-              {{$plansPinYin = common::convert2Pinyin($plans)}}
+              $plansPinYin = common::convert2Pinyin($plans)
               {{end}}
               <div class="list-group">
                 <?php
@@ -344,17 +329,17 @@
           </div>
           {{end}}
 
-          {{if common_hasPriv "story" "batchAssignTo"}}
+          {{if common_hasPriv . "story" "batchAssignTo"}}
           <div class="btn-group dropup">
             <button data-toggle="dropdown" type="button" class="btn">{{.Lang.story.assignedTo}} <span class="caret"></span></button>
             <?php
-            $withSearch = count($users) > 10;
+            {{$withSearch := gt (len .Data.users) 10}}
             $actionLink = $this->createLink('story', 'batchAssignTo', "productID=$productID");
             html_select "assignedTo" $users "" "class="hidden""
             ?>
-            <div class="dropdown-menu search-list{{if $withSearch) ' search-box-sink'}}" data-ride="searchList">
-              {{if($withSearch}}
-              {{$usersPinYin = common::convert2Pinyin($users)}}
+            <div class="dropdown-menu search-list{{and $withSearch " search-box-sink"}}" data-ride="searchList">
+              {{if $withSearch}}
+              $usersPinYin = common::convert2Pinyin($users)
               <div class="input-control search-box has-icon-left has-icon-right search-example">
                 <input id="userSearchBox" type="search" autocomplete="off" class="form-control search-input">
                 <label for="userSearchBox" class="input-control-icon-left search-icon"><i class="icon icon-search"></i></label>
@@ -362,7 +347,7 @@
               </div>
               {{end}}
               <div class="list-group">
-              {{foreach ($users as $key => $value):}}
+              {{range $key,$value := .data.users}}
               <?php
               if(empty($key) or $key == 'closed') continue;
               $searchKey = $withSearch ? ('data-key="' . zget($usersPinYin, $value, '') . " @$key\"") : "data-key='@$key'";
@@ -374,16 +359,16 @@
           </div>
           {{end}}
         </div>
-        <div class="table-statistic">{{$summary}}</div>
-        {{$pager->show('right', 'pagerjs')}}
+        <div class="table-statistic">{{.Data.summary}}</div>
+        {{pager_show "right" "pagerjs"}}
       </div>
     </form>
     {{end}}
   </div>
 </div>
 <script>
-var moduleID = {{$moduleID}};
-$('#module{{$moduleID}}').closest('li').addClass('active');
+var browseType={{.Data.browseType}},productID= {{.Data.productID}},branch={{.Data.branch}},moduleID = {{.Data.moduleID}};
+$('#module{{.Data.moduleID}}').closest('li').addClass('active');
 
 $(function()
 {

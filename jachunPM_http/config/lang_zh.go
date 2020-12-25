@@ -4926,6 +4926,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["file"]["download"] = "下载附件"
 	Lang[protocol.ZH_CN]["file"]["uploadImages"] = "多图上传"
 	Lang[protocol.ZH_CN]["file"]["common"] = "附件"
+	Lang[protocol.ZH_CN]["file"]["imguploadFail"] = "图片上传失败，建议刷新重试,错误%v"
 	Lang[protocol.ZH_CN]["file"]["processFile"] = map[string]string{
 		"processFile": "过程文件",
 	}
@@ -6325,4 +6326,9 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["file"]["error"] = map[string]string{
 		"ErrImgType": "上传图片失败，格式识别错误",
 	}
+	Lang[protocol.ZH_CN]["error"]["checkTypeRequire"] = "不能为空"
+	Lang[protocol.ZH_CN]["error"]["checkTypeNum"] = "必须为数字"
+	Lang[protocol.ZH_CN]["error"]["checkTypeUserId"] = "必须为有效的用户"
+	Lang[protocol.ZH_CN]["error"]["checkHtmlKeyValueStr"] = "该选项无效，请刷新重新选择"
+	Lang[protocol.ZH_CN]["error"]["resultType"] = "远程服务器返回的结果不符合预期"
 }
