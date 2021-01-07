@@ -25,7 +25,7 @@ func get_dept_browse(data *TemplateData) gnet.Action {
 	data.Data["deptID"] = deptID
 	msg, err := HostConn.GetMsg()
 	if err != nil {
-		ws.OutErr(err)
+		data.OutErr(err)
 		return gnet.None
 	}
 	if int32(deptID) > 0 {
@@ -33,7 +33,7 @@ func get_dept_browse(data *TemplateData) gnet.Action {
 		getParents.Id = int32(deptID)
 		res, err := dept_getParents(int32(deptID))
 		if err != nil {
-			ws.OutErr(err)
+			data.OutErr(err)
 			return gnet.None
 		}
 		data.Data["parentDepts"] = res
@@ -41,12 +41,12 @@ func get_dept_browse(data *TemplateData) gnet.Action {
 	}
 	data.Data["depts"], err = dept_getTreeMenu(data, 0, dept_createManageLink)
 	if err != nil {
-		ws.OutErr(err)
+		data.OutErr(err)
 		return gnet.None
 	}
 	data.Data["sons"], err = dept_getSons(int32(deptID))
 	if err != nil {
-		ws.OutErr(err)
+		data.OutErr(err)
 		return gnet.None
 	}
 	getDataStructure := protocol.GET_MSG_USER_Dept_getDataStructure()
@@ -54,13 +54,13 @@ func get_dept_browse(data *TemplateData) gnet.Action {
 	var res *protocol.MSG_USER_Dept_getDataStructure_result
 	err = msg.SendMsgWaitResult(0, getDataStructure, &res)
 	if err != nil {
-		ws.OutErr(err)
+		data.OutErr(err)
 		return gnet.None
 	}
 	data.Data["tree"] = res.List
 	getDataStructure.Put()
 	if err != nil {
-		ws.OutErr(err)
+		data.OutErr(err)
 		return gnet.None
 	}
 	templateOut("dept.browse.html", data)

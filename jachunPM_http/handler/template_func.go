@@ -67,6 +67,13 @@ func createLink(moduleName string, methodName string, vars interface{}) string {
 		}
 
 	case nil:
+	case []interface{}:
+		if len(v) > 0 {
+			buf.WriteByte('?')
+			for _, s := range v {
+				buf.WriteString(libraries.I2S(s))
+			}
+		}
 	default:
 		libraries.DebugLog("createLink不识别类型%s\r\n%s", reflect.TypeOf(v).String(), string(debug.Stack()))
 	}
@@ -366,17 +373,17 @@ func htmlFuncs() {
 		}
 		return template.HTML("")
 	}
-	global_Funcs["html_commonButton"] = func(label string, value ...string) template.HTML { //$class = 'btn', $misc = '', $icon = '')
+	global_Funcs["html_commonButton"] = func(label string, value ...string) template.HTML { // $misc = '', $class = 'btn', $icon = '')
 		buf := bufpool.Get().(*libraries.MsgBuffer)
 		buf.WriteString("<button type='button'")
 		if len(value) > 0 {
 			buf.WriteString(" class='")
-			buf.WriteString(value[0]) //class
+			buf.WriteString(value[1]) //class
 			buf.WriteString("'")
 		}
 		if len(value) > 1 {
 			buf.WriteString(" ")
-			buf.WriteString(value[1]) //misc
+			buf.WriteString(value[0]) //misc
 		}
 		buf.WriteString(">")
 		if len(value) > 2 {

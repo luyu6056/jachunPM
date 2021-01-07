@@ -96,8 +96,7 @@ func post_user_login(data *TemplateData) gnet.Action {
 			keepLogin := ws.Post("keepLogin")
 			if keepLogin == "1" {
 				session.Expire(protocol.SessionKeepLoginExpires)
-			} else {
-				session.Expire(protocol.SessionTempExpires)
+				ws.SetCookie("sessionID", session.Load_str("sessionID"), protocol.SessionKeepLoginExpires)
 			}
 			referer := ws.Post("referer")
 			if strings.Index(referer, config.Server.Origin) == -1 {
@@ -118,7 +117,7 @@ func post_user_login(data *TemplateData) gnet.Action {
 func get_user_create(data *TemplateData) (action gnet.Action) {
 	deptList, err := dept_getOptionMenu(0)
 	if err != nil {
-		data.ws.OutErr(errors.New(data.Lang["dept"]["err"].(map[string]string)[protocol.Err_DeptNotFound.String()]))
+		data.OutErr(errors.New(data.Lang["dept"]["err"].(map[string]string)[protocol.Err_DeptNotFound.String()]))
 		return
 	}
 
@@ -142,7 +141,7 @@ func get_user_create(data *TemplateData) (action gnet.Action) {
 		data.Data["salt"] = resdata.Salt
 		data.Data["rand"] = strconv.Itoa(int(r))
 	} else {
-		data.ws.OutErr(err)
+		data.OutErr(err)
 		return
 	}
 	resdata.Put()
@@ -153,12 +152,12 @@ func get_user_edit(data *TemplateData) (action gnet.Action) {
 	userID, _ := strconv.Atoi(data.ws.Query("userID"))
 	userInfo := HostConn.GetUserCacheById(int32(userID))
 	if userInfo == nil {
-		data.ws.OutErr(errors.New(data.Lang["user"]["error"].(map[string]string)[protocol.Err_UserInfoNotFound.String()]))
+		data.OutErr(errors.New(data.Lang["user"]["error"].(map[string]string)[protocol.Err_UserInfoNotFound.String()]))
 		return
 	}
 	deptList, err := dept_getOptionMenu(0)
 	if err != nil {
-		data.ws.OutErr(errors.New(data.Lang["dept"]["err"].(map[string]string)[protocol.Err_DeptNotFound.String()]))
+		data.OutErr(errors.New(data.Lang["dept"]["err"].(map[string]string)[protocol.Err_DeptNotFound.String()]))
 		return
 	}
 	data.Data["groups"], _ = user_getGroupOptionMenu()
@@ -177,7 +176,7 @@ func get_user_edit(data *TemplateData) (action gnet.Action) {
 		data.Data["salt"] = resdata.Salt
 		data.Data["rand"] = strconv.Itoa(int(r))
 	} else {
-		data.ws.OutErr(err)
+		data.OutErr(err)
 		return
 	}
 	resdata.Put()
@@ -354,7 +353,7 @@ func get_user_delete(data *TemplateData) (action gnet.Action) {
 		data.Data["rand"] = strconv.Itoa(int(r))
 		resdata.Put()
 	} else {
-		data.ws.OutErr(err)
+		data.OutErr(err)
 		return
 	}
 	templateOut("user.delete.html", data)
@@ -408,7 +407,7 @@ func get_user_restore(data *TemplateData) (action gnet.Action) {
 	}
 	err := HostConn.SendMsgWaitResultToDefault(outupdate, nil)
 	if err != nil {
-		data.ws.OutErr(err)
+		data.OutErr(err)
 		return
 	}
 	outupdate.Put()

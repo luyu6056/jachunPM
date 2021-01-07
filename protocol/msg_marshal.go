@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"libraries"
+	"math"
 	"reflect"
 	"unsafe"
 )
@@ -73,6 +74,13 @@ func WRITE_bool(b bool, buf *libraries.MsgBuffer) {
 		buf.WriteByte(0)
 	}
 }
+func WRITE_float32(f float32, buf *libraries.MsgBuffer) {
+	WRITE_int32(int32(math.Float32bits(f)), buf)
+}
+func WRITE_float64(f float64, buf *libraries.MsgBuffer) {
+	WRITE_int64(int64(math.Float64bits(f)), buf)
+}
+
 func WRITE_map(i interface{}, buf *libraries.MsgBuffer) {
 	r := reflect.ValueOf(i)
 	if r.Kind() != reflect.Map && r.Kind() != reflect.Invalid {
@@ -115,6 +123,10 @@ func write_reflect(v reflect.Value, buf *libraries.MsgBuffer) {
 		WRITE_bool(v.Bool(), buf)
 	case reflect.Map:
 		WRITE_map(v.Interface(), buf)
+	case reflect.Float32:
+		WRITE_float32(v.Interface().(float32), buf)
+	case reflect.Float64:
+		WRITE_float64(v.Float(), buf)
 	case reflect.Slice:
 		if vv, ok := v.Interface().([]byte); ok {
 			WRITE_int32(int32(len(vv)), buf)
@@ -188,6 +200,13 @@ func READ_bool(buf *libraries.MsgBuffer) bool {
 	b := buf.Next(1)
 	return b[0] == 1
 }
+func READ_float32(buf *libraries.MsgBuffer) float32 {
+	return math.Float32frombits(READ_uint32(buf))
+}
+func READ_float64(buf *libraries.MsgBuffer) float64 {
+	return math.Float64frombits(READ_uint64(buf))
+}
+
 func READ_MSG_DATA(buf *libraries.MsgBuffer) MSG_DATA {
 	cmd := READ_int32(buf)
 	if f, ok := cmdMapFunc[cmd]; ok {
@@ -195,6 +214,7 @@ func READ_MSG_DATA(buf *libraries.MsgBuffer) MSG_DATA {
 	}
 	return nil
 }
+
 func READ_map(i interface{}, buf *libraries.MsgBuffer) {
 	l := READ_uint32(buf)
 	if l == 0 {
@@ -240,6 +260,10 @@ func read_reflect(v reflect.Type, buf *libraries.MsgBuffer) reflect.Value {
 		r := reflect.New(v).Elem()
 		READ_map(r.Interface(), buf)
 		return r
+	case reflect.Float32:
+		return reflect.ValueOf(READ_float32(buf))
+	case reflect.Float64:
+		return reflect.ValueOf(READ_float64(buf))
 	case reflect.Slice:
 		l := READ_int32(buf)
 		if v.Elem().Kind() == reflect.Uint8 {

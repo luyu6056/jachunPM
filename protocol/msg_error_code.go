@@ -16,7 +16,8 @@ const (
 	Err_DeptNotFound       ErrCode = -8
 	Err_DeptNotFoundID     ErrCode = -9
 	Err_UserInfoNotFound   ErrCode = -10
-	Err_UserAccountIsexist ErrCode = -19
+	Err_UserAccountIsexist ErrCode = -11
+	Err_TreeRepeatName     ErrCode = -12
 )
 
 func (err ErrCode) String() string {
@@ -28,5 +29,6 @@ func (err ErrCode) String() string {
 		Err_DeptNotFoundID:     "ErrDeptInfoDeptID",
 		Err_UserInfoNotFound:   "NotFoundUserInfo",
 		Err_UserAccountIsexist: "UserAccountIsexist",
+		Err_TreeRepeatName:     "ModuleNameRepeat",
 	}[err]
 }

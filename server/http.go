@@ -596,9 +596,10 @@ func (hs *Httpserver) Session() *cache.Hashvalue {
 				sessionIdKey = strings.TrimRight(libraries.SHA256_URL_BASE64(strconv.FormatInt(time.Now().UnixNano(), 10)+string(b)), "=")
 				_, has = cache.Has(sessionIdKey, "session")
 			}
-			hs.SetCookie("sessionID", sessionIdKey, protocol.SessionTempExpires)
+			hs.SetCookie("sessionID", sessionIdKey, protocol.SessionKeepLoginExpires)
 			hs.session = cache.Hget(sessionIdKey, "session")
-			hs.session.Expire(3600) //给个临时session
+			hs.session.Set("sessionID", sessionIdKey)
+			hs.session.Expire(protocol.SessionTempExpires) //给个临时session
 		}
 	}
 	return hs.session
@@ -689,6 +690,7 @@ func (hs *Httpserver) Post(key string) (value string) {
 	return
 }
 func (hs *Httpserver) PostSlice(key string) []string {
+	hs.Request.getFormCache()
 	return hs.Request.FormCache[key]
 }
 func (hs *Httpserver) GetAllPost() (res map[string][]string) {

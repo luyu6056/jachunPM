@@ -109,3 +109,23 @@ type MSG_FILE_DeleteByID struct { //
 	QueryID uint32
 	FileID  int64
 }
+type MSG_COMMON_BeginTransaction struct {
+	QueryID       uint32
+	TransactionNo uint32
+}
+type MSG_COMMON_BeginTransaction_result struct {
+	QueryResultID uint32
+	TransactionNo uint32
+}
+type MSG_COMMON_Transaction_Commit struct {
+	QueryID uint32
+	No      uint32
+}
+type MSG_COMMON_Transaction_RollBack struct {
+	QueryID uint32
+	No      uint32
+}
+type MSG_COMMON_Transaction_Check struct {
+	QueryID uint32
+	No      uint32
+}

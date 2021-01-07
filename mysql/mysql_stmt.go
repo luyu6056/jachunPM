@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -267,14 +268,25 @@ func (stmt *Database_mysql_stmt) Execute(args []interface{}) error {
 
 			// cache types and values
 			switch v := arg.(type) {
-			case int, int8, int16, int32, int64:
+			case int, int8, int16, int32:
+				paramTypes[i+i] = byte(fieldTypeLong)
+				paramTypes[i+i+1] = 0x00
+
+				b := argbuf.Make(4)
+				uint32ToBytes(touint32(v), b)
+			case int64:
 				paramTypes[i+i] = byte(fieldTypeLongLong)
 				paramTypes[i+i+1] = 0x00
 
 				b := argbuf.Make(8)
 				uint64ToBytes(touint64(v), b)
+			case uint, uint8, uint16, uint32:
+				paramTypes[i+i] = byte(fieldTypeLongLong)
+				paramTypes[i+i+1] = 0x00
 
-			case uint, uint8, uint16, uint32, uint64:
+				b := argbuf.Make(4)
+				uint32ToBytes(touint32(v), b)
+			case uint64:
 				paramTypes[i+i] = byte(fieldTypeLongLong)
 				paramTypes[i+i+1] = 0x80 // type is unsigned
 				b := argbuf.Make(8)
@@ -285,7 +297,11 @@ func (stmt *Database_mysql_stmt) Execute(args []interface{}) error {
 
 				b := argbuf.Make(8)
 				uint64ToBytes(math.Float64bits(v), b)
-
+			case float32:
+				paramTypes[i+i] = byte(fieldTypeFloat)
+				paramTypes[i+i+1] = 0x00
+				b := argbuf.Make(4)
+				uint32ToBytes(math.Float32bits(v), b)
 			case bool:
 				paramTypes[i+i] = byte(fieldTypeTiny)
 				paramTypes[i+i+1] = 0x00
@@ -338,6 +354,18 @@ func (stmt *Database_mysql_stmt) Execute(args []interface{}) error {
 				}
 
 			default:
+				r := reflect.TypeOf(arg)
+				if r.Kind() == reflect.Struct || r.Kind() == reflect.Slice || r.Kind() == reflect.Map {
+					paramTypes[i+i] = byte(fieldTypeString)
+					paramTypes[i+i+1] = 0x00
+					v := JsonMarshal(arg)
+					if len(v) < max_packet_size/(stmt.numInput+1) {
+						Writelenmsg(argbuf, v)
+						continue
+					} else {
+						return errors.New("输入的[]byte数据超过设计数值，请联系作者完善")
+					}
+				}
 				return fmt.Errorf("cannot convert type: %T", arg)
 			}
 		}

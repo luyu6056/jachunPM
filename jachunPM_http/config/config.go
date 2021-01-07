@@ -366,5 +366,13 @@ func configInit(local protocol.CountryNo) {
 		"planLabels":    []string{""},
 		"projectLabels": []string{""},
 	}
-
+	Config[local]["datatable"] = make(map[string]map[string]interface{})
+	Config[local]["datatable"]["moduleAlias"] = map[string]interface{}{
+		"product-browse": "story",
+		"project-task":   "task",
+		"testtask-cases": "testcase",
+		"my-task":        "task",
+	}
+	Config[local]["story"] = make(map[string]map[string]interface{})
+	Config[local]["story"]["statusList"] = protocol.HtmlKeyValueStr2MapStringInterface(Lang[protocol.DefaultLang]["story"]["statusList"].([]protocol.HtmlKeyValueStr))
 }

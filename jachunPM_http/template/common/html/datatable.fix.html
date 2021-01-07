@@ -1,28 +1,27 @@
-{{$datatableId := .ModuleName . ucfirst($this->methodName)}}
+{{$datatableId := strAdd .App.moduleName "/" .App.methodName}}
 <style>
 #setShowModule {margin-left: 30px;}
 </style>
 <script>
 $(function()
 {
-    {{if !empty($setModule)}}
+    {{if .Data.setModule}}
     $('#sidebar .cell .text-center:last').append("<a href='#showModuleModal' data-toggle='modal' class='btn btn-info btn-wide'>{{.Lang.datatable.moduleSetting}}</a><hr class='space-sm' />");
     {{end}}
 
     var $btnToolbar = $('#main .table-header .btn-toolbar:first');
     if($btnToolbar.length > 0)
     {
-        {{$mode = isset(.Config.datatable->$datatableId->mode) ? .Config.datatable->$datatableId->mode : 'table'}}
+        {{$mode := or (and (index .Config.datatable $datatableId) (index (index .Config.datatable $datatableId) "mode")) "table"}}
         var $dropdown = $('<div class="dropdown"><button id="tableCustomBtn" type="button" class="btn btn-link" data-toggle="dropdown"><i class="icon-cog"></i></button></div>');
         var $dropmenu = $('<ul class="dropdown-menu pull-right"></ul>');
-        $dropmenu.append("<li><a href='{{$this->createLink('datatable', 'ajaxCustom', 'id=' . .ModuleName . '&method=' . $this->methodName)}}' data-toggle='modal' data-type='ajax'>{{.Lang.datatable.custom}}</a></li>");
-        $dropmenu.append("<li><a href='javascript:saveDatatableConfig(\"mode\", \"{{$mode == 'table' ? 'datatable' : 'table'}}\", true);' id='switchToDatatable'>{{$mode == 'table' ? .Lang.datatable.switchToDatatable : .Lang.datatable.switchToTable}}</a></li>");
+        $dropmenu.append("<li><a href='{{helper_createLink "datatable" "ajaxCustom" "id="  .App.moduleName  "&method="  .App.methodName}}' data-toggle='modal' data-type='ajax'>{{.Lang.datatable.custom}}</a></li>");
+        $dropmenu.append("<li><a href='javascript:saveDatatableConfig(\"mode\", \"{{if eq $mode "table"}}datatable{{else}}table{{end}}\", true);' id='switchToDatatable'>{{if eq $mode "table"}}{{.Lang.datatable.switchToDatatable}}{{else}}{{.Lang.datatable.switchToTable}}{{end}}</a></li>");
         $dropdown.append($dropmenu).appendTo($btnToolbar);
     }
 
     $('#setShowModule').click(function()
     {
-        if('{{$this->app->user->account}}' == 'guest') return;
         datatableId   = '{{$datatableId}}';
         var value     = $('#showModuleModal input[name="showModule"]:checked').val();
         var allModule = $('#showModuleModal input[name="showAllModule"]:checked').val();
@@ -39,13 +38,12 @@ $(function()
                 allModule: allModule, 
             },
             success:function(){window.location.reload();},
-            url: '{{$this->createLink('datatable', 'ajaxSave')}}'
+            url: '{{helper_createLink "datatable" "ajaxSave"}}'
         });
     });
 
     window.saveDatatableConfig = function(name, value, reload, global)
     {
-        if('{{$this->app->user->account}}' == 'guest') return;
         var datatableId = '{{$datatableId}}';
         if(typeof value === 'object') value = JSON.stringify(value);
         if(typeof global === 'undefined') global = 0;
@@ -55,7 +53,7 @@ $(function()
             dataType: 'json',
             data: {target: datatableId, name: name, value: value, global: global},
             success:function(e){if(reload) window.location.reload();},
-            url: '{{$this->createLink('datatable', 'ajaxSave')}}'
+            url: '{{helper_createLink "datatable" "ajaxSave"}}'
         });
         $.get(createLink('score', 'ajax', "method=switchToDataTable"));
     };
@@ -70,16 +68,16 @@ $(function()
         <h4 class="modal-title"><i class="icon-cog"></i> {{.Lang.datatable.moduleSetting}}</h4>
       </div>
       <div class="modal-body">
-        <form class='form-condensed' method='post' target='hiddenwin' action='{{$this->createLink('datatable', 'ajaxSave')}}'>
+        <form class='form-condensed' method='post' target='hiddenwin' action='{{helper_createLink "datatable" "ajaxSave"}}'>
           <table class='table table-form'>
             <tr> 
               <td class='w-150px'>{{.Lang.datatable.showModule}}</td>
-              <td>{{html_radio "showModule" .Lang.datatable.showModuleList isset(.Config.datatable->$datatableId->showModule ? .Config.datatable->$datatableId->showModule : '')}}</td>
+              <td>{{html_radio "showModule" .Lang.datatable.showModuleList (or (and (index .Config.datatable $datatableId) (index (index .Config.datatable $datatableId) "showModule")) "")}}</td>
             </tr>
-            {{if $app->moduleName == 'project' && $app->methodName == 'task'}}
+            {{if and (eq .App.moduleName "project") (eq .App.methodName  "task")}}
             <tr> 
               <td>{{.Lang.datatable.showAllModule}}</td>
-              <td>{{html_radio "showAllModule" .Lang.datatable.showAllModuleList isset(.Config.project.task.allModule ? .Config.project.task.allModule : 0)}}</td>
+              <td>{{html_radio "showAllModule" .Lang.datatable.showAllModuleList (or (and .Config.project.task .Config.project.task.allModule)  0)}}</td>
             </tr>
             {{end}}
             <tr>

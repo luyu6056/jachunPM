@@ -1,108 +1,49 @@
 {{template "header.html" .}}
-{{template "datatable.fix.html"}}
-
+{{template "datatable.fix.html" .}}
 <div id="mainMenu" class="clearfix">
   <div id="sidebarHeader">
     <div class="title">
-      <?php
-      $moduleName;
-      if($moduleID)
-      {
-          $removeLink = $browseType == 'bymodule' ? inlink('browse', "productID=$productID&branch=$branch&browseType=$browseType&param=0&orderBy=$orderBy&recTotal=0&recPerPage={$pager->recPerPage}") : 'javascript:removeCookieByKey("storyModule")';
-          html_a $removeLink "<i class='icon icon-sm icon-close'></i>" "" "class='text-muted'"
-      }
-      ?>
+      {{- .Data.moduleName -}}
+      {{if .Data.moduleID}}{{if eq .Data.browseType "bymodule"}}{{html_a (helper_createLink "product" "browse" "productID=" .Data.productID "&branch=" .Data.branch "&browseType=" .Data.browseType "&param=0&orderBy=" .Data.orderBy "&recTotal=0&recPerPage=" .Page.PerPage) "<i class='icon icon-sm icon-close'></i>" "" "class='text-muted'"}}{{else}}{{html_a "javascript:removeCookieByKey('storyModule')" "<i class='icon icon-sm icon-close'></i>" "" "class='text-muted'"}}{{end}}{{end}}
     </div>
   </div>
   <div class="btn-toolbar pull-left">
-    <?php
-    foreach(customModel::getFeatureMenu(.ModuleName, $this->methodName) as $menuItem)
-    {
-        if(isset($menuItem->hidden)) continue;
-        $menuBrowseType = strpos($menuItem->name, 'QUERY') === 0 ? 'bySearch' : $menuItem->name;
-        if($menuItem->name == 'more')
-        {
-            if(!empty(.Lang.product.moreSelects))
-            {
-                $moreLabel       = .Lang.more;
-                $moreLabelActive = '';
-                $storyBrowseType = $this->session->storyBrowseType;
-                if(isset(.Lang.product.moreSelects[$storyBrowseType]))
-                {
-                    $moreLabel       = "<span class='text'>{.Lang.product.moreSelects[$storyBrowseType]}</span> <span class='label label-light label-badge'>{$pager->recTotal}</span>";
-                    $moreLabelActive = 'btn-active-text';
-                }
-                '<div class="btn-group">';
-                html::a('javascript:;', $moreLabel . " <span class='caret'></span>", '', "data-toggle='dropdown' class='btn btn-link $moreLabelActive'");
-                "<ul class='dropdown-menu'>";
-                foreach(.Lang.product.moreSelects as $key => $value)
-                {
-                    $active = $key == $storyBrowseType ? 'btn-active-text' : '';
-                    '<li>' . html_a $this->inlink('browse' "productID=$productID&branch=$branch&browseType=$key") "<span class='text'>{$value}</span>" '', "class='btn btn-link $active'" . '</li>';
-                }
-                '</ul></div>';
-            }
-        }
-        elseif($menuItem->name == 'QUERY')
-        {
-            if(isset(.Lang.custom.queryList))
-            {
-                '<div class="btn-group" id="query">';
-                $active  = '';
-                $current = $menuItem->text;
-                $dropdownHtml = "<ul class='dropdown-menu'>";
-                foreach(.Lang.custom.queryList as $queryID => $queryTitle)
-                {
-                    if($this->session->storyBrowseType == 'bysearch' and $queryID == $param)
-                    {
-                        $active  = 'btn-active-text';
-                        $current = "<span class='text'>{$queryTitle}</span> <span class='label label-light label-badge'>{$pager->recTotal}</span>";
-                    }
-                    $dropdownHtml .= '<li' . ($param == $queryID ? " class='active'" : '') . '>';
-                    $dropdownHtml .= html_a $this->inlink('browse' "productID=$productID&branch=$branch&browseType=$menuBrowseType&param=$queryID") $queryTitle
-                }
-                $dropdownHtml .= '</ul>';
-
-                html::a('javascript:;', $current . " <span class='caret'></span>", '', "data-toggle='dropdown' class='btn btn-link $active'");
-                $dropdownHtml;
-                '</div>';
-            }
-        }
-        else
-        {
-            html_a $this->inlink('browse' "productID=$productID&branch=$branch&browseType=$menuBrowseType") "<span class='text'>$menuItem->text</span>" . ($menuItem->name == $this->session->storyBrowseType ? ' <span class="label label-light label-badge">' . $pager->recTotal . '</span>' : '') "', "id='{$menuItem->name}Tab' class='btn btn-link" . ($this->session->storyBrowseType == $menuItem->name ? ' btn-active-text' : '" . "'");
-        }
-    }
-    ?>
+    {{range $menuItem:=.Lang.product.featureBar.browse}}
+        {{- if eq $menuItem.Key  "more"}}
+            {{- if $.Lang.product.moreSelects}}
+                {{- $moreLabel       := $.Lang.common.more}}
+                {{- $moreLabelActive := ""}}
+                {{- if getValue $.Lang.product.moreSelects $.Data.browseType}}    
+                    {{$moreLabel       = strAdd "<span class='text'>" (getValue $.Lang.product.moreSelects $.Data.browseType)}} "</span> <span class='label label-light label-badge'>" $.Page.Total "</span>"}}
+                    {{$moreLabelActive = "btn-active-text"}}
+                {{- end}}
+                <div class="btn-group">
+                {{html_a "javascript:;" (strAdd $moreLabel  " <span class='caret'></span>") "" (strAdd "data-toggle='dropdown' class='btn btn-link " $moreLabelActive "'")}}
+                <ul class='dropdown-menu'>
+                {{range $item := $.Lang.product.moreSelects}}
+                    {{- $active := and (or (eq $item.Key $.Data.browseType) "")  "btn-active-text" -}}
+                    <li>{{html_a (helper_createLink "product" "browse" "productID=" $.Data.productID "&branch=" $.Data.branch "&browseType=" $item.Key) (strAdd "<span class='text'>" $item.Value "</span>") "" (strAdd "class='btn btn-link " $active "'")}}</li>
+                {{end}}
+                </ul></div>
+            {{end}}
+        {{- else}}
+            {{- html_a (helper_createLink "product" "browse" "productID=" $.Data.productID "&branch=" $.Data.branch "&browseType=" $menuItem.Key) (strAdd "<span class='text'>" $menuItem.Value "</span>" (and (or (eq $menuItem.Key $.Data.browseType) "") (strAdd "<span class='label label-light label-badge'>" $.Page.Total "</span>")))  (strAdd "id=" $menuItem.Key "Tab' class='btn btn-link"  (and (or (eq $menuItem.Key $.Data.browseType) "") " btn-active-text") )}}
+        {{end -}}
+    {{end}}
     <a class="btn btn-link querybox-toggle" id='bysearchTab'><i class="icon icon-search muted"></i> {{.Lang.product.searchStory}}</a>
   </div>
   <div class="btn-toolbar pull-right">
-    {{common_printIcon "story" "report" "productID=$productID&browseType=$browseType&branchID=$branch&moduleID=$moduleID" "', 'button', 'bar-chart muted" }}
+    {{common_printIcon . "story" "report" (strAdd "productID=" .Data.productID "&browseType=" .Data.browseType "&branchID=" .Data.branch "&moduleID=" .Data.moduleID) nil "button" "bar-chart muted" }}
     <div class="btn-group">
-      <button class="btn btn-link" data-toggle="dropdown"><i class="icon icon-export muted"></i> <span class="text">{{.Lang.export }}</span> <span class="caret"></span></button>
+      <button class="btn btn-link" data-toggle="dropdown"><i class="icon icon-export muted"></i> <span class="text">{{.Lang.common.export }}</span> <span class="caret"></span></button>
       <ul class="dropdown-menu" id='exportActionMenu'>
-        <?php
-        $class = common_hasPriv "story" "export" ? '' : "class=disabled";
-        $misc  = common_hasPriv "story" "export" ? "class='export'" : "class=disabled";
-        $link  = common_hasPriv "story" "export') ?  $this->createLink('story" "export" "productID=$productID&orderBy=$orderBy&projectID=0&browseType=$browseType" : '#';
-        "<li $class>" . html_a $link .Lang.story.export "" $misc . "</li>";
-        ?>
+        {{- $misc  := or (and (common_hasPriv . "story" "export") "class='export'") "class=disabled"}}
+        {{- $link  := or (and (common_hasPriv . "story" "export") (helper_createLink "story" "export" "productID=" .Data.productID "&orderBy=" .Data.orderBy "&projectID=0&browseType=" .Data.browseType)) "#"}}
+        <li {{if (common_hasPriv . "story" "export")}}{{else}}class='disabled'{{end}}>{{html_a $link .Lang.story.export "" $misc}}</li>
       </ul>
     </div>
     {{if common_hasPriv . "story" "batchCreate"}}{{html_a (helper_createLink "story" "batchCreate" "productID=" .Data.productID "&branch=" .Data.branch "&moduleID=" .Data.moduleID) (strAdd "<i class='icon icon-plus'></i>" .Lang.story.batchCreate) "" "class='btn btn btn-secondary'"}}{{end}}
-    <?php
-    if(commonModel::isTutorialMode())
-    {
-        $wizardParams = helper::safe64Encode("productID=$productID&branch=$branch&moduleID=$moduleID");
-        $link = $this->createLink('tutorial', 'wizard', "module=story&method=create&params=$wizardParams");
-        html_a $link "<i class='icon icon-plus'></i> {.Lang.story.create}" "" "class='btn btn-primary create-story-btn'"
-    }
-    else
-    {
-        $link = $this->createLink('story', 'create', "productID=$productID&branch=$branch&moduleID=$moduleID");
-        if(common_hasPriv "story" 'create')) html::a($link "<i class='icon icon-plus'></i> {.Lang.story.create}" '', "class='btn btn-primary'"
-    }
-    ?>
+        {{if common_hasPriv . "story" "create"}}{{html_a (helper_createLink "story" "create" "productID=" .Data.productID "&branch=" .Data.branch "&moduleID=" .Data.moduleID) (strAdd "<i class='icon icon-plus'></i> " .Lang.story.create) "" "class='btn btn-primary'"}}{{end}}
   </div>
 </div>
 <div id="mainContent" class="main-row fade">
@@ -118,14 +59,14 @@
       {{end}}
       {{.Data.moduleTree}}
       <div class="text-center">
-        {{common_printLink . "tree" "browse" (strAdd "rootID=" .Data.productID "&view=story") .Lang.tree.manage "" "class='btn btn-info btn-wide'"}}
+        {{common_printLink . "tree" "browse" (strAdd "productID=" .Data.productID "&view=story") .Lang.tree.manage "" "class='btn btn-info btn-wide'"}}
         <hr class="space-sm" />
       </div>
     </div>
   </div>
   <div class="main-col">
     <div class="cell{{if eq .Data.browseType "bysearch"}} show{{end}}" id="queryBox"></div>
-    {{if eq len .Data.stories 0}}
+    {{if eq (len .Data.stories) 0}}
     <div class="table-empty-tip">
       <p>
         <span class="text-muted">{{.Lang.story.noStory}}</span>
@@ -236,10 +177,11 @@
 
               if(common_hasPriv "story" "batchChangeBranch" and $this->session->currentProductType != 'normal')
               {
-                  $withSearch = count($branches) > 8;
+                  {{$withSearch := gt (len .Data.branches) 8}}
+             
                   "<li class='dropdown-submenu'>";
                   html::a('javascript:;', .Lang.product.branchName[$this->session->currentProductType], '', "id='branchItem'");
-                  "<div class='dropdown-menu" . ($withSearch ? ' with-search':'') . "'>";
+                  <div class='dropdown-menu{{if $withSearch}} with-search{{end}}'>
                   "<ul class='dropdown-list'>";
                   foreach($branches as $branchID => $branchName)
                   {

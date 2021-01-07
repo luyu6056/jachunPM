@@ -8,7 +8,6 @@ import (
 	"libraries"
 	"strconv"
 	"strings"
-	"sync/atomic"
 
 	"github.com/luyu6056/cache"
 	"github.com/luyu6056/gnet"
@@ -22,11 +21,6 @@ func init() {
 	httpHandlerMap["GET"]["/file/tmpimg"] = get_file_tmpimg
 }
 
-var tempfileID uint64
-
-func init() {
-	tempfileID = commoncache.Load_uint64("tempfileID")
-}
 func post_file_ajaxPasteImage(data *TemplateData) (action gnet.Action) {
 	editor := data.ws.Post("editor")
 	result, err := libraries.Preg_match_result(`^<img src="data:image/([^;]+);base64,([^"]+)"`, editor, 1)
@@ -60,9 +54,8 @@ func post_file_ajaxPasteImage(data *TemplateData) (action gnet.Action) {
 			return
 		}
 	}
-	newID := atomic.AddUint64(&tempfileID, 1)
-	commoncache.INCRBY("commoncache", 1)
-	strID := strconv.FormatUint(newID, 10)
+	newID := commoncache.INCRBY("commoncache", 1)
+	strID := strconv.FormatUint(uint64(newID), 10)
 	cache.Hset(strID, map[string][]byte{"img": b}, "tmpfile", 86400)
 	data.ws.WriteString(`<img src="/file/tmpimg?fileID=` + strID + `&t=` + ext + `" alt="" />`)
 	return

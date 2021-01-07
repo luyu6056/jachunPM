@@ -7,6 +7,13 @@ import (
 	"time"
 )
 
+func uint32ToBytes(n uint32, b []byte) {
+	b[0] = byte(n)
+	b[1] = byte(n >> 8)
+	b[2] = byte(n >> 16)
+	b[3] = byte(n >> 24)
+
+}
 func uint64ToBytes(n uint64, b []byte) {
 	b[0] = byte(n)
 	b[1] = byte(n >> 8)
@@ -261,6 +268,27 @@ func touint64(arg interface{}) uint64 {
 	case uint32:
 		return uint64(v)
 	case uint64:
+		return v
+	}
+	return 0
+}
+func touint32(arg interface{}) uint32 {
+	switch v := arg.(type) {
+	case int:
+		return uint32(v)
+	case int8:
+		return uint32(v)
+	case int16:
+		return uint32(v)
+	case int32:
+		return uint32(v)
+	case uint:
+		return uint32(v)
+	case uint8:
+		return uint32(v)
+	case uint16:
+		return uint32(v)
+	case uint32:
 		return v
 	}
 	return 0

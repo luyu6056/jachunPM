@@ -20,7 +20,7 @@ func HandleTick(t time.Time) {
 	if HostConn.Status&firstFlag == firstFlag {
 		HostConn.Status -= protocol.RpcTickStatusFirst
 		//检查是否缺少默认admin
-		err := db.DB.Table(db.TABLE_USER).Limit(0).Select(&users)
+		err := HostConn.DB.Table(db.TABLE_USER).Limit(0).Select(&users)
 		if err != nil {
 			panic("检查用户数量失败" + err.Error())
 		}
@@ -34,13 +34,13 @@ func HandleTick(t time.Time) {
 				Realname: "admin",
 			}
 			admin.Password = libraries.SHA256_S("123456" + admin.Salt)
-			_, err = db.DB.Table(db.TABLE_USER).Insert(admin)
+			_, err = HostConn.DB.Table(db.TABLE_USER).Insert(admin)
 			if err != nil {
 				panic("初始化admin用户失败" + err.Error())
 			}
 			users = append(users, admin)
 		}
-		err = db.DB.Table(db.TABLE_COMPANY).Limit(0).Find(&company)
+		err = HostConn.DB.Table(db.TABLE_COMPANY).Limit(0).Find(&company)
 		if err != nil {
 			panic("检查公司信息失败" + err.Error())
 		}
@@ -50,34 +50,34 @@ func HandleTick(t time.Time) {
 				Name:   "杰骏数码",
 				Admins: []string{"admin"},
 			}
-			_, err = db.DB.Table(db.TABLE_COMPANY).Insert(company)
+			_, err = HostConn.DB.Table(db.TABLE_COMPANY).Insert(company)
 			if err != nil {
 				panic("初始化company失败" + err.Error())
 			}
 		}
-		err = db.DB.Table(db.TABLE_DEPT).Limit(0).Select(&deptlist)
+		err = HostConn.DB.Table(db.TABLE_DEPT).Limit(0).Select(&deptlist)
 		if err != nil {
 			panic("检查dept失败" + err.Error())
 		}
-		err = db.DB.Table(db.TABLE_GROUP).Limit(0).Select(&groups)
+		err = HostConn.DB.Table(db.TABLE_GROUP).Limit(0).Select(&groups)
 		if err != nil {
 			panic("检查group失败" + err.Error())
 		}
 	} else {
 		//检查是否需要更新缓存
-		err := db.DB.Table(db.TABLE_USER).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&users)
+		err := HostConn.DB.Table(db.TABLE_USER).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&users)
 		if err != nil {
 			libraries.ReleaseLog("检查user刷新缓存失败%v", err)
 		}
-		err = db.DB.Table(db.TABLE_COMPANY).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Find(&company)
+		err = HostConn.DB.Table(db.TABLE_COMPANY).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Find(&company)
 		if err != nil {
 			libraries.ReleaseLog("检查company刷新缓存失败%v", err)
 		}
-		err = db.DB.Table(db.TABLE_DEPT).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&deptlist)
+		err = HostConn.DB.Table(db.TABLE_DEPT).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&deptlist)
 		if err != nil {
 			libraries.ReleaseLog("检查dept刷新缓存失败%v", err)
 		}
-		err = db.DB.Table(db.TABLE_GROUP).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&groups)
+		err = HostConn.DB.Table(db.TABLE_GROUP).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&groups)
 		if err != nil {
 			libraries.ReleaseLog("检查dept刷新缓存失败%v", err)
 		}

@@ -34,11 +34,9 @@ func main() {
 		libraries.ReleaseLog("服务启动失败%v", err)
 	} else {
 		//db.Init()
+		handler.HostConn.SetTickHand(handler.HandleTick)
 		handler.HostConn.HandleMsg = handler.Handler
 		go handler.HostConn.Start()
-	}
-	for key, config := range config.Config[protocol.DefaultLang] {
-		handler.HostConn.SetConfig(key, config)
 	}
 
 	go http.ListenAndServe("0.0.0.0:"+strconv.Itoa(8100+protocol.HttpServerNo), nil)

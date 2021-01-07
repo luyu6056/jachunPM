@@ -60,7 +60,7 @@ func dept_updateFromCache(cacheList []*protocol.MSG_USER_Dept_cache) error {
 	return dept_updateFromList(deptList)
 }
 func dept_updateFromList(deptList []*db.Dept) error {
-	_, err := db.DB.Table(db.TABLE_DEPT).ReplaceAll(deptList)
+	_, err := HostConn.DB.Table(db.TABLE_DEPT).ReplaceAll(deptList)
 	if err == nil {
 		//刷新缓存
 		for _, v := range deptList {
@@ -104,7 +104,7 @@ func dept_getDeptUserPairs(deptID int32) (list []*protocol.MSG_USER_Pairs, err e
 		}
 	}
 
-	err = db.DB.Table(db.TABLE_USER).Field("Id,Account,Realname").Where(conditions).Order("Account").Select(&list)
+	err = HostConn.DB.Table(db.TABLE_USER).Field("Id,Account,Realname").Where(conditions).Order("Account").Select(&list)
 	return list, err
 }
 func dept_getAllChildID(deptID int32) (res []int32, err error) {
@@ -157,7 +157,7 @@ func dept_delete(data *protocol.MSG_USER_Dept_delete, in *protocol.Msg) {
 			return
 		}
 	}
-	_, err := db.DB.Table(db.TABLE_DEPT).Where("Id=?", data.DeptId).Delete()
+	_, err := in.DB.Table(db.TABLE_DEPT).Where("Id=?", data.DeptId).Delete()
 	if err != nil {
 		in.WriteErr(err)
 		return

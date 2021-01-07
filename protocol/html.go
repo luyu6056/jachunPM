@@ -20,3 +20,11 @@ type HtmlBlock struct {
 	Block  string
 	Prams  map[string]string
 }
+
+func HtmlKeyValueStr2MapStringInterface(in []HtmlKeyValueStr) (out map[string]interface{}) {
+	out = make(map[string]interface{}, len(in))
+	for _, kv := range in {
+		out[kv.Key] = kv.Value
+	}
+	return
+}

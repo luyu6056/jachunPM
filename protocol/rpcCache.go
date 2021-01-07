@@ -28,7 +28,7 @@ func (c *RpcCache) Get(name, path string) (b []byte, err error) {
 	data.Name = name
 	defer data.Put()
 	var resdata *MSG_COMMON_CACHE_GET_result
-	err = c.Svr.SendMsgWaitResult(0, 0, 0, data, &resdata)
+	err = c.Svr.SendMsgWaitResult(0, 0, 0, 0, data, &resdata)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func (c *RpcCache) GetPath(path string) (value [][]byte, err error) {
 	data.Path = path
 	defer data.Put()
 	var resdata *MSG_COMMON_CACHE_GETPATH_result
-	err = c.Svr.SendMsgWaitResult(0, 0, 0, data, &resdata)
+	err = c.Svr.SendMsgWaitResult(0, 0, 0, 0, data, &resdata)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (c *RpcCache) Set(name, path string, value []byte, expire int64) error {
 	data.Value = make([]byte, len(value))
 	copy(data.Value, value)
 	data.Expire = expire
-	c.Svr.SendMsg(0, 0, 0, data)
+	c.Svr.SendMsg(0, 0, 0, 0, data)
 	data.Put()
 
 	return nil
@@ -71,7 +71,7 @@ func (c *RpcCache) Del(name, path string) error {
 	data := GET_MSG_COMMON_CACHE_DEL()
 	data.Path = path
 	data.Name = name
-	c.Svr.SendMsg(0, 0, 0, data)
+	c.Svr.SendMsg(0, 0, 0, 0, data)
 	data.Put()
 	return nil
 }
@@ -81,7 +81,7 @@ func (c *RpcCache) DelPath(path string) error {
 	}
 	data := GET_MSG_COMMON_CACHE_DelPath()
 	data.Path = path
-	c.Svr.SendMsg(0, 0, 0, data)
+	c.Svr.SendMsg(0, 0, 0, 0, data)
 	data.Put()
 	return nil
 }

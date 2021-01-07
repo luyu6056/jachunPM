@@ -1,0 +1,23 @@
+<script type="text/javascript">productID={{.Data.productID}},module={{.Data.module}},method={{.Data.method}},extra={{.Data.extra}}</script>
+
+<div class="table-row">
+  <div class="table-col col-left">
+    <div class='list-group'>
+    {{if .Data.myProductsHtml}}
+        <div class='heading'>{{.Lang.product.mine}}</div>
+        {{.Data.myProductsHtml}}
+        <div class='heading'>{{.Lang.product.other}}</div>
+    {{end}}
+    {{.Data.normalProductsHtml}}
+    </div>
+    <div class="col-footer">
+      {{html_a (helper_createLink "product" "all") (strAdd "<i class='icon icon-cards-view muted'></i> "  .Lang.product.all)}}
+      <a class='pull-right toggle-right-col'>{{.Lang.product.closed}}<i class='icon icon-angle-right'></i></a>
+    </div>
+  </div>
+  <div class="table-col col-right">
+   <div class='list-group'>
+    {{.Data.closedProductsHtml}}
+    </div>
+  </div>
+</div>

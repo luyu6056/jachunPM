@@ -14,18 +14,15 @@ const (
 	TABLE_GROUP   = "group"
 )
 
-var DB *mysql.MysqlDB
-
-func Init() {
-	var err error
-	DB, err = mysql.Open(config.Config.MysqlDsn)
+func Init() *mysql.MysqlDB {
+	db, err := mysql.Open(config.Config.MysqlDsn)
 	if err != nil {
 		log.Fatalf("数据库连接失败 %v", err)
 	}
 	if config.Config.MysqlMaxConn > 0 {
-		DB.MaxOpenConns = config.Config.MysqlMaxConn
+		db.MaxOpenConns = config.Config.MysqlMaxConn
 	}
-	errs := DB.StoreEngine("Aria").AriaSetting(true, false, false, "PAGE").Sync2(
+	errs := db.StoreEngine("Innodb").Sync2(
 		new(User),
 		new(Company),
 		new(Dept),
@@ -34,6 +31,7 @@ func Init() {
 	if errs != nil {
 		log.Fatalf("数据库启动失败%v", errs)
 	}
+	return db
 }
 
 type User struct {

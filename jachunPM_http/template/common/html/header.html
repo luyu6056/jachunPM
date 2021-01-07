@@ -1,21 +1,19 @@
 {{template "header.lite.html" .}}
-
 {{importHeaderHook .}} 
-
-{{if eq .App.onlybody ""}}
+{{- if eq .App.onlybody "" -}}
 <header id='header'>
   <div id='mainHeader'>
     <div class='container'>
       <hgroup id='heading'>
-        {{$heading := .App.company.Name}}
+        {{- $heading := .App.company.Name}}
         <h1 id='companyname' title='{{$heading}}'{{if gt (strlen $heading) 36}} class='long-name'{{end}}>{{html_a (helper_createLink "index" "index")  $heading}}</h1>
       </hgroup>
       <nav id='navbar'>{{printMainmenu .}}</nav>
       <div id='toolbar'>
         <div id="userMenu">
-        {{$searchObject := .App.moduleName}}
-        {{if eq .App.moduleName "product"}}
-        {{if eq .App.methodName "browse"}}{{$searchObject = "story"}}{{end}}
+        {{- $searchObject := .App.moduleName}}
+        {{- if eq .App.moduleName "product"}}
+        {{- if eq .App.methodName "browse"}}{{$searchObject = "story"}}{{end}}
         {{else if eq .App.moduleName "project"}}
             {{if gt (strpos "task|story|bug|build" .App.methodName) -1}}{{$searchObject = .App.methodName}}{{end}}
         {{else if or (eq .App.moduleName "my") (eq .App.moduleName  "user")}}
@@ -51,17 +49,17 @@
                     <li class='dropdown-submenu'>
                       <a href='javascript:;'>{{.Lang.common.theme}}</a>
                       <ul class='dropdown-menu pull-left'>
-                      {{range $key,$value := .Lang.common.themes}}
+                      {{- range $key,$value := .Lang.common.themes}}
                           <li {{if eq (cookie $ "theme") $key}}class='selected'{{end}}><a href='javascript:selectTheme("{{$key}}");' data-value='{{$key}}'>{{$value}}</a></li>
-                      {{end}}
+                      {{- end}}
                       </ul>
                     </li>
                     <li class='dropdown-submenu'>
                     <a href='javascript:;'>{{.Lang.common.lang}}</a>
                       <ul class='dropdown-menu pull-left'>
-                      {{range $value := .Config.common.langs}}
+                      {{- range $value := .Config.common.langs}}
                         <li {{if eq (cookie $ "lang") $value.Key}}class='selected'{{end}}><a href='javascript:selectLang("{{$value.Key}}");'>{{$value.Value}}</a></li>
-                      {{end}}
+                      {{- end}}
                       </ul>
                   </li>
                 <li class='custom-item'><a href='{{helper_createLink "custom" "ajaxMenu" (strAdd "module=" .App.moduleName "&method=" .App.methodName)}}' data-toggle='modal' data-type='iframe' data-icon='cog' data-width='80%'>{{.Lang.common.customMenu}}</a></li>
@@ -74,14 +72,13 @@
   </div>
   <div id='subHeader'>
     <div class='container'>
-      <div id="pageNav" class='btn-toolbar'>{{if .Lang.common.modulePageNav}}{{.Lang.common.modulePageNav}}{{end}}</div>
+      <div id="pageNav" class='btn-toolbar'>{{if .Data.modulePageNav}}{{.Data.modulePageNav}}{{end}}</div>
       <nav id='subNavbar'>{{common_printModuleMenu . .App.moduleName}}</nav>
       <div id="pageActions"><div class='btn-toolbar'>{{if .Lang.common.modulePageActions}}{{.Lang.common.modulePageActions}}{{end}}</div></div>
     </div>
   </div>
- 
+  </div>
 </header>
-{{end}}
-
+{{- end}}
 <main id='main'>
   <div class='container'>

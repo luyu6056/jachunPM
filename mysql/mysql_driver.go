@@ -192,7 +192,7 @@ func (mysqldb *MysqlDB) ping() {
 							}
 						default:
 							for _, conn := range conn2List {
-								mysqldb.Put(conn) //最终再丢回去
+								mysqldb.putConn(conn) //最终再丢回去
 							}
 							break pingfor
 						}
@@ -259,6 +259,7 @@ func (conn *Mysql_Conn) ping(now int64) bool {
 }
 func (mysql *Mysql_Conn) Close() error {
 	if mysql != nil {
+		DEBUG(mysql.Thread_id)
 		if mysql.conn != nil {
 			conn := mysql.conn
 			mysql.conn = nil
@@ -347,7 +348,7 @@ func (mysqldb *MysqlDB) connect_new() (*Mysql_Conn, error) {
 	mysqldb.Lock.Unlock()
 	return new_connect, nil
 }
-func (mysqldb *MysqlDB) GET() (conn *Mysql_Conn, err error) {
+func (mysqldb *MysqlDB) getConn() (conn *Mysql_Conn, err error) {
 Loop:
 	for conn == nil {
 		select {
@@ -375,13 +376,13 @@ Loop:
 	}
 	return
 }
-func (mysqldb *MysqlDB) Query(sql []byte, row *MysqlRows, prepare_arg []interface{}) (columns []MysqlColumn, err error) {
-	conn, err := mysqldb.GET()
+func (mysqldb *MysqlDB) query(sql []byte, row *MysqlRows, prepare_arg []interface{}) (columns []MysqlColumn, err error) {
+	conn, err := mysqldb.getConn()
 	defer func() {
 		if err != nil {
 			conn.Close()
 		}
-		mysqldb.Put(conn)
+		mysqldb.putConn(conn)
 	}()
 	if err != nil {
 		return nil, err
@@ -398,13 +399,13 @@ func (mysqldb *MysqlDB) Query(sql []byte, row *MysqlRows, prepare_arg []interfac
 	}
 	return
 }
-func (mysqldb *MysqlDB) Exec(sql []byte, prepare_arg []interface{}) (lastInsertId, rowsAffected int64, err error) {
-	conn, err := mysqldb.GET()
+func (mysqldb *MysqlDB) exec(sql []byte, prepare_arg []interface{}) (lastInsertId, rowsAffected int64, err error) {
+	conn, err := mysqldb.getConn()
 	defer func() {
 		if err != nil {
 			conn.Close()
 		}
-		mysqldb.Put(conn)
+		mysqldb.putConn(conn)
 	}()
 	if err != nil {
 		return 0, 0, err
@@ -422,25 +423,23 @@ func (mysqldb *MysqlDB) Exec(sql []byte, prepare_arg []interface{}) (lastInsertI
 	return lastInsertId, rowsAffected, err
 }
 
-var start_transaction = []byte{115, 116, 97, 114, 116, 32, 116, 114, 97, 110, 115, 97, 99, 116, 105, 111, 110}
-
 func (mysqldb *MysqlDB) BeginTransaction() (*Transaction, error) {
-	conn, err := mysqldb.GET()
+	conn, err := mysqldb.getConn()
 	if err != nil {
 		return nil, err
 	}
-	_, _, err = conn.Exec(start_transaction) //start transaction
+	_, _, err = conn.Exec([]byte{115, 116, 97, 114, 116, 32, 116, 114, 97, 110, 115, 97, 99, 116, 105, 111, 110}) //start transaction
 	if err != nil {
 		conn.Close()
 		return nil, err
 	}
 	return &Transaction{conn: conn}, nil
 }
-func (mysqldb *MysqlDB) EndTransaction(conn *Mysql_Conn) {
-	mysqldb.Put(conn)
+func (mysqldb *MysqlDB) endTransaction(conn *Mysql_Conn) {
+	mysqldb.putConn(conn)
 }
 
-func (mysqldb *MysqlDB) Put(conn *Mysql_Conn) {
+func (mysqldb *MysqlDB) putConn(conn *Mysql_Conn) {
 	//DEBUG("Put", conn.Thread_id)
 	if mysqldb == nil || conn == nil {
 		return

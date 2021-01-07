@@ -5,7 +5,6 @@ import (
 	"libraries"
 	"protocol"
 	"runtime/debug"
-	"server"
 	"strings"
 
 	"github.com/luyu6056/cache"
@@ -34,7 +33,6 @@ type HttpRequest interface {
 	SetCookie(name, value string, max_age uint32)
 	SetHeader(name, value string)
 	StaticHandler() gnet.Action
-	OutErr(err error)
 	Write(*libraries.MsgBuffer)
 	WriteString(string)
 	Redirect(url string)
@@ -85,30 +83,4 @@ func getClientLang(ws HttpRequest) protocol.CountryNo {
 		client = protocol.DefaultLang
 	}
 	return client
-}
-func init() {
-	server.Errfunc = func(i interface{}, err error) bool {
-		ws, ok := i.(HttpRequest)
-		if ok {
-			data := templateDataInit(ws)
-			data.Data["err"] = err.Error()
-			templateLock.RLock()
-			buf := bufpool.Get().(*libraries.MsgBuffer)
-			defer func() {
-				buf.Reset()
-				bufpool.Put(buf)
-				templateLock.RUnlock()
-			}()
-			name := "error.html"
-			data.App["TemplateName"] = name
-			data.Data["title"] = "无法访问"
-			err := T.ExecuteTemplate(buf, name, data)
-			if err != nil {
-				libraries.ReleaseLog("%+v", err)
-			} else {
-				data.ws.Write(buf)
-			}
-		}
-		return ok
-	}
 }

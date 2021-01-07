@@ -25,9 +25,11 @@ func Init() {
 	}
 	errs := DB.StoreEngine("TokuDB").Sync2(
 		new(Log_msg),
-		new(File),
 	)
-	if errs != nil {
+	errs = append(errs, DB.StoreEngine("Innodb").Sync2(
+		new(File),
+	)...)
+	if len(errs) > 0 {
 		log.Fatalf("数据库启动失败%v", errs)
 	}
 	go UpdatedbInit()

@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"libraries"
 	"log"
 	"math"
 	"net/url"
@@ -18,7 +17,7 @@ import (
 	"unsafe"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/modern-go/reflect2"
+	"github.com/luyu6056/reflect2"
 )
 
 const (
@@ -54,39 +53,54 @@ type SliceHeader struct {
 }
 type Transaction struct {
 	conn *Mysql_Conn
+	lock sync.Mutex
 }
 
 func (t *Transaction) GetTransaction() *Mysql_Conn {
+	t.lock.Lock()
+	defer t.lock.Unlock()
 	return t.conn
 }
 
 func (t *Transaction) EndTransaction() {
+	t.lock.Lock()
+	defer t.lock.Unlock()
 	if conn := t.conn; conn != nil {
 		t.conn = nil
 		//rollback
 		conn.Exec([]byte{114, 111, 108, 108, 98, 97, 99, 107})
-		conn.db.EndTransaction(conn)
+		conn.db.endTransaction(conn)
 	}
 }
 
 func (t *Transaction) Commit() error {
-	_, _, err := t.conn.Exec([]byte{99, 111, 109, 109, 105, 116})
-	return err
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	if t.conn != nil {
+		_, _, err := t.conn.Exec([]byte{99, 111, 109, 109, 105, 116})
+		return err
+	}
+	return nil
 }
 
 func (t *Transaction) Rollback() error {
-	_, _, err := t.conn.Exec([]byte{114, 111, 108, 108, 98, 97, 99, 107})
-	return err
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	if t.conn != nil {
+		_, _, err := t.conn.Exec([]byte{114, 111, 108, 108, 98, 97, 99, 107})
+		return err
+	}
+	return nil
 }
 
 /*执行select专用
  *返回数据结构模式[]map[string]string
  */
 func (db *MysqlDB) QueryString(format string, args ...interface{}) (maps []map[string]string, err error) {
-	return QueryMap(Str2bytes(format), args, db, &Transaction{})
+	return queryMap(Str2bytes(format), args, db, &Transaction{})
 }
 
-func QueryMap(sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transaction) (maps []map[string]string, err error) {
+func queryMap(sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transaction) (maps []map[string]string, err error) {
 	row := rows_pool.Get().(*MysqlRows)
 	defer rows_pool.Put(row)
 
@@ -112,7 +126,7 @@ Retry:
 			return
 		}
 	} else {
-		columns, err = db.Query(sql, row, prepare_arg)
+		columns, err = db.query(sql, row, prepare_arg)
 		if err != nil {
 			if strings.Contains(err.Error(), "EOF") {
 				goto Retry
@@ -173,7 +187,7 @@ Retry:
 
 	return maps, nil
 }
-func Query(sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transaction, r interface{}) (err error) {
+func query(sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transaction, r interface{}) (err error) {
 	var is_struct, is_ptr bool
 	var obj_t, type_struct reflect.Type
 	var field_m map[string]*Field_struct
@@ -255,7 +269,7 @@ Retry:
 			return
 		}
 	} else {
-		columns, err = db.Query(sql, row, prepare_arg)
+		columns, err = db.query(sql, row, prepare_arg)
 		if err != nil {
 
 			if strings.Contains(err.Error(), "EOF") {
@@ -677,7 +691,7 @@ Retry:
  *返回新增ID和error
  *
  */
-func Insert(insert_sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transaction) (LastInsertId, rowsAffected int64, err error) {
+func insert(insert_sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transaction) (LastInsertId, rowsAffected int64, err error) {
 
 	var ts *Mysql_Conn
 	if t != nil {
@@ -699,7 +713,7 @@ func Insert(insert_sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transa
 
 	} else {
 	Retry:
-		LastInsertId, rowsAffected, err = db.Exec(insert_sql, prepare_arg)
+		LastInsertId, rowsAffected, err = db.exec(insert_sql, prepare_arg)
 
 		if err != nil {
 			if strings.Contains(err.Error(), "EOF") {
@@ -718,7 +732,7 @@ func Insert(insert_sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transa
  *返回error
  *
  */
-func Exec(query_sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transaction) (err error) {
+func exec(query_sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transaction) (err error) {
 	var ts *Mysql_Conn
 	if t != nil {
 		ts = t.GetTransaction()
@@ -736,7 +750,7 @@ func Exec(query_sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transacti
 		}
 	} else {
 	Retry:
-		_, _, err = db.Exec(query_sql, prepare_arg)
+		_, _, err = db.exec(query_sql, prepare_arg)
 		if err != nil {
 			if strings.Contains(err.Error(), "EOF") {
 				goto Retry
@@ -752,7 +766,7 @@ func Exec(query_sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transacti
 }
 
 //执行语句并取受影响行数
-func Query_getaffected(query_sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transaction) (rowsAffected int64, err error) {
+func query_getaffected(query_sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transaction) (rowsAffected int64, err error) {
 	var ts *Mysql_Conn
 	if t != nil {
 		ts = t.GetTransaction()
@@ -771,7 +785,7 @@ func Query_getaffected(query_sql []byte, prepare_arg []interface{}, db *MysqlDB,
 		}
 	} else {
 	Retry:
-		_, rowsAffected, err = db.Exec(query_sql, prepare_arg)
+		_, rowsAffected, err = db.exec(query_sql, prepare_arg)
 
 		if err != nil {
 			if strings.Contains(err.Error(), "EOF") {
@@ -819,7 +833,6 @@ func Open(dsn string) (*MysqlDB, error) {
 
 	}
 
-	libraries.DebugLog(time.Now().Format("2006-01-02 15:04:05") + "连接据库" + dsn)
 	var charset = "utf8"
 
 	if str[0][7] != "" {
@@ -1151,7 +1164,7 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 						buf.WriteString(" TRANSACTIONAL = 0 PAGE_CHECKSUM = 0 TABLE_CHECKSUM = 0 ROW_FORMAT = DYNAMIC")
 					}
 				}
-				err := Exec(buf.Bytes(), nil, db, &Transaction{})
+				err := exec(buf.Bytes(), nil, db, &Transaction{})
 				if err != nil {
 					errs = append(errs, errors.New("执行新建数据库失败："+err.Error()+" 错误sql:"+buf.String()))
 					return
@@ -1690,7 +1703,7 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 				if len(sql) > 0 {
 					s := "ALTER TABLE `" + table_name + "` " + strings.Join(sql, ",")
 					DEBUG(s)
-					err := Exec(Str2bytes(s), nil, db, &Transaction{})
+					err := exec(Str2bytes(s), nil, db, &Transaction{})
 					if err != nil {
 						errs = append(errs, errors.New(table_name+":"+err.Error()))
 						return
@@ -1705,7 +1718,7 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 				if res[0]["ENGINE"] != db.storeEngine.name {
 
 					res[0]["CREATE_OPTIONS"] = ""
-					err = Exec([]byte("ALTER TABLE `"+table_name+"` ENGINE = "+db.storeEngine.name+" transactional=default,row_format=default,checksum=0"), nil, db, &Transaction{})
+					err = exec([]byte("ALTER TABLE `"+table_name+"` ENGINE = "+db.storeEngine.name+" transactional=default,row_format=default,checksum=0"), nil, db, &Transaction{})
 					if err != nil {
 						errs = append(errs, errors.New(table_name+":"+err.Error()))
 						return
@@ -1741,7 +1754,7 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 				if sql != nil {
 					sql_str := "ALTER TABLE `" + table_name + "` " + strings.Join(sql, ",")
 					DEBUG(sql_str)
-					err := Exec([]byte(sql_str), nil, db, &Transaction{})
+					err := exec([]byte(sql_str), nil, db, &Transaction{})
 					if err != nil {
 						errs = append(errs, errors.New(table_name+":"+err.Error()))
 						return
@@ -1772,7 +1785,7 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 						buf.WriteString(" (`")
 						buf.WriteString(k)
 						buf.WriteString("`)")
-						err = Exec(buf.Bytes(), nil, db, &Transaction{})
+						err = exec(buf.Bytes(), nil, db, &Transaction{})
 						if err != nil {
 							errs = append(errs, errors.New(table_name+":"+err.Error()))
 							return
@@ -1851,19 +1864,25 @@ func Getvalue(str_i interface{}) string {
 	return ""
 }
 func marsha1Tostring(i interface{}) (str string) {
-	r := reflect.TypeOf(i)
-	if r == nil {
-		return ""
+	r := reflect.ValueOf(i)
+	if i == nil {
+		return "NULL"
 	}
 	for r.Kind() == reflect.Ptr {
 		r = r.Elem()
 	}
-	if r.Kind() == reflect.Struct || r.Kind() == reflect.Map || r.Kind() == reflect.Slice {
-		str = "'" + JsonMarshalString(i) + "'"
-	} else {
-		str = "'" + fmt.Sprint(i) + "'"
+	switch r.Kind() {
+	case reflect.Map:
+		if r.Len() == 0 {
+			return "'{}'"
+		}
+	case reflect.Slice:
+		if r.Len() == 0 {
+			return "'[]'"
+		}
 	}
-	return
+
+	return "'" + value_srp.Replace(JsonMarshalString(i)) + "'"
 }
 func encodeHex(bin []byte) string {
 	if len(bin) == 0 {
@@ -1920,21 +1939,25 @@ func GetvaluefromPtr(ptr uintptr, field reflect.StructField) string {
 		t := field.Type
 		if t.Kind() == reflect.Ptr {
 			if *(*uintptr)(unsafe.Pointer(ptr + field.Offset)) == 0 {
-				return "'null'"
+				return "NULL"
 			}
 		}
 		for t.Kind() == reflect.Ptr {
-
 			t = t.Elem()
 		}
 		i := reflect.NewAt(t, unsafe.Pointer(ptr+field.Offset))
-		var str string
-		if t.Kind() == reflect.Struct || t.Kind() == reflect.Map || t.Kind() == reflect.Slice {
-			str = JsonMarshalString(i.Interface())
-		} else {
-			str = fmt.Sprint(i)
+		switch t.Kind() {
+		case reflect.Map:
+			if i.Elem().Len() == 0 {
+				return "'{}'"
+			}
+		case reflect.Slice:
+			if i.Elem().Len() == 0 {
+				return "'[]'"
+			}
 		}
-		return "'" + str + "'"
+		return "'" + value_srp.Replace(JsonMarshalString(i.Elem().Interface())) + "'"
+
 	}
 	return ""
 }

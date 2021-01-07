@@ -29,6 +29,11 @@ const (
 	CMD_MSG_FILE_getByID_result = -1484540160
 	CMD_MSG_FILE_updateByIDMap = -1777243392
 	CMD_MSG_FILE_DeleteByID = -1568529408
+	CMD_MSG_COMMON_BeginTransaction = 1527289600
+	CMD_MSG_COMMON_BeginTransaction_result = 1407092224
+	CMD_MSG_COMMON_Transaction_Commit = 1628629504
+	CMD_MSG_COMMON_Transaction_RollBack = 1686161408
+	CMD_MSG_COMMON_Transaction_Check = -1791581952
 )
 
 type MSG_COMMON_regServer struct {
@@ -1121,6 +1126,236 @@ func (data *MSG_FILE_DeleteByID) getQueryID() uint32 {
 	return data.QueryID
 }
 func (data *MSG_FILE_DeleteByID) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_COMMON_BeginTransaction struct {
+	QueryID uint32
+	TransactionNo uint32
+}
+
+var pool_MSG_COMMON_BeginTransaction = sync.Pool{New: func() interface{} { return &MSG_COMMON_BeginTransaction{} }}
+
+func GET_MSG_COMMON_BeginTransaction() *MSG_COMMON_BeginTransaction {
+	return pool_MSG_COMMON_BeginTransaction.Get().(*MSG_COMMON_BeginTransaction)
+}
+
+func (data *MSG_COMMON_BeginTransaction) cmd() int32 {
+	return CMD_MSG_COMMON_BeginTransaction
+}
+
+func (data *MSG_COMMON_BeginTransaction) Put() {
+	data.QueryID = 0
+	data.TransactionNo = 0
+	pool_MSG_COMMON_BeginTransaction.Put(data)
+}
+func (data *MSG_COMMON_BeginTransaction) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_COMMON_BeginTransaction,buf)
+	WRITE_MSG_COMMON_BeginTransaction(data, buf)
+}
+
+func WRITE_MSG_COMMON_BeginTransaction(data *MSG_COMMON_BeginTransaction, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_uint32(data.TransactionNo, buf)
+}
+
+func READ_MSG_COMMON_BeginTransaction(buf *libraries.MsgBuffer) *MSG_COMMON_BeginTransaction {
+	data := pool_MSG_COMMON_BeginTransaction.Get().(*MSG_COMMON_BeginTransaction)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_COMMON_BeginTransaction) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	data.TransactionNo = READ_uint32(buf)
+
+}
+func (data *MSG_COMMON_BeginTransaction) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_COMMON_BeginTransaction) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_COMMON_BeginTransaction_result struct {
+	QueryResultID uint32
+	TransactionNo uint32
+}
+
+var pool_MSG_COMMON_BeginTransaction_result = sync.Pool{New: func() interface{} { return &MSG_COMMON_BeginTransaction_result{} }}
+
+func GET_MSG_COMMON_BeginTransaction_result() *MSG_COMMON_BeginTransaction_result {
+	return pool_MSG_COMMON_BeginTransaction_result.Get().(*MSG_COMMON_BeginTransaction_result)
+}
+
+func (data *MSG_COMMON_BeginTransaction_result) cmd() int32 {
+	return CMD_MSG_COMMON_BeginTransaction_result
+}
+
+func (data *MSG_COMMON_BeginTransaction_result) Put() {
+	data.QueryResultID = 0
+	data.TransactionNo = 0
+	pool_MSG_COMMON_BeginTransaction_result.Put(data)
+}
+func (data *MSG_COMMON_BeginTransaction_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_COMMON_BeginTransaction_result,buf)
+	WRITE_MSG_COMMON_BeginTransaction_result(data, buf)
+}
+
+func WRITE_MSG_COMMON_BeginTransaction_result(data *MSG_COMMON_BeginTransaction_result, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryResultID, buf)
+	WRITE_uint32(data.TransactionNo, buf)
+}
+
+func READ_MSG_COMMON_BeginTransaction_result(buf *libraries.MsgBuffer) *MSG_COMMON_BeginTransaction_result {
+	data := pool_MSG_COMMON_BeginTransaction_result.Get().(*MSG_COMMON_BeginTransaction_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_COMMON_BeginTransaction_result) read(buf *libraries.MsgBuffer) {
+	data.QueryResultID = READ_uint32(buf)
+	data.TransactionNo = READ_uint32(buf)
+
+}
+func (data *MSG_COMMON_BeginTransaction_result) getQueryResultID() uint32 {
+	return data.QueryResultID
+}
+func (data *MSG_COMMON_BeginTransaction_result) setQueryResultID(id uint32) {
+	data.QueryResultID = id
+}
+
+type MSG_COMMON_Transaction_Commit struct {
+	QueryID uint32
+	No uint32
+}
+
+var pool_MSG_COMMON_Transaction_Commit = sync.Pool{New: func() interface{} { return &MSG_COMMON_Transaction_Commit{} }}
+
+func GET_MSG_COMMON_Transaction_Commit() *MSG_COMMON_Transaction_Commit {
+	return pool_MSG_COMMON_Transaction_Commit.Get().(*MSG_COMMON_Transaction_Commit)
+}
+
+func (data *MSG_COMMON_Transaction_Commit) cmd() int32 {
+	return CMD_MSG_COMMON_Transaction_Commit
+}
+
+func (data *MSG_COMMON_Transaction_Commit) Put() {
+	data.QueryID = 0
+	data.No = 0
+	pool_MSG_COMMON_Transaction_Commit.Put(data)
+}
+func (data *MSG_COMMON_Transaction_Commit) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_COMMON_Transaction_Commit,buf)
+	WRITE_MSG_COMMON_Transaction_Commit(data, buf)
+}
+
+func WRITE_MSG_COMMON_Transaction_Commit(data *MSG_COMMON_Transaction_Commit, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_uint32(data.No, buf)
+}
+
+func READ_MSG_COMMON_Transaction_Commit(buf *libraries.MsgBuffer) *MSG_COMMON_Transaction_Commit {
+	data := pool_MSG_COMMON_Transaction_Commit.Get().(*MSG_COMMON_Transaction_Commit)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_COMMON_Transaction_Commit) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	data.No = READ_uint32(buf)
+
+}
+func (data *MSG_COMMON_Transaction_Commit) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_COMMON_Transaction_Commit) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_COMMON_Transaction_RollBack struct {
+	No uint32
+}
+
+var pool_MSG_COMMON_Transaction_RollBack = sync.Pool{New: func() interface{} { return &MSG_COMMON_Transaction_RollBack{} }}
+
+func GET_MSG_COMMON_Transaction_RollBack() *MSG_COMMON_Transaction_RollBack {
+	return pool_MSG_COMMON_Transaction_RollBack.Get().(*MSG_COMMON_Transaction_RollBack)
+}
+
+func (data *MSG_COMMON_Transaction_RollBack) cmd() int32 {
+	return CMD_MSG_COMMON_Transaction_RollBack
+}
+
+func (data *MSG_COMMON_Transaction_RollBack) Put() {
+	data.No = 0
+	pool_MSG_COMMON_Transaction_RollBack.Put(data)
+}
+func (data *MSG_COMMON_Transaction_RollBack) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_COMMON_Transaction_RollBack,buf)
+	WRITE_MSG_COMMON_Transaction_RollBack(data, buf)
+}
+
+func WRITE_MSG_COMMON_Transaction_RollBack(data *MSG_COMMON_Transaction_RollBack, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.No, buf)
+}
+
+func READ_MSG_COMMON_Transaction_RollBack(buf *libraries.MsgBuffer) *MSG_COMMON_Transaction_RollBack {
+	data := pool_MSG_COMMON_Transaction_RollBack.Get().(*MSG_COMMON_Transaction_RollBack)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_COMMON_Transaction_RollBack) read(buf *libraries.MsgBuffer) {
+	data.No = READ_uint32(buf)
+
+}
+
+type MSG_COMMON_Transaction_Check struct {
+	QueryID uint32
+	No uint32
+}
+
+var pool_MSG_COMMON_Transaction_Check = sync.Pool{New: func() interface{} { return &MSG_COMMON_Transaction_Check{} }}
+
+func GET_MSG_COMMON_Transaction_Check() *MSG_COMMON_Transaction_Check {
+	return pool_MSG_COMMON_Transaction_Check.Get().(*MSG_COMMON_Transaction_Check)
+}
+
+func (data *MSG_COMMON_Transaction_Check) cmd() int32 {
+	return CMD_MSG_COMMON_Transaction_Check
+}
+
+func (data *MSG_COMMON_Transaction_Check) Put() {
+	data.QueryID = 0
+	data.No = 0
+	pool_MSG_COMMON_Transaction_Check.Put(data)
+}
+func (data *MSG_COMMON_Transaction_Check) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_COMMON_Transaction_Check,buf)
+	WRITE_MSG_COMMON_Transaction_Check(data, buf)
+}
+
+func WRITE_MSG_COMMON_Transaction_Check(data *MSG_COMMON_Transaction_Check, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_uint32(data.No, buf)
+}
+
+func READ_MSG_COMMON_Transaction_Check(buf *libraries.MsgBuffer) *MSG_COMMON_Transaction_Check {
+	data := pool_MSG_COMMON_Transaction_Check.Get().(*MSG_COMMON_Transaction_Check)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_COMMON_Transaction_Check) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	data.No = READ_uint32(buf)
+
+}
+func (data *MSG_COMMON_Transaction_Check) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_COMMON_Transaction_Check) setQueryID(id uint32) {
 	data.QueryID = id
 }
 

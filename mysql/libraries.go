@@ -89,6 +89,13 @@ func JsonMarshalString(i interface{}) string {
 	}
 	return s
 }
+func JsonMarshal(i interface{}) []byte {
+	s, e := jsoniter.Marshal(i)
+	if e != nil {
+		DEBUG(i, "json序列化失败", e)
+	}
+	return s
+}
 func Log(format string, v ...interface{}) {
 	_, file, line, ok := runtime.Caller(1)
 	if ok {

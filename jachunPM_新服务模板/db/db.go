@@ -11,16 +11,13 @@ const (
 	TABLE_LOG_MSG = "Log_msg"
 )
 
-var DB *mysql.MysqlDB
-
-func Init() {
-	var err error
-	DB, err = mysql.Open(config.Config.MysqlDsn)
+func Init() *mysql.MysqlDB {
+	db, err := mysql.Open(config.Config.MysqlDsn)
 	if err != nil {
 		log.Fatalf("数据库连接失败 %v", err)
 	}
 	if config.Config.MysqlMaxConn > 0 {
-		DB.MaxOpenConns = config.Config.MysqlMaxConn
+		db.MaxOpenConns = config.Config.MysqlMaxConn
 	}
 	errs := DB.StoreEngine("TokuDB").Sync2(
 		new(Log_msg),
@@ -28,6 +25,7 @@ func Init() {
 	if errs != nil {
 		log.Fatalf("数据库启动失败%v", errs)
 	}
+	return db
 }
 
 type Log_msg struct {

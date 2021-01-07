@@ -11,7 +11,7 @@ import (
 func getLoginSalt(data *protocol.MSG_USER_GET_LoginSalt, msg *protocol.Msg) {
 
 	var user *db.User
-	err := db.DB.Table(db.TABLE_USER).WhereOr(map[string]interface{}{"Account": data.Name, "Realname": data.Name, "Mobile": data.Name}).Find(&user)
+	err := msg.DB.Table(db.TABLE_USER).WhereOr(map[string]interface{}{"Account": data.Name, "Realname": data.Name, "Mobile": data.Name}).Find(&user)
 	if err != nil {
 		msg.WriteErr(err)
 		return
@@ -31,7 +31,7 @@ func checkPasswd(data *protocol.MSG_USER_CheckPasswd, msg *protocol.Msg) {
 	if data.UserId > 0 {
 		user, err = getUserInfoByID(data.UserId)
 	} else {
-		err = db.DB.Table(db.TABLE_USER).WhereOr(map[string]interface{}{"Account": data.Name, "Realname": data.Name, "Mobile": data.Name}).Find(&user)
+		err = msg.DB.Table(db.TABLE_USER).WhereOr(map[string]interface{}{"Account": data.Name, "Realname": data.Name, "Mobile": data.Name}).Find(&user)
 	}
 
 	if err != nil {
@@ -49,12 +49,12 @@ func checkPasswd(data *protocol.MSG_USER_CheckPasswd, msg *protocol.Msg) {
 	res.Put()
 }
 func getUserInfoByID(uid int32) (userinfo *db.User, err error) {
-	err = db.DB.Table(db.TABLE_USER).Prepare().Where("Id=?", uid).Find(&userinfo)
+	err = HostConn.DB.Table(db.TABLE_USER).Prepare().Where("Id=?", uid).Find(&userinfo)
 	return
 }
 func getUserInfoByIDS(ids []int32) (users []*db.User, err error) {
 	userlist := []*db.User{}
-	err = db.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": ids}).Select(&userlist)
+	err = HostConn.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": ids}).Select(&userlist)
 	return userlist, err
 
 }
@@ -95,7 +95,7 @@ func user_getPairs(params string, usersToAppended int32) ([]protocol.HtmlKeyValu
 		conditions["account"] = usersToAppended
 	}
 
-	err = db.DB.Table(db.TABLE_USER).Field(fields).WhereOr(conditions).Order(orderBy).Select(&userList)
+	err = HostConn.DB.Table(db.TABLE_USER).Field(fields).WhereOr(conditions).Order(orderBy).Select(&userList)
 	if err != nil {
 		return nil, err
 	}
@@ -156,13 +156,13 @@ func user_getCompanyUsers(data *protocol.MSG_USER_getCompanyUsers, in *protocol.
 		}
 		where = data.Where
 	}
-	err := db.DB.Table(db.TABLE_USER).Where(where).Order("deleted asc,"+data.Sort).Limit(data.PerPage*(data.Page-1), data.PerPage).Select(&out.List)
+	err := in.DB.Table(db.TABLE_USER).Where(where).Order("deleted asc,"+data.Sort).Limit(data.PerPage*(data.Page-1), data.PerPage).Select(&out.List)
 	if err != nil {
 		in.WriteErr(err)
 		return
 	}
 	if data.Total <= 0 {
-		out.Total, err = db.DB.Table(db.TABLE_USER).Where(where).Count()
+		out.Total, err = in.DB.Table(db.TABLE_USER).Where(where).Count()
 		if err != nil {
 			in.WriteErr(err)
 			return
@@ -172,10 +172,10 @@ func user_getCompanyUsers(data *protocol.MSG_USER_getCompanyUsers, in *protocol.
 	return
 }
 func user_updateMap(where map[string]interface{}, update map[string]interface{}) error {
-	res, err := db.DB.Table(db.TABLE_USER).Where(where).Update(update)
+	res, err := HostConn.DB.Table(db.TABLE_USER).Where(where).Update(update)
 	if res {
 		var users []*db.User
-		db.DB.Table(db.TABLE_USER).Where(where).Limit(0).Select(&users)
+		HostConn.DB.Table(db.TABLE_USER).Where(where).Limit(0).Select(&users)
 		for _, user := range users {
 			user_setCache(user)
 		}
@@ -218,7 +218,7 @@ func user_setCache(user *db.User) {
 	cache.Put()
 }
 func user_insertMap(insert map[string]interface{}) error {
-	id, err := db.DB.Table(db.TABLE_USER).Insert(insert)
+	id, err := HostConn.DB.Table(db.TABLE_USER).Insert(insert)
 	if id > 0 {
 		user, _ := getUserInfoByID(int32(id))
 		user_setCache(user)
@@ -226,7 +226,7 @@ func user_insertMap(insert map[string]interface{}) error {
 	return err
 }
 func user_getUserInfo(where map[string]interface{}) (users []*db.User, err error) {
-	err = db.DB.Table(db.TABLE_USER).Where(where).Limit(0).Select(&users)
+	err = HostConn.DB.Table(db.TABLE_USER).Where(where).Limit(0).Select(&users)
 	return
 }
 func updateUserView(data *protocol.MSG_USER_updateUserView, in *protocol.Msg) {
@@ -240,7 +240,7 @@ func updateUserView(data *protocol.MSG_USER_updateUserView, in *protocol.Msg) {
 
 	var users []*db.User
 	var matchIds []int32
-	err = db.DB.Table(db.TABLE_USER).Limit(0).Select(&users)
+	err = in.DB.Table(db.TABLE_USER).Limit(0).Select(&users)
 	if err != nil {
 		return
 	}
@@ -289,14 +289,14 @@ func updateUserView(data *protocol.MSG_USER_updateUserView, in *protocol.Msg) {
 	}
 	//先把权限删除
 	if len(productIds) > 0 && data.ProductId > 0 {
-		_, err = db.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": productIds}).Update(map[string]interface{}{"AclProducts": []string{"exp", "json_remove(AclProducts, '$." + strconv.Itoa(int(data.ProductId)) + "' )"}})
+		_, err = in.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": productIds}).Update(map[string]interface{}{"AclProducts": []string{"exp", "json_remove(AclProducts, '$." + strconv.Itoa(int(data.ProductId)) + "' )"}})
 		if err != nil {
 			return
 		}
 
 	}
 	if len(projectIds) > 0 && data.ProjectId > 0 {
-		_, err = db.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": projectIds}).Update(map[string]interface{}{"AclProjects": []string{"exp", "json_remove(AclProjects, '$." + strconv.Itoa(int(data.ProjectId)) + "' )"}})
+		_, err = in.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": projectIds}).Update(map[string]interface{}{"AclProjects": []string{"exp", "json_remove(AclProjects, '$." + strconv.Itoa(int(data.ProjectId)) + "' )"}})
 		if err != nil {
 			return
 		}
@@ -304,21 +304,21 @@ func updateUserView(data *protocol.MSG_USER_updateUserView, in *protocol.Msg) {
 	//增加权限
 	if len(matchIds) > 0 {
 		if data.ProductId > 0 {
-			_, err = db.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds, "AclProducts": nil}).Update(map[string]interface{}{"AclProducts": `{}`})
+			_, err = in.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds, "AclProducts": nil}).Update(map[string]interface{}{"AclProducts": `{}`})
 			if err != nil {
 				return
 			}
-			_, err = db.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds}).Update(map[string]interface{}{"AclProducts": []string{"exp", "json_set(AclProducts, '$." + strconv.Itoa(int(data.ProductId)) + "','true' )"}})
+			_, err = in.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds}).Update(map[string]interface{}{"AclProducts": []string{"exp", "json_set(AclProducts, '$." + strconv.Itoa(int(data.ProductId)) + "','true' )"}})
 			if err != nil {
 				return
 			}
 		}
 		if data.ProjectId > 0 {
-			_, err = db.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds, "AclProjects": nil}).Update(map[string]interface{}{"AclProjects": `{}`})
+			_, err = in.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds, "AclProjects": nil}).Update(map[string]interface{}{"AclProjects": `{}`})
 			if err != nil {
 				return
 			}
-			_, err = db.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds}).Update(map[string]interface{}{"AclProjects": []string{"exp", "json_set(AclProjects, '$." + strconv.Itoa(int(data.ProjectId)) + "','true' )"}})
+			_, err = in.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds}).Update(map[string]interface{}{"AclProjects": []string{"exp", "json_set(AclProjects, '$." + strconv.Itoa(int(data.ProjectId)) + "','true' )"}})
 			if err != nil {
 				return
 			}

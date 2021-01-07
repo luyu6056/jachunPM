@@ -305,11 +305,9 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["product"] = make(map[string]interface{})
 	Lang[protocol.ZH_CN]["product"]["noMatched"] = `找不到包含"%s"的` + Lang[protocol.ZH_CN]["common"]["productCommon"].(string)
 	Lang[protocol.ZH_CN]["product"]["noProduct"] = "暂时没有产品。"
-	Lang[protocol.ZH_CN]["product"]["noModule"] = "<div>您现在还没有模块信息</div><div>请维护产品模块</div>"
+	Lang[protocol.ZH_CN]["product"]["noModule"] = template.HTML("<div>您现在还没有模块信息</div><div>请维护产品模块</div>")
 	Lang[protocol.ZH_CN]["product"]["checkedSummary"] = "选中 <strong>%total%</strong> 个需求，预计 <strong>%estimate%</strong> 个工时，用例覆盖率 <strong>%rate%</strong>。"
 	Lang[protocol.ZH_CN]["product"]["storySummary"] = "本页共 <strong>%s</strong> 个需求，预计 <strong>%s</strong> 个工时，用例覆盖率 <strong>%s</strong>。"
-
-	Lang[protocol.ZH_CN]["product"]["typeList['']"] = ""
 	Lang[protocol.ZH_CN]["product"]["allProductsOfProject"] = `全部关联` + Lang[protocol.ZH_CN]["common"]["productCommon"].(string)
 	Lang[protocol.ZH_CN]["product"]["allProduct"] = `全部` + Lang[protocol.ZH_CN]["common"]["productCommon"].(string)
 	Lang[protocol.ZH_CN]["product"]["allStory"] = "所有"
@@ -452,7 +450,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["story"]["legendLifeTime"] = "需求的一生"
 	Lang[protocol.ZH_CN]["story"]["legendBasicInfo"] = "基本信息"
 	Lang[protocol.ZH_CN]["story"]["reviewResultList['']"] = ""
-	Lang[protocol.ZH_CN]["story"]["statusList['']"] = ""
+
 	Lang[protocol.ZH_CN]["story"]["dittoNotice"] = "该需求与上一需求不属于同一产品！"
 	Lang[protocol.ZH_CN]["story"]["ditto"] = "同上"
 	Lang[protocol.ZH_CN]["story"]["deleted"] = "已删除"
@@ -4545,7 +4543,7 @@ func LangZH_CNInit() {
 		"project":     Lang[protocol.ZH_CN]["common"]["projectCommon"].(string),
 	}
 	Lang[protocol.ZH_CN]["datatable"] = make(map[string]interface{})
-	Lang[protocol.ZH_CN]["datatable"]["showModuleList[]"] = "不显示"
+
 	Lang[protocol.ZH_CN]["datatable"]["showModule"] = "列表页是否显示模块名"
 	Lang[protocol.ZH_CN]["datatable"]["platform"] = "平台"
 	Lang[protocol.ZH_CN]["datatable"]["branch"] = "分支"
@@ -4562,9 +4560,10 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["datatable"]["show"] = "显示"
 	Lang[protocol.ZH_CN]["datatable"]["width"] = "宽度"
 	Lang[protocol.ZH_CN]["datatable"]["common"] = "数据表格"
-	Lang[protocol.ZH_CN]["datatable"]["showModuleList"] = map[string]string{
-		"base": "只显示一级模块",
-		"end":  "只显示最后一级模块",
+	Lang[protocol.ZH_CN]["datatable"]["showModuleList"] = []protocol.HtmlKeyValueStr{
+		{"[]", "不显示"},
+		{"base", "只显示一级模块"},
+		{"end", "只显示最后一级模块"},
 	}
 
 	Lang[protocol.ZH_CN]["dev"]["fields"] = map[string]string{
@@ -5145,6 +5144,7 @@ func LangZH_CNInit() {
 		"reject": "拒绝",
 	}
 	Lang[protocol.ZH_CN]["product"]["typeList"] = []protocol.HtmlKeyValueStr{
+		{"", ""},
 		{"normal", "正常"},
 		{"branch", "多分支"},
 		{"platform", "多平台"},
@@ -5167,28 +5167,28 @@ func LangZH_CNInit() {
 		{"private", "私有" + Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "(只有" + Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "相关负责人和" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "团队成员才能访问)"},
 		{"custom", "自定义白名单(团队成员和白名单的成员可以访问)"},
 	}
-	Lang[protocol.ZH_CN]["product"]["featureBar"] = map[string]map[string]string{
-		"browse": map[string]string{
-			"allstory":     Lang[protocol.ZH_CN]["product"]["allStory"].(string),
-			"unclosed":     Lang[protocol.ZH_CN]["product"]["unclosed"].(string),
-			"assignedtome": Lang[protocol.ZH_CN]["product"]["assignedToMe"].(string),
-			"openedbyme":   Lang[protocol.ZH_CN]["product"]["openedByMe"].(string),
-			"reviewedbyme": Lang[protocol.ZH_CN]["product"]["reviewedByMe"].(string),
-			"draftstory":   Lang[protocol.ZH_CN]["product"]["draftStory"].(string),
-			"more":         Lang[protocol.ZH_CN]["common"]["more"].(string),
+	Lang[protocol.ZH_CN]["product"]["featureBar"] = map[string][]protocol.HtmlKeyValueStr{
+		"browse": []protocol.HtmlKeyValueStr{
+			{"allstory", Lang[protocol.ZH_CN]["product"]["allStory"].(string)},
+			{"unclosed", Lang[protocol.ZH_CN]["product"]["unclosed"].(string)},
+			{"assignedtome", Lang[protocol.ZH_CN]["product"]["assignedToMe"].(string)},
+			{"openedbyme", Lang[protocol.ZH_CN]["product"]["openedByMe"].(string)},
+			{"reviewedbyme", Lang[protocol.ZH_CN]["product"]["reviewedByMe"].(string)},
+			{"draftstory", Lang[protocol.ZH_CN]["product"]["draftStory"].(string)},
+			{"more", Lang[protocol.ZH_CN]["common"]["more"].(string)},
 		},
-		"all": map[string]string{
-			"noclosed": Lang[protocol.ZH_CN]["product"]["unclosed"].(string),
-			"closed":   "结束",
-			"all":      Lang[protocol.ZH_CN]["product"]["allProduct"].(string),
+		"all": []protocol.HtmlKeyValueStr{
+			{"noclosed", Lang[protocol.ZH_CN]["product"]["unclosed"].(string)},
+			{"closed", "结束"},
+			{"all", Lang[protocol.ZH_CN]["product"]["allProduct"].(string)},
 		},
 	}
-	Lang[protocol.ZH_CN]["product"]["moreSelects"] = map[string]string{
-		"closedbyme":   Lang[protocol.ZH_CN]["product"]["closedByMe"].(string),
-		"activestory":  Lang[protocol.ZH_CN]["product"]["activeStory"].(string),
-		"changedstory": Lang[protocol.ZH_CN]["product"]["changedStory"].(string),
-		"willclose":    Lang[protocol.ZH_CN]["product"]["willClose"].(string),
-		"closedstory":  Lang[protocol.ZH_CN]["product"]["closedStory"].(string),
+	Lang[protocol.ZH_CN]["product"]["moreSelects"] = []protocol.HtmlKeyValueStr{
+		{"closedbyme", Lang[protocol.ZH_CN]["product"]["closedByMe"].(string)},
+		{"activestory", Lang[protocol.ZH_CN]["product"]["activeStory"].(string)},
+		{"changedstory", Lang[protocol.ZH_CN]["product"]["changedStory"].(string)},
+		{"willclose", Lang[protocol.ZH_CN]["product"]["willClose"].(string)},
+		{"closedstory", Lang[protocol.ZH_CN]["product"]["closedStory"].(string)},
 	}
 	Lang[protocol.ZH_CN]["productplan"]["endList"] = []string{"一星期", `两星期`, `一个月`, `两个月`, `三个月`, `半年`, `一年`}
 	Lang[protocol.ZH_CN]["productplan"]["featureBar"] = map[string]interface{}{
@@ -5641,6 +5641,7 @@ func LangZH_CNInit() {
 	}
 	Lang[protocol.ZH_CN]["story"]["useList"] = []string{"不使用", `使用`}
 	Lang[protocol.ZH_CN]["story"]["statusList"] = []protocol.HtmlKeyValueStr{
+		{"", ""},
 		{"draft", "草稿"},
 		{"active", "激活"},
 		{"closed", "已关闭"},
@@ -6139,7 +6140,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["tree"]["line"] = "产品线名称"
 	Lang[protocol.ZH_CN]["tree"]["name"] = "模块名称"
 	Lang[protocol.ZH_CN]["tree"]["module"] = "模块"
-	Lang[protocol.ZH_CN]["tree"]["repeatName"] = "模块名“%s”已经存在！"
+
 	Lang[protocol.ZH_CN]["tree"]["successFixed"] = "成功修正数据！"
 	Lang[protocol.ZH_CN]["tree"]["successSave"] = "成功保存"
 	Lang[protocol.ZH_CN]["tree"]["confirmRoot"] = "模块的所属" + Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "修改，会关联修改该模块下的需求、Bug、用例的所属" + Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "，以及" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "和" + Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "的关联关系。该操作比较危险，请谨慎操作。是否确认修改？"
@@ -6331,4 +6332,11 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["error"]["checkTypeUserId"] = "必须为有效的用户"
 	Lang[protocol.ZH_CN]["error"]["checkHtmlKeyValueStr"] = "该选项无效，请刷新重新选择"
 	Lang[protocol.ZH_CN]["error"]["resultType"] = "远程服务器返回的结果不符合预期"
+	Lang[protocol.ZH_CN]["product"]["error"] = map[string]string{
+		"NotFound": "没有找到产品",
+	}
+	Lang[protocol.ZH_CN]["tree"]["error"] = map[string]string{
+		"ModuleNameRepeat": "模块名已经存在！",
+	}
+
 }

@@ -65,10 +65,9 @@ func main() {
 	h := "\n" //换行符
 
 	out := new(bytes.Buffer)
-	for serverid, name := range []string{"0common.go", "", "", "", "4user.go", "5project.go"} {
+	for serverid, name := range []string{"0common.go", "", "", "", "4user.go", "5project.go", "6test.go"} {
 		func() {
 			name = BASE_ROOT_PATH + DS + name
-			fmt.Println(name)
 			b, err := ioutil.ReadFile(name)
 			if err != nil {
 				return
@@ -111,7 +110,11 @@ func main() {
 				r = append(r, _struct)
 			}
 			out.Reset()
-			out.WriteString("package protocol\n\nimport (\n	\"sync\"\n	\"libraries\"\n)\n\n")
+			out.WriteString("package protocol\n\nimport (\n	\"sync\"\n	\"libraries\"\n")
+			if strings.Contains(str, "time.Time") {
+				out.WriteString("	\"time\"\n")
+			}
+			out.WriteString(")\n\n")
 			out.WriteString("const (\n")
 			for _, _struct := range r {
 				out.WriteString("	")
@@ -210,6 +213,10 @@ func main() {
 							out.WriteString("	data.")
 							out.WriteString(f.name)
 							out.WriteString(" = false\n")
+						case "time.Time":
+							out.WriteString("	data.")
+							out.WriteString(f.name)
+							out.WriteString(" = time.Unix(0,0)\n")
 						default:
 							if f.typ[:2] == "[]" {
 								out.WriteString("	data.")
@@ -272,6 +279,10 @@ func main() {
 						out.WriteString(strings.Replace(f.typ[2:], "*", "", 1))
 						out.WriteString("(v, buf)\n")
 						out.WriteString("	}\n")
+					case f.typ == "time.Time":
+						out.WriteString("	WRITE_int64(data.")
+						out.WriteString(f.name)
+						out.WriteString(".UnixNano(), buf)\n")
 					case len(f.typ) > 4 && f.typ[:4] == "map[":
 						out.WriteString("	WRITE_map(data.")
 						out.WriteString(f.name)
@@ -363,6 +374,10 @@ func main() {
 						out.WriteString(strings.Replace(f.typ[2:], "*", "", 1))
 						out.WriteString("(buf))\n")
 						out.WriteString("	}\n")
+					case f.typ == "time.Time":
+						out.WriteString("	data.")
+						out.WriteString(f.name)
+						out.WriteString(" = time.Unix(0, READ_int64(buf))\n")
 					case len(f.typ) > 4 && f.typ[:4] == "map[":
 						out.WriteString("	READ_map(&data.")
 						out.WriteString(f.name)

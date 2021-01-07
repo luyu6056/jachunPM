@@ -179,7 +179,7 @@ func templateOut(name string, data *TemplateData) {
 	}
 	err := T.ExecuteTemplate(buf, name, data)
 	if err != nil {
-		data.ws.OutErr(err)
+		data.OutErr(err)
 	} else {
 		data.ws.Write(buf)
 	}
@@ -209,4 +209,23 @@ func (data *TemplateData) ajaxResult(result bool, message interface{}, locateAnd
 	data.ws.WriteString(buf.String())
 	buf.Reset()
 	bufpool.Put(buf)
+}
+func (data *TemplateData) OutErr(err error) {
+	data.Data["err"] = err.Error()
+	templateLock.RLock()
+	buf := bufpool.Get().(*libraries.MsgBuffer)
+	defer func() {
+		buf.Reset()
+		bufpool.Put(buf)
+		templateLock.RUnlock()
+	}()
+	name := "error.html"
+	data.App["TemplateName"] = name
+	data.Data["title"] = "无法访问"
+	e := T.ExecuteTemplate(buf, name, data)
+	if e != nil {
+		libraries.ReleaseLog("%+v", e)
+	} else {
+		data.ws.Write(buf)
+	}
 }

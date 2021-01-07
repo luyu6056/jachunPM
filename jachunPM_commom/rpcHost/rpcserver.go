@@ -81,11 +81,11 @@ func NewRpcServer(c gnet.Conn) *RpcServer {
 	s := &RpcServer{ServerConn: c, Id: -1}
 	return s
 }
-func (svr *RpcServer) SendMsg(remote uint16, msgno uint32, ttl uint8, out protocol.MSG_DATA) {
-	protocol.SendMsg(svr.local, remote, msgno, ttl, out, svr.outChan)
+func (svr *RpcServer) SendMsg(remote uint16, msgno uint32, ttl uint8, transactionNo uint32, out protocol.MSG_DATA) {
+	protocol.SendMsg(0, remote, msgno, ttl, transactionNo, out, rpcServerOutChan[protocol.HostServerNo])
 }
-func (svr *RpcServer) SendMsgWaitResult(remote uint16, msgno uint32, ttl uint8, out protocol.MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
-	return protocol.SendMsgWaitResult(0, remote, msgno, ttl, out, result, rpcServerOutChan[protocol.HostServerNo], timeout...)
+func (svr *RpcServer) SendMsgWaitResult(remote uint16, msgno uint32, ttl uint8, transactionNo uint32, out protocol.MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
+	return protocol.SendMsgWaitResult(0, remote, msgno, ttl, transactionNo, out, result, rpcServerOutChan[protocol.HostServerNo], timeout...)
 }
 func (svr *RpcServer) Start(no uint8, ipport string, window int32) {
 	svr.ServerNo = no
@@ -122,13 +122,13 @@ func (svr *RpcServer) Start(no uint8, ipport string, window int32) {
 	if _, ok := rpcServerCenterId[svr.ServerNo]; !ok {
 		svr.setCenter()
 	}
-	go svr.handleMsgOut(outChan)
+	go svr.handlerMsgOut(outChan)
 
 	libraries.DebugLog("服务%v，ID%v,启动", svr.ServerNo, svr.Id)
 
 	data := protocol.GET_MSG_COMMON_regServer_result()
 	data.Id = uint8(svr.Id)
-	svr.SendMsg(svr.local, 0, 0, data)
+	svr.SendMsg(svr.local, 0, 0, 0, data)
 	data.Put()
 }
 
@@ -162,16 +162,16 @@ func (svr *RpcServer) setCenter() {
 	rpcServerCenterId[svr.ServerNo] = uint8(svr.Id)
 	data := protocol.GET_MSG_COMMON_StartTicker()
 	svr.isCenter = true
-	svr.SendMsg(svr.local, 0, 0, data)
+	svr.SendMsg(svr.local, 0, 0, 0, data)
 	data.Put()
 }
 
 //以下为server的消息in和out，client的解码编码在protocol里
-func (svr *RpcServer) handleMsgOut(outChan chan *libraries.MsgBuffer) {
+func (svr *RpcServer) handlerMsgOut(outChan chan *libraries.MsgBuffer) {
 	defer func() {
 		if r := recover(); r != nil {
 			libraries.DebugLog("%v", r)
-			go svr.handleMsgOut(outChan)
+			go svr.handlerMsgOut(outChan)
 		}
 	}()
 	var (
@@ -275,7 +275,7 @@ func (svr *RpcServer) handleMsgOut(outChan chan *libraries.MsgBuffer) {
 			svr.status = rpcStatusHalfOpen
 		}
 		data := protocol.GET_MSG_COMMON_PING()
-		svr.SendMsg(svr.local, 0, 0, data)
+		svr.SendMsg(svr.local, 0, 0, 0, data)
 		data.Put()
 	}
 	for {

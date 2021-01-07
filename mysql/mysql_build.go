@@ -97,6 +97,11 @@ func (db *MysqlDB) Table(tablename string) *Mysql_Build {
 	build.sql.table.WriteByte('`')
 	return build
 }
+func (this *Mysql_Build) SetErr(err error) {
+	if this.err == nil {
+		this.err = err
+	}
+}
 
 //标记需要进行预处理
 func (this *Mysql_Build) Prepare() *Mysql_Build {
@@ -498,6 +503,7 @@ func (this *Mysql_Build) Field(field string) *Mysql_Build {
 func (this *Mysql_Build) Order(order string) *Mysql_Build {
 	if order != `` && this.err == nil {
 		order = strings.Replace(strings.ToLower(order), `order by`, ``, -1)
+		order = strings.Replace(order, "_", " ", 1)
 		this.sql.order.Write([]byte{32, 79, 82, 68, 69, 82, 32, 66, 89, 32})
 		this.sql.order.WriteString(order)
 	}
@@ -603,7 +609,7 @@ func (this *Mysql_Build) Select(s interface{}) (err error) {
 	this.buffer.Write(this.sql.lock.Bytes())
 	//sql := `select ` + this.sql.field + ` from` + this.sql.table + this.sql.join + this.sql.on + this.sql.where + this.sql.group + this.sql.order + this.sql.limit + this.sql.lock
 
-	e := Query(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction, s)
+	e := query(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction, s)
 	//DEBUG(`sql语句`, this.buffer.String())
 	if e != nil {
 		err = errors.New(`执行Select出错,sql错误信息：` + e.Error() + `,错误sql：` + this.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.prepare_arg))
@@ -636,7 +642,7 @@ func (this *Mysql_Build) Select_Key(key string) (map[string]map[string]string, e
 	this.buffer.Write(this.sql.lock.Bytes())
 	//sql := `select ` + this.sql.field + ` from` + this.sql.table + this.sql.join + this.sql.on + this.sql.where + this.sql.group + this.sql.order + this.sql.limit + this.sql.lock
 
-	result, e := QueryMap(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction)
+	result, e := queryMap(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction)
 	if key != `` && result != nil {
 		tmp := make(map[string]map[string]string)
 		for _, value := range result {
@@ -669,7 +675,7 @@ func (this *Mysql_Build) Count() (res int, err error) {
 	//sql := `select count(*) as conut from` + this.sql.table + this.sql.where + this.sql.group + this.sql.order + ` limit 1` + this.sql.lock
 	//DEBUG(this.buffer.String())
 
-	ress, e := QueryMap(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction)
+	ress, e := queryMap(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction)
 	if e != nil {
 		err = errors.New(`执行Count出错,sql错误信息：` + e.Error() + `,错误sql：` + this.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.prepare_arg))
 		return
@@ -719,18 +725,18 @@ func (this *Mysql_Build) Insert(i interface{}) (id int64, err error) {
 	case reflect.Map:
 		this.extend_data(i)
 	default:
-		err = errors.New(`执行Insert出错，不支持的插入类型` + fmt.Sprint(r.Kind()))
+		err = errors.New(`执行insert出错，不支持的插入类型` + fmt.Sprint(r.Kind()))
 		return
 	}
 
 	//sql := do + this.sql.attr + ` INTO` + this.sql.table + ` SET ` + this.extend_data(param)
 	//DEBUG(this.buffer.String())
-	new_id, rowsAffected, e := Insert(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction)
+	new_id, rowsAffected, e := insert(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction)
 	if e != nil {
-		err = errors.New(`执行Insert出错,sql错误信息：` + e.Error() + `,错误sql：` + this.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.prepare_arg))
+		err = errors.New(`执行insert出错,sql错误信息：` + e.Error() + `,错误sql：` + this.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.prepare_arg))
 	} else {
 		if new_id == 0 && rowsAffected == 0 {
-			err = errors.New(`执行Insert出错,sql错误信息： 受影响行数为0 ,错误sql：` + this.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.prepare_arg))
+			err = errors.New(`执行insert出错,sql错误信息： 受影响行数为0 ,错误sql：` + this.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.prepare_arg))
 			return
 		}
 		if new_id > 0 {
@@ -786,7 +792,7 @@ func (this *Mysql_Build) Replace(i interface{}) (err error) {
 
 	//sql := do + this.sql.attr + ` INTO` + this.sql.table + ` SET ` + this.extend_data(param)
 	//DEBUG(this.buffer.String())
-	_, rowsAffected, e := Insert(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction)
+	_, rowsAffected, e := insert(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction)
 	if e != nil {
 		err = errors.New(`执行Replace出错,sql错误信息：` + e.Error() + `,错误sql：` + this.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.prepare_arg))
 	}
@@ -854,7 +860,7 @@ func (this *Mysql_Build) InsertAll(i interface{}) (res bool, err error) {
 			value = append(value, `(`+strings.Join(vv, `,`)+`)`)
 
 		default:
-			err = errors.New(`执行InsertAll出错，不支持的slice子元素插入类型` + fmt.Sprint(t.Kind()))
+			err = errors.New(`执行insertAll出错，不支持的slice子元素插入类型` + fmt.Sprint(t.Kind()))
 			return false, err
 		}
 
@@ -868,9 +874,9 @@ func (this *Mysql_Build) InsertAll(i interface{}) (res bool, err error) {
 	this.buffer.WriteString(strings.Join(value, `,`))
 	//sql := do + this.sql.attr + ` INTO` + this.sql.table + ` (` + strings.Join(field, `,`)ReplaceAll + `) VALUES ` + strings.Join(value, `,`)
 	//DEBUG("insert语句" + this.buffer.String())
-	_, rowsAffected, e := Insert(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction)
+	_, rowsAffected, e := insert(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction)
 	if e != nil {
-		err = errors.New(`执行InsertAll出错,sql错误信息：` + e.Error() + `,错误sql：` + this.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.prepare_arg))
+		err = errors.New(`执行insertAll出错,sql错误信息：` + e.Error() + `,错误sql：` + this.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.prepare_arg))
 	} else {
 		res = rowsAffected > 0
 	}
@@ -949,7 +955,7 @@ func (this *Mysql_Build) ReplaceAll(i interface{}) (res bool, err error) {
 	this.buffer.WriteString(strings.Join(value, `,`))
 	//sql := do + this.sql.attr + ` INTO` + this.sql.table + ` (` + strings.Join(field, `,`) + `) VALUES ` + strings.Join(value, `,`)
 	//DEBUG("insert语句" + this.buffer.String())
-	_, rowsAffected, e := Insert(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction)
+	_, rowsAffected, e := insert(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction)
 	if e != nil {
 		err = errors.New(`执行ReplaceAll出错,sql错误信息：` + e.Error() + `,错误sql：` + this.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.prepare_arg))
 	} else {
@@ -984,7 +990,7 @@ func (this *Mysql_Build) Delete() (result bool, err error) {
 		this.prepare_arg = append(this.prepare_arg, v)
 	}
 	//sql := `DELETE` + this.sql.attr + ` FROM` + this.sql.table + this.sql.where + this.sql.order + this.sql.limit
-	e := Exec(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction)
+	e := exec(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction)
 	//DEBUG("delete语句" + this.buffer.String())
 	if e != nil {
 		err = errors.New(`执行Delete出错,sql错误信息：` + e.Error() + `,错误sql：` + this.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.prepare_arg))
@@ -1049,7 +1055,7 @@ func (this *Mysql_Build) Update(param interface{}, arg ...interface{}) (result b
 		this.prepare_arg = append(this.prepare_arg, v)
 	}
 	//sql := `UPDATE ` + this.sql.attr + this.sql.table + ` SET ` + this.extend_data(param) + this.sql.where + this.sql.order + this.sql.limit
-	res, e := Query_getaffected(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction)
+	res, e := query_getaffected(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction)
 	//DEBUG("update语句" + this.buffer.String())
 	if e != nil {
 		err = errors.New(`执行Update出错,sql错误信息：` + e.Error() + `,错误sql：` + this.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.prepare_arg))
@@ -1079,7 +1085,7 @@ func (this *Mysql_Build) Find(s interface{}) (err error) {
 	this.buffer.Write([]byte{32, 76, 73, 77, 73, 84, 32, 49})
 	this.buffer.Write(this.sql.lock.Bytes())
 	//sql := `select ` + this.sql.field + ` from` + this.sql.table + this.sql.where + this.sql.group + this.sql.order + ` LIMIT 1` + this.sql.lock
-	e := Query(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction, s)
+	e := query(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction, s)
 	//DEBUG(`find的sql语句`, this.buffer.String(), res)
 	if e != nil {
 		err = errors.New(`执行Find出错,sql错误信息：` + e.Error() + `,错误sql：` + this.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.prepare_arg))
@@ -1108,7 +1114,7 @@ func (this *Mysql_Build) FindMap() (m map[string]string, err error) {
 	this.buffer.Write([]byte{32, 76, 73, 77, 73, 84, 32, 49})
 	this.buffer.Write(this.sql.lock.Bytes())
 	//sql := `select ` + this.sql.field + ` from` + this.sql.table + this.sql.where + this.sql.group + this.sql.order + ` LIMIT 1` + this.sql.lock
-	res, err := QueryMap(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction)
+	res, err := queryMap(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction)
 	//DEBUG(`find的sql语句`, this.buffer.String(), res)
 	if err != nil {
 		err = errors.New(`执行Find出错,sql错误信息：` + err.Error() + `,错误sql：` + this.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.prepare_arg))
@@ -1164,46 +1170,46 @@ func (this *Mysql_RawBuild) Find(s interface{}) (err error) {
 	if this.build.err != nil {
 		return this.build.err
 	}
-	e := Query(this.build.buffer.Bytes(), this.build.prepare_arg, this.build.db, this.build.Transaction, s)
+	e := query(this.build.buffer.Bytes(), this.build.prepare_arg, this.build.db, this.build.Transaction, s)
 	//DEBUG(`find的sql语句`, this.buffer.String(), res)
 	if e != nil {
 		err = errors.New(`执行Raw.Find出错,sql错误信息：` + e.Error() + `,错误sql：` + this.build.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.build.prepare_arg))
 	}
 	return
 }
-func (this *Mysql_RawBuild) Exec() (err error) {
+func (this *Mysql_RawBuild) exec() (err error) {
 	defer buildPool.Put(this.build)
 	if this.build.err != nil {
 		return this.build.err
 	}
-	e := Exec(this.build.buffer.Bytes(), this.build.prepare_arg, this.build.db, this.build.Transaction)
+	e := exec(this.build.buffer.Bytes(), this.build.prepare_arg, this.build.db, this.build.Transaction)
 	//DEBUG("exec语句" + this.buffer.String())
 	if e != nil {
-		err = errors.New(`执行Raw.Exec出错,sql错误信息：` + e.Error() + `,错误sql：` + this.build.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.build.prepare_arg))
+		err = errors.New(`执行Raw.exec出错,sql错误信息：` + e.Error() + `,错误sql：` + this.build.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.build.prepare_arg))
 	}
 	return
 }
-func (this *Mysql_RawBuild) Query(s interface{}) (err error) {
+func (this *Mysql_RawBuild) query(s interface{}) (err error) {
 	defer buildPool.Put(this.build)
 	if this.build.err != nil {
 		return this.build.err
 	}
-	e := Query(this.build.buffer.Bytes(), this.build.prepare_arg, this.build.db, this.build.Transaction, s)
+	e := query(this.build.buffer.Bytes(), this.build.prepare_arg, this.build.db, this.build.Transaction, s)
 	//DEBUG(`find的sql语句`, this.buffer.String(), res)
 	if e != nil {
-		err = errors.New(`执行Raw.Query出错,sql错误信息：` + e.Error() + `,错误sql：` + this.build.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.build.prepare_arg))
+		err = errors.New(`执行Raw.query出错,sql错误信息：` + e.Error() + `,错误sql：` + this.build.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.build.prepare_arg))
 	}
 	return
 }
-func (this *Mysql_RawBuild) QueryMap() (res []map[string]string, err error) {
+func (this *Mysql_RawBuild) queryMap() (res []map[string]string, err error) {
 	defer buildPool.Put(this.build)
 	if this.build.err != nil {
 		return nil, this.build.err
 	}
-	res, e := QueryMap(this.build.buffer.Bytes(), this.build.prepare_arg, this.build.db, this.build.Transaction)
+	res, e := queryMap(this.build.buffer.Bytes(), this.build.prepare_arg, this.build.db, this.build.Transaction)
 	//DEBUG(`find的sql语句`, this.buffer.String(), res)
 	if e != nil {
-		err = errors.New(`执行Raw.Query出错,sql错误信息：` + e.Error() + `,错误sql：` + this.build.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.build.prepare_arg))
+		err = errors.New(`执行Raw.query出错,sql错误信息：` + e.Error() + `,错误sql：` + this.build.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.build.prepare_arg))
 	}
 	return res, err
 }

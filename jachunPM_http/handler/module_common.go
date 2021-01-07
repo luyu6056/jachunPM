@@ -9,7 +9,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/luyu6056/cache"
@@ -27,13 +26,10 @@ type moduleMenu struct {
 	subModule []string
 }
 
-var generateUid uint32
 var commoncache = cache.Hget("common", "global")
 
-func init() {
-	generateUid = uint32(commoncache.Load_uint64("generateUid"))
-}
 func hasPriv(data *TemplateData, module, method string) bool {
+
 	return true
 }
 func commonModelFuncs() {
@@ -59,7 +55,7 @@ func commonModelFuncs() {
 		_b := reflect.ValueOf(b)
 		return _a.Int() * _b.Int()
 	}
-	global_Funcs["helper_createLink"] = func(moduleName, methodName string, vars ...string) string {
+	global_Funcs["helper_createLink"] = func(moduleName, methodName string, vars ...interface{}) string {
 
 		return createLink(moduleName, methodName, vars)
 	}
@@ -515,10 +511,10 @@ func commonModelFuncs() {
 		return 0
 	}
 	global_Funcs["generateUid"] = func() string {
-		id := atomic.AddUint32(&generateUid, 1)
-		commoncache.INCRBY("generateUid", 1)
+		id := commoncache.INCRBY("generateUid", 1)
 		return strconv.FormatUint(uint64(id), 10)
 	}
+
 }
 
 func getModuleMenu(module string, data *TemplateData) (menu []moduleMenu) {
@@ -545,7 +541,13 @@ func getModuleMenu(module string, data *TemplateData) (menu []moduleMenu) {
 					for _, vars := range strings.Split(l[3], "&") {
 						s := strings.Split(vars, "=")
 						if len(s) == 2 {
-							menuItem.vars = append(menuItem.vars, protocol.HtmlKeyValueStr{s[0], s[1]})
+							value := s[1]
+							if replace, ok := data.App["menuReplace"].(map[string]string); ok {
+								if r, ok := replace[s[0]]; ok {
+									value = fmt.Sprintf(value, r)
+								}
+							}
+							menuItem.vars = append(menuItem.vars, protocol.HtmlKeyValueStr{s[0], value})
 						}
 
 					}

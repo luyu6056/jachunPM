@@ -20,7 +20,7 @@ func main() {
 	if err != nil {
 		libraries.ReleaseLog("服务启动失败%v", err)
 	} else {
-		db.Init()
+		handler.HostConn.DB = db.Init()
 		handler.HostConn.HandleMsg = handler.Handler
 		handler.HostConn.HandleTick = handler.HandleTick
 		handler.HostConn.Start()

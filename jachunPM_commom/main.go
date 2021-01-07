@@ -23,7 +23,8 @@ func init() {
 
 	db.Init()
 	rpcHost.MsgnoInit()
-	go rpcHost.HostServerHandler()
+	go rpcHost.HostServerHandlerMsgIn()
+	go rpcHost.HostServerHandlerOutChan()
 }
 
 type rpcServer struct {

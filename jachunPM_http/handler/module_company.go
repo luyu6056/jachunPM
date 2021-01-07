@@ -31,7 +31,7 @@ func get_company_browse(data *TemplateData) gnet.Action {
 	if deptID > 0 {
 		deptinfo, err := dept_getCacheById(int32(deptID))
 		if err != nil {
-			ws.OutErr(err)
+			data.OutErr(err)
 			return gnet.None
 		}
 		data.Data["dept"] = deptinfo
@@ -39,7 +39,7 @@ func get_company_browse(data *TemplateData) gnet.Action {
 	}
 	/*msg, err := HostConn.GetMsg()
 	if err != nil {
-		ws.OutErr(err)
+		data.OutErr(err)
 		return gnet.None
 	}*/
 	var err error
@@ -51,7 +51,7 @@ func get_company_browse(data *TemplateData) gnet.Action {
 
 	data.Data["deptTree"], err = dept_getTreeMenu(data, 0, dept_createMemberLink)
 	if err != nil {
-		ws.OutErr(err)
+		data.OutErr(err)
 		return gnet.None
 	}
 	getCompanyUser := protocol.GET_MSG_USER_getCompanyUsers()
@@ -63,7 +63,7 @@ func get_company_browse(data *TemplateData) gnet.Action {
 	if TYPE == "bysearch" {
 		getCompanyUser.Where, err = post_search_buildQuery(data)
 		if err != nil {
-			ws.OutErr(err)
+			data.OutErr(err)
 			return gnet.None
 		}
 	}
@@ -72,7 +72,7 @@ func get_company_browse(data *TemplateData) gnet.Action {
 	var res *protocol.MSG_USER_getCompanyUsers_result
 	err = HostConn.SendMsgWaitResultToDefault(getCompanyUser, &res)
 	if err != nil {
-		ws.OutErr(err)
+		data.OutErr(err)
 		return gnet.None
 	}
 	data.Data["users"] = res.List

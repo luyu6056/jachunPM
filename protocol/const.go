@@ -7,7 +7,7 @@ import (
 
 const (
 	MaxOutLen       = 1<<32 - 1
-	MsgHeadLen      = 4 + 1 + 2 + 2 + 3 //不包含cmd
+	MsgHeadLen      = 4 + 1 + 2 + 2 + 4 + 3 //不包含cmd
 	MaxMsgLen       = 1<<24 - 1 + MsgHeadLen
 	MaxMsgNum       = 127
 	MaxMsgTtl       = 100 //目前只允许查询100次
@@ -77,6 +77,7 @@ const (
 	PATH_CONFIG_CACHE          = "config_cache"
 	PATH_USER_GROUP_CACHE      = "group_cache"
 	PATH_PROJECT_PRODUCT_CACHE = "product_cache"
+	PATH_PROJECT_TREE_CACHE    = "tree_cache"
 )
 
 //格式化时间定义
