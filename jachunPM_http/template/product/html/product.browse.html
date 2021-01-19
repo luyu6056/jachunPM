@@ -14,7 +14,7 @@
                 {{- $moreLabel       := $.Lang.common.more}}
                 {{- $moreLabelActive := ""}}
                 {{- if getValue $.Lang.product.moreSelects $.Data.browseType}}    
-                    {{$moreLabel       = strAdd "<span class='text'>" (getValue $.Lang.product.moreSelects $.Data.browseType)}} "</span> <span class='label label-light label-badge'>" $.Page.Total "</span>"}}
+                    {{$moreLabel       = strAdd "<span class='text'>" (getValue $.Lang.product.moreSelects $.Data.browseType) "</span> <span class='label label-light label-badge'>" $.Page.Total "</span>"}}
                     {{$moreLabelActive = "btn-active-text"}}
                 {{- end}}
                 <div class="btn-group">
@@ -27,7 +27,7 @@
                 </ul></div>
             {{end}}
         {{- else}}
-            {{- html_a (helper_createLink "product" "browse" "productID=" $.Data.productID "&branch=" $.Data.branch "&browseType=" $menuItem.Key) (strAdd "<span class='text'>" $menuItem.Value "</span>" (and (or (eq $menuItem.Key $.Data.browseType) "") (strAdd "<span class='label label-light label-badge'>" $.Page.Total "</span>")))  (strAdd "id=" $menuItem.Key "Tab' class='btn btn-link"  (and (or (eq $menuItem.Key $.Data.browseType) "") " btn-active-text") )}}
+            {{- html_a (helper_createLink "product" "browse" "productID=" $.Data.productID "&branch=" $.Data.branch "&browseType=" $menuItem.Key) (strAdd "<span class='text'>" $menuItem.Value "</span>" (and (or (eq $menuItem.Key $.Data.browseType) "") (strAdd "<span class='label label-light label-badge'>" $.Page.Total "</span>"))) "" (strAdd "id='" $menuItem.Key "Tab' class='btn btn-link"  (and (or (eq $menuItem.Key $.Data.browseType) "") " btn-active-text") "'")}}
         {{end -}}
     {{end}}
     <a class="btn btn-link querybox-toggle" id='bysearchTab'><i class="icon icon-search muted"></i> {{.Lang.product.searchStory}}</a>

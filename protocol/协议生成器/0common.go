@@ -14,10 +14,14 @@ type MSG_COMMON_regServer_result struct {
 }
 
 //中心服激活ticker
-type MSG_COMMON_StartTicker struct{}
+type MSG_COMMON_StartTicker struct {
+}
 
-type MSG_COMMON_PING struct{}
-type MSG_COMMON_PONG struct{}
+type MSG_COMMON_PING struct {
+}
+
+type MSG_COMMON_PONG struct {
+}
 
 //增加窗口
 type MSG_COMMON_WINDOW_UPDATE struct {

@@ -65,7 +65,7 @@ func main() {
 	h := "\n" //换行符
 
 	out := new(bytes.Buffer)
-	for serverid, name := range []string{"0common.go", "", "", "", "4user.go", "5project.go", "6test.go"} {
+	for serverid, name := range []string{"0common.go", "", "", "3log.go", "4user.go", "5project.go", "6test.go"} {
 		func() {
 			name = BASE_ROOT_PATH + DS + name
 			b, err := ioutil.ReadFile(name)
@@ -73,7 +73,7 @@ func main() {
 				return
 			}
 			str := strings.Replace(string(b), "\r\n", h, -1)
-			m, err := Preg_match_result(`type ([^\s]+)\s* struct\s*{\s*(((?!})[\s\S])*)}`, str, -1)
+			m, err := Preg_match_result(`type ([^\s]+)\s* struct\s*{(((?!\n})[\s\S])*)(\n)*}`, str, -1)
 			r := []*go_struct{}
 			for _, val := range m {
 				if val[1] == "" {
@@ -95,7 +95,6 @@ func main() {
 							if _m[0][1][:2] == "//" {
 								continue
 							}
-
 							_struct.field = append(_struct.field, struct {
 								name string
 								tag  string
@@ -201,7 +200,7 @@ func main() {
 						}
 					} else {
 						switch f.typ {
-						case "int", "int8", "int16", "int32", "int64", "uint", "uint8", "uint16", "uint32", "uint64", "ErrCode":
+						case "int", "int8", "int16", "int32", "int64", "uint", "uint8", "uint16", "uint32", "uint64", "ErrCode", "float32", "float64":
 							out.WriteString("	data.")
 							out.WriteString(f.name)
 							out.WriteString(" = 0\n")
@@ -275,9 +274,14 @@ func main() {
 						out.WriteString("	for _, v := range data.")
 						out.WriteString(f.name)
 						out.WriteString("{\n")
-						out.WriteString("		WRITE_")
-						out.WriteString(strings.Replace(f.typ[2:], "*", "", 1))
-						out.WriteString("(v, buf)\n")
+						if strings.Contains(f.typ, "*") || strings.Contains("[]string,[]int,[]int8,[]int16,[]int32,[]int64,[]uint,[]uint8,[]uint16,[]uint32,[]uint64,[]HtmlKeyValueStr", f.typ) {
+							out.WriteString("		WRITE_")
+							out.WriteString(strings.Replace(f.typ[2:], "*", "", 1))
+							out.WriteString("(v, buf)\n")
+						} else {
+							out.WriteString("		WRITE_any(v, buf)\n")
+						}
+
 						out.WriteString("	}\n")
 					case f.typ == "time.Time":
 						out.WriteString("	WRITE_int64(data.")
@@ -363,16 +367,38 @@ func main() {
 						l := f.name + "_len"
 						out.WriteString("	")
 						out.WriteString(l)
-						out.WriteString(" := int(READ_int32(buf))\n	for i := 0; i < ")
+						out.WriteString(" := int(READ_int32(buf))\n	if ")
+						out.WriteString(l)
+						out.WriteString(">cap(data.")
+						out.WriteString(f.name)
+						out.WriteString("){\n		data.")
+						out.WriteString(f.name)
+						out.WriteString("= make(")
+						out.WriteString(f.typ)
+						out.WriteString(", ")
+						out.WriteString(l)
+						out.WriteString(")\n	}else{\n		data.")
+						out.WriteString(f.name)
+						out.WriteString(" = data.")
+						out.WriteString(f.name)
+						out.WriteString("[:")
+						out.WriteString(l)
+						out.WriteString("]\n	}\n	for i := 0; i < ")
 						out.WriteString(l)
 						out.WriteString("; i++ {\n")
-						out.WriteString("		data.")
-						out.WriteString(f.name)
-						out.WriteString(" = append(data.")
-						out.WriteString(f.name)
-						out.WriteString(", READ_")
-						out.WriteString(strings.Replace(f.typ[2:], "*", "", 1))
-						out.WriteString("(buf))\n")
+						if strings.Contains(f.typ, "*") || strings.Contains("[]string,[]int,[]int8,[]int16,[]int32,[]int64,[]uint,[]uint8,[]uint16,[]uint32,[]uint64,[]HtmlKeyValueStr", f.typ) {
+							out.WriteString("		data.")
+							out.WriteString(f.name)
+							out.WriteString("[i] = ")
+							out.WriteString("READ_")
+							out.WriteString(strings.Replace(f.typ[2:], "*", "", 1))
+							out.WriteString("(buf)\n")
+						} else {
+							out.WriteString("		READ_any(&data.")
+							out.WriteString(f.name)
+							out.WriteString("[i], buf)\n")
+						}
+
 						out.WriteString("	}\n")
 					case f.typ == "time.Time":
 						out.WriteString("	data.")

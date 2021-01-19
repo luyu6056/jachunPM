@@ -1,0 +1,221 @@
+{{template "header.html" .}}
+  <div id='mainContent' class="main-row">
+    <div class="col-8 main-col">
+      <div class="row">
+        <div class="col-sm-6">
+          <div class="panel block-release">
+            <div class="panel-heading">
+              <div class="panel-title">{{.Lang.product.roadmap}}</div>
+            </div>
+            <div class="panel-body">
+              <div class="release-path">
+                <ul class="release-line">
+                  {{range $year , $roadmap :=.Data.roadmaps}}
+                  {{range $plans:=$roadmap}}
+                  {{range $plan:= $plans}}
+                  {{if $plan.Begin}}
+                  <li{{if gt (date "2006-01-02")  $plan.Begin}} class='active'{{end}}>
+                    <a href="{{helper_createLink "productplan" "view" "planID=" $plan.Id}}">
+                      <span class="title">{{$plan.Title}}</span>
+                      <span class="date">{{$plan.Begin}}</span>
+                    </a>
+                  </li>
+                  {{else}}
+                  <li>
+                    <a href="{{helper_createLink "release" "view" "releaseID=" $plan.Id}}">
+                      <span class="title">{{$plan.Name}}</span>
+                      <span class="date">{{$plan.Date}}</span>
+                    </a>
+                  </li>
+                  {{end}}
+                  {{end}}
+                  {{end}}
+                  {{end}}
+                </ul>
+              </div>
+              {{html_a (helper_createLink "product" "roadmap" "productID=" .Data.product.Id) (strAdd $.Lang.product.iterationView  "<span class='label label-badge label-icon'><i class='icon icon-arrow-right'></i></span>") "" "class='btn btn-primary btn-circle btn-icon-right btn-sm pull-right'"}}
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6">
+          <div class="panel block-dynamic">
+            <div class="panel-heading">
+            <div class="panel-title">{{.Lang.product.latestDynamic}}</div>
+              <nav class="panel-actions nav nav-default">
+                <li><a href="{{helper_createLink "product" "dynamic" "productID=" .Data.product.Id "&type=all"}}" title="{{.Lang.common.more}}"><i class="icon icon-more icon-sm"></i></i></a></li>
+              </nav>
+            </div>
+            <div class="panel-body scrollbar-hover">
+              <ul class="timeline timeline-tag-left no-margin">
+                {{range $action := .Data.dynamics}}
+                <li{{if $action.Major}} class='active'{{end}}>
+                  <div class='text-ellipsis'>
+                    <span class="timeline-tag">{{$action.Date}}</span>
+                    <span class="timeline-text">{{getValue .Data.users $action.Actor}} {{$action.ActionLabel}}{{$action.ObjectLabel}} {{html_a $action.ObjectLink $action.ObjectName}}</span>
+                  </div>
+                </li>
+                {{end}}
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-12">
+          {{template "action.html" .}}
+        </div>
+      </div>
+      <div class='main-actions'>
+        <div class="btn-toolbar">
+          {{- $params := strAdd "product=" .Data.product.Id}}
+          {{- common_printBack . (helper_createLink "product" "all")}}
+          {{- if not .Data.product.Deleted}}
+              <div class='divider'></div>
+              {{if ne .Data.product.Status "closed"}}
+                  {{common_printIcon . "product" "close" $params .Data.product "button" "" "" "iframe" "true"}}
+
+                  <div class='divider'></div>
+              {{end}}
+              {{common_printIcon . "product" "edit" $params .Data.product "" ""}}
+              {{common_printIcon . "product" "delete" $params .Data.product "button" "" "hiddenwin"}}
+          {{end}}
+          
+        </div>
+      </div>
+    </div>
+    <div class="col-4 side-col">
+      <div class="row">
+        <div class="col-sm-12">
+          <div class="cell">
+            <div class="detail">
+              <h2 class="detail-title"><span class="label-id">{{.Data.product.Id}}</span> <span class="label label-light label-outline">{{.Data.product.Code}}</span> {{.Data.product.Name}}</h2>
+              <div class="detail-content article-content">
+                <p><span class="text-limit" data-limit-size="40">{{bbcode2html .Data.product.Desc}}</span><a class="text-primary text-limit-toggle small" data-text-expand="{{.Lang.common.expand}}"  data-text-collapse="{{.Lang.common.collapse}}"></a></p>
+                <p>
+                  <span class="label label-primary label-outline" title='{{.Lang.product.type}}'>{{getValue .Lang.product.typeList .Data.product.Type}}</span>
+                  <span class="label label-success label-outline" title='{{.Lang.product.status}}'>{{getValue .Lang.product.statusList .Data.product.Status}}</span>
+                  {{if .Data.product.Deleted}}
+                  <span class='label label-danger label-outline'>{{.Lang.product.deleted}}</span>
+                  {{end}}
+                </p>
+              </div>
+            </div>
+            {{if eq .Data.product.Type  "platform"}}
+            <div class="detail">
+            <div class="detail-title"><strong>{{.Lang.product.branchName.platform}}</strong><a class="btn btn-link pull-right muted"><i class="icon icon-more icon-sm"></i></a></div>
+              <div class="detail-content">
+                <ul class="clearfix branch-list">
+                  {{range $branchName:=.Data.branches}}
+                  <li>{{$branchName}}</li>
+                  {{end}}
+                  <li><a class="text-muted" href="{{helper_createLink "branch" "manage" "productID=" .Data.product.Id}}"><i class="icon icon-plus hl-primary text-primary"></i> &nbsp;{{.Lang.branch.add}}</a></li>
+                </ul>
+              </div>
+            </div>
+            {{end}}
+            <div class="detail">
+                <div class="detail-title"><strong>{{.Lang.product.manager}}</strong></div>
+              <div class="detail-content">
+                <table class="table table-data">
+                  <tbody>
+                    <tr>
+                      <th><i class="icon icon-person icon-sm"></i> {{.Lang.common.productCommon}}</th>
+                      <td><em>{{getValue .Data.users .Data.product.PO}}</em></td>
+                      <th><i class="icon icon-person icon-sm"></i> {{.Lang.product.qa}}</th>
+                      <td><em>{{getValue .Data.users .Data.product.QD}}</em></td>
+                    </tr>
+                    <tr>
+                      <th><i class="icon icon-person icon-sm"></i> {{.Lang.product.release}}</th>
+                      <td><em>{{getValue .Data.users .Data.product.RD}}</em></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="detail">
+              <div class="detail-title"><strong>{{.Lang.product.basicInfo}}</strong></div>
+              <div class="detail-content">
+                <table class="table table-data data-basic">
+                  <tbody>
+                    <tr>
+                      <th>{{.Lang.product.line}}</th>
+                      <td><em>{{getValue .Data.lines .Data.product.Line}}</em></td>
+                    </tr>
+                    <tr>
+                      <th>{{.Lang.story.openedBy}}</th>
+                      <td><em>{{getValue .Data.users .Data.product.CreatedBy}}</em></td>
+                    </tr>
+                    <tr>
+                      <th>{{.Lang.story.openedDate}}</th>
+                      <td><em>{{date "2006-01-02" .Data.product.CreatedDate}}</em></td>
+                    </tr>
+                    <tr>
+                      <th>{{.Lang.product.acl}}</th>
+                      <td><em>{{getValue .Lang.product.aclList .Data.product.Acl}}</em></td>
+                    </tr>
+                    {{if eq .Data.product.Acl "custom"}}
+                    <tr>
+                      <th>{{.Lang.product.whitelist}}</th>
+                      <td>
+                        <em>
+                          <?php
+                          $whitelist = explode(',', $product->whitelist);
+                          foreach($whitelist as $groupID) if(isset($groups[$groupID])) $groups[$groupID] . '&nbsp;';
+                          ?>
+                        </em>
+                      </td>
+                    </tr>
+                    {{end}}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+         
+            <div class="detail">
+              <div class="detail-title"><strong>{{.Lang.product.otherInfo}}</strong></div>
+              <div class="detail-content">
+                <table class="table table-data data-basic">
+                  <tbody>
+                    <tr>
+                      <th>{{getValue .Lang.story.statusList "active"}}{{.Lang.story.common}}</th>
+                      <td><em>{{.Data.product.Stories.active}}</em></td>
+                      <th>{{.Lang.product.plans}}</th>
+                      <td><em>{{.Data.product.Plans}}</em></td>
+                      <th>{{.Lang.product.bugs}}</th>
+                      <td><em>{{.Data.product.Bugs}}</em></td>
+                    </tr>
+                    <tr>
+                      <th>{{getValue .Lang.story.statusList "changed"}}{{.Lang.story.common}}</th>
+                      <td><em>{{.Data.product.Stories.changed}}</em></td>
+                      <th>{{.Lang.product.projects}}</th>
+                      <td><em>{{.Data.product.Projects}}</em></td>
+                      <th>{{.Lang.product.cases}}</th>
+                      <td><em>{{.Data.product.Cases}}</em></td>
+                    </tr>
+                    <tr>
+                      <th>{{getValue .Lang.story.statusList "draft"}}{{.Lang.story.common}}</th>
+                      <td><em>{{.Data.product.Stories.draft}}</em></td>
+                      <th>{{.Lang.product.builds}}</th>
+                      <td><em>{{.Data.product.Builds}}</em></td>
+                      <th>{{.Lang.product.docs}}</th>
+                      <td><em>{{.Data.product.Docs}}</em></td>
+                    </tr>
+                    <tr>
+                      <th>{{getValue .Lang.story.statusList "closed"}}{{.Lang.story.common}}</th>
+                      <td><em>{{.Data.product.Stories.closed}}</em></td>
+                      <th>{{.Lang.product.releases}}</th>
+                      <td><em>{{.Data.product.Releases}}</em></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="mainActions" class='main-actions'>
+  <nav class="container"></nav>
+</div>
+{{template "footer.html" .}}

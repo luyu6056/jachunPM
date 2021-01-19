@@ -242,8 +242,13 @@ func (data *MSG_USER_INFO_cache) read(buf *libraries.MsgBuffer) {
 	data.Role = READ_string(buf)
 	data.Realname = READ_string(buf)
 	Group_len := int(READ_int32(buf))
+	if Group_len>cap(data.Group){
+		data.Group= make([]int32, Group_len)
+	}else{
+		data.Group = data.Group[:Group_len]
+	}
 	for i := 0; i < Group_len; i++ {
-		data.Group = append(data.Group, READ_int32(buf))
+		data.Group[i] = READ_int32(buf)
 	}
 	data.Commiter = READ_string(buf)
 	data.Gender = READ_int8(buf)
@@ -451,8 +456,13 @@ func (data *MSG_USER_Company_cache) read(buf *libraries.MsgBuffer) {
 	data.Website = READ_string(buf)
 	data.Backyard = READ_string(buf)
 	Admins_len := int(READ_int32(buf))
+	if Admins_len>cap(data.Admins){
+		data.Admins= make([]string, Admins_len)
+	}else{
+		data.Admins = data.Admins[:Admins_len]
+	}
 	for i := 0; i < Admins_len; i++ {
-		data.Admins = append(data.Admins, READ_string(buf))
+		data.Admins[i] = READ_string(buf)
 	}
 	data.Deleted = READ_bool(buf)
 
@@ -529,16 +539,26 @@ func (data *MSG_USER_Dept_cache) read(buf *libraries.MsgBuffer) {
 	data.Name = READ_string(buf)
 	data.Parent = READ_int32(buf)
 	Path_len := int(READ_int32(buf))
+	if Path_len>cap(data.Path){
+		data.Path= make([]int32, Path_len)
+	}else{
+		data.Path = data.Path[:Path_len]
+	}
 	for i := 0; i < Path_len; i++ {
-		data.Path = append(data.Path, READ_int32(buf))
+		data.Path[i] = READ_int32(buf)
 	}
 	data.Grade = READ_int8(buf)
 	data.Order = READ_int8(buf)
 	data.Manager = READ_int32(buf)
 	data.ManagerName = READ_string(buf)
 	Children_len := int(READ_int32(buf))
+	if Children_len>cap(data.Children){
+		data.Children= make([]*MSG_USER_Dept_cache, Children_len)
+	}else{
+		data.Children = data.Children[:Children_len]
+	}
 	for i := 0; i < Children_len; i++ {
-		data.Children = append(data.Children, READ_MSG_USER_Dept_cache(buf))
+		data.Children[i] = READ_MSG_USER_Dept_cache(buf)
 	}
 
 }
@@ -636,8 +656,13 @@ func READ_MSG_USER_Dept_getParents_result(buf *libraries.MsgBuffer) *MSG_USER_De
 func (data *MSG_USER_Dept_getParents_result) read(buf *libraries.MsgBuffer) {
 	data.QueryResultID = READ_uint32(buf)
 	List_len := int(READ_int32(buf))
+	if List_len>cap(data.List){
+		data.List= make([]*MSG_USER_Dept_cache, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
 	for i := 0; i < List_len; i++ {
-		data.List = append(data.List, READ_MSG_USER_Dept_cache(buf))
+		data.List[i] = READ_MSG_USER_Dept_cache(buf)
 	}
 
 }
@@ -741,8 +766,13 @@ func READ_MSG_USER_Dept_getDataStructure_result(buf *libraries.MsgBuffer) *MSG_U
 func (data *MSG_USER_Dept_getDataStructure_result) read(buf *libraries.MsgBuffer) {
 	data.QueryResultID = READ_uint32(buf)
 	List_len := int(READ_int32(buf))
+	if List_len>cap(data.List){
+		data.List= make([]*MSG_USER_Dept_cache, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
 	for i := 0; i < List_len; i++ {
-		data.List = append(data.List, READ_MSG_USER_Dept_cache(buf))
+		data.List[i] = READ_MSG_USER_Dept_cache(buf)
 	}
 
 }
@@ -798,8 +828,13 @@ func READ_MSG_USER_Dept_update(buf *libraries.MsgBuffer) *MSG_USER_Dept_update {
 func (data *MSG_USER_Dept_update) read(buf *libraries.MsgBuffer) {
 	data.QueryID = READ_uint32(buf)
 	List_len := int(READ_int32(buf))
+	if List_len>cap(data.List){
+		data.List= make([]*MSG_USER_Dept_cache, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
 	for i := 0; i < List_len; i++ {
-		data.List = append(data.List, READ_MSG_USER_Dept_cache(buf))
+		data.List[i] = READ_MSG_USER_Dept_cache(buf)
 	}
 
 }
@@ -1045,8 +1080,13 @@ func READ_MSG_USER_getDeptUserPairs_result(buf *libraries.MsgBuffer) *MSG_USER_g
 func (data *MSG_USER_getDeptUserPairs_result) read(buf *libraries.MsgBuffer) {
 	data.QueryResultID = READ_uint32(buf)
 	List_len := int(READ_int32(buf))
+	if List_len>cap(data.List){
+		data.List= make([]*MSG_USER_Pairs, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
 	for i := 0; i < List_len; i++ {
-		data.List = append(data.List, READ_MSG_USER_Pairs(buf))
+		data.List[i] = READ_MSG_USER_Pairs(buf)
 	}
 
 }
@@ -1181,8 +1221,13 @@ func READ_MSG_USER_getCompanyUsers_result(buf *libraries.MsgBuffer) *MSG_USER_ge
 func (data *MSG_USER_getCompanyUsers_result) read(buf *libraries.MsgBuffer) {
 	data.QueryResultID = READ_uint32(buf)
 	List_len := int(READ_int32(buf))
+	if List_len>cap(data.List){
+		data.List= make([]*MSG_USER_INFO_cache, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
 	for i := 0; i < List_len; i++ {
-		data.List = append(data.List, READ_MSG_USER_INFO_cache(buf))
+		data.List[i] = READ_MSG_USER_INFO_cache(buf)
 	}
 	data.Total = READ_int(buf)
 
@@ -1266,16 +1311,31 @@ func (data *MSG_USER_Group_cache) read(buf *libraries.MsgBuffer) {
 	data.Role = READ_string(buf)
 	data.Desc = READ_string(buf)
 	Acl_len := int(READ_int32(buf))
+	if Acl_len>cap(data.Acl){
+		data.Acl= make([]string, Acl_len)
+	}else{
+		data.Acl = data.Acl[:Acl_len]
+	}
 	for i := 0; i < Acl_len; i++ {
-		data.Acl = append(data.Acl, READ_string(buf))
+		data.Acl[i] = READ_string(buf)
 	}
 	AclProducts_len := int(READ_int32(buf))
+	if AclProducts_len>cap(data.AclProducts){
+		data.AclProducts= make([]int32, AclProducts_len)
+	}else{
+		data.AclProducts = data.AclProducts[:AclProducts_len]
+	}
 	for i := 0; i < AclProducts_len; i++ {
-		data.AclProducts = append(data.AclProducts, READ_int32(buf))
+		data.AclProducts[i] = READ_int32(buf)
 	}
 	AclProjects_len := int(READ_int32(buf))
+	if AclProjects_len>cap(data.AclProjects){
+		data.AclProjects= make([]int32, AclProjects_len)
+	}else{
+		data.AclProjects = data.AclProjects[:AclProjects_len]
+	}
 	for i := 0; i < AclProjects_len; i++ {
-		data.AclProjects = append(data.AclProjects, READ_int32(buf))
+		data.AclProjects[i] = READ_int32(buf)
 	}
 	data.Developer = READ_int8(buf)
 	READ_map(&data.Priv,buf)
@@ -1524,8 +1584,13 @@ func READ_MSG_USER_getPairs_result(buf *libraries.MsgBuffer) *MSG_USER_getPairs_
 func (data *MSG_USER_getPairs_result) read(buf *libraries.MsgBuffer) {
 	data.QueryResultID = READ_uint32(buf)
 	List_len := int(READ_int32(buf))
+	if List_len>cap(data.List){
+		data.List= make([]HtmlKeyValueStr, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
 	for i := 0; i < List_len; i++ {
-		data.List = append(data.List, READ_HtmlKeyValueStr(buf))
+		data.List[i] = READ_HtmlKeyValueStr(buf)
 	}
 
 }
@@ -1592,12 +1657,22 @@ func (data *MSG_USER_updateUserView) read(buf *libraries.MsgBuffer) {
 	data.ProjectId = READ_int32(buf)
 	data.ProductId = READ_int32(buf)
 	UserIds_len := int(READ_int32(buf))
+	if UserIds_len>cap(data.UserIds){
+		data.UserIds= make([]int32, UserIds_len)
+	}else{
+		data.UserIds = data.UserIds[:UserIds_len]
+	}
 	for i := 0; i < UserIds_len; i++ {
-		data.UserIds = append(data.UserIds, READ_int32(buf))
+		data.UserIds[i] = READ_int32(buf)
 	}
 	GroupIds_len := int(READ_int32(buf))
+	if GroupIds_len>cap(data.GroupIds){
+		data.GroupIds= make([]int32, GroupIds_len)
+	}else{
+		data.GroupIds = data.GroupIds[:GroupIds_len]
+	}
 	for i := 0; i < GroupIds_len; i++ {
-		data.GroupIds = append(data.GroupIds, READ_int32(buf))
+		data.GroupIds[i] = READ_int32(buf)
 	}
 
 }

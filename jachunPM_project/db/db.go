@@ -48,9 +48,10 @@ type Module struct {
 	Order     int16   `db:"default(0)"`
 	Type      string  `db:"type:varchar(30)"`
 	Owner     string  `db:"type:varchar(30)"`
-	Collector string  `db:"type:text"`
-	Short     string  `db:"type:varchar(30)"`
-	Deleted   bool    `db:"default(0)"` // 0=0,1=1,
+	OwnerID   int32
+	Collector string `db:"type:text"`
+	Short     string `db:"type:varchar(30)"`
+	Deleted   bool   `db:"default(0)"` // 0=0,1=1,
 	TimeStamp int64
 }
 

@@ -40,7 +40,10 @@ type MSG_PROJECT_product_insert_result struct {
 	QueryResultID uint32
 	ID            int32
 }
-
+type MSG_PROJECT_product_update struct {
+	QueryID uint32
+	Data    *MSG_PROJECT_product_cache
+}
 type MSG_PROJECT_product_getStories struct {
 	QueryID    uint32
 	ProductID  int32
@@ -103,6 +106,7 @@ type MSG_PROJECT_tree_cache struct {
 	Order     int16
 	Type      string
 	Owner     string
+	OwnerID   int32
 	Collector string
 	Short     string
 	Deleted   bool
@@ -133,4 +137,27 @@ type MSG_PROJECT_tree_manageChild_result struct {
 	QueryResultID uint32
 	Result        ErrCode
 	Name          string
+}
+type MSG_PROJECT_product_getStoriesMapBySql struct {
+	QueryID uint32
+	Field   string
+	Where   map[string]interface{}
+	Order   string
+	Group   string
+	Page    int
+	PerPage int
+	Total   int
+}
+type MSG_PROJECT_product_getStoriesMapBySql_result struct {
+	QueryResultID uint32
+	List          []map[string]string
+	Total         int
+}
+type MSG_PROJECT_tree_updateList struct {
+	QueryID uint32
+	Modules []*MSG_PROJECT_tree_cache
+}
+type MSG_PROJECT_tree_delete struct {
+	QueryID uint32
+	Ids     []int32
 }

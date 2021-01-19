@@ -29,7 +29,7 @@
 {{- range $key,$value := .Lang.common.searchObjects}}<li{{if eq $key $searchObject}} class='selected'{{end}}><a href='javascript:$.setSearchType("{{$key}}");' data-value='{{$key}}'>{{$value}}</a></li>
 {{end -}}
           </ul></div>
-          <input id='searchInput' class='form-control search-input' type='search' onclick='this.value=\"\"' onkeydown='if(event.keyCode==13) $.gotoObject();' placeholder='{{.Lang.common.searchTips}}'/>
+          <input id='searchInput' class='form-control search-input' type='search' onclick='this.value=""' onkeydown='if(event.keyCode==13) $.gotoObject();' placeholder='{{.Lang.common.searchTips}}'/>
           </div>
           <a href='javascript:$.gotoObject();' class='btn btn-link' id='searchGo'>GO!</a>
           </div>

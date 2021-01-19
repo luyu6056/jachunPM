@@ -19,6 +19,14 @@ func Handler(in *protocol.Msg) {
 		product_getStories(data, in)
 	case *protocol.MSG_PROJECT_tree_manageChild:
 		tree_manageChild(data, in)
+	case *protocol.MSG_PROJECT_product_getStoriesMapBySql:
+		story_getStoriesMapBySql(data, in)
+	case *protocol.MSG_PROJECT_tree_updateList:
+		tree_updateList(data, in)
+	case *protocol.MSG_PROJECT_tree_delete:
+		tree_delete(data, in)
+	case *protocol.MSG_PROJECT_product_update:
+		product_update(data, in)
 	default:
 		libraries.ReleaseLog("未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 	}

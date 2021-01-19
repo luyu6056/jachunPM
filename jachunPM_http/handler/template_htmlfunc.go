@@ -10,28 +10,11 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 const (
 	classActive = "class='active'"
 )
-
-var global_Funcs template.FuncMap = map[string]interface{}{}
-var bufpool = sync.Pool{New: func() interface{} {
-	return new(libraries.MsgBuffer)
-}}
-
-func init() {
-	loadFuncs()
-}
-func loadFuncs() {
-	commonModelFuncs()
-	htmlFuncs()
-	hookFuncs()
-	isClickableFuncs()
-	global_t.Funcs(global_Funcs)
-}
 
 func createLink(moduleName string, methodName string, vars interface{}) string {
 	buf := bufpool.Get().(*libraries.MsgBuffer)
@@ -257,7 +240,7 @@ func htmlFuncs() {
 			buf.WriteString(value[1]) //misc
 		}
 		buf.WriteByte('>')
-		if len(value) > 0 {
+		if len(value) > 0 && value[0] != "" {
 			buf.WriteString(value[0]) //label
 		} else {
 			buf.WriteString(data.Lang["common"]["goback"].(string))
@@ -541,6 +524,25 @@ func htmlFuncs() {
 		bufpool.Put(buf)
 		return template.HTML(res)
 	}
+	global_Funcs["bbcode2html"] = func(code string) template.HTML {
+		return template.HTML(libraries.Bbcode2html(code, true, false, false, false, true, false))
+	}
+	global_Funcs["html_icon"] = func(name string, classExt ...string) template.HTML {
+		buf := bufpool.Get().(*libraries.MsgBuffer)
+		buf.WriteString("<i class='")
+		buf.WriteString("icon-")
+		buf.WriteString(name)
+		if len(classExt) == 1 {
+			buf.WriteString(" ")
+			buf.WriteString(classExt[0])
+		}
+		buf.WriteString("'></i>")
+		res := buf.String()
+		buf.Reset()
+		bufpool.Put(buf)
+		return template.HTML(res)
+
+	}
 }
 func hookFuncs() {
 	global_Funcs["importHeaderHook"] = func(data *TemplateData) (res template.HTML) {
@@ -592,7 +594,7 @@ func html_a(href string, value ...string) string {
 	if len(value) == 3 {
 		buf.WriteString(value[2])
 	}
-	if len(value) > 1 && value[1] != "_self" {
+	if len(value) > 1 && value[1] != "_self" && value[1] != "" {
 		buf.WriteString(" target='" + value[1])
 		buf.WriteString("'")
 	}
@@ -638,6 +640,20 @@ func isClickableFuncs() {
 		lockMinutes, _ := data.Config["user"]["common"]["lockMinutes"].(int)
 		if action == "unlock" && data.Time.Unix()-v.Locked >= int64(lockMinutes)*60 {
 			return false
+		}
+		return true
+	}
+	global_Funcs["MSG_PROJECT_product_cache_isClickable"] = func(data *TemplateData, obj interface{}, action string) bool {
+		v := obj.(*protocol.MSG_PROJECT_product_cache)
+		if action == "close" {
+			return v.Status != "closed"
+		}
+		return true
+	}
+	global_Funcs["MSG_PROJECT_product_cache_map_isClickable"] = func(data *TemplateData, obj interface{}, action string) bool {
+		v := obj.(map[string]interface{})
+		if action == "close" {
+			return v["Status"].(string) != "closed"
 		}
 		return true
 	}

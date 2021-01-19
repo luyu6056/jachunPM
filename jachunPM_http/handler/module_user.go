@@ -107,9 +107,9 @@ func post_user_login(data *TemplateData) gnet.Action {
 		} else {
 			err = errors.New(data.Lang["user"]["error"].(map[string]string)[resdata.Result.String()])
 		}
-	} else {
-		ws.WriteString(`{"error":"` + err.Error() + `"}`)
 	}
+	ws.WriteString(`{"error":"` + err.Error() + `"}`)
+
 	resdata.Put()
 	return gnet.None
 }

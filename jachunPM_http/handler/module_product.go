@@ -19,6 +19,10 @@ func init() {
 	httpHandlerMap["POST"]["/product/create"] = post_product_create
 	httpHandlerMap["GET"]["/product/browse"] = get_product_browse
 	httpHandlerMap["GET"]["/product/ajaxGetDropMenu"] = get_product_ajaxGetDropMenu
+	httpHandlerMap["GET"]["/product/all"] = get_product_all
+	httpHandlerMap["GET"]["/product/view"] = get_product_view
+	httpHandlerMap["GET"]["/product/edit"] = get_product_edit
+	httpHandlerMap["POST"]["/product/edit"] = post_product_edit
 }
 func get_product_index(data *TemplateData) (action gnet.Action) {
 
@@ -42,9 +46,13 @@ func get_product_index(data *TemplateData) (action gnet.Action) {
 	return
 }
 func get_product_create(data *TemplateData) (action gnet.Action) {
-	//$rootID = key($this->products);
-	//if($this->session->product) $rootID = $this->session->product;
-	//$this->product->setMenu($this->products, $rootID);
+
+	productID, branch, err := product_saveState(data, 0)
+	if err != nil {
+		data.OutErr(err)
+		return
+	}
+	err = product_setMenu(data, productID, branch, "")
 	data.Data["groups"], _ = user_getGroupOptionMenu()
 	msg, err := HostConn.GetMsg()
 	if err != nil {
@@ -93,6 +101,7 @@ func get_product_create(data *TemplateData) (action gnet.Action) {
 	}
 	res3.List = append([]protocol.HtmlKeyValueStr{{"", ""}}, res3.List...)
 	data.Data["lines"] = res3.List
+	data.Data["rootID"] = productID
 	templateOut("product.create.html", data)
 	res.Put()
 	res1.Put()
@@ -261,27 +270,30 @@ func get_product_browse(data *TemplateData) (action gnet.Action) {
 	templateOut("product.browse.html", data)
 	return
 }
-func product_getAll() (result []*protocol.MSG_PROJECT_product_cache, err error) {
-	res, err := HostConn.CacheGetPath(protocol.ProjectServerNo, protocol.PATH_PROJECT_PRODUCT_CACHE)
-	if err != nil {
-		return
-	}
-
-	buf := bufpool.Get().(*libraries.MsgBuffer)
-	for _, b := range res {
-		buf.Reset()
-		buf.Write(b)
-		if v, ok := protocol.READ_MSG_DATA(buf).(*protocol.MSG_PROJECT_product_cache); ok {
-			result = append(result, v)
+func product_getAll(data *TemplateData) (result []*protocol.MSG_PROJECT_product_cache, err error) {
+	if data.Data["product_getAll"] == nil {
+		res, err := HostConn.CacheGetPath(protocol.ProjectServerNo, protocol.PATH_PROJECT_PRODUCT_CACHE)
+		if err != nil {
+			return nil, err
 		}
-	}
-	buf.Reset()
-	bufpool.Put(buf)
 
-	return
+		buf := bufpool.Get().(*libraries.MsgBuffer)
+		for _, b := range res {
+			buf.Reset()
+			buf.Write(b)
+			if v, ok := protocol.READ_MSG_DATA(buf).(*protocol.MSG_PROJECT_product_cache); ok {
+				result = append(result, v)
+			}
+		}
+		buf.Reset()
+		bufpool.Put(buf)
+		data.Data["product_getAll"] = result
+	}
+
+	return data.Data["product_getAll"].([]*protocol.MSG_PROJECT_product_cache), nil
 }
 func product_getPairs(data *TemplateData, mode ...string) (res []protocol.HtmlKeyValueStr, err error) {
-	list, err := product_getAll()
+	list, err := product_getAll(data)
 	if err != nil {
 		return nil, err
 	}
@@ -359,12 +371,15 @@ func product_setMenu(data *TemplateData, productID, branch int32, extra string) 
 		buf.Reset()
 		bufpool.Put(buf)
 	}()
-	selectHtml := func() {
+	selectHtml := func() error {
 		//public function select($products, $productID, $currentModule, $currentMethod, $extra = '', $branch = 0, $module = 0, $moduleType = '')
 		//$isMobile = $this->app->viewType == 'mhtml';
 		data.ws.SetCookie("lastProduct", productIDStr, protocol.SessionKeepLoginExpires)
 
 		currentProduct := HostConn.GetProductById(int32(productID))
+		if currentProduct == nil {
+			return errors.New(data.Lang["product"]["error"].(map[string]string)["NotFound"])
+		}
 		data.ws.Session().Set("currentProductType", currentProduct.Type)
 		buf.WriteString(`<div class='btn-group angle-btn'><div class='btn-group'><button data-toggle='dropdown' type='button' class='btn btn-limit' id='currentItem' title='`)
 		buf.WriteString(currentProduct.Name)
@@ -414,6 +429,7 @@ func product_setMenu(data *TemplateData, productID, branch int32, extra string) 
 		if true { //!$isMobile)
 			buf.WriteString("</div>")
 		}
+		return nil
 	}
 	buf.WriteString(`<div class="btn-group angle-btn`)
 	if currentMethod == `index` {
@@ -438,7 +454,9 @@ func product_setMenu(data *TemplateData, productID, branch int32, extra string) 
 		buf.WriteString(`</li>`)
 	}
 	buf.WriteString(`</ul></div></div>`)
-	selectHtml()
+	if err = selectHtml(); err != nil {
+		return err
+	}
 
 	data.Data["modulePageNav"] = template.HTML(buf.String())
 	if data.App["menuReplace"] == nil {
@@ -494,12 +512,12 @@ func get_product_ajaxGetDropMenu(data *TemplateData) (action gnet.Action) {
 	data.Data["module"] = module
 	data.Data["method"] = method
 	data.Data["extra"] = data.ws.Query("extra")
-	products, err := product_getAll()
+	products, err := product_getAll(data)
 	if err != nil {
 		data.OutErr(err)
 		return
 	}
-	lines, err := tree_getLinePairs()
+	lines, err := tree_getLinePairs(data)
 	if err != nil {
 		data.OutErr(err)
 		return
@@ -633,4 +651,453 @@ func product_getProductLink(module, method, extra string, branch int32) string {
 	}
 
 	return ""
+}
+func get_product_all(data *TemplateData) (action gnet.Action) {
+
+	//this->session->set("productList", this->app->getURI(true))
+	id, _ := strconv.Atoi(data.ws.Query("productID"))
+	productID, branch, err := product_saveState(data, int32(id))
+	err = product_setMenu(data, productID, branch, "")
+	if err != nil {
+		data.OutErr(err)
+		return
+	}
+	line, _ := strconv.Atoi(data.ws.Query("line"))
+	orderBy := data.ws.Query("orderBy")
+	status := data.ws.Query("status")
+	if status == "" {
+		status = "noclosed"
+	}
+	/* Load pager and get tasks. */
+	//this->app->loadClass("pager", static = true)
+	//pager = new pager(recTotal, recPerPage, pageID)
+
+	data.Data["title"] = data.Lang["product"]["allProduct"]
+
+	data.Data["productStats"], err = product_getStats(data, orderBy, status, int32(line))
+	data.Data["lineTree"], err = tree_getTreeMenu(data, 0, "line", 0, tree_createLineLink, map[string]interface{}{"productID": int32(productID), "status": status}, 0)
+	if err != nil {
+		data.OutErr(err)
+		return
+	}
+	lines, err := tree_getLinePairs(data)
+	if err != nil {
+		data.OutErr(err)
+		return
+	}
+	data.Data["lines"] = append([]protocol.HtmlKeyValueStr{{"", ""}}, lines...)
+	data.Data["productID"] = productID
+	data.Data["line"] = line
+	data.Data["status"] = status
+	data.Data["orderBy"] = orderBy
+	templateOut("product.all.html", data)
+	return
+}
+func product_getStats(data *TemplateData, orderBy string, status string, line int32, rootID ...int32) (result []map[string]interface{}, err error) {
+	order := func(a, b *protocol.MSG_PROJECT_product_cache) bool {
+		if a.Order == b.Order {
+			return a.Id < b.Id
+		}
+		return a.Order < b.Order
+	}
+	orders := strings.Split(orderBy, "_")
+	if len(orders) == 2 {
+		switch orders[0] {
+		case "id":
+			if orders[1] == "asc" {
+				order = func(a, b *protocol.MSG_PROJECT_product_cache) bool {
+					return a.Id < b.Id
+				}
+			} else {
+				order = func(a, b *protocol.MSG_PROJECT_product_cache) bool {
+					return a.Id > b.Id
+				}
+			}
+
+		case "name":
+			if orders[1] == "asc" {
+				order = func(a, b *protocol.MSG_PROJECT_product_cache) bool {
+					return a.Name < b.Name
+				}
+			} else {
+				order = func(a, b *protocol.MSG_PROJECT_product_cache) bool {
+					return a.Name > b.Name
+				}
+			}
+		case "line":
+			if orders[1] == "asc" {
+				order = func(a, b *protocol.MSG_PROJECT_product_cache) bool {
+					return a.Line < b.Line
+				}
+			} else {
+				order = func(a, b *protocol.MSG_PROJECT_product_cache) bool {
+					return a.Line > b.Line
+				}
+			}
+		}
+	}
+
+	if status == "" {
+		status = "noclosed"
+	}
+	id := int32(0)
+	if len(rootID) == 1 {
+		id = rootID[0]
+	}
+	products, err := product_getList(data, order, status, 0, line, id)
+	if err != nil {
+		return
+	}
+	if data.Page.Total == 0 {
+		data.Page.Total = len(products)
+	}
+	if (data.Page.Page-1)*data.Page.PerPage >= len(products) {
+		return
+	}
+	end := (data.Page.Page) * data.Page.PerPage
+	if end > len(products) {
+		end = len(products)
+	}
+	products = products[(data.Page.Page-1)*data.Page.PerPage : end]
+	var ids = make([]int32, len(products))
+	for k, p := range products {
+		ids[k] = p.Id
+	}
+	getstories := protocol.GET_MSG_PROJECT_product_getStoriesMapBySql()
+	getstories.Field = "product, status, count(status) AS count"
+	getstories.Where = map[string]interface{}{
+		"Deleted": false,
+		"Product": ids,
+	}
+	getstories.Group = "product, status"
+	var getstories_result *protocol.MSG_PROJECT_product_getStoriesMapBySql_result
+	HostConn.SendMsgWaitResultToDefault(getstories, &getstories_result)
+	stories := map[int32]map[string]string{}
+	for _, v := range getstories_result.List {
+		id, _ := strconv.Atoi(v["product"])
+		if stories[int32(id)] == nil {
+			stories[int32(id)] = make(map[string]string)
+		}
+		stories[int32(id)][v["status"]] = v["count"]
+	}
+	var langstatus []string
+	for _, kv := range data.Lang["story"]["statusList"].([]protocol.HtmlKeyValueStr) {
+		if kv.Key != "" {
+			langstatus = append(langstatus, kv.Key)
+		}
+	}
+	for _, id := range ids {
+		if _, ok := stories[id]; !ok {
+			stories[id] = make(map[string]string)
+			for _, key := range langstatus {
+				stories[id][key] = "0"
+			}
+		} else {
+			for _, key := range langstatus {
+				if _, ok := stories[id][key]; !ok {
+					stories[id][key] = "0"
+				}
+			}
+		}
+	}
+	/*
+	  plans = this->dao->select("product, count(*) AS count")
+	      ->from(TABLE_PRODUCTPLAN)
+	      ->where("deleted")->eq(0)
+	      ->andWhere("product")->in(array_keys(products))
+	      ->andWhere("end")->gt(helper::now())
+	      ->groupBy("product")
+	      ->fetchPairs()
+
+	  releases = this->dao->select("product, count(*) AS count")
+	      ->from(TABLE_RELEASE)
+	      ->where("deleted")->eq(0)
+	      ->andWhere("product")->in(array_keys(products))
+	      ->groupBy("product")
+	      ->fetchPairs()
+
+	  bugs = this->dao->select("product,count(*) AS conut")
+	      ->from(TABLE_BUG)
+	      ->where("deleted")->eq(0)
+	      ->andWhere("product")->in(array_keys(products))
+	      ->groupBy("product")
+	      ->fetchPairs()
+	  unResolved = this->dao->select("product,count(*) AS count")
+	      ->from(TABLE_BUG)
+	      ->where("deleted")->eq(0)
+	      ->andwhere("status")->eq("active")
+	      ->andWhere("product")->in(array_keys(products))
+	      ->groupBy("product")
+	      ->fetchPairs()
+	  assignToNull = this->dao->select("product,count(*) AS count")
+	      ->from(TABLE_BUG)
+	      ->where("deleted")->eq(0)
+	      ->andwhere("assignedTo")->eq("")
+	      ->andWhere("product")->in(array_keys(products))
+	      ->groupBy("product")
+	      ->fetchPairs()
+
+	  stats = array()
+	  foreach(products as key => product)
+	  {
+	      product->stories  = stories[product->id]
+	      product->plans    = isset(plans[product->id])    ? plans[product->id]    : 0
+	      product->releases = isset(releases[product->id]) ? releases[product->id] : 0
+
+	      product->bugs         = isset(bugs[product->id]) ? bugs[product->id] : 0
+	      product->unResolved   = isset(unResolved[product->id]) ? unResolved[product->id] : 0
+	      product->assignToNull = isset(assignToNull[product->id]) ? assignToNull[product->id] : 0
+	      stats[] = product
+	  }
+
+	  return stats*/
+	result = make([]map[string]interface{}, len(products))
+	for k, product := range products {
+		tmp := make(map[string]interface{})
+		tmp["Id"] = product.Id
+		tmp["Name"] = product.Name
+		tmp["Code"] = product.Code
+		tmp["Line"] = product.Line
+		tmp["Type"] = product.Type
+		tmp["Status"] = product.Status
+		tmp["Desc"] = product.Desc
+		tmp["PO"] = product.PO
+		tmp["QD"] = product.QD
+		tmp["RD"] = product.RD
+		tmp["Acl"] = product.Acl
+		tmp["Whitelist"] = product.Whitelist
+		tmp["CreatedBy"] = product.CreatedBy
+		tmp["CreatedDate"] = product.CreatedDate
+		tmp["Order"] = product.Order
+		tmp["stories"] = stories[product.Id]
+		tmp["isClickableKey"] = "MSG_PROJECT_product_cache_map_isClickable"
+		result[k] = tmp
+	}
+	return
+}
+func product_getList(data *TemplateData, order func(a, b *protocol.MSG_PROJECT_product_cache) bool, status string, limit int, line int32, rootID int32) (result []*protocol.MSG_PROJECT_product_cache, err error) {
+	var list []*protocol.MSG_PROJECT_product_cache
+	if rootID == 0 {
+		list, err = product_getAll(data)
+		if err != nil {
+			return
+		}
+	} else {
+		list = []*protocol.MSG_PROJECT_product_cache{HostConn.GetProductById(rootID)}
+	}
+
+	for _, v := range list {
+		if v.Deleted || (line > 0 && v.Line != line) || (data.User.Id != 1 && data.User.AclProducts[v.Id] == false) {
+			continue
+		}
+		switch status {
+		case "noclosed":
+			if v.Status == "closed" {
+				continue
+			}
+		case "involved":
+			if v.PO != data.User.Id && v.QD != data.User.Id && v.RD != data.User.Id && v.CreatedBy != data.User.Id {
+				continue
+			}
+		default:
+			if status != "all" {
+				if v.Status != status {
+					continue
+				}
+			}
+		}
+		result = append(result, v)
+	}
+	protocol.Order_product(result, order)
+	/*protocol.Order_product(result, func(a, b *protocol.MSG_PROJECT_product_cache) bool {
+		if a.Order == b.Order {
+			return a.Desc < b.Desc
+		}
+		return a.Order < b.Order
+	})*/
+	if limit > 0 && limit > len(result) {
+		result = result[:limit]
+	}
+
+	return
+}
+func get_product_view(data *TemplateData) (action gnet.Action) {
+	id, _ := strconv.Atoi(data.ws.Query("product"))
+	productID, branch, err := product_saveState(data, int32(id))
+	err = product_setMenu(data, productID, branch, "")
+	if err != nil {
+		data.OutErr(err)
+		return
+	}
+	list, err := product_getStats(data, "", "all", 0, productID)
+	if err != nil {
+		data.OutErr(err)
+		return
+	} else if len(list) == 0 {
+		data.OutErr(errors.New(data.Lang["product"]["error"].(map[string]string)["NotFound"]))
+		return
+	}
+
+	data.Data["product"] = list[0]
+	getuserPairs := protocol.GET_MSG_USER_getPairs()
+	getuserPairs.Params = "noletter"
+	var result *protocol.MSG_USER_getPairs_result
+	if err = HostConn.SendMsgWaitResultToDefault(getuserPairs, &result); err != nil {
+		data.OutErr(err)
+		return
+	}
+	data.Data["users"] = result.List
+	lines, err := tree_getLinePairs(data)
+	if err != nil {
+		data.OutErr(err)
+		return
+	}
+	data.Data["lines"] = append([]protocol.HtmlKeyValueStr{{"", ""}}, lines...)
+	data.Data["blockHistory"] = true
+	templateOut("product.view.html", data)
+	return
+}
+func get_product_edit(data *TemplateData) (action gnet.Action) {
+	id, _ := strconv.Atoi(data.ws.Query("product"))
+	productID, branch, err := product_saveState(data, int32(id))
+	err = product_setMenu(data, productID, branch, "")
+	if err != nil {
+		data.OutErr(err)
+		return
+	}
+	product := HostConn.GetProductById(productID)
+	if product == nil {
+		data.OutErr(errors.New(data.Lang["product"]["error"].(map[string]string)["NotFound"]))
+		return
+	}
+
+	data.Data["product"] = product
+	lines, err := tree_getLinePairs(data)
+	if err != nil {
+		data.OutErr(err)
+		return
+	}
+	getuserPairs := protocol.GET_MSG_USER_getPairs()
+	getuserPairs.Params = "nodeleted"
+	var result *protocol.MSG_USER_getPairs_result
+	if err = HostConn.SendMsgWaitResultToDefault(getuserPairs, &result); err != nil {
+		data.OutErr(err)
+		return
+	}
+	data.Data["poUsers"] = result.List
+	data.Data["qdUsers"] = result.List
+	data.Data["rdUsers"] = result.List
+	data.Data["lines"] = append([]protocol.HtmlKeyValueStr{{"", ""}}, lines...)
+	data.Data["groups"], _ = user_getGroupOptionMenu()
+	templateOut("product.edit.html", data)
+	return
+}
+func post_product_edit(data *TemplateData) (action gnet.Action) {
+	if !data.ajaxCheckPost() {
+		return
+	}
+	id, _ := strconv.Atoi(data.ws.Query("product"))
+	product := HostConn.GetProductById(int32(id))
+	if product == nil {
+		data.ajaxResult(false, data.Lang["product"]["error"].(map[string]string)["NotFound"])
+		return
+	}
+	msg, err := HostConn.GetMsg()
+	if err != nil {
+		data.ajaxResult(false, err.Error())
+		return
+	}
+	out := protocol.GET_MSG_PROJECT_product_update()
+	product.Id = product.Id
+	product.Status = "normal"
+	product.CreatedBy = data.User.Id
+
+	for key, v := range data.ws.GetAllPost() {
+		switch key {
+		case "acl":
+			product.Acl = v[0]
+		case "whitelist":
+			for _, sid := range v {
+				id, _ := strconv.Atoi(sid)
+				if id > 0 {
+					product.Whitelist = append(product.Whitelist, int32(id))
+				}
+			}
+		case "name":
+			product.Name = v[0]
+		case "code":
+			product.Code = v[0]
+		case "line":
+			id, _ := strconv.Atoi(v[0])
+			product.Line = int32(id)
+		case "PO":
+			id, _ := strconv.Atoi(v[0])
+			product.PO = int32(id)
+		case "QD":
+			id, _ := strconv.Atoi(v[0])
+			product.QD = int32(id)
+		case "RD":
+			id, _ := strconv.Atoi(v[0])
+			product.RD = int32(id)
+		case "type":
+			product.Type = v[0]
+		case "desc":
+			product.Desc = v[0]
+
+		}
+	}
+	m, _ := libraries.Preg_match_result(`<img src="/file/tmpimg\?fileID=(\d+)&amp;t=([^"]+)" alt="" \/>`, product.Desc, -1)
+	var uploaderr error
+	var newimgids []int64
+	for _, match := range m {
+		b, ok := file_getTempFile(match[1])
+		if ok {
+			upload := protocol.GET_MSG_FILE_upload()
+			upload.AddBy = data.User.Id
+			upload.Data = b
+			upload.Name = time.Now().Format("20060102") + "_" + match[1] + "." + match[2]
+			var res *protocol.MSG_FILE_upload_result
+			uploaderr = msg.SendMsgWaitResult(0, upload, &res)
+			if uploaderr == nil {
+				newimgids = append(newimgids, res.FileID)
+				product.Desc = strings.ReplaceAll(product.Desc, match[0], `<img src="/file/read?fileID=`+strconv.FormatInt(res.FileID, 10)+` alt="" />`)
+			}
+			res.Put()
+			if uploaderr != nil {
+				deleteimg := protocol.GET_MSG_FILE_DeleteByID()
+				for _, id := range newimgids {
+					deleteimg.FileID = id
+					msg.SendMsg(0, deleteimg)
+				}
+				deleteimg.Put()
+				data.ajaxResult(false, map[string]string{"desc": fmt.Sprintf(data.Lang["file"]["imguploadFail"].(string), uploaderr)})
+				return
+			}
+		} else {
+			product.Desc = strings.ReplaceAll(product.Desc, match[0], "")
+		}
+
+	}
+	product.Desc = libraries.Html2bbcode(product.Desc)
+	defer func() {
+		if err != nil { //以下使用err来判断图片删除
+			deleteimg := protocol.GET_MSG_FILE_DeleteByID()
+			for _, id := range newimgids {
+				deleteimg.FileID = id
+				msg.SendMsg(0, deleteimg)
+			}
+			deleteimg.Put()
+		}
+	}()
+	out.Data = product
+	err = msg.SendMsgWaitResult(0, out, nil)
+	fmt.Println(err)
+	if err != nil {
+		data.ajaxResult(false, err.Error())
+		return
+	}
+	locate := createLink("product", "view", []string{"productID=", strconv.Itoa(int(product.Id))})
+	data.ajaxResult(true, data.Lang["common"]["saveSuccess"], locate)
+	out.Put()
+	return
 }

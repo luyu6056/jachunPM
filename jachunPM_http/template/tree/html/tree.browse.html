@@ -50,15 +50,14 @@
               {{end}}
               <td>
                 <div id='sonModule'>
-                  
                   {{range $sonModule:= .Data.sons}}
-                  {{$disabled := or (and (eq $sonModule.Type $.Data.viewType) "") "disabled"}}
+                  {{- $disabled := or (and (ne $sonModule.Type $.Data.viewType) "disabled") "" -}}
                   <div class="table-row row-module">
                     <div class="table-col col-module">{{html_input (strAdd "modules[id" $sonModule.Id "]") $sonModule.Name (strAdd "class='form-control' autocomplete='off'" $disabled)}}</div>
                     {{if $.Data.hasBranch}}
                     <div class="table-col col-module">{{html_select (strAdd "branch[id" $sonModule.Id "]") $.Data.branches $sonModule.Branch "class='form-control' disabled"}}</div>
                     {{end}}
-                    <div class="table-col col-shorts">{{html_input (strAdd "shorts[id" $sonModule.Id "]") $sonModule.Short (strAdd "class='form-control' placeholder='" .Lang.tree.short "' $disabled autocomplete='off'")}}{[html_hidden (strAdd "order[id" $sonModule.Id "]") $sonModule.Order}}</div>
+                    <div class="table-col col-shorts">{{html_input (strAdd "shorts[id" $sonModule.Id "]") $sonModule.Short (strAdd "class='form-control' placeholder='" $.Lang.tree.short "' $disabled autocomplete='off'")}}{{html_hidden (strAdd "order[id" $sonModule.Id "]") (string $sonModule.Order)}}</div>
                     <div class="table-col col-actions">
                       <button type="button" class="btn btn-link btn-icon btn-add" onclick="addItem(this"><i class="icon icon-plus"></i></button>
                     </div>
@@ -100,7 +99,7 @@
               {{end}}
               <td colspan="2" class="form-actions">
                 {{html_submitButton .}}
-                {{html_a "javascript:history.go(-1)" .Lang.common.goback "" "class='btn btn-wide'"}}
+                {{html_backButton . .Lang.common.goback "" "class='btn btn-wide'"}}
                 {{html_hidden "parentModuleID" (string .Data.currentModuleID)}}
               </td>
             </tr>
@@ -116,7 +115,7 @@
   var viewType='{{.Data.viewType}}'
 $(function()
 {
-    var data = $.parseJSON('{{.Data.tree}}');
+    var data = {{.Data.tree}};
     var options =
     {
         initialState: 'preserve',
@@ -189,9 +188,9 @@ $(function()
                 {
                     var $li = $(this);
                     var item = $li.data();
-                    orders['orders[' + item.id + ']'] = $li.attr('data-order') || item.order;
+                    orders[item.id] = $li.attr('data-order') || item.order;
                 });
-                $.post('{{helper_createLink "tree" "updateOrder" "rootID=" .Data.rootID "&viewType=" .Data.viewType}}', orders).error(function()
+                $.post('{{helper_createLink "tree" "updateOrder" "rootID=" .Data.rootID "&viewType=" .Data.viewType}}', orders).fail(function()
                 {
                     bootbox.alert(lang.timeout);
                 });

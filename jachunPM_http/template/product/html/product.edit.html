@@ -1,0 +1,71 @@
+{{template "header.html" .}}
+{{template "kindeditor.html" .}}
+<div id="mainContent" class="main-content">
+  <div class="center-block">
+    <div class="main-header">
+      <h2>
+        <span class='label label-id'>{{.Data.product.Id}}</span>
+        {{html_a (helper_createLink "product" "view" "product="  .Data.product.Id) .Data.product.Name "" (strAdd "title='" .Data.product.Name "'")}}
+        <small>{{.Lang.common.arrow }} {{.Lang.product.edit}}</small>
+      </h2>
+    </div>
+    <form class="load-indicator main-form form-ajax" id="createForm" method="post" target='hiddenwin'>
+      <table class="table table-form">
+        <tbody>
+          <tr>
+            <th class='w-120px'>{{.Lang.product.name}}</th>
+            <td class='w-p40-f'>{{html_input "name" .Data.product.Name "class='form-control' autocomplete='off' required"}}</td><td></td>
+          </tr>  
+          <tr>
+            <th>{{.Lang.product.code}}</th>
+            <td>{{html_input "code" .Data.product.Code "class='form-control' autocomplete='off' required"}}</td><td></td>
+          </tr>  
+          <tr>
+            <th>{{.Lang.product.line}}</th>
+            <td>{{html_select "line" .Data.lines .Data.product.Line "class='form-control chosen'"}}</td>
+            <td>{{if not .Data.lines}}{{common_printLink . "tree" "browse" "rootID=&view=line" .Lang.tree.manageLine}}{{end}}</td>
+          </tr>
+          <tr>
+            <th>{{.Lang.product.PO}}</th>
+            <td>{{html_select "PO" .Data.poUsers .Data.product.PO "class='form-control chosen'"}}</td><td></td>
+          </tr>
+          <tr>
+            <th>{{.Lang.product.QD}}</th>
+            <td>{{html_select "QD" .Data.qdUsers .Data.product.QD "class='form-control chosen'"}}</td><td></td>
+          </tr>  
+          <tr>
+            <th>{{.Lang.product.RD}}</th>
+            <td>{{html_select "RD" .Data.rdUsers .Data.product.RD "class='form-control chosen'"}}</td><td></td>
+          </tr>  
+          <tr>
+            <th>{{.Lang.product.type}}</th>
+            <td>{{html_select "type" .Lang.product.typeList .Data.product.Type "class='form-control'"}}</td><td></td>
+          </tr>  
+          <tr>
+            <th>{{.Lang.product.status}}</th>
+            <td>{{html_select "status" .Lang.product.statusList .Data.product.Status "class='form-control'"}}</td><td></td>
+          </tr>  
+          <tr>
+            <th>{{.Lang.product.desc}}</th>
+            <td colspan='2'>{{html_textarea "desc" (string (bbcode2html .Data.product.Desc)) "rows='8' class='form-control'"}}</td>
+          </tr>  
+          <tr>
+            <th>{{.Lang.product.acl}}</th>
+            <td colspan='2'>{{html_radio "acl" .Lang.product.aclList .Data.product.Acl "onclick='setWhite(this.value)'" "block"}}</td>
+          </tr>  
+          <tr id='whitelistBox'{{if ne .Data.product.Acl "custom"}} class='hidden'{{end}}>
+            <th>{{.Lang.product.whitelist}}</th>
+            <td colspan='2'>{{html_checkbox "whitelist" .Data.groups .Data.product.Whitelist}}</td>
+          </tr>  
+          <tr>
+            <td colspan='3' class='text-center form-actions'>
+              {{html_submitButton .}}
+              {{html_backButton . "" "" "btn btn-wide"}}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </form>
+  </div>
+</div>
+{{template "footer.html" .}}

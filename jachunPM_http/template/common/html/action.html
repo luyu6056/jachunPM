@@ -1,0 +1,82 @@
+{{if .Data.blockHistory}}
+<div class="panel block-histories histories no-margin" data-textDiff="{{.Lang.action.textDiff}}" data-original="{{.Lang.action.original}}">
+{{else}}
+<div class="detail histories" id='actionbox' data-textDiff="{{.Lang.action.textDiff}}" data-original="{{.Lang.action.original}}">
+{{end}}
+<style>.histories-list > li{word-break: break-word; word-wrap: break-word;}</style>
+  <script>
+  $(function()
+  {
+      var diffButton = '<button type="button" class="btn btn-mini btn-icon btn-strip"><i class="icon icon-code icon-sm"></i></button>';
+      var newBoxID = '';
+      var oldBoxID = '';
+      $('blockquote.textdiff').each(function()
+      {
+          newBoxID = $(this).parent().attr('id');
+          if(newBoxID != oldBoxID)
+          {
+              oldBoxID = newBoxID;
+              if($(this).html() != $(this).next().html()) $(this).closest('.history-changes').before(diffButton);
+          }
+      });
+  });
+  </script>
+  {{if .Data.blockHistory}}
+  <div class="panel-heading"><div class="panel-title">
+  {{else}}
+  <div class="detail-title">
+  {{end}}
+    {{.Lang.common.history}} &nbsp;
+    <button type="button" class="btn btn-mini btn-icon btn-reverse" title='{{.Lang.reverse}}'>
+      <i class="icon icon-arrow-up icon-sm"></i>
+    </button>
+    <button type="button" class="btn btn-mini btn-icon btn-expand-all" title='{{.Lang.switchDisplay}}'>
+      <i class="icon icon-plus icon-sm"></i>
+    </button>
+    {{if .Data.actionFormLink}}{{common_printCommentIcon . .Data.actionFormLink}}{{end}}
+  </div>
+  {{if .Data.blockHistory}}
+  </div>
+  {{end}}
+  {{if .Data.blockHistory}}
+  <div class="panel-body">
+  {{else}}
+  <div class="detail-content">
+  {{end}}
+    <ol class='histories-list'>
+      {{range $key,$action :=.Data.actions}}
+      {{- $i:=intsum $key 1 -}}
+      {{- $canEditComment := and (eq $i (len $.Data.actions)) (ne (strlen $action.Comment) 0) (eq $.App.methodName "view") (eq $action.ActorId $.user.Id) (common_hasPriv . "action" "editComment") -}}
+      <li value='{{$i}}'>
+        {{action_printAction $action}}
+        {{if $action.History}}
+        <button type='button' class='btn btn-mini switch-btn btn-icon btn-expand' title='{{$.Lang.switchDisplay}}'><i class='change-show icon icon-plus icon-sm'></i></button>
+        <div class='history-changes' id='changeBox{{$i}}'>
+          {{action_printChanges $action.ObjectType $action.History}}
+        </div>
+        {{end}}
+        {{if ne (strlen $action.Comment)  0}}
+        {{if $canEditComment}}
+        {{html_commonButton "<i class='icon icon-pencil'></i>" (strAdd "title='" $.Lang.action.editComment "'") "btn btn-link btn-icon btn-sm btn-edit-comment"}}
+        <style>.comment .comment-content{width: 98%}</style>
+        {{end}}
+        <div class='article-content comment'>
+          <div class='comment-content'>{{strings_replace $action.Comment "\n" "<br>"}}</div>
+        </div>
+        {{if $canEditComment}}
+        <form method='post' class='comment-edit-form' action='{{helper_createLink "action" "editComment" "actionID=" $action.Id}}'>
+          <div class="form-group">
+          {{html_textarea "lastComment" $action.Comment "rows='8' autofocus='autofocus'"}}
+          </div>
+          <div class="form-group form-actions">
+          {{html_submitButton .Lang.common.save}}
+          {{html_commonButton .Lang.common.close "" "btn btn-wide btn-hide-form"}}
+          </div>
+        </form>
+        {{end}}
+        {{end}}
+      </li>
+      {{end}}
+    </ol>
+  </div>
+</div>

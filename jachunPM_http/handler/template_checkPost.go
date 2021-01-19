@@ -27,6 +27,16 @@ var checkinfo = map[string]map[string]interface{}{ //目前接受checkType和[]p
 		"type":      config.Lang[protocol.DefaultLang]["product"]["typeList"].([]protocol.HtmlKeyValueStr),
 		"acl":       config.Lang[protocol.DefaultLang]["product"]["aclList"].([]protocol.HtmlKeyValueStr),
 	},
+	"/product/edit": map[string]interface{}{
+		"name":      checkTypeRequire,
+		"code":      checkTypeRequire,
+		"PO":        checkTypeUserId,
+		"QD":        checkTypeUserId,
+		"RD":        checkTypeUserId,
+		"whitelist": user_getGroupOptionMenu,
+		"type":      config.Lang[protocol.DefaultLang]["product"]["typeList"].([]protocol.HtmlKeyValueStr),
+		"acl":       config.Lang[protocol.DefaultLang]["product"]["aclList"].([]protocol.HtmlKeyValueStr),
+	},
 }
 
 //post请求检查

@@ -60,3 +60,18 @@ func story_getByField(productID, branch int32, modules []int32, fieldName, field
 	}
 	return
 }
+func story_getStoriesMapBySql(data *protocol.MSG_PROJECT_product_getStoriesMapBySql, in *protocol.Msg) {
+	var limit []int
+	if data.PerPage > 0 {
+		limit = []int{(data.Page - 1) * data.PerPage, data.PerPage}
+	}
+	res, err := HostConn.DB.Table(db.TABLE_STORY).Field(data.Field).Where(data.Where).Order(data.Order).Group(data.Group).Limit(limit...).SelectMap()
+	if err != nil {
+		in.WriteErr(err)
+		return
+	}
+	out := protocol.GET_MSG_PROJECT_product_getStoriesMapBySql_result()
+	out.List = res
+	in.SendResult(out)
+	out.Put()
+}

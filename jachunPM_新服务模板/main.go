@@ -22,7 +22,7 @@ func main() {
 	} else {
 		handler.HostConn.DB = db.Init()
 		handler.HostConn.HandleMsg = handler.Handler
-		handler.HostConn.HandleTick = handler.HandleTick
+		handler.HostConn.SetTickHand(handler.HandleTick)
 		handler.HostConn.Start()
 	}
 

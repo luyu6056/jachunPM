@@ -28,7 +28,7 @@ type moduleMenu struct {
 
 var commoncache = cache.Hget("common", "global")
 
-func hasPriv(data *TemplateData, module, method string) bool {
+func hasPriv(data *TemplateData, module, method string, obj ...interface{}) bool {
 
 	return true
 }
@@ -341,10 +341,10 @@ func commonModelFuncs() {
 
 		return template.HTML(html_a(link, label, "", "class='"+className+"'"))
 	}
-	global_Funcs["appendKeyValueStr"] = func(strs ...string) (res []protocol.HtmlKeyValueStr) {
+	global_Funcs["appendKeyValueStr"] = func(strs ...interface{}) (res []protocol.HtmlKeyValueStr) {
 		for i := 0; i < len(strs); i += 2 {
 			if len(strs) > i+1 {
-				res = append(res, protocol.HtmlKeyValueStr{strs[i], strs[i+1]})
+				res = append(res, protocol.HtmlKeyValueStr{libraries.I2S(strs[i]), libraries.I2S(strs[i+1])})
 			}
 		}
 		return
@@ -381,6 +381,7 @@ func commonModelFuncs() {
 		extraClass := ""
 		misc := ""
 		title := ""
+		//onlyBody := false
 		if len(extvalue) > 0 {
 			target = extvalue[0]
 			if len(extvalue) > 1 {
@@ -393,10 +394,13 @@ func commonModelFuncs() {
 				extraClass = extvalue[1]
 			}
 			if len(extvalue) > 2 {
-				misc = extvalue[2]
+				//onlyBody = extvalue[2] == "true"
 			}
 			if len(extvalue) > 3 {
-				title = extvalue[3]
+				misc = extvalue[3]
+			}
+			if len(extvalue) > 4 {
+				title = extvalue[4]
 			}
 		}
 
@@ -421,7 +425,17 @@ func commonModelFuncs() {
 		}
 		clickable := true
 		if object != nil {
-			if f_interface, ok := global_Funcs[reflect.ValueOf(object).Elem().Type().Name()+"_isClickable"]; ok {
+			key := ""
+			r := reflect.ValueOf(object)
+			switch r.Kind() {
+			case reflect.Ptr:
+				key = r.Elem().Type().Name()
+			case reflect.Map:
+				if k := r.MapIndex(reflect.ValueOf("isClickableKey")); k.Kind() == reflect.String {
+					key = k.String()
+				}
+			}
+			if f_interface, ok := global_Funcs[key+"_isClickable"]; ok {
 				if f, ok := f_interface.(func(*TemplateData, interface{}, string) bool); ok {
 					clickable = f(data, object, method)
 				}
@@ -514,7 +528,59 @@ func commonModelFuncs() {
 		id := commoncache.INCRBY("generateUid", 1)
 		return strconv.FormatUint(uint64(id), 10)
 	}
+	global_Funcs["common_printCommentIcon"] = func(data *TemplateData, commentFormLink string, object interface{}) template.HTML {
 
+		if !hasPriv(data, "action", "comment", object) {
+			return template.HTML("")
+		}
+		buf := bufpool.Get().(*libraries.MsgBuffer)
+		buf.WriteString(string(global_Funcs["html_commonButton"].(func(label string, value ...string) template.HTML)("<i class='icon icon-chat-line'></i> "+data.Lang["action"]["create"].(string), "", "btn btn-link pull-right btn-comment")))
+		buf.WriteString(`<div class="modal fade modal-comment">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><i class="icon icon-close"></i></button>
+        <h4 class="modal-title">`)
+		buf.WriteString(data.Lang["action"]["create"].(string))
+		buf.WriteString(`</h4>
+      </div>
+      <div class="modal-body">
+        <form class="load-indicator" action="`)
+		buf.WriteString(commentFormLink)
+		buf.WriteString(`" target='hiddenwin' method='post'>
+          <div class="form-group">
+            <textarea id='comment' name='comment' class="form-control" rows="8" autofocus="autofocus"></textarea>
+          </div>
+          <div class="form-group form-actions text-center">
+            <button type="submit" class="btn btn-primary btn-wide">`)
+		buf.WriteString(data.Lang["common"]["save"].(string))
+		buf.WriteString(`</button><button type="button" class="btn btn-wide" data-dismiss="modal">`)
+		buf.WriteString(data.Lang["common"]["close"].(string))
+		buf.WriteString("</button></div></form></div></div></div></div>")
+		res := buf.String()
+		buf.Reset()
+		bufpool.Put(buf)
+		return template.HTML(res)
+	}
+	global_Funcs["intsum"] = func(a, b int) int {
+		return a + b
+	}
+	global_Funcs["strings_replace"] = func(a, b, c string) string {
+		return strings.ReplaceAll(a, b, c)
+	}
+	global_Funcs["common_printBack"] = func(data *TemplateData, link string, classExt ...string) template.HTML {
+
+		if data.onlybody() {
+			return template.HTML("")
+		}
+		class := "btn"
+		if len(classExt) == 1 {
+			class = classExt[0]
+		}
+
+		title := data.Lang["common"]["goback"].(string) + data.Lang["common"]["backShortcutKey"].(string)
+		return template.HTML(html_a(link, "<i class='icon-goback icon-back'></i> "+data.Lang["common"]["goback"].(string), "", "id='back' class='"+class+"' title='"+title+"'"))
+	}
 }
 
 func getModuleMenu(module string, data *TemplateData) (menu []moduleMenu) {

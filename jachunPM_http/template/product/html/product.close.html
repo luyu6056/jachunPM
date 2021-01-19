@@ -1,0 +1,32 @@
+{{template "header.html" .}}
+{{template "kindeditor.html" .}}
+<div id='mainContent' class='main-content'>
+  <div class='main-header'>
+    <h2>
+      <span class='prefix'>{{html_icon .Lang.icons.product}} <strong>{{.Data.product.Id}}</strong></span>
+      {{if .App.onlybody}}<span title='.Data.product.Name'>{{.Data.product.Name}}</span>{{else}}{[html_a (helper_createLink "product" "view" "productID=" .Data.product.Id) .Data.product.Name}}{{end}}
+      {{if not .App.onlybody}}
+      <small>{{.Lang.common.arrow}}{{.Lang.product.close}}</small>
+      {{end}}
+    </h2>
+  </div>
+  <form class='load-indicator main-form' method='post' target='hiddenwin'>
+    <table class='table table-form'>
+      <tr>
+        <th class='w-40px'>{{.Lang.common.comment}}</th>
+        <td>{{html_textarea "comment" "" "rows='6' class='form-control kindeditor' hidefocus='true'"}}</td>
+      </tr>
+      <tr>
+        <td colspan='2' class='text-center form-actions'>
+          {{html_submitButton .}}
+          {{html_linkButton .Lang.common.goback (helper_createLink "product" "all") "self" "" "btn btn-wide"}}
+        </td>
+      </tr>
+    </table>
+  </form>
+  <hr class='small' />
+  <div class='main'>
+    {{template "action" .}}
+  </div>
+</div>
+{{template "footer.html" .}}

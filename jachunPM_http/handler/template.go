@@ -36,15 +36,26 @@ type TemplateData struct {
 
 var templateLock sync.RWMutex
 var global_t = template.New("jachun")
+var T *template.Template
+var n int
+var global_Funcs template.FuncMap = map[string]interface{}{}
+var bufpool = sync.Pool{New: func() interface{} {
+	return new(libraries.MsgBuffer)
+}}
 
 func init() {
 	loadFuncs()
 	loadAlltemplate()
+
 }
-
-var T *template.Template
-var n int
-
+func loadFuncs() {
+	commonModelFuncs()
+	htmlFuncs()
+	hookFuncs()
+	isClickableFuncs()
+	actionModelFuncs()
+	global_t.Funcs(global_Funcs)
+}
 func loadAlltemplate() {
 	iswatcher := false
 	watcher, err := fsnotify.NewWatcher()

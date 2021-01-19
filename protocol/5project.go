@@ -12,6 +12,7 @@ const (
 	CMD_MSG_PROJECT_product_cache = -553153019
 	CMD_MSG_PROJECT_product_insert = -504988411
 	CMD_MSG_PROJECT_product_insert_result = -686336507
+	CMD_MSG_PROJECT_product_update = -1139812859
 	CMD_MSG_PROJECT_product_getStories = 1365829125
 	CMD_MSG_PROJECT_product_getStories_result = 528481285
 	CMD_MSG_PROJECT_story = 1713425925
@@ -21,6 +22,10 @@ const (
 	CMD_MSG_PROJECT_branch_info = 894530565
 	CMD_MSG_PROJECT_tree_manageChild = 727801093
 	CMD_MSG_PROJECT_tree_manageChild_result = -2003846907
+	CMD_MSG_PROJECT_product_getStoriesMapBySql = 2007179013
+	CMD_MSG_PROJECT_product_getStoriesMapBySql_result = 1478139909
+	CMD_MSG_PROJECT_tree_updateList = -1144133115
+	CMD_MSG_PROJECT_tree_delete = 598613509
 )
 
 type MSG_PROJECT_tree_getLinePairs struct {
@@ -109,8 +114,13 @@ func READ_MSG_PROJECT_tree_getLinePairs_result(buf *libraries.MsgBuffer) *MSG_PR
 func (data *MSG_PROJECT_tree_getLinePairs_result) read(buf *libraries.MsgBuffer) {
 	data.QueryResultID = READ_uint32(buf)
 	List_len := int(READ_int32(buf))
+	if List_len>cap(data.List){
+		data.List= make([]HtmlKeyValueStr, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
 	for i := 0; i < List_len; i++ {
-		data.List = append(data.List, READ_HtmlKeyValueStr(buf))
+		data.List[i] = READ_HtmlKeyValueStr(buf)
 	}
 
 }
@@ -227,8 +237,13 @@ func (data *MSG_PROJECT_product_cache) read(buf *libraries.MsgBuffer) {
 	data.RD = READ_int32(buf)
 	data.Acl = READ_string(buf)
 	Whitelist_len := int(READ_int32(buf))
+	if Whitelist_len>cap(data.Whitelist){
+		data.Whitelist= make([]int32, Whitelist_len)
+	}else{
+		data.Whitelist = data.Whitelist[:Whitelist_len]
+	}
 	for i := 0; i < Whitelist_len; i++ {
-		data.Whitelist = append(data.Whitelist, READ_int32(buf))
+		data.Whitelist[i] = READ_int32(buf)
 	}
 	data.CreatedBy = READ_int32(buf)
 	data.CreatedDate = READ_int64(buf)
@@ -236,8 +251,13 @@ func (data *MSG_PROJECT_product_cache) read(buf *libraries.MsgBuffer) {
 	data.Deleted = READ_bool(buf)
 	data.TimeStamp = READ_int64(buf)
 	Branchs_len := int(READ_int32(buf))
+	if Branchs_len>cap(data.Branchs){
+		data.Branchs= make([]*MSG_PROJECT_branch_info, Branchs_len)
+	}else{
+		data.Branchs = data.Branchs[:Branchs_len]
+	}
 	for i := 0; i < Branchs_len; i++ {
-		data.Branchs = append(data.Branchs, READ_MSG_PROJECT_branch_info(buf))
+		data.Branchs[i] = READ_MSG_PROJECT_branch_info(buf)
 	}
 
 }
@@ -353,6 +373,67 @@ func (data *MSG_PROJECT_product_insert_result) getQueryResultID() uint32 {
 }
 func (data *MSG_PROJECT_product_insert_result) setQueryResultID(id uint32) {
 	data.QueryResultID = id
+}
+
+type MSG_PROJECT_product_update struct {
+	QueryID uint32
+	Data *MSG_PROJECT_product_cache
+}
+
+var pool_MSG_PROJECT_product_update = sync.Pool{New: func() interface{} { return &MSG_PROJECT_product_update{} }}
+
+func GET_MSG_PROJECT_product_update() *MSG_PROJECT_product_update {
+	return pool_MSG_PROJECT_product_update.Get().(*MSG_PROJECT_product_update)
+}
+
+func (data *MSG_PROJECT_product_update) cmd() int32 {
+	return CMD_MSG_PROJECT_product_update
+}
+
+func (data *MSG_PROJECT_product_update) Put() {
+	data.QueryID = 0
+	if data.Data != nil {
+		data.Data.Put()
+		data.Data = nil
+	}
+	pool_MSG_PROJECT_product_update.Put(data)
+}
+func (data *MSG_PROJECT_product_update) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_PROJECT_product_update,buf)
+	WRITE_MSG_PROJECT_product_update(data, buf)
+}
+
+func WRITE_MSG_PROJECT_product_update(data *MSG_PROJECT_product_update, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	if data.Data == nil {
+		WRITE_int8(0, buf)
+	} else {
+		WRITE_int8(1, buf)
+		WRITE_MSG_PROJECT_product_cache(data.Data, buf)
+	}
+}
+
+func READ_MSG_PROJECT_product_update(buf *libraries.MsgBuffer) *MSG_PROJECT_product_update {
+	data := pool_MSG_PROJECT_product_update.Get().(*MSG_PROJECT_product_update)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_PROJECT_product_update) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	Data_len := int(READ_int8(buf))
+	if Data_len == 1 {
+		data.Data = READ_MSG_PROJECT_product_cache(buf)
+	}else{
+		data.Data = nil
+	}
+
+}
+func (data *MSG_PROJECT_product_update) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_PROJECT_product_update) setQueryID(id uint32) {
+	data.QueryID = id
 }
 
 type MSG_PROJECT_product_getStories struct {
@@ -483,8 +564,13 @@ func READ_MSG_PROJECT_product_getStories_result(buf *libraries.MsgBuffer) *MSG_P
 func (data *MSG_PROJECT_product_getStories_result) read(buf *libraries.MsgBuffer) {
 	data.QueryResultID = READ_uint32(buf)
 	List_len := int(READ_int32(buf))
+	if List_len>cap(data.List){
+		data.List= make([]*MSG_PROJECT_story, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
 	for i := 0; i < List_len; i++ {
-		data.List = append(data.List, READ_MSG_PROJECT_story(buf))
+		data.List[i] = READ_MSG_PROJECT_story(buf)
 	}
 	data.Total = READ_int(buf)
 
@@ -553,6 +639,7 @@ func (data *MSG_PROJECT_story) Put() {
 	data.Title = ``
 	data.Keywords = ``
 	data.Pri = 0
+	data.Estimate = 0
 	data.Status = ``
 	data.Stage = ``
 	data.Mailto = ``
@@ -668,6 +755,7 @@ type MSG_PROJECT_tree_cache struct {
 	Order int16
 	Type string
 	Owner string
+	OwnerID int32
 	Collector string
 	Short string
 	Deleted bool
@@ -694,6 +782,7 @@ func (data *MSG_PROJECT_tree_cache) Put() {
 	data.Order = 0
 	data.Type = ``
 	data.Owner = ``
+	data.OwnerID = 0
 	data.Collector = ``
 	data.Short = ``
 	data.Deleted = false
@@ -718,6 +807,7 @@ func WRITE_MSG_PROJECT_tree_cache(data *MSG_PROJECT_tree_cache, buf *libraries.M
 	WRITE_int16(data.Order, buf)
 	WRITE_string(data.Type, buf)
 	WRITE_string(data.Owner, buf)
+	WRITE_int32(data.OwnerID, buf)
 	WRITE_string(data.Collector, buf)
 	WRITE_string(data.Short, buf)
 	WRITE_bool(data.Deleted, buf)
@@ -736,13 +826,19 @@ func (data *MSG_PROJECT_tree_cache) read(buf *libraries.MsgBuffer) {
 	data.Name = READ_string(buf)
 	data.Parent = READ_int32(buf)
 	Path_len := int(READ_int32(buf))
+	if Path_len>cap(data.Path){
+		data.Path= make([]int32, Path_len)
+	}else{
+		data.Path = data.Path[:Path_len]
+	}
 	for i := 0; i < Path_len; i++ {
-		data.Path = append(data.Path, READ_int32(buf))
+		data.Path[i] = READ_int32(buf)
 	}
 	data.Grade = READ_int8(buf)
 	data.Order = READ_int16(buf)
 	data.Type = READ_string(buf)
 	data.Owner = READ_string(buf)
+	data.OwnerID = READ_int32(buf)
 	data.Collector = READ_string(buf)
 	data.Short = READ_string(buf)
 	data.Deleted = READ_bool(buf)
@@ -842,8 +938,13 @@ func READ_MSG_PROJECT_tree_getParents_result(buf *libraries.MsgBuffer) *MSG_PROJ
 func (data *MSG_PROJECT_tree_getParents_result) read(buf *libraries.MsgBuffer) {
 	data.QueryResultID = READ_uint32(buf)
 	List_len := int(READ_int32(buf))
+	if List_len>cap(data.List){
+		data.List= make([]*MSG_PROJECT_tree_cache, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
 	for i := 0; i < List_len; i++ {
-		data.List = append(data.List, READ_MSG_PROJECT_tree_cache(buf))
+		data.List[i] = READ_MSG_PROJECT_tree_cache(buf)
 	}
 
 }
@@ -964,8 +1065,13 @@ func (data *MSG_PROJECT_tree_manageChild) read(buf *libraries.MsgBuffer) {
 	data.RootID = READ_int32(buf)
 	data.ViewType = READ_string(buf)
 	Modules_len := int(READ_int32(buf))
+	if Modules_len>cap(data.Modules){
+		data.Modules= make([]*MSG_PROJECT_tree_cache, Modules_len)
+	}else{
+		data.Modules = data.Modules[:Modules_len]
+	}
 	for i := 0; i < Modules_len; i++ {
-		data.Modules = append(data.Modules, READ_MSG_PROJECT_tree_cache(buf))
+		data.Modules[i] = READ_MSG_PROJECT_tree_cache(buf)
 	}
 	data.ParentModuleID = READ_int32(buf)
 
@@ -1027,5 +1133,261 @@ func (data *MSG_PROJECT_tree_manageChild_result) getQueryResultID() uint32 {
 }
 func (data *MSG_PROJECT_tree_manageChild_result) setQueryResultID(id uint32) {
 	data.QueryResultID = id
+}
+
+type MSG_PROJECT_product_getStoriesMapBySql struct {
+	QueryID uint32
+	Field string
+	Where map[string]interface{}
+	Order string
+	Group string
+	Page int
+	PerPage int
+	Total int
+}
+
+var pool_MSG_PROJECT_product_getStoriesMapBySql = sync.Pool{New: func() interface{} { return &MSG_PROJECT_product_getStoriesMapBySql{} }}
+
+func GET_MSG_PROJECT_product_getStoriesMapBySql() *MSG_PROJECT_product_getStoriesMapBySql {
+	return pool_MSG_PROJECT_product_getStoriesMapBySql.Get().(*MSG_PROJECT_product_getStoriesMapBySql)
+}
+
+func (data *MSG_PROJECT_product_getStoriesMapBySql) cmd() int32 {
+	return CMD_MSG_PROJECT_product_getStoriesMapBySql
+}
+
+func (data *MSG_PROJECT_product_getStoriesMapBySql) Put() {
+	data.QueryID = 0
+	data.Field = ``
+	data.Where = nil
+	data.Order = ``
+	data.Group = ``
+	data.Page = 0
+	data.PerPage = 0
+	data.Total = 0
+	pool_MSG_PROJECT_product_getStoriesMapBySql.Put(data)
+}
+func (data *MSG_PROJECT_product_getStoriesMapBySql) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_PROJECT_product_getStoriesMapBySql,buf)
+	WRITE_MSG_PROJECT_product_getStoriesMapBySql(data, buf)
+}
+
+func WRITE_MSG_PROJECT_product_getStoriesMapBySql(data *MSG_PROJECT_product_getStoriesMapBySql, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_string(data.Field, buf)
+	WRITE_map(data.Where,buf)
+	WRITE_string(data.Order, buf)
+	WRITE_string(data.Group, buf)
+	WRITE_int(data.Page, buf)
+	WRITE_int(data.PerPage, buf)
+	WRITE_int(data.Total, buf)
+}
+
+func READ_MSG_PROJECT_product_getStoriesMapBySql(buf *libraries.MsgBuffer) *MSG_PROJECT_product_getStoriesMapBySql {
+	data := pool_MSG_PROJECT_product_getStoriesMapBySql.Get().(*MSG_PROJECT_product_getStoriesMapBySql)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_PROJECT_product_getStoriesMapBySql) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	data.Field = READ_string(buf)
+	READ_map(&data.Where,buf)
+	data.Order = READ_string(buf)
+	data.Group = READ_string(buf)
+	data.Page = READ_int(buf)
+	data.PerPage = READ_int(buf)
+	data.Total = READ_int(buf)
+
+}
+func (data *MSG_PROJECT_product_getStoriesMapBySql) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_PROJECT_product_getStoriesMapBySql) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_PROJECT_product_getStoriesMapBySql_result struct {
+	QueryResultID uint32
+	List []map[string]string
+	Total int
+}
+
+var pool_MSG_PROJECT_product_getStoriesMapBySql_result = sync.Pool{New: func() interface{} { return &MSG_PROJECT_product_getStoriesMapBySql_result{} }}
+
+func GET_MSG_PROJECT_product_getStoriesMapBySql_result() *MSG_PROJECT_product_getStoriesMapBySql_result {
+	return pool_MSG_PROJECT_product_getStoriesMapBySql_result.Get().(*MSG_PROJECT_product_getStoriesMapBySql_result)
+}
+
+func (data *MSG_PROJECT_product_getStoriesMapBySql_result) cmd() int32 {
+	return CMD_MSG_PROJECT_product_getStoriesMapBySql_result
+}
+
+func (data *MSG_PROJECT_product_getStoriesMapBySql_result) Put() {
+	data.QueryResultID = 0
+	data.List = data.List[:0]
+	data.Total = 0
+	pool_MSG_PROJECT_product_getStoriesMapBySql_result.Put(data)
+}
+func (data *MSG_PROJECT_product_getStoriesMapBySql_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_PROJECT_product_getStoriesMapBySql_result,buf)
+	WRITE_MSG_PROJECT_product_getStoriesMapBySql_result(data, buf)
+}
+
+func WRITE_MSG_PROJECT_product_getStoriesMapBySql_result(data *MSG_PROJECT_product_getStoriesMapBySql_result, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryResultID, buf)
+	WRITE_int32(int32(len(data.List)), buf)
+	for _, v := range data.List{
+		WRITE_any(v, buf)
+	}
+	WRITE_int(data.Total, buf)
+}
+
+func READ_MSG_PROJECT_product_getStoriesMapBySql_result(buf *libraries.MsgBuffer) *MSG_PROJECT_product_getStoriesMapBySql_result {
+	data := pool_MSG_PROJECT_product_getStoriesMapBySql_result.Get().(*MSG_PROJECT_product_getStoriesMapBySql_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_PROJECT_product_getStoriesMapBySql_result) read(buf *libraries.MsgBuffer) {
+	data.QueryResultID = READ_uint32(buf)
+	List_len := int(READ_int32(buf))
+	if List_len>cap(data.List){
+		data.List= make([]map[string]string, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
+	for i := 0; i < List_len; i++ {
+		READ_any(&data.List[i], buf)
+	}
+	data.Total = READ_int(buf)
+
+}
+func (data *MSG_PROJECT_product_getStoriesMapBySql_result) getQueryResultID() uint32 {
+	return data.QueryResultID
+}
+func (data *MSG_PROJECT_product_getStoriesMapBySql_result) setQueryResultID(id uint32) {
+	data.QueryResultID = id
+}
+
+type MSG_PROJECT_tree_updateList struct {
+	QueryID uint32
+	Modules []*MSG_PROJECT_tree_cache
+}
+
+var pool_MSG_PROJECT_tree_updateList = sync.Pool{New: func() interface{} { return &MSG_PROJECT_tree_updateList{} }}
+
+func GET_MSG_PROJECT_tree_updateList() *MSG_PROJECT_tree_updateList {
+	return pool_MSG_PROJECT_tree_updateList.Get().(*MSG_PROJECT_tree_updateList)
+}
+
+func (data *MSG_PROJECT_tree_updateList) cmd() int32 {
+	return CMD_MSG_PROJECT_tree_updateList
+}
+
+func (data *MSG_PROJECT_tree_updateList) Put() {
+	data.QueryID = 0
+	for _,v := range data.Modules {
+		v.Put()
+	}
+	data.Modules = data.Modules[:0]
+	pool_MSG_PROJECT_tree_updateList.Put(data)
+}
+func (data *MSG_PROJECT_tree_updateList) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_PROJECT_tree_updateList,buf)
+	WRITE_MSG_PROJECT_tree_updateList(data, buf)
+}
+
+func WRITE_MSG_PROJECT_tree_updateList(data *MSG_PROJECT_tree_updateList, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_int32(int32(len(data.Modules)), buf)
+	for _, v := range data.Modules{
+		WRITE_MSG_PROJECT_tree_cache(v, buf)
+	}
+}
+
+func READ_MSG_PROJECT_tree_updateList(buf *libraries.MsgBuffer) *MSG_PROJECT_tree_updateList {
+	data := pool_MSG_PROJECT_tree_updateList.Get().(*MSG_PROJECT_tree_updateList)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_PROJECT_tree_updateList) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	Modules_len := int(READ_int32(buf))
+	if Modules_len>cap(data.Modules){
+		data.Modules= make([]*MSG_PROJECT_tree_cache, Modules_len)
+	}else{
+		data.Modules = data.Modules[:Modules_len]
+	}
+	for i := 0; i < Modules_len; i++ {
+		data.Modules[i] = READ_MSG_PROJECT_tree_cache(buf)
+	}
+
+}
+func (data *MSG_PROJECT_tree_updateList) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_PROJECT_tree_updateList) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_PROJECT_tree_delete struct {
+	QueryID uint32
+	Ids []int32
+}
+
+var pool_MSG_PROJECT_tree_delete = sync.Pool{New: func() interface{} { return &MSG_PROJECT_tree_delete{} }}
+
+func GET_MSG_PROJECT_tree_delete() *MSG_PROJECT_tree_delete {
+	return pool_MSG_PROJECT_tree_delete.Get().(*MSG_PROJECT_tree_delete)
+}
+
+func (data *MSG_PROJECT_tree_delete) cmd() int32 {
+	return CMD_MSG_PROJECT_tree_delete
+}
+
+func (data *MSG_PROJECT_tree_delete) Put() {
+	data.QueryID = 0
+	data.Ids = data.Ids[:0]
+	pool_MSG_PROJECT_tree_delete.Put(data)
+}
+func (data *MSG_PROJECT_tree_delete) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_PROJECT_tree_delete,buf)
+	WRITE_MSG_PROJECT_tree_delete(data, buf)
+}
+
+func WRITE_MSG_PROJECT_tree_delete(data *MSG_PROJECT_tree_delete, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_int32(int32(len(data.Ids)), buf)
+	for _, v := range data.Ids{
+		WRITE_int32(v, buf)
+	}
+}
+
+func READ_MSG_PROJECT_tree_delete(buf *libraries.MsgBuffer) *MSG_PROJECT_tree_delete {
+	data := pool_MSG_PROJECT_tree_delete.Get().(*MSG_PROJECT_tree_delete)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_PROJECT_tree_delete) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	Ids_len := int(READ_int32(buf))
+	if Ids_len>cap(data.Ids){
+		data.Ids= make([]int32, Ids_len)
+	}else{
+		data.Ids = data.Ids[:Ids_len]
+	}
+	for i := 0; i < Ids_len; i++ {
+		data.Ids[i] = READ_int32(buf)
+	}
+
+}
+func (data *MSG_PROJECT_tree_delete) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_PROJECT_tree_delete) setQueryID(id uint32) {
+	data.QueryID = id
 }
 

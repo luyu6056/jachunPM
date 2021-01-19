@@ -653,6 +653,7 @@ func (hs *Httpserver) Recovery() {
 	hs.Request.Form = nil
 	hs.OutCode = 0
 	hs.OutContentType = ""
+	hs.Request.query = hs.Request.query[:0]
 }
 func (hs *Httpserver) Cookie(name string) string {
 	if cookieHead, ok := hs.Request.Header["Cookie"]; ok {

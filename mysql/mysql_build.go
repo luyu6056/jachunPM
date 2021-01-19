@@ -135,7 +135,7 @@ func (this *Mysql_Build) On(on string) *Mysql_Build {
 }
 func (this *Mysql_Build) Where(conditions ...interface{}) *Mysql_Build {
 	if len(conditions) == 0 || this.err != nil {
-		this.sql.where.WriteString("1=1")
+		this.sql.where.WriteString(" where 1=1")
 		return this
 	}
 	var where map[string]interface{}
@@ -218,7 +218,7 @@ func (this *Mysql_Build) Where(conditions ...interface{}) *Mysql_Build {
 //全or模式
 func (this *Mysql_Build) WhereOr(condition map[string]interface{}) *Mysql_Build {
 	if len(condition) == 0 || this.err != nil {
-		this.sql.where.WriteString("1=1")
+		this.sql.where.WriteString(" where 1=1")
 		return this
 	}
 	this.sql.where.Write([]byte{32, 119, 104, 101, 114, 101, 32})
@@ -617,7 +617,7 @@ func (this *Mysql_Build) Select(s interface{}) (err error) {
 
 	return
 }
-func (this *Mysql_Build) Select_Key(key string) (map[string]map[string]string, error) {
+func (this *Mysql_Build) SelectKey(key string) (map[string]map[string]string, error) {
 	defer buildPool.Put(this)
 	if this.err != nil {
 		return nil, this.err
@@ -651,6 +651,31 @@ func (this *Mysql_Build) Select_Key(key string) (map[string]map[string]string, e
 		return tmp, e
 	}
 	return nil, e
+}
+func (this *Mysql_Build) SelectMap() ([]map[string]string, error) {
+	defer buildPool.Put(this)
+	if this.err != nil {
+		return nil, this.err
+	}
+	this.buffer.Reset()
+	this.buffer.Write([]byte{115, 101, 108, 101, 99, 116, 32})
+	this.buffer.Write(this.sql.field.Bytes())
+	this.buffer.Write([]byte{32, 102, 114, 111, 109, 32})
+	this.buffer.Write(this.sql.table.Bytes())
+
+	this.buffer.Write(this.sql.on.Bytes())
+	this.buffer.Write(this.sql.where.Bytes())
+	for _, v := range this.sql.where_prepare_arg {
+		this.prepare_arg = append(this.prepare_arg, v)
+	}
+	this.buffer.Write(this.sql.group.Bytes())
+	this.buffer.Write(this.sql.order.Bytes())
+	this.buffer.Write(this.sql.limit.Bytes())
+	for _, v := range this.sql.limit_prepare_arg {
+		this.prepare_arg = append(this.prepare_arg, v)
+	}
+	this.buffer.Write(this.sql.lock.Bytes())
+	return queryMap(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction)
 }
 
 //获取数量

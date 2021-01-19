@@ -102,9 +102,11 @@ func user_getPairs(params string, usersToAppended int32) ([]protocol.HtmlKeyValu
 	res := []protocol.HtmlKeyValueStr{}
 	/* Cycle the user records to append the first letter of his account. */
 	for _, user := range userList {
-		//firstLetter = ucfirst(substr(account, 0, 1)) . ":";
-		//if((strpos(params, "noletter") !== false) or (isset(this->config->isINT) and this->config->isINT)) firstLetter =  "";
-		value := strings.ToUpper(user.Account[:1]) + ":"
+
+		var value string
+		if !strings.Contains(params, "noletter") {
+			value = strings.ToUpper(user.Account[:1]) + ":"
+		}
 		if user.Deleted && strings.Index(params, "realname") == -1 {
 			value += user.Account
 		} else {

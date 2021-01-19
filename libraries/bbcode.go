@@ -295,7 +295,7 @@ func (code *DISCUZCODE) imgtag(attributes string) string {
 	matches, _ := Preg_match_result(`src=(["']?)([\s\S]*?)(\1)`, attributes, 1)
 
 	if len(matches) == 1 {
-		src = matches[0][2]
+		src, _ = Preg_replace(`\s*alt=(")?([^"[]*)(")?`, "", matches[0][2])
 	} else {
 		return ""
 	}

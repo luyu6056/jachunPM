@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/klauspost/compress/zstd"
+	"github.com/luyu6056/cache"
 )
 
 const (
@@ -37,9 +38,9 @@ var (
 	RpcClientQueryResultErrType = errors.New("result结构体必须为& *MSG_,并且包含QueryResultID")
 	RpcClientQueryTimeOutErr    = errors.New("请求超时")
 	rpcHanleMsgNum              = runtime.NumCPU()
-	RpcClientQueryLock          sync.RWMutex
-	RpcClientQueryMap           = make(map[uint32]chan RpcQueryResult)
-	RpcClientQueryId            uint32
+	rpcClientQueryLock          sync.RWMutex
+	rpcClientQueryMap           = make(map[uint32]chan RpcQueryResult)
+	rpcClientQueryId            = cache.Hget("rpcClientQueryId", "rpcClientQuery")
 )
 
 type RpcClient struct {

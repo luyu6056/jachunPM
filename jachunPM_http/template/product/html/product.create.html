@@ -21,7 +21,7 @@
             <td>
               <div class='input-group' id='lineIdBox'>
                 {{html_select "line" .Data.lines "" "class='form-control chosen'"}}
-                <span class='input-group-addon'>{{html_a (helper_createLink "tree" "browse" (strAdd "rootID=" .Data.rootID "&view=line")) .Lang.tree.manageLine "" "class='text-primary' data-toggle='modal' data-type='iframe' data-width='95%'"}}</span>
+                <span class='input-group-addon'>{{html_a (helper_createLink "tree" "browse" (strAdd "rootID=" .Data.rootID "&view=line&onlybody=yes")) .Lang.tree.manageLine "" "class='text-primary' data-toggle='modal' data-type='iframe' data-width='95%'"}}</span>
               </div>
               <div class='hidden'>{{html_a "javascript:void(0)" .Lang.common.refresh "" (strAdd "class='refresh' onclick='loadProductLines(" .Data.rootID ")'")}}</div>
             </td>

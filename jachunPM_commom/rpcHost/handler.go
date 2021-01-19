@@ -3,6 +3,7 @@ package rpcHost
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"jachunPM_commom/db"
 	"libraries"
 	"os"
@@ -249,15 +250,11 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 	case *protocol.MSG_COMMON_CACHE_SET:
 		cache.Hset(data.Name, map[string][]byte{"value": data.Value}, data.Path, data.Expire)
 	case *protocol.MSG_COMMON_CACHE_GET:
-
-		if svr != nil {
-			r := cache.Hget(data.Name, data.Path)
-			out := protocol.GET_MSG_COMMON_CACHE_GET_result()
-			r.Get("value", &out.Value)
-			in.SendResult(out)
-			out.Put()
-
-		}
+		r := cache.Hget(data.Name, data.Path)
+		out := protocol.GET_MSG_COMMON_CACHE_GET_result()
+		r.Get("value", &out.Value)
+		in.SendResult(out)
+		out.Put()
 	case *protocol.MSG_COMMON_CACHE_GETPATH:
 		out := protocol.GET_MSG_COMMON_CACHE_GETPATH_result()
 		cache.RangePath(data.Path, func(key string, v *cache.Hashvalue) bool {
@@ -360,6 +357,25 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 		}
 		os.Remove(filepath + file.Pathname)
 		db.DB.Table(db.TABLE_FILE).Where("Id=?", data.FileID).Delete()
+	case *protocol.MSG_FILE_getByID:
+		var file *db.File
+		err := db.DB.Table(db.TABLE_FILE).Prepare().Where("Id=?", data.FileID).Find(&file)
+		if err != nil {
+			in.WriteErr(err)
+			return
+		}
+		b, err := ioutil.ReadFile(filepath + file.Pathname)
+		if err != nil {
+			in.WriteErr(err)
+			return
+		}
+		out := protocol.GET_MSG_FILE_getByID_result()
+		out.Data = b
+		out.Ext = file.Extension
+		out.Name = file.Title
+		out.Type = file.Type
+		in.SendResult(out)
+		out.Put()
 	case *protocol.MSG_COMMON_BeginTransaction:
 		//发起事务的服务器
 		startSvr := data.TransactionNo == 0

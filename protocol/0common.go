@@ -1274,6 +1274,7 @@ func (data *MSG_COMMON_Transaction_Commit) setQueryID(id uint32) {
 }
 
 type MSG_COMMON_Transaction_RollBack struct {
+	QueryID uint32
 	No uint32
 }
 
@@ -1288,6 +1289,7 @@ func (data *MSG_COMMON_Transaction_RollBack) cmd() int32 {
 }
 
 func (data *MSG_COMMON_Transaction_RollBack) Put() {
+	data.QueryID = 0
 	data.No = 0
 	pool_MSG_COMMON_Transaction_RollBack.Put(data)
 }
@@ -1297,6 +1299,7 @@ func (data *MSG_COMMON_Transaction_RollBack) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_COMMON_Transaction_RollBack(data *MSG_COMMON_Transaction_RollBack, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
 	WRITE_uint32(data.No, buf)
 }
 
@@ -1307,8 +1310,15 @@ func READ_MSG_COMMON_Transaction_RollBack(buf *libraries.MsgBuffer) *MSG_COMMON_
 }
 
 func (data *MSG_COMMON_Transaction_RollBack) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
 	data.No = READ_uint32(buf)
 
+}
+func (data *MSG_COMMON_Transaction_RollBack) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_COMMON_Transaction_RollBack) setQueryID(id uint32) {
+	data.QueryID = id
 }
 
 type MSG_COMMON_Transaction_Check struct {

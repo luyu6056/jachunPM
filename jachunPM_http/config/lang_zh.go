@@ -5340,15 +5340,15 @@ func LangZH_CNInit() {
 			"week":  "周",
 			"month": "月",
 		},
-		"assignTo":          "指派给",
-		"duration":          "持续天数",
-		"comp":              "进度",
-		"startDate":         "开始日期",
-		"endDate":           "结束日期",
-		"days":              " 天",
-		"format":            "查看格式",
-		"preTaskStatus['']": "",
+		"assignTo":  "指派给",
+		"duration":  "持续天数",
+		"comp":      "进度",
+		"startDate": "开始日期",
+		"endDate":   "结束日期",
+		"days":      " 天",
+		"format":    "查看格式",
 		"preTaskStatus": map[string]string{
+			"":      "",
 			"end":   "完成后",
 			"begin": "开始后",
 		},
@@ -6337,6 +6337,7 @@ func LangZH_CNInit() {
 	}
 	Lang[protocol.ZH_CN]["tree"]["error"] = map[string]string{
 		"ModuleNameRepeat": "模块名已经存在！",
+		"ModuleNotFound":   "没有找到该模块请返回首页重试",
 	}
 
 }

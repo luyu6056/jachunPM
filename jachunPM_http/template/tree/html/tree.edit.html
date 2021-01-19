@@ -1,0 +1,99 @@
+{{template "chosen.html"}}
+<div class='modal-dialog w-500px'>
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal"><i class="icon icon-close"></i></button>
+    <h4 class="modal-title"><strong>{{.Lang.tree.edit}}</strong></h4>
+  </div>
+  <div class='modal-body'>
+    <form action="{{inlink . "edit" (strAdd "module="  .Data.module.Id "&type=" .Data.type)}}" target='hiddenwin' method='post' class='mt-10px' id='dataform'>
+      <table class='table table-form'>
+        {{if .Data.showProduct}}
+        <tr>
+          <th class='w-80px'>{{.Lang.tree.product}}</th>
+          <td>{{html_select "root" .Data.products .Data.module.Root "class='form-control chosen'"}}</td>
+        </tr>
+        {{end}}
+        {{$hidden := and (ne .Data.type "story") (eq .Data.module.Type "story")}}
+        {{- if eq .Data.type "doc" -}}
+        <tr>
+          <th class='w-80px'>{{.Lang.doc.lib}}</th>
+          <td>{{html_select "root" .Data.libs .Data.module.Root "class='form-control chosen' onchange=loadDocModule(this.value)"}}</td>
+        </tr>
+        {{end}}
+        {{if ne .Data.module.Type "line"}}
+        <tr{{if $hidden}} style='display:none'{{end}}>
+          <th class='w-80px'>{{if .Data.type "doc"}}{{.Lang.tree.parentCate}}{{else}}{{.Lang.tree.parent}}{{end}}</th>
+          <td>{{html_select "parent" .Data.optionMenu .Data.module.Parent "class='form-control chosen'"}}</td>
+        </tr>
+        {{end}}
+        <tr{{if $hidden}} style='display:none'{{end}}>
+          <th class='w-80px'>{{if eq .Data.type "doc"}}{{.Lang.tree.cate}}{{else}}{{.Lang.tree.name}}{{end}}</th>
+          <td>{{html_input "name" .Data.module.Name "class='form-control' autocomplete='off'"}}</td>
+        </tr>
+        {{if eq .Data.type "bug"}}
+        <tr>
+          <th class='w-80px'>{{.Lang.tree.owner}}</th>
+          <td>{{html_select "owner" .Data.users .Data.module.Owner "class='form-control chosen'" true}}</td>
+        </tr>
+        {{end}}
+        <tr>
+          <th>{{.Lang.tree.short}}</th>
+          <td>{{html_input "short" .Data.module.Short "class='form-control' autocomplete='off'"}}</td>
+        </tr>
+        <tr>
+          <td colspan='2' class='text-center'>
+          {{html_submitButton .}}
+          </td>
+        </tr>
+      </table>
+    </form>
+  </div>
+</div>
+<script>
+var type = {{.Data.type}}
+var currentRoot   = {{.Data.module.Root}};
+var currentParent = {{.Data.module.Parent}};
+function getProductModules(productID)
+{
+    $.get(createLink('tree', 'ajaxGetOptionMenu', 'rootID=' + productID + '&viewType=story&branch=0&rootModuleID=0&returnType=json'), function(data)
+    {
+        var newOption = '';
+        for(i in data) newOption += '<option value="' + i + '">' + data[i] + '</option>';
+        $('#parent').html(newOption);
+        if(productID == currentRoot) $('#parent').val(currentParent);
+        $('#parent').trigger('chosen:updated')
+    }, 'json');
+}
+$(function()
+{
+    if(type == 'doc') return;
+    $('#root').change(function()
+    {
+        if($(this).val() == currentRoot) return true;
+        if(!confirm('{{.Lang.tree.confirmRoot}}'))
+        {
+            $('#root').val(currentRoot);
+            $('#root').trigger('chosen:updated');
+        }
+        getProductModules($(this).val());
+    })
+})
+function loadDocModule(libID)
+{
+    var link = createLink('doc', 'ajaxGetChild', 'libID=' + libID + '&type=parent');
+    $.post(link, function(data)
+    {
+        $('#parent').empty().append($(data).children()).trigger('chosen:updated');
+    });
+}
+$(function()
+{
+    $('#dataform .chosen').chosen();
+
+    // hide #parent chosen dropdown on root dropdown show
+    $('#root').on('chosen:showing_dropdown', function()
+    {
+        $('#parent').trigger('chosen:close');
+    });
+})
+</script>

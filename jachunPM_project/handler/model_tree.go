@@ -20,22 +20,36 @@ func tree_getLinePairs(data *protocol.MSG_PROJECT_tree_getLinePairs, in *protoco
 	in.SendResult(out)
 	out.Put()
 }
-func tree_getAllChildId(moduleID int32) ([]int32, error) {
-	if moduleID < 1 {
-		return nil, nil
-	}
-	module := HostConn.GetTreeById(moduleID)
-	if module == nil {
-		return nil, nil
-	}
-	var list []db.Module
-	err := HostConn.DB.Table(db.TABLE_MODULE).Field("Id").Where("JSON_CONTAINS(Path, '?')").Select(&list)
-	var res []int32
-	for _, m := range list {
-		res = append(res, m.Id)
-	}
-	return res, err
+func tree_getAllChildId(moduleID int32) (res []int32) {
 
+	var list []*protocol.MSG_PROJECT_tree_cache
+	HostConn.DB.Table(db.TABLE_MODULE).Field("Id,Path,Deleted").Limit(0).Select(&list)
+	var module *protocol.MSG_PROJECT_tree_cache
+	for _, v := range list {
+		if v.Id == moduleID {
+			module = v
+			break
+		}
+	}
+	if module != nil {
+		for _, v := range list {
+			find := true
+			if !v.Deleted && len(v.Path) > len(module.Path) {
+				for k, id := range module.Path {
+					if v.Path[k] != id {
+						find = false
+						break
+					}
+				}
+			} else {
+				find = false
+			}
+			if find {
+				res = append(res, v.Id)
+			}
+		}
+	}
+	return
 }
 
 func tree_setCache(m *db.Module) {
@@ -48,6 +62,7 @@ func tree_setCache(m *db.Module) {
 	data.Name = m.Name
 	data.Order = m.Order
 	data.Owner = m.Owner
+	data.OwnerID = m.OwnerID
 	data.Parent = m.Parent
 	data.Path = m.Path
 	data.Root = m.Root
@@ -85,8 +100,7 @@ func tree_manageChild(data *protocol.MSG_PROJECT_tree_manageChild, in *protocol.
 			parentPath = parentModule.Path
 		}
 	}
-	//branches = isset(data->branch) ? data->branch : array()
-	//orders   = isset(data->order)  ? data->order  : array()
+
 	var updates []*protocol.MSG_PROJECT_tree_cache
 	session, err := in.DB.BeginTransaction()
 	if err != nil {
@@ -94,19 +108,11 @@ func tree_manageChild(data *protocol.MSG_PROJECT_tree_manageChild, in *protocol.
 		return
 	}
 	defer session.EndTransaction()
+	var ids []int32
 	for _, module := range data.Modules {
 
-		/* The new modules. */
 		if module.Id == 0 {
-			/*if(isset(orders[moduleID]) and !empty(orders[moduleID]))
-			  {
-			      order = orders[moduleID]
-			  }
-			  else
-			  {
-			      order = this->post->maxOrder + i * 10
-			      i ++
-			  }*/
+
 			module.Root = data.RootID
 			module.Parent = data.ParentModuleID
 			//module->branch  = isset(branches[moduleID]) ? branches[moduleID] : 0
@@ -117,21 +123,36 @@ func tree_manageChild(data *protocol.MSG_PROJECT_tree_manageChild, in *protocol.
 				in.WriteErr(err)
 				return
 			}
-			module.Path = make([]int32, len(parentPath)+1)
-			copy(module.Path, parentPath)
-			module.Path[len(parentPath)] = int32(id)
+			module.Path = append(parentPath, int32(id))
+			ids = append(ids, int32(id))
 			_, err = session.Table(db.TABLE_MODULE).Prepare().Where("Id=?", id).Update("Path=?", module.Path)
 			if err != nil {
 				in.WriteErr(err)
 				return
 			}
-			/*this->dao->insert(TABLE_MODULE)->data(module)->exec()
-			  moduleID  = this->dao->lastInsertID()
-			  childPath = parentPath . "moduleID,"
-			  this->dao->update(TABLE_MODULE)->set("path")->eq(childPath)->where("id")->eq(moduleID)->limit(1)->exec()*/
 		} else {
+			ids = append(ids, module.Id)
 			update := HostConn.GetTreeById(module.Id)
 			if update != nil {
+				childs := tree_getAllChildId(module.Id)
+				update.Grade = grade
+				update.Path = append(parentPath, update.Id)
+				update.OwnerID = module.OwnerID
+				if data.RootID >= 0 {
+					update.Root = data.RootID
+					update.Branch = 0
+					for _, id := range childs {
+						child := HostConn.GetTreeById(id)
+						child.Grade = update.Grade + 1
+						child.OwnerID = module.OwnerID
+						child.Root = data.RootID
+						child.Branch = 0
+						child.Path = append(update.Path, child.Id)
+						ids = append(ids, id)
+						updates = append(updates, child)
+					}
+				}
+				//$this->fixModulePath(isset($module->root) ? $module->root : update->root, update->type);
 				update.Name = module.Name
 				update.Short = module.Short
 				updates = append(updates, update)
@@ -145,6 +166,13 @@ func tree_manageChild(data *protocol.MSG_PROJECT_tree_manageChild, in *protocol.
 			return
 		}
 	}
+	session.CommitCallback(func() {
+		var list []*db.Module
+		session.Table(db.TABLE_MODULE).Prepare().Where(map[string]interface{}{"id": ids}).Limit(0).Select(&list)
+		for _, v := range list {
+			tree_setCache(v)
+		}
+	})
 	session.Commit()
 	out := protocol.GET_MSG_PROJECT_tree_manageChild_result()
 	out.Result = protocol.Success
@@ -180,6 +208,9 @@ func tree_checkUnique(module *protocol.MSG_PROJECT_tree_cache, modules []*protoc
 		return false, err
 	}
 	for _, module := range modules {
+		if module.Name == "" {
+			return true, nil
+		}
 		for _, existsModule := range existsModules {
 			if module.Name == existsModule.Name && module.Id != existsModule.Id && (module.Branch == 0 || module.Branch == existsModule.Branch) {
 				return true, nil
@@ -189,4 +220,27 @@ func tree_checkUnique(module *protocol.MSG_PROJECT_tree_cache, modules []*protoc
 	}
 
 	return false, nil
+}
+func tree_updateList(data *protocol.MSG_PROJECT_tree_updateList, in *protocol.Msg) {
+	update, err := HostConn.DB.Table(db.TABLE_MODULE).ReplaceAll(data.Modules)
+	in.WriteErr(err)
+	if update {
+		var ids = make([]int32, len(data.Modules))
+		for k, v := range data.Modules {
+			ids[k] = v.Id
+		}
+		var list []*db.Module
+		HostConn.DB.Table(db.TABLE_MODULE).Where(map[string]interface{}{"id": ids}).Limit(0).Select(&list)
+		for _, v := range list {
+			tree_setCache(v)
+		}
+	}
+}
+func tree_delete(data *protocol.MSG_PROJECT_tree_delete, in *protocol.Msg) {
+	_, err := in.DB.Table(db.TABLE_MODULE).Where(map[string]interface{}{"Id": data.Ids}).Delete()
+	in.WriteErr(err)
+	for _, id := range data.Ids {
+		HostConn.CacheDel(protocol.PATH_PROJECT_TREE_CACHE, strconv.Itoa(int(id)))
+	}
+
 }

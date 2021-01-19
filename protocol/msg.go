@@ -9,7 +9,6 @@ import (
 	"runtime/debug"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -220,13 +219,13 @@ func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint8, transactio
 	if !ok {
 		return errors.New(fmt.Sprintf("out结构体%s不含QueryID无法使用Result模式", reflect.TypeOf(out).Elem().Name()))
 	}
-	id := atomic.AddUint32(&RpcClientQueryId, 1)
+	id := uint32(rpcClientQueryId.INCRBY("id", 1))
 	if id == 0 { //不允许为0
-		id = atomic.AddUint32(&RpcClientQueryId, 1)
+		id = uint32(rpcClientQueryId.INCRBY("id", 1))
 	}
 	query.setQueryID(id)
 	resultchan := make(chan RpcQueryResult, 1)
-	RpcClientQueryMap[id] = resultchan
+	rpcClientQueryMap[id] = resultchan
 	buf := BufPoolGet()
 	b := buf.Make(MsgHeadLen)
 	b[0] = byte(msgno)
@@ -285,9 +284,9 @@ func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint8, transactio
 		}
 		return checkAndSetResult(r)
 	case <-time.After(_timeout):
-		RpcClientQueryLock.Lock()
-		defer RpcClientQueryLock.Unlock()
-		delete(RpcClientQueryMap, id)
+		rpcClientQueryLock.Lock()
+		defer rpcClientQueryLock.Unlock()
+		delete(rpcClientQueryMap, id)
 		select {
 		case r := <-resultchan:
 			defer r.(MSG_DATA).Put()
@@ -310,11 +309,11 @@ func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint8, transactio
 }
 func SetMsgQuery(i interface{}) bool {
 	if rpcResult, ok := i.(RpcQueryResult); ok {
-		RpcClientQueryLock.RLock()
-		if v, ok := RpcClientQueryMap[rpcResult.getQueryResultID()]; ok {
+		rpcClientQueryLock.RLock()
+		if v, ok := rpcClientQueryMap[rpcResult.getQueryResultID()]; ok {
 			v <- rpcResult
 		}
-		RpcClientQueryLock.RUnlock()
+		rpcClientQueryLock.RUnlock()
 		return true
 	}
 	return false
@@ -409,6 +408,13 @@ func (t *MsgDBTransaction) Commit() error {
 	out.No = t.newTransactionNo
 	err := t.msg.SendMsgWaitResult(0, out, nil)
 	out.Put()
+	if err == nil {
+		//马上执行commit避免提前EndTransaction
+		if v, ok := transactionMap.LoadAndDelete(t.newTransactionNo); ok {
+			v.(*mysql.Transaction).Commit()
+		}
+	}
+
 	return err
 }
 func (t *MsgDBTransaction) Rollback() error {
@@ -425,7 +431,7 @@ func (t *MsgDBTransaction) EndTransaction() {
 		return
 	}
 	t.t.EndTransaction()
-	//并尝试告诉网关关闭其他可能还存在的事务
+	//并尝试告诉网关 关闭其他可能还存在的事务
 	if _, ok := transactionMap.Load(t.newTransactionNo); ok {
 		out := GET_MSG_COMMON_Transaction_RollBack()
 		out.No = t.newTransactionNo
@@ -433,6 +439,12 @@ func (t *MsgDBTransaction) EndTransaction() {
 		out.Put()
 	}
 
+}
+func (t *MsgDBTransaction) CommitCallback(f func()) {
+	t.t.CommitCallback(f)
+}
+func (t *MsgDBTransaction) RollbackCallback(f func()) {
+	t.t.RollbackCallback(f)
 }
 func msgTransactionCheck(data *MSG_COMMON_Transaction_Check, in *Msg) {
 	if _, ok := transactionMap.Load(data.No); ok {

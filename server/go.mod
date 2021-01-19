@@ -7,7 +7,7 @@ require (
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/klauspost/compress v1.11.4
-	github.com/luyu6056/cache v1.1.2
+	github.com/luyu6056/cache v1.1.4
 	github.com/luyu6056/gnet v1.2.8
 	github.com/panjf2000/ants/v2 v2.4.3
 	github.com/rubenfonseca/fastimage v0.0.0-20170112075114-7e006a27a95b // indirect

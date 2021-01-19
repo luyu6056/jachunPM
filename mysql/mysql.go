@@ -52,30 +52,57 @@ type SliceHeader struct {
 	Cap  int
 }
 type Transaction struct {
-	conn *Mysql_Conn
-	lock sync.Mutex
+	conn                                                     *Mysql_Conn
+	queryLock, transactionLock                               sync.Mutex
+	commitCallback, rollbackCallback, endTransactionCallback func()
+	endTransactionOnce                                       sync.Once
 }
 
 func (t *Transaction) GetTransaction() *Mysql_Conn {
-	t.lock.Lock()
-	defer t.lock.Unlock()
+	t.queryLock.Lock()
+	defer t.queryLock.Unlock()
 	return t.conn
 }
 
 func (t *Transaction) EndTransaction() {
-	t.lock.Lock()
-	defer t.lock.Unlock()
-	if conn := t.conn; conn != nil {
-		t.conn = nil
-		//rollback
-		conn.Exec([]byte{114, 111, 108, 108, 98, 97, 99, 107})
-		conn.db.endTransaction(conn)
+	t.queryLock.Lock()
+	t.transactionLock.Lock()
+	defer t.queryLock.Unlock()
+	defer t.transactionLock.Unlock()
+	if t.endTransactionCallback == nil {
+		t.endTransactionCallback = t.rollbackCallback
 	}
+	t.commitCallback = nil
+	t.rollbackCallback = nil
+	t.endTransactionOnce.Do(func() {
+		//rollback
+		t.conn.Exec([]byte{114, 111, 108, 108, 98, 97, 99, 107})
+		if t.endTransactionCallback != nil {
+			t.queryLock.Unlock()
+			t.endTransactionCallback()
+			t.queryLock.Lock()
+		}
+		t.endTransactionCallback = nil
+		t.conn.db.endTransaction(t.conn)
+	})
+
 }
 
+//在commit和rollback前设置callback
+func (t *Transaction) CommitCallback(f func()) {
+	t.commitCallback = f
+}
+func (t *Transaction) RollbackCallback(f func()) {
+	t.rollbackCallback = f
+}
 func (t *Transaction) Commit() error {
-	t.lock.Lock()
-	defer t.lock.Unlock()
+	t.queryLock.Lock()
+	t.transactionLock.Lock()
+	defer t.queryLock.Unlock()
+	defer t.transactionLock.Unlock()
+	if t.endTransactionCallback == nil {
+		t.endTransactionCallback = t.commitCallback
+	}
 	if t.conn != nil {
 		_, _, err := t.conn.Exec([]byte{99, 111, 109, 109, 105, 116})
 		return err
@@ -84,8 +111,13 @@ func (t *Transaction) Commit() error {
 }
 
 func (t *Transaction) Rollback() error {
-	t.lock.Lock()
-	defer t.lock.Unlock()
+	t.queryLock.Lock()
+	t.transactionLock.Lock()
+	defer t.queryLock.Unlock()
+	defer t.transactionLock.Unlock()
+	if t.endTransactionCallback == nil {
+		t.endTransactionCallback = t.rollbackCallback
+	}
 	if t.conn != nil {
 		_, _, err := t.conn.Exec([]byte{114, 111, 108, 108, 98, 97, 99, 107})
 		return err
@@ -110,7 +142,14 @@ func queryMap(sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transaction
 		ts = t.GetTransaction()
 	}
 
+	var lastErr string
+	retryNum := int32(0)
 Retry:
+	retryNum++
+	//暂时先设定一个最大重试次数
+	if retryNum > db.MaxOpenConns {
+		return nil, errors.New("错误重试次数过多，最后一次错误是：" + lastErr)
+	}
 	if ts != nil {
 		if prepare_arg != nil {
 			stmt, err := ts.Prepare(sql)
@@ -128,9 +167,9 @@ Retry:
 	} else {
 		columns, err = db.query(sql, row, prepare_arg)
 		if err != nil {
-			if strings.Contains(err.Error(), "EOF") {
-				goto Retry
-			} else if strings.Contains(err.Error(), "broken pipe") { //unix断连
+			errstr := err.Error()
+			if strings.Contains(errstr, "EOF") || strings.Contains(errstr, "broken pipe") /*unix断连*/ || strings.Contains(errstr, "No connection could be made because the target machine actively refused it") {
+				lastErr = errstr
 				goto Retry
 			} else {
 				return nil, err
@@ -252,8 +291,14 @@ func query(sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transaction, r
 	if t != nil {
 		ts = t.GetTransaction()
 	}
-
+	var lastErr string
+	retryNum := int32(0)
 Retry:
+	retryNum++
+	//暂时先设定一个最大重试次数
+	if retryNum > db.MaxOpenConns {
+		return errors.New("错误重试次数过多，最后一次错误是：" + lastErr)
+	}
 	if ts != nil {
 		if prepare_arg != nil {
 			stmt, err := ts.Prepare(sql)
@@ -271,10 +316,9 @@ Retry:
 	} else {
 		columns, err = db.query(sql, row, prepare_arg)
 		if err != nil {
-
-			if strings.Contains(err.Error(), "EOF") {
-				goto Retry
-			} else if strings.Contains(err.Error(), "broken pipe") { //unix断连
+			errstr := err.Error()
+			if strings.Contains(errstr, "EOF") || strings.Contains(errstr, "broken pipe") /*unix断连*/ || strings.Contains(errstr, "No connection could be made because the target machine actively refused it") {
+				lastErr = errstr
 				goto Retry
 			} else {
 				return err
@@ -712,13 +756,20 @@ func insert(insert_sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transa
 		}
 
 	} else {
+		var lastErr string
+		retryNum := int32(0)
 	Retry:
+		retryNum++
+		//暂时先设定一个最大重试次数
+		if retryNum > db.MaxOpenConns {
+			return 0, 0, errors.New("错误重试次数过多，最后一次错误是：" + lastErr)
+		}
 		LastInsertId, rowsAffected, err = db.exec(insert_sql, prepare_arg)
 
 		if err != nil {
-			if strings.Contains(err.Error(), "EOF") {
-				goto Retry
-			} else if strings.Contains(err.Error(), "broken pipe") { //unix断连
+			errstr := err.Error()
+			if strings.Contains(errstr, "EOF") || strings.Contains(errstr, "broken pipe") /*unix断连*/ || strings.Contains(errstr, "No connection could be made because the target machine actively refused it") {
+				lastErr = errstr
 				goto Retry
 			} else {
 				return 0, 0, err
@@ -749,12 +800,19 @@ func exec(query_sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transacti
 			_, _, err = ts.Exec(query_sql)
 		}
 	} else {
+		var lastErr string
+		retryNum := int32(0)
 	Retry:
+		retryNum++
+		//暂时先设定一个最大重试次数
+		if retryNum > db.MaxOpenConns {
+			return errors.New("错误重试次数过多，最后一次错误是：" + lastErr)
+		}
 		_, _, err = db.exec(query_sql, prepare_arg)
 		if err != nil {
-			if strings.Contains(err.Error(), "EOF") {
-				goto Retry
-			} else if strings.Contains(err.Error(), "broken pipe") { //unix断连
+			errstr := err.Error()
+			if strings.Contains(errstr, "EOF") || strings.Contains(errstr, "broken pipe") /*unix断连*/ || strings.Contains(errstr, "No connection could be made because the target machine actively refused it") {
+				lastErr = errstr
 				goto Retry
 			} else {
 				return err
@@ -784,13 +842,20 @@ func query_getaffected(query_sql []byte, prepare_arg []interface{}, db *MysqlDB,
 
 		}
 	} else {
+		var lastErr string
+		retryNum := int32(0)
 	Retry:
+		retryNum++
+		//暂时先设定一个最大重试次数
+		if retryNum > db.MaxOpenConns {
+			return 0, errors.New("错误重试次数过多，最后一次错误是：" + lastErr)
+		}
 		_, rowsAffected, err = db.exec(query_sql, prepare_arg)
 
 		if err != nil {
-			if strings.Contains(err.Error(), "EOF") {
-				goto Retry
-			} else if strings.Contains(err.Error(), "broken pipe") { //unix断连
+			errstr := err.Error()
+			if strings.Contains(errstr, "EOF") || strings.Contains(errstr, "broken pipe") /*unix断连*/ || strings.Contains(errstr, "No connection could be made because the target machine actively refused it") {
+				lastErr = errstr
 				goto Retry
 			} else {
 				return 0, err

@@ -1,0 +1,111 @@
+{{template "header.html" .}}
+{{template "sortable.html" .}}
+<div id="mainMenu" class="clearfix">
+  <div id="sidebarHeader">
+    <div class="title">
+      {{if .Data.line }}{{getValue .Data.lines .Data.line}}{{else}}{{.Lang.product.line}}{{end}}
+      {{if .Data.line}}{{html_a (helper_createLink "product" "all" "productID=" .Data.productID "&line=&status=" .Data.status) "<i class='icon icon-sm icon-close'></i>" "" "class='text-muted'"}}{{end}}
+    </div>
+  </div>
+  <div class="btn-toolbar pull-left">
+    {{range .Lang.product.featureBar.all}}
+        {{$label   := strAdd "<span class='text'>" .Value "</span>"}}
+        {{if eq .Key $.Data.status}}{{$label = strAdd $label " <span class='label label-light label-badge'>" $.Page.Total "</span>"}}{{end}}
+        {{$active  := or (and (eq .Key $.Data.status) "btn-active-text") ""}}
+        {{html_a (helper_createLink "product" "all"  "productID=" $.Data.productID "&line=&status=" .Key) $label "" (strAdd "class='btn btn-link " $active "' id='" .Key "'")}}
+    {{end}}
+  </div>
+  <div class="btn-toolbar pull-right">
+    {{common_printLink . "product" "export" (strAdd "status=" .Data.status "&orderBy=" .Data.orderBy) (strAdd "<i class='icon-export muted'> </i>"  .Lang.common.export) "" "class='btn btn-link export'"}}
+    {{common_printLink . "product" "create" "" (strAdd "<i class='icon-plus'></i> "  .Lang.product.create) "" "class='btn btn-primary'" }}
+  </div>
+</div>
+<div id="mainContent" class="main-row fade">
+  <div class="side-col" id="sidebar">
+    <div class="sidebar-toggle"><i class="icon icon-angle-left"></i></div>
+    <div class="cell">
+      {{.Data.lineTree}}
+      <div class="text-center">
+        {{common_printLink . "tree" "browse" (strAdd "rootID=" .Data.productID "&view=line") .Lang.tree.manageLine "" "class='btn btn-info btn-wide'"}}
+        <hr class="space-sm" />
+      </div>
+    </div>
+  </div>
+  <div class="main-col">
+    <div class="cell" id="queryBox"></div>
+    <form class="main-table table-product" data-ride="table" method="post" id='productsForm' action='{{helper_createLink "product" "batchEdit" "productID=" .Data.productID}}'>
+      {{/*$canOrder :=false (common_hasPriv . "product" "updateOrder")*/}}
+      {{- $canOrder :=false -}}
+      {{$canBatchEdit := (common_hasPriv . "product" "batchEdit") }}
+      <table class="table has-sort-head table-fixed" id='productList'>
+        {{$vars := strAdd "productID=" .Data.productID "&line=" .Data.line "&status=" .Data.status "&orderBy=%s&recTotal=" .Page.Total "&recPerPage=" .Page.PerPage "&pageID=" .Page.Page}}
+        <thead>
+          <tr>
+            <th class='c-id'>
+              {{if $canBatchEdit}}
+              <div class="checkbox-primary check-all" title="{{.Lang.common.selectAll}}">
+                <label></label>
+              </div>
+              {{end}}
+              {{common_printOrderLink . "id" .Data.orderBy $vars .Lang.common.idAB}}
+            </th>
+            <th>{{common_printOrderLink . "name" .Data.orderBy $vars .Lang.product.name}}</th>
+            <th class='w-80px text-left'>{{common_printOrderLink . "line" .Data.orderBy $vars .Lang.product.line}}</th>
+            <th class='w-80px'>{{.Lang.product.activeStories}}</th>
+            <th class='w-90px'>{{.Lang.product.changedStories}}</th>
+            <th class='w-70px'>{{.Lang.product.draftStories}}</th>
+            <th class='w-90px'>{{.Lang.product.closedStories}}</th>
+            <th class='w-70px'>{{.Lang.product.plans}}</th>
+            <th class='w-70px'>{{.Lang.product.releases}}</th>
+            <th class='w-80px'>{{.Lang.product.bugs}}</th>
+            <th class='w-80px'>{{.Lang.product.unResolvedBugs}}</th>
+            <th class='w-80px'>{{.Lang.product.assignToNullBugs}}</th>
+            {{if $canOrder}}
+            <th class='w-70px sort-default'>{{common_printOrderLink . "order" .Data.orderBy $vars .Lang.product.updateOrder}}</th>
+            {{end}}
+          </tr>
+        </thead>
+        <tbody class="sortable" id="productTableList">
+        {{range $product:=.Data.productStats}}
+        <tr data-id='{{$product.Id }}' data-order='{{$product.Code}}'>
+          <td class='c-id'>
+            {{if $canBatchEdit}}
+            {{html_checkbox "productIDList" (appendKeyValueStr $product.Id  (printf "%03d" $product.Id))}}
+            {{else}}
+            {{printf "%03d" $product.Id}}
+            {{end}}
+          </td>
+          <td class="c-name" title='{{$product.Name}}'>{{html_a (helper_createLink "product" "view" "product="  $product.Id) $product.Name}}</td>
+          <td title='{{getValue $.Data.lines $product.Line}}'>{{getValue $.Data.lines $product.Line}}</td>
+          <td class='text-center'>{{$product.stories.active}}</td>
+          <td class='text-center'>{{$product.stories.changed}}</td>
+          <td class='text-center'>{{$product.stories.draft}}</td>
+          <td class='text-center'>{{$product.stories.closed}}</td>
+          <td class='text-center'>{{$product.plans}}</td>
+          <td class='text-center'>{{$product.releases}}</td>
+          <td class='text-center'>{{$product.bugs}}</td>
+          <td class='text-center'>{{$product.unResolved}}</td>
+          <td class='text-center'>{{$product.assignToNull}}</td>
+          {{if $canOrder}}
+          <td class='c-actions sort-handler'><i class="icon icon-move"></i></td>
+          {{end}}
+        </tr>
+        {{end}}
+        </tbody>
+      </table>
+      {{if .Data.productStats}}
+      <div class="table-footer">
+        {{if $canBatchEdit}}
+        <div class="checkbox-primary check-all"><label>{{.Lang.common.selectAll}}</label></div>
+        <div class="table-actions btn-toolbar">
+          {{html_submitButton . .Lang.common.edit "" "btn"}}
+        </div>
+        {{end}}
+        {{pager_show . "right" "pagerjs"}}
+      </div>
+      {{end}}
+    </form>
+  </div>
+</div>
+<script>orderBy={{.Data.orderBy}}</script>
+{{template "footer.html" .}}

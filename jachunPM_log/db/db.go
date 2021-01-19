@@ -1,46 +1,56 @@
 package db
 
 import (
-	"jachunPM_log/config"
+	"jachunPM_user/config"
 	"log"
 	"mysql"
 	"time"
 )
 
 const (
-	TABLE_LOG_MSG = "Log_msg"
+	TABLE_ACTION = "action"
 )
 
-var DB *mysql.MysqlDB
-
-func Init() {
-	var err error
-	DB, err = mysql.Open(config.Config.MysqlDsn)
+func Init() *mysql.MysqlDB {
+	db, err := mysql.Open(config.Config.MysqlDsn)
 	if err != nil {
 		log.Fatalf("数据库连接失败 %v", err)
 	}
 	if config.Config.MysqlMaxConn > 0 {
-		DB.MaxOpenConns = config.Config.MysqlMaxConn
+		db.MaxOpenConns = config.Config.MysqlMaxConn
 	}
 	errs := DB.StoreEngine("TokuDB").Sync2(
-		new(Log_msg),
+		new(TABLE_ACTION),
 	)
 	if errs != nil {
 		log.Fatalf("数据库启动失败%v", errs)
 	}
+	return db
 }
 
-type Log_msg struct {
-	Msgno     uint32 `db:"not null;pk"`
-	Ttl       uint8  `db:"not null;pk"`
-	LocalNo   uint8
-	LocalId   uint8
-	RemoteNo  uint8
-	RemoteId  uint8
-	Cmd       int32
-	Timestamp time.Time `db:"default(current_timestamp());extra('on update current_timestamp()')"`
+type Action struct {
+	Id         int64  `db:"auto_increment;pk"`
+	ObjectType string `db:"type:varchar(30)"`
+	ObjectID   int32  `db:"default(0)"`
+	Product    int32
+	Project    int32
+	ActorId    int32
+	Actor      string    `db:"type:varchar(30)"`
+	Action     string    `db:"type:varchar(30)"`
+	Date       time.Time `db:"not null"`
+	Comment    string    `db:"type:text"`
+	Extra      string    `db:"type:text"`
+	Read       bool
+	Historys   []*History `db:"type:json"`
 }
 
-func (*Log_msg) TableName() string {
-	return TABLE_LOG_MSG
+func (*Action) TableName() string {
+	return TABLE_ACTION
+}
+
+type History struct {
+	Field string
+	Old   string
+	New   string
+	Diff  string
 }
