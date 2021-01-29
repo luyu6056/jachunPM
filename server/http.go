@@ -574,6 +574,7 @@ func init() {
 }
 func (hs *Httpserver) Close() {
 	hs.session = nil
+	hs.c.Close()
 }
 
 var sessionID = uint64(rand.NewSource(time.Now().Unix()).Int63())

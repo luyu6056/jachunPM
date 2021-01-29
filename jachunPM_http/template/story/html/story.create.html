@@ -1,12 +1,10 @@
-{{template "header.html" .}}
-{{js_set "holders" .Lang.story.placeholder }}
+{{template "story.header.html" .}}
 <div id="mainContent" class="main-content">
   <div class="center-block">
     <div class="main-header">
       <h2>{{.Lang.story.create}}</h2>
       <div class="pull-right btn-toolbar">
-        {{$customLink = (helper_createLink 'custom', 'ajaxSaveCustomFields', 'module=story&section=custom&key=createFields')}}
-        {{include '../../common/view/customfield.html.php'}}
+        {{template "customfield.html" .}}
       </div>
     </div>
     <form class="load-indicator main-form form-ajax" method='post' enctype='multipart/form-data' id='dataform'>
@@ -15,30 +13,27 @@
           <tr>
             <th>{{.Lang.story.product}}</th>
             <td colspan="2">
-              {{if $product->type != 'normal'}}
+              {{- if ne .Data.product.Type "normal"}}
               <div class='input-group'>
-              {{end}}
-              {{html_select "product" $products $productID "onchange='loadProduct(this.value' class='form-control chosen control-product'")}}
-              {{if $product->type != 'normal'}}
+              {{- end}}
+              {{html_select "product" .Data.products .Data.productID "onchange='loadProduct(this.value)' class='form-control chosen control-product'"}}
+              {{- if ne .Data.product.Type "normal"}}
               <span class='input-group-addon fix-border fix-padding'></span>
-              {{html_select "branch" $branches $branch "onchange='loadBranch(' class='form-control chosen control-branch'")}}
+              {{html_select "branch" .Data.branches .Data.branch "onchange='loadBranch()' class='form-control chosen control-branch'"}}
               </div>
-              {{end}}
+              {{- end}}
             </td>
             <td colspan="2">
               <div class='input-group' id='moduleIdBox'>
                 <div class="input-group-addon">{{.Lang.story.module}}</div>
-                <?php
-                html_select "module" $moduleOptionMenu $moduleID "class='form-control chosen'"
-                if(count($moduleOptionMenu) == 1)
-                {
-                    "<div class='input-group-addon'>";
-                    html_a (helper_createLink 'tree' "browse" "rootID=$productID&view=story&currentModuleID=0&branch=$branch" '', true, .Lang.tree.manage, '', "class='text-primary' data-toggle='modal' data-type='iframe' data-width='95%'");
-                    '&nbsp; ';
-                    html_a "javascript:void(0)" .Lang.refresh "" "class='refresh' onclick='loadProductModules($productID'");
-                    '</div>';
-                }
-                ?>
+                {{html_select "module" .Data.moduleOptionMenu .Data.moduleID "class='form-control chosen'"}}
+                {{- if eq (len .Data.moduleOptionMenu) 1}}
+                    <div class='input-group-addon'>
+                    {{html_a (helper_createLink "tree" "browse" "rootID=" .Data.productID "&view=story&currentModuleID=0&branch=" .Data.branch true) .Lang.tree.manage "" "class='text-primary' data-toggle='modal' data-type='iframe' data-width='95%'" -}}
+                    &nbsp;
+                    {{- html_a "javascript:void(0)" .Lang.common.refresh "" (strAdd "class='refresh' onclick='loadProductModules(" .Data.productID ")'")}}
+                    </div>
+               {{- end}}
               </div>
             </td>
           </tr>
@@ -46,28 +41,25 @@
             <th>{{.Lang.story.plan}}</th>
             <td colspan="2">
               <div class='input-group' id='planIdBox'>
-                <?php
-                html_select "plan" $plans $planID "class='form-control chosen'"
-                if(count($plans) == 1)
-                {
-                    "<div class='input-group-btn'>";
-                    html_a (helper_createLink 'productplan' "create" "productID=$productID&branch=$branch" '', true, "<i class='icon icon-plus'></i>", '', "class='btn btn-icon' data-toggle='modal' data-type='iframe' data-width='95%' title='{.Lang.productplan.create}'");
-                    '</div>';
-                    "<div class='input-group-btn'>";
-                    html_a "javascript:void(0)" "<i class='icon icon-refresh'></i>" "" "class='btn btn-icon refresh' data-toggle='tooltip' title='{.Lang.refresh}' onclick='loadProductPlans($productID'");
-                    '</div>';
-                }
-                ?>
+                {{html_select "plan" .Data.plans .Data.planID "class='form-control chosen'"}}
+                {{- if eq (len .Data.plans) 1}}
+                    <div class='input-group-btn'>
+                    {{html_a (helper_createLink "productplan" "create" "productID=" .Data.productID "&branch=" .Data.branch true) "<i class='icon icon-plus'></i>" "" (strAdd "class='btn btn-icon' data-toggle='modal' data-type='iframe' data-width='95%' title='" .Lang.productplan.create "'")}}
+                    </div>
+                    <div class='input-group-btn'>
+                    {{html_a "javascript:void(0)" "<i class='icon icon-refresh'></i>" "" (strAdd "class='btn btn-icon refresh' data-toggle='tooltip' title='" .Lang.common.refresh "' onclick='loadProductPlans(" .Data.productID "'")}}
+                    </div>
+                {{- end}}
               </div>
             </td>
-            {{if strpos(",$showFields,", ',source,') !== false}}
+            {{if gt (strpos (strAdd "," .Data.showFields ",") ",source,") -1}}
             <td colspan="2">
               <div class="input-group">
                 <div class="input-group">
                   <div class="input-group-addon">{{.Lang.story.source}}</div>
-                  {{html_select "source" .Lang.story.sourceList $source "class='form-control chosen'"}}
+                  {{html_select "source" .Lang.story.sourceList .Data.source "class='form-control chosen'"}}
                   <span class='input-group-addon'>{{.Lang.story.sourceNote}}</span>
-                  {{html::input('sourceNote', $sourceNote, "class='form-control' autocomplete='off' style='width:140px;'")}}
+                  {{html_input "sourceNote" .Data.sourceNote "class='form-control' autocomplete='off' style='width:140px;'"}}
                 </div>
               </div>
             </td>
@@ -75,11 +67,11 @@
           </tr>
           <tr>
             <th>{{.Lang.story.reviewedBy}}</th>
-            <td>{{html_select "assignedTo" $users empty($needReview) ? $product->PO : '' "class='form-control chosen'"}}</td>
-            {{if !$this->story->checkForceReview()}}
+            <td>{{html_select "assignedTo" .Data.users (or (and .Data.needReview .Data.product.PO) "") "class='form-control chosen'"}}</td>
+            {{if not .Data.checkForceReview}}
             <td>
               <div class='checkbox-primary'>
-                <input id='needNotReview' name='needNotReview' value='1' type='checkbox' class='no-margin' {{$needReview}}/>
+                <input id='needNotReview' name='needNotReview' value='1' type='checkbox' class='no-margin' {{.Data.needReview}}/>
                 <label for='needNotReview'>{{.Lang.story.needNotReview}}</label>
               </div>
             </td>
@@ -91,7 +83,7 @@
               <div class='table-row'>
                 <div class='table-col'>
                   <div class="input-control has-icon-right">
-                    {{html_input "title" $storyTitle "class='form-control' autocomplete='off' required"}}
+                    {{html_input "title" .Data.storyTitle "class='form-control' autocomplete='off' required"}}
                     <div class="colorpicker">
                       <button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown"><span class="cp-title"></span><span class="color-bar"></span><i class="ic"></i></button>
                       <ul class="dropdown-menu clearfix">
@@ -101,42 +93,36 @@
                     </div>
                   </div>
                 </div>
-                {{if strpos(",$showFields,", ',pri,') !== false): // begin print pri selector}}
+                {{if gt (strpos (strAdd "," .Data.showFields ",") ",pri,") -1}}
                 <div class='table-col w-150px'>
                   <div class="input-group">
                     <span class="input-group-addon fix-border br-0">{{.Lang.story.pri}}</span>
-                    <?php
-                    $hasCustomPri = false;
-                    foreach(.Lang.story.priList as $priKey => $priValue)
-                    {
-                        if(!empty($priKey) and (string)$priKey != (string)$priValue)
-                        {
-                            $hasCustomPri = true;
-                            break;
-                        }
-                    }
-                    $priList = .Lang.story.priList;
-                    ?>
-                    {{if($hasCustomPri}}
-                    {{html_select "pri" (array)$priList $pri "class='form-control'"}}
-                    {{else:}}
+                    {{- $hasCustomPri := false}}
+                    {{- range $kv := .Lang.story.priList}}
+                        {{- if ne $kv.Key $kv.Value}}
+                            {{- $hasCustomPri = true}}
+                        {{- end}}
+                    {{- end}}
+                    {{if .Data.hasCustomPri}}
+                    {{html_select "pri" .Lang.story.priList .Data.pri "class='form-control'"}}
+                    {{else}}
                     <div class="input-group-btn pri-selector" data-type="pri">
                       <button type="button" class="btn dropdown-toggle br-0" data-toggle="dropdown">
-                        <span class="pri-text"><span class="label-pri label-pri-{{empty($pri) ? '0' : $pri}}" title="{{$pri}}">{{$pri}}</span></span> &nbsp;<span class="caret"></span>
+                        <span class="pri-text"><span class="label-pri label-pri-{{or .Data.pri "0"}}" title="{{.Data.pri}}">{{.Data.pri}}</span></span> &nbsp;<span class="caret"></span>
                       </button>
                       <div class='dropdown-menu pull-right'>
-                        {{html_select "pri" (array)$priList $pri "class='form-control' data-provide='labelSelector' data-label-class='label-pri'"}}
+                        {{html_select "pri" .Lang.story.priList .Data.pri "class='form-control' data-provide='labelSelector' data-label-class='label-pri'"}}
                       </div>
                     </div>
                     {{end}}
                   </div>
                 </div>
-                {{endif; }}
-                {{if strpos(",$showFields,", ',estimate,') !== false}}
+                {{- end}}
+                {{- if gt (strpos (strAdd "," .Data.showFields ",") ",estimate,") -1}}
                 <div class='table-col w-120px'>
                   <div class="input-group">
                     <span class="input-group-addon fix-border br-0">{{.Lang.story.estimateAB}}</span>
-                    <input type="text" name="estimate" id="estimate" value="{{$estimate}}" class="form-control" autocomplete="off" placeholder='{{.Lang.story.hour}}' />
+                    <input type="text" name="estimate" id="estimate" value="{{.Data.estimate}}" class="form-control" autocomplete="off" placeholder='{{.Lang.story.hour}}' />
                   </div>
                 </div>
                 {{end}}
@@ -145,34 +131,34 @@
           </tr>
           <tr>
             <th>{{.Lang.story.spec}}</th>
-            <td colspan="4">{{html_textarea "spec" $spec "rows='9' class='form-control kindeditor disabled-ie-placeholder' hidefocus='true' placeholder='" . htmlspecialchars(.Lang.story.specTemplate . "'")}}</td>
+            <td colspan="4">{{html_textarea "spec" .Data.spec (strAdd "rows='9' class='form-control kindeditor disabled-ie-placeholder' hidefocus='true' placeholder='"  .Lang.story.specTemplate  "'")}}</td>
           </tr>
-          {{if strpos(",$showFields,", ',verify,') !== false}}
+          {{- if gt (strpos (strAdd "," .Data.showFields ",") ",verify,") -1}}
           <tr>
             <th>{{.Lang.story.verify}}</th>
-            <td colspan="4">{{html_textarea "verify" $verify "rows='6' class='form-control kindeditor' hidefocus='true'"}}</td>
+            <td colspan="4">{{html_textarea "verify" .Data.verify "rows='6' class='form-control kindeditor' hidefocus='true'"}}</td>
           </tr>
           {{end}}
           <tr>
             <th>{{.Lang.story.legendAttatch}}</th>
-            <td colspan='4'>{{$this->fetch('file', 'buildform')}}</td>
+            <td colspan='4'>{{fetch . "file" "buildform" ""}}</td>
           </tr>
-          {{if strpos(",$showFields,", ',mailto,') !== false}}
+          {{if gt (strpos (strAdd "," .Data.showFields ",") ",mailto,") -1}}
           <tr>
             <th>{{.Lang.story.mailto}}</th>
             <td colspan="4">
               <div class="input-group">
-                {{html_select "mailto[]" $users str_replace(' ' '', $mailto, "class='form-control chosen' data-placeholder='{.Lang.chooseUsersToMail}' multiple")}}
-                {{$this->fetch('my', 'buildContactLists')}}
+                {{html_select "mailto" .Data.users (strings_replace .Data.mailto " " "") (strAdd "class='form-control chosen' data-placeholder='" .Lang.common.chooseUsersToMail "' multiple")}}
+                {{fetch . "my" "buildContactLists" ""}}
               </div>
             </td>
           </tr>
           {{end}}
-          {{if strpos(",$showFields,", ',keywords,') !== false}}
+          {{- if gt (strpos (strAdd "," .Data.showFields ",") ",keywords,") -1}}
           <tr>
             <th>{{.Lang.story.keywords}}</th>
             <td colspan="4">
-              {{html_input "keywords" $keywords "class="form-control" autocomplete="off""}}
+              {{html_input "keywords" .Data.keywords "class='form-control' autocomplete='off'"}}
             </td>
           </tr>
           {{end}}
@@ -189,5 +175,5 @@
     </form>
   </div>
 </div>
-{{js_set "storyModule" .Lang.story.module}}
+<script type="text/javascript">var storyModule = {{.Lang.story.module}},holders = {{.Lang.story.placeholder}};</script>
 {{template "footer.html" .}}

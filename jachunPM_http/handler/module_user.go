@@ -11,8 +11,6 @@ import (
 	"protocol"
 	"strconv"
 	"strings"
-
-	"github.com/luyu6056/gnet"
 )
 
 func init() {
@@ -28,32 +26,32 @@ func init() {
 	httpHandlerMap["GET"]["/user/delete"] = get_user_delete
 	httpHandlerMap["POST"]["/user/delete"] = post_user_delete
 	httpHandlerMap["GET"]["/user/restore"] = get_user_restore
+	httpHandlerMap["GET"]["/user/ajaxGetContactUsers"] = get_user_ajaxGetContactUsers
 }
-func get_user_login(data *TemplateData) gnet.Action {
+func get_user_login(data *TemplateData) {
 	//检查是否登录
 	ws := data.ws
 	if data.User != nil {
 		ws.Redirect(createLink("company", "browse", nil))
-		return gnet.None
+		return
 	}
 	ws.Session()
 	data.Data["keepLogin"] = ""
 	data.Data["referer"] = ws.Header("Referer")
 	data.Data["title"] = data.Lang["user"]["common"].(string) + data.Lang["common"]["colon"].(string) + data.Lang["user"]["todo"].(string)
 	templateOut("user.login.html", data)
-	return gnet.None
 }
-func get_user_logout(data *TemplateData) gnet.Action {
+func get_user_logout(data *TemplateData) {
 	data.ws.DelSession()
 	data.ws.Redirect(createLink("user", "login", nil))
-	return gnet.None
+	return
 }
-func get_user_getsalt(data *TemplateData) gnet.Action {
+func get_user_getsalt(data *TemplateData) {
 	ws := data.ws
 	name := strings.Trim(ws.Post("account"), " ")
 	if name == "" {
 		ws.WriteString(`{"error":"` + config.Lang[getClientLang(ws)]["user"]["loginFailed"].(string) + `"}`)
-		return gnet.None
+		return
 	}
 	out := protocol.GET_MSG_USER_GET_LoginSalt()
 	out.Name = name
@@ -70,15 +68,15 @@ func get_user_getsalt(data *TemplateData) gnet.Action {
 		ws.WriteString(`{"error":"` + err.Error() + `"}`)
 	}
 	resdata.Put()
-	return gnet.None
+	return
 }
-func post_user_login(data *TemplateData) gnet.Action {
+func post_user_login(data *TemplateData) {
 	ws := data.ws
 
 	name := strings.Trim(ws.Post("account"), " ")
 	if name == "" {
 		ws.WriteString(`{"error":"` + config.Lang[getClientLang(ws)]["user"]["loginFailed"].(string) + `"}`)
-		return gnet.None
+		return
 	}
 	out := protocol.GET_MSG_USER_CheckPasswd()
 	out.Name = name
@@ -103,7 +101,7 @@ func post_user_login(data *TemplateData) gnet.Action {
 				referer = createLink("company", "browse", nil)
 			}
 			ws.WriteString(`{"locate":"` + referer + `"}`)
-			return gnet.None
+			return
 		} else {
 			err = errors.New(data.Lang["user"]["error"].(map[string]string)[resdata.Result.String()])
 		}
@@ -111,10 +109,10 @@ func post_user_login(data *TemplateData) gnet.Action {
 	ws.WriteString(`{"error":"` + err.Error() + `"}`)
 
 	resdata.Put()
-	return gnet.None
+	return
 }
 
-func get_user_create(data *TemplateData) (action gnet.Action) {
+func get_user_create(data *TemplateData) {
 	deptList, err := dept_getOptionMenu(0)
 	if err != nil {
 		data.OutErr(errors.New(data.Lang["dept"]["err"].(map[string]string)[protocol.Err_DeptNotFound.String()]))
@@ -148,7 +146,7 @@ func get_user_create(data *TemplateData) (action gnet.Action) {
 	templateOut("user.create.html", data)
 	return
 }
-func get_user_edit(data *TemplateData) (action gnet.Action) {
+func get_user_edit(data *TemplateData) {
 	userID, _ := strconv.Atoi(data.ws.Query("userID"))
 	userInfo := HostConn.GetUserCacheById(int32(userID))
 	if userInfo == nil {
@@ -220,7 +218,7 @@ func user_getGroupListByIds(ids []int32) (res []*protocol.MSG_USER_Group_cache, 
 	}
 	return
 }
-func post_user_edit(data *TemplateData) (action gnet.Action) {
+func post_user_edit(data *TemplateData) {
 	userID, _ := strconv.Atoi(data.ws.Post("userID"))
 	if userID < 0 {
 		data.ajaxResult(false, map[string]string{"account": data.Lang["user"]["error"].(map[string]string)["NotFoundUserInfo"]}, createLink("company", "browse", nil))
@@ -232,7 +230,7 @@ func post_user_edit(data *TemplateData) (action gnet.Action) {
 		data.ajaxResult(false, map[string]string{"password1": data.Lang["user"]["error"].(map[string]string)["passwordsame"], "password2": data.Lang["user"]["error"].(map[string]string)["passwordsame"]}, "")
 		return
 	}
-	msg, err := HostConn.GetMsg()
+	msg, err := data.GetMsg()
 	if err != nil {
 		data.ajaxResult(false, map[string]string{"verifyPassword": fmt.Sprintf(data.Lang["common"]["error"].(map[string]string)["ErrGetMsg"], err)}, "")
 		return
@@ -339,7 +337,7 @@ func user_checkNewpasswd(newpwd string, data *TemplateData) bool {
 	}
 	return true
 }
-func get_user_delete(data *TemplateData) (action gnet.Action) {
+func get_user_delete(data *TemplateData) {
 	out := protocol.GET_MSG_USER_GET_LoginSalt()
 	out.Name = data.User.Account
 	var resdata *protocol.MSG_USER_GET_LoginSalt_result
@@ -359,8 +357,8 @@ func get_user_delete(data *TemplateData) (action gnet.Action) {
 	templateOut("user.delete.html", data)
 	return
 }
-func post_user_delete(data *TemplateData) (action gnet.Action) {
-	msg, err := HostConn.GetMsg()
+func post_user_delete(data *TemplateData) {
+	msg, err := data.GetMsg()
 	if err != nil {
 		data.ajaxResult(false, map[string]string{"verifyPassword": fmt.Sprintf(data.Lang["common"]["error"].(map[string]string)["ErrGetMsg"], err)}, "")
 		return
@@ -398,7 +396,7 @@ func post_user_delete(data *TemplateData) (action gnet.Action) {
 
 	return
 }
-func get_user_restore(data *TemplateData) (action gnet.Action) {
+func get_user_restore(data *TemplateData) {
 	userID, _ := strconv.Atoi(data.ws.Query("userID"))
 	outupdate := protocol.GET_MSG_USER_INFO_updateByID()
 	outupdate.UserID = int32(userID)
@@ -413,4 +411,35 @@ func get_user_restore(data *TemplateData) (action gnet.Action) {
 	outupdate.Put()
 	data.ws.WriteString(js.Location("back", "_self"))
 	return
+}
+func user_getPairs(params string) ([]protocol.HtmlKeyValueStr, error) {
+	out := protocol.GET_MSG_USER_getPairs()
+	out.Params = params
+	var result *protocol.MSG_USER_getPairs_result
+	if err := HostConn.SendMsgWaitResultToDefault(out, &result); err != nil {
+		return nil, err
+	}
+	out.Put()
+	return result.List, nil
+}
+func get_user_ajaxGetContactUsers(data *TemplateData) {
+	users, err := user_getPairs("devfirst|nodeleted")
+	if err != nil {
+		data.ws.WriteString(js.Alert(data.Lang["user"]["error"].(map[string]string)["NotFoundUserInfo"]))
+		return
+	}
+	listID, _ := strconv.Atoi(data.ws.Query("listID"))
+	if listID <= 0 {
+		data.ws.WriteString(html_select("mailto", users, "", "class='form-control' multiple data-placeholder='"+data.Lang["common"]["chooseUsersToMail"].(string)+"'"))
+		return
+	}
+	out := protocol.GET_MSG_USER_getContactListById()
+	out.Id = int32(listID)
+	var result *protocol.MSG_USER_getContactListById_result
+	if err = HostConn.SendMsgWaitResultToDefault(out, &result); err != nil {
+		data.ws.WriteString(js.Alert(err.Error()))
+		return
+	}
+	data.ws.WriteString(html_select("mailto", users, result.Result.UserList, "class='form-control' multiple data-placeholder='"+data.Lang["common"]["chooseUsersToMail"].(string)+"'"))
+
 }

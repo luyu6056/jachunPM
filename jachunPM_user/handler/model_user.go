@@ -58,7 +58,7 @@ func getUserInfoByIDS(ids []int32) (users []*db.User, err error) {
 	return userlist, err
 
 }
-func user_getPairs(params string, usersToAppended int32) ([]protocol.HtmlKeyValueStr, error) {
+func user_getPairs(params string, usersToAppended int32, in *protocol.Msg) ([]protocol.HtmlKeyValueStr, error) {
 	fields := "Id, Account, Realname, Deleted"
 	if strings.Index(params, "pofirst") > -1 {
 		fields += ", INSTR(',pd,po,', role) AS roleOrder"
@@ -82,7 +82,7 @@ func user_getPairs(params string, usersToAppended int32) ([]protocol.HtmlKeyValu
 	if strings.Index(params, "first") > -1 {
 		orderBy = "roleOrder DESC, account"
 	}
-	userconfig, err := HostConn.LoadConfig("user")
+	userconfig, err := in.LoadConfig("user")
 	if err != nil {
 		return nil, err
 	}
@@ -326,4 +326,98 @@ func updateUserView(data *protocol.MSG_USER_updateUserView, in *protocol.Msg) {
 			}
 		}
 	}
+}
+func user_getGlobalContacts() (globalContacts []*db.Usercontact, err error) {
+	err = HostConn.DB.Table(db.TABLE_USERCONTACT).Prepare().Where(map[string]interface{}{"Share": true}).Limit(0).Select(&globalContacts)
+	return
+}
+func user_getContactLists(data *protocol.MSG_USER_getContactLists, in *protocol.Msg) {
+	var contacts []*db.Usercontact
+	err := in.DB.Table(db.TABLE_USERCONTACT).Prepare().Where("Uid = ?", data.Uid).Limit(0).Select(&contacts)
+	if err != nil {
+		in.WriteErr(err)
+		return
+	}
+	globalContacts, err := user_getGlobalContacts()
+	if err != nil {
+		in.WriteErr(err)
+		return
+	}
+	for _, c1 := range globalContacts {
+		find := false
+		for _, c2 := range contacts {
+			if c1.Id == c2.Id {
+				find = true
+				break
+			}
+		}
+		if !find {
+			contacts = append(contacts, c1)
+		}
+	}
+
+	out := protocol.GET_MSG_USER_getContactLists_result()
+	if len(contacts) != 0 {
+		if strings.Contains(data.Params, "withempty") {
+			out.List = []protocol.HtmlKeyValueStr{{}}
+		}
+		if strings.Contains(data.Params, "withnote") {
+			userConfig, _ := in.LoadConfig("user")
+			if userConfig != nil && userConfig["contacts"] != nil && userConfig["contacts"]["common"] != nil {
+				out.List = []protocol.HtmlKeyValueStr{{userConfig["contacts"]["common"].(string), ""}}
+			}
+		}
+		for _, c1 := range contacts {
+			out.List = append(out.List, protocol.HtmlKeyValueStr{strconv.Itoa(int(c1.Id)), c1.ListName})
+		}
+	}
+	in.SendResult(out)
+	out.Put()
+}
+func user_getContactListByUid(data *protocol.MSG_USER_getContactListByUid, in *protocol.Msg) {
+	var contacts []*db.Usercontact
+	err := in.DB.Table(db.TABLE_USERCONTACT).Prepare().Where("Uid = ?", data.Uid).Limit(0).Select(&contacts)
+	if err != nil {
+		in.WriteErr(err)
+		return
+	}
+	out := protocol.GET_MSG_USER_getContactListByUid_result()
+	for _, c := range contacts {
+		out.List = append(out.List, protocol.HtmlKeyValueStr{strconv.Itoa(int(c.Id)), c.ListName})
+	}
+	in.SendResult(out)
+	out.Put()
+}
+
+func user_getContactListById(data *protocol.MSG_USER_getContactListById, in *protocol.Msg) {
+	out := protocol.GET_MSG_USER_getContactListById_result()
+	out.Result = protocol.GET_MSG_USER_ContactList()
+	err := in.DB.Table(db.TABLE_USERCONTACT).Prepare().Where("Id = ?", data.Id).Limit(0).Select(&out.Result)
+	if err != nil {
+		in.WriteErr(err)
+		return
+	}
+	in.SendResult(out)
+	out.Put()
+}
+func user_insertUpdateContactList(data *protocol.MSG_USER_insertUpdateContactList, in *protocol.Msg) {
+
+	if data.Insert.Id == 0 {
+		id, err := in.DB.Table(db.TABLE_USERCONTACT).Insert(data.Insert)
+		if err != nil {
+			in.WriteErr(err)
+			return
+		}
+		out := protocol.GET_MSG_USER_insertUpdateContactList_result()
+		out.Id = int32(id)
+		in.SendResult(out)
+		out.Put()
+	} else {
+		err := in.DB.Table(db.TABLE_USERCONTACT).Replace(data.Insert)
+		in.WriteErr(err)
+		if err != nil {
+			return
+		}
+	}
+
 }

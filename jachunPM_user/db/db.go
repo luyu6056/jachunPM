@@ -8,10 +8,11 @@ import (
 )
 
 const (
-	TABLE_USER    = "user"
-	TABLE_COMPANY = "company"
-	TABLE_DEPT    = "dept"
-	TABLE_GROUP   = "group"
+	TABLE_USER        = "user"
+	TABLE_COMPANY     = "company"
+	TABLE_DEPT        = "dept"
+	TABLE_GROUP       = "group"
+	TABLE_USERCONTACT = "usercontact"
 )
 
 func Init() *mysql.MysqlDB {
@@ -27,6 +28,7 @@ func Init() *mysql.MysqlDB {
 		new(Company),
 		new(Dept),
 		new(Group),
+		new(Usercontact),
 	)
 	if errs != nil {
 		log.Fatalf("数据库启动失败%v", errs)
@@ -134,4 +136,16 @@ type Group struct {
 
 func (*Group) TableName() string {
 	return TABLE_GROUP
+}
+
+type Usercontact struct {
+	Id       int32   `db:"auto_increment;pk"`
+	Uid      int32   `db:"type:varchar(30);index"`
+	ListName string  `db:"type:varchar(60)"`
+	UserList []int32 `db:"type:json"`
+	Share    bool    `db:index`
+}
+
+func (*Usercontact) TableName() string {
+	return TABLE_USERCONTACT
 }

@@ -393,7 +393,7 @@ func (this *Mysql_Build) _where_interface(key string, value interface{}) error {
 			}
 
 			//return key + ` > ` + Getvalue(value.([]interface{})[1])
-		case `egt`, ">=":
+		case `egt`, `ge`, ">=":
 			this.buffer.WriteString(Getkey(key))
 			this.buffer.Write([]byte{62, 61})
 			if this.prepare {
@@ -413,7 +413,7 @@ func (this *Mysql_Build) _where_interface(key string, value interface{}) error {
 				this.buffer.WriteString(Getvalue(value.([]interface{})[1]))
 			}
 			//return key + ` < ` + Getvalue(value.([]interface{})[1])
-		case `elt`, "<=":
+		case `elt`, `le`, "<=":
 			this.buffer.WriteString(Getkey(key))
 			this.buffer.Write([]byte{60, 61})
 			if this.prepare {
@@ -423,7 +423,7 @@ func (this *Mysql_Build) _where_interface(key string, value interface{}) error {
 				this.buffer.WriteString(Getvalue(value.([]interface{})[1]))
 			}
 			//return key + ` <= ` + Getvalue(value.([]interface{})[1])
-		case `neq`, "!=":
+		case `neq`, "ne", "!=":
 			this.buffer.WriteString(Getkey(key))
 			this.buffer.Write([]byte{33, 61})
 			if this.prepare {
@@ -467,6 +467,44 @@ func (this *Mysql_Build) _where_interface(key string, value interface{}) error {
 				this.sql.where_prepare_arg = append(this.sql.where_prepare_arg, value.([]interface{})[1])
 			} else {
 				this.buffer.WriteString(Getvalue(value.([]interface{})[1]))
+			}
+		case `not in`, `notin`:
+			switch v := value.([]interface{})[1].(type) {
+			case []int, []int8, []int16, []int32, []int64, []uint, []uint8, []uint16, []uint32, []uint64, []string:
+				ref := reflect.ValueOf(v)
+				if ref.Len() == 0 {
+					this.buffer.WriteString(Getkey(key))
+					this.buffer.WriteString(" is null")
+					return nil
+				}
+				this.buffer.WriteString(Getkey(key))
+				this.buffer.Write([]byte{32, 110, 111, 116, 32, 73, 78, 32, 40}) // not IN (
+				if this.prepare {
+					for i := 0; i < ref.Len(); i++ {
+						this.sql.where_prepare_arg = append(this.sql.where_prepare_arg, ref.Index(i).Interface())
+						this.buffer.Write([]byte{63, 44}) //?,
+					}
+				} else {
+					for i := 0; i < ref.Len(); i++ {
+						this.buffer.WriteString(Getvalue(ref.Index(i).Interface()))
+						this.buffer.WriteByte(44) //,
+					}
+				}
+				this.buffer.Truncate(this.buffer.Len() - 1)
+				this.buffer.WriteByte(41) //)
+			case string:
+				this.buffer.WriteString(Getkey(key))
+				this.buffer.Write([]byte{32, 110, 111, 116, 32, 73, 78, 32, 40}) // not IN (
+				if this.prepare {
+					this.buffer.Write([]byte{63}) //?
+					this.sql.where_prepare_arg = append(this.sql.where_prepare_arg, v)
+				} else {
+					this.buffer.WriteString(Getvalue(v))
+				}
+				this.buffer.WriteByte(41)
+			default:
+				t := reflect.TypeOf(v)
+				return errors.New(`where []interface{} not in未设置类型` + t.Name())
 			}
 		default:
 
@@ -675,7 +713,11 @@ func (this *Mysql_Build) SelectMap() ([]map[string]string, error) {
 		this.prepare_arg = append(this.prepare_arg, v)
 	}
 	this.buffer.Write(this.sql.lock.Bytes())
-	return queryMap(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction)
+	res, err := queryMap(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction)
+	if err != nil {
+		err = errors.New(`执行SelectMap出错,sql错误信息：` + err.Error() + `,错误sql：` + this.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.prepare_arg))
+	}
+	return res, err
 }
 
 //获取数量

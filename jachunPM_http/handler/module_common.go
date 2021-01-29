@@ -55,10 +55,7 @@ func commonModelFuncs() {
 		_b := reflect.ValueOf(b)
 		return _a.Int() * _b.Int()
 	}
-	global_Funcs["helper_createLink"] = func(moduleName, methodName string, vars ...interface{}) string {
 
-		return createLink(moduleName, methodName, vars)
-	}
 	global_Funcs["inlink"] = func(data *TemplateData, methodName string, vars ...string) string {
 
 		return createLink(data.App["moduleName"].(string), methodName, vars)
@@ -73,7 +70,7 @@ func commonModelFuncs() {
 		return len(s)
 	}
 
-	global_Funcs["getTemplateCss"] = func(name string) template.CSS {
+	global_Funcs["getTemplateCss"] = func(data *TemplateData, name string) template.CSS {
 		buf := bufpool.Get().(*libraries.MsgBuffer)
 		templateLock.RLock()
 		defer func() {
@@ -83,10 +80,8 @@ func commonModelFuncs() {
 		}()
 		s := strings.Split(name, ".")
 		T.ExecuteTemplate(buf, s[0]+".common.css", nil)
-		err := T.ExecuteTemplate(buf, strings.Replace(name, ".html", ".css", 1), nil)
-		if err != nil {
-			libraries.DebugLog("加载%s的css失败,%v", name, err)
-		}
+		T.ExecuteTemplate(buf, strings.Replace(name, ".html", ".css", 1), nil)
+		T.ExecuteTemplate(buf, strings.Replace(name, ".html", "."+data.App["ClientLang"].(string)+".css", 1), nil)
 		return template.CSS(buf.String())
 	}
 	global_Funcs["getTemplateJs"] = func(name string) template.JS {
@@ -349,6 +344,16 @@ func commonModelFuncs() {
 		}
 		return
 	}
+	global_Funcs["mergeKeyValueStr"] = func(kvstrs ...[]protocol.HtmlKeyValueStr) (res []protocol.HtmlKeyValueStr) {
+		if len(kvstrs) > 0 {
+			res = make([]protocol.HtmlKeyValueStr, len(kvstrs[0]))
+			copy(res, kvstrs[0])
+			for i := 1; i < len(kvstrs); i++ {
+				res = append(res, kvstrs[i]...)
+			}
+		}
+		return res
+	}
 	//格式化输出时间戳，允许不输入timestamp，则为当前时间
 	global_Funcs["date"] = func(layout string, timestamp ...int64) (res string) {
 		if len(timestamp) == 1 {
@@ -512,8 +517,10 @@ func commonModelFuncs() {
 	global_Funcs["rem"] = func(i, k int) int {
 		return i % k
 	}
-	global_Funcs["fetch"] = func(data *TemplateData, module, method, varstr string) int {
-		if f, ok := httpHandlerMap["GET"][module+"/"+method]; ok {
+	global_Funcs["fetch"] = func(oldData *TemplateData, module, method, varstr string) template.HTML {
+		path := "/" + module + "/" + method
+		data := getFetchInterface(oldData.ws, path)
+		if f, ok := httpHandlerMap["GET"][path]; ok {
 			for _, vars := range strings.Split(varstr, "&") {
 				s := strings.Split(vars, "=")
 				if len(s) == 2 {
@@ -521,8 +528,11 @@ func commonModelFuncs() {
 				}
 			}
 			f(data)
+			res := template.HTML(string(data.ws.(*CommonFetch).OutBuffer()))
+			putFetchInterface(data.ws.(*CommonFetch))
+			return res
 		}
-		return 0
+		return template.HTML("没有找到GET " + path + "方法")
 	}
 	global_Funcs["generateUid"] = func() string {
 		id := commoncache.INCRBY("generateUid", 1)

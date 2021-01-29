@@ -1,0 +1,45 @@
+{{template "header.html" .}}
+<div id='mainContent' class='main-content'>
+  <div class="center-block mw-700px">
+    <div class="main-header">
+      <h2>{{printf .Lang.branch.manageTitle (getValue .Lang.product.branchName .Data.product.Type)}}</h2>
+    </div>
+    <form method='post' target='hiddenwin'>
+      <table class="table table-form">
+        <tr>
+          <td class='w-50px'></td>
+          <td class="w-300px">
+            <div id='branches'>
+              {{range .Data.branches}}
+              <div class='input-group' data-id='{{.Key}}'>
+                {{html_input .Key .Value "class='form-control'"}}
+                {{if common_hasPriv $ "branch" "sort"}}
+                <span class='input-group-addon sort-handler'><a><i class='icon icon-move'></i></a></span>
+                {{end}}
+                {{if common_hasPriv $ "branch" "delete"}}
+                <span class='input-group-addon'>{{html_a (helper_createLink "branch" "delete" "branchID=" .Key "&productID=" $.Data.product.Id) "<i class='icon icon-close'></i>" "hiddenwin"}}</span>
+                {{end}}
+              </div>
+              {{end}}
+             </div>
+             <div id='newbranches'>
+              {{range genlist 0 1}}
+              <div class='input-group'>
+                {{html_input "newbranch" "" "class='form-control'"}}
+                 <span class='input-group-addon'><a href='javascript:;' onclick='addItem(this)'><i class='icon icon-plus'></i></a></span>
+                 <span class='input-group-addon'><a href='javascript:;' onclick='deleteItem(this)'><i class='icon icon-close'></i></a></span>
+              </div>
+              {{end}}
+             </div>
+           </td>
+          <td></td>
+        </tr>
+        <tr>
+          <td colspan='2' class='text-center'>{{html_submitButton .}} </td><td></td>
+        </tr>
+      </table>
+    </form>
+  </div>
+</div>
+<script type="text/javascript">var productID={{$.Data.product.Id}}</script>
+{{template "footer.html" .}}

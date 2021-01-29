@@ -20,6 +20,7 @@ func main() {
 			log.Fatal(err)
 		}
 		str := string(b)
+		str, _ = Preg_replace(`<\?php \$([A-z]+) = ([^?]+)\? (.+) : (.+);\?>`, `{{$$$1 := or (and ($2) $3) $4}}`, str)
 		str, _ = Preg_replace(`<\?php /\*(((?!\*\/)[\s\S])*)\*. \?>`, "{{/*$1*/}}", str)
 
 		str, _ = Preg_replace(`<\?php (((?!\?>)[\s\S])*)\?>`, `{{$1}}`, str)
@@ -45,7 +46,10 @@ func main() {
 		for _, r := range res {
 			for k, v := range r[3:] {
 				v = strings.Trim(v, " ")
-				r[3:][k], _ = Preg_replace(`^'(.*)'$`, `"$1"`, v)
+				if v[0:1] == "'" && v[len(v)-1:] == "'" {
+					v = strings.ReplaceAll(v, `"`, "'")
+					r[3:][k], _ = Preg_replace(`^'(.*)'$`, `"$1"`, v)
+				}
 			}
 			replace := fmt.Sprintf("%s_%s %s %s %s %s", r[1], r[2], r[3], r[4], r[5], r[6])
 			str = strings.Replace(str, r[0], replace, 1)
@@ -54,7 +58,11 @@ func main() {
 		for _, r := range res {
 			for k, v := range r[3:] {
 				v = strings.Trim(v, " ")
-				r[3:][k], _ = Preg_replace(`^'(.*)'$`, `"$1"`, v)
+				if v[0:1] == "'" && v[len(v)-1:] == "'" {
+					v = strings.ReplaceAll(v, `"`, "'")
+					r[3:][k], _ = Preg_replace(`^'(.*)'$`, `"$1"`, v)
+				}
+
 			}
 			replace := fmt.Sprintf("%s_%s %s %s %s", r[1], r[2], r[3], r[4], r[5])
 			str = strings.Replace(str, r[0], replace, 1)
@@ -63,7 +71,10 @@ func main() {
 		for _, r := range res {
 			for k, v := range r[3:] {
 				v = strings.Trim(v, " ")
-				r[3:][k], _ = Preg_replace(`^'(.*)'$`, `"$1"`, v)
+				if v[0:1] == "'" && v[len(v)-1:] == "'" {
+					v = strings.ReplaceAll(v, `"`, "'")
+					r[3:][k], _ = Preg_replace(`^'(.*)'$`, `"$1"`, v)
+				}
 			}
 			replace := fmt.Sprintf("%s_%s %s %s", r[1], r[2], r[3], r[4])
 			str = strings.Replace(str, r[0], replace, 1)
@@ -72,7 +83,10 @@ func main() {
 		for _, r := range res {
 			for k, v := range r[3:] {
 				v = strings.Trim(v, " ")
-				r[3:][k], _ = Preg_replace(`^'(.*)'$`, `"$1"`, v)
+				if v[0:1] == "'" && v[len(v)-1:] == "'" {
+					v = strings.ReplaceAll(v, `"`, "'")
+					r[3:][k], _ = Preg_replace(`^'(.*)'$`, `"$1"`, v)
+				}
 			}
 			replace := fmt.Sprintf("%s_%s %s", r[1], r[2], r[3])
 			str = strings.Replace(str, r[0], replace, 1)
@@ -92,6 +106,11 @@ func main() {
 		str = strings.ReplaceAll(str, "{{include '../../common/view/kindeditor.html.php'}}", `{{template "kindeditor.html" .}}`)
 		str = strings.ReplaceAll(str, "{{include '../../common/view/datatable.fix.html.php'}}", `{{template "datatable.fix.html" .}}`)
 		str, _ = Preg_replace(`\$this->createLink\(([^)]+)\)`, "(helper_createLink $1)", str)
+		str, _ = Preg_replace(`{{if ([^ ]+) != '([^']+)'}}`, `{{if ne $1 "$2"}}`, str)
+		str, _ = Preg_replace(`{{if ([^ ]+) == '([^']+)'}}`, `{{if eq $1 "$2"}}`, str)
+		str, _ = Preg_replace(`\$([^ ]+) == '([^']+)'`, `(eq $1 "$2")`, str)
+		str, _ = Preg_replace(`\$([^ ]+) != '([^']+)'`, `(ne $1 "$2")`, str)
+		str, _ = Preg_replace(`{{js_import \$jsRoot \. '([^']+)'}}`, `{{js_import (strAdd .Config.common.common.jsRoot "$1")}}`, str)
 		newname := strings.Replace(name, ".php", "", 1)
 		newname = strings.Replace(newname, ".hook", "", 1)
 		os.Remove(newname)

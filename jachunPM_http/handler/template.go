@@ -240,3 +240,22 @@ func (data *TemplateData) OutErr(err error) {
 		data.ws.Write(buf)
 	}
 }
+func (data *TemplateData) GetMsg() (*protocol.Msg, error) {
+	if data.Msg == nil {
+		out := protocol.GET_MSG_COMMON_GET_Msgno()
+		defer out.Put()
+		var resdata *protocol.MSG_COMMON_GET_Msgno_result
+		err := HostConn.SendMsgWaitResultToDefault(out, &resdata)
+		if err != nil {
+			return nil, err
+		}
+		msg := &protocol.Msg{Msgno: resdata.Msgno, DB: &protocol.MsgDB{DB: HostConn.DB}}
+		msg.SetServer(HostConn)
+		data.Msg = msg
+	}
+
+	return data.Msg, nil
+}
+func (data *TemplateData) isajax() bool {
+	return data.ws.Header("X-Requested-With") == "XMLHttpRequest"
+}

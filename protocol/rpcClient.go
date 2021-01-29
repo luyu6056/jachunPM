@@ -20,9 +20,9 @@ import (
 )
 
 const (
-	RpcClientStatuShutdown = 0
-	RpcClientStatuNormal   = 1 << 1
-	RpcTickStatusFirst     = 1 << 2 //tick first时要初始化缓存
+	RpcClientStatuShutdown = 1 << iota
+	RpcClientStatuNormal
+	RpcTickStatusFirst //tick first时要初始化缓存
 )
 
 type RpcQuery interface {
@@ -430,7 +430,7 @@ func (client *RpcClient) handleMsg() {
 	for {
 		select {
 		case msg := <-client.inchan:
-			msg.DB.db = client.DB
+			msg.DB.DB = client.DB
 
 			i := msg.Data
 			if client.cache != nil {
@@ -440,6 +440,9 @@ func (client *RpcClient) handleMsg() {
 			}
 			switch data := i.(type) {
 			case *MSG_COMMON_regServer_result:
+				if client.Status&RpcClientStatuShutdown == RpcClientStatuShutdown {
+					client.Status -= RpcClientStatuShutdown
+				}
 				client.Id = data.Id
 				client.Status |= RpcClientStatuNormal
 				if client.cache != nil {
@@ -558,7 +561,9 @@ func (client *RpcClient) CacheDel(path, key string) error {
 func (client *RpcClient) CacheDelPath(path string) error {
 	return client.cache.DelPath(strconv.Itoa(int(client.No)) + "_" + path)
 }
-func (client *RpcClient) GetMsg() (*Msg, error) {
+
+//暂时不开放getMsg接口
+func (client *RpcClient) getMsg() (*Msg, error) {
 	data := GET_MSG_COMMON_GET_Msgno()
 	defer data.Put()
 	var resdata *MSG_COMMON_GET_Msgno_result
@@ -566,23 +571,13 @@ func (client *RpcClient) GetMsg() (*Msg, error) {
 	if err != nil {
 		return nil, err
 	}
-	msg := &Msg{Msgno: resdata.Msgno, DB: &MsgDB{db: client.DB}}
+	msg := &Msg{Msgno: resdata.Msgno, DB: &MsgDB{DB: client.DB}}
 	msg.SetServer(client)
 	return msg, nil
 }
-func (client *RpcClient) LoadConfig(key string) (res map[string]map[string]interface{}, err error) {
-	b, err := client.cache.Get(key, PATH_CONFIG_CACHE)
-	if err != nil {
-		return nil, err
-	}
-	if len(b) == 0 {
-		return
-	}
-	err = libraries.JsonUnmarshal(b, &res)
-	return res, err
-}
-func (client *RpcClient) SetConfig(key string, config map[string]map[string]interface{}) (err error) {
-	return client.cache.Set(key, PATH_CONFIG_CACHE, libraries.JsonMarshal(config), 0)
+
+func (client *RpcClient) SetConfig(lang CountryNo, key string, config map[string]map[string]interface{}) (err error) {
+	return client.cache.Set(key, PATH_CONFIG_CACHE+lang.String(), libraries.JsonMarshal(config), 0)
 }
 func (client *RpcClient) GetUserCacheById(id int32) (user *MSG_USER_INFO_cache) {
 	err := client.CacheGet(UserServerNo, PATH_USER_INFO_CACHE, strconv.Itoa(int(id)), &user)

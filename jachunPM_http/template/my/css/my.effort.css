@@ -1,0 +1,4 @@
+.select-7 {width:70px}
+.icon-green-effort-view:before{content: "\f0f6";}
+.fixed-footer{color:#fff}
+td.c-work, td.c-objectType{white-space:nowrap; text-overflow:ellipsis; overflow: hidden;}

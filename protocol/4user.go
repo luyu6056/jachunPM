@@ -32,6 +32,17 @@ const (
 	CMD_MSG_USER_getPairs = 338636804
 	CMD_MSG_USER_getPairs_result = -1261518588
 	CMD_MSG_USER_updateUserView = 1131689476
+	CMD_MSG_USER_getContactLists = 1618683396
+	CMD_MSG_USER_getContactLists_result = -1892740092
+	CMD_MSG_USER_getContactListByUid = -2090728188
+	CMD_MSG_USER_getContactListByUid_result = 155656196
+	CMD_MSG_USER_getContactListById = 640438276
+	CMD_MSG_USER_getContactListById_result = 368212996
+	CMD_MSG_USER_ContactList = -803107580
+	CMD_MSG_USER_insertUpdateContactList = 1170940932
+	CMD_MSG_USER_insertUpdateContactList_result = -1137193468
+	CMD_MSG_USER_getGlobalContacts = -1348354556
+	CMD_MSG_USER_getGlobalContacts_result = -1400001276
 )
 
 type MSG_USER_GET_LoginSalt struct {
@@ -1681,5 +1692,612 @@ func (data *MSG_USER_updateUserView) getQueryID() uint32 {
 }
 func (data *MSG_USER_updateUserView) setQueryID(id uint32) {
 	data.QueryID = id
+}
+
+type MSG_USER_getContactLists struct {
+	QueryID uint32
+	Uid int32
+	Params string
+}
+
+var pool_MSG_USER_getContactLists = sync.Pool{New: func() interface{} { return &MSG_USER_getContactLists{} }}
+
+func GET_MSG_USER_getContactLists() *MSG_USER_getContactLists {
+	return pool_MSG_USER_getContactLists.Get().(*MSG_USER_getContactLists)
+}
+
+func (data *MSG_USER_getContactLists) cmd() int32 {
+	return CMD_MSG_USER_getContactLists
+}
+
+func (data *MSG_USER_getContactLists) Put() {
+	data.QueryID = 0
+	data.Uid = 0
+	data.Params = ``
+	pool_MSG_USER_getContactLists.Put(data)
+}
+func (data *MSG_USER_getContactLists) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_getContactLists,buf)
+	WRITE_MSG_USER_getContactLists(data, buf)
+}
+
+func WRITE_MSG_USER_getContactLists(data *MSG_USER_getContactLists, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_int32(data.Uid, buf)
+	WRITE_string(data.Params, buf)
+}
+
+func READ_MSG_USER_getContactLists(buf *libraries.MsgBuffer) *MSG_USER_getContactLists {
+	data := pool_MSG_USER_getContactLists.Get().(*MSG_USER_getContactLists)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_getContactLists) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	data.Uid = READ_int32(buf)
+	data.Params = READ_string(buf)
+
+}
+func (data *MSG_USER_getContactLists) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_USER_getContactLists) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_USER_getContactLists_result struct {
+	QueryResultID uint32
+	List []HtmlKeyValueStr
+}
+
+var pool_MSG_USER_getContactLists_result = sync.Pool{New: func() interface{} { return &MSG_USER_getContactLists_result{} }}
+
+func GET_MSG_USER_getContactLists_result() *MSG_USER_getContactLists_result {
+	return pool_MSG_USER_getContactLists_result.Get().(*MSG_USER_getContactLists_result)
+}
+
+func (data *MSG_USER_getContactLists_result) cmd() int32 {
+	return CMD_MSG_USER_getContactLists_result
+}
+
+func (data *MSG_USER_getContactLists_result) Put() {
+	data.QueryResultID = 0
+	data.List = data.List[:0]
+	pool_MSG_USER_getContactLists_result.Put(data)
+}
+func (data *MSG_USER_getContactLists_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_getContactLists_result,buf)
+	WRITE_MSG_USER_getContactLists_result(data, buf)
+}
+
+func WRITE_MSG_USER_getContactLists_result(data *MSG_USER_getContactLists_result, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryResultID, buf)
+	WRITE_int32(int32(len(data.List)), buf)
+	for _, v := range data.List{
+		WRITE_HtmlKeyValueStr(v, buf)
+	}
+}
+
+func READ_MSG_USER_getContactLists_result(buf *libraries.MsgBuffer) *MSG_USER_getContactLists_result {
+	data := pool_MSG_USER_getContactLists_result.Get().(*MSG_USER_getContactLists_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_getContactLists_result) read(buf *libraries.MsgBuffer) {
+	data.QueryResultID = READ_uint32(buf)
+	List_len := int(READ_int32(buf))
+	if List_len>cap(data.List){
+		data.List= make([]HtmlKeyValueStr, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
+	for i := 0; i < List_len; i++ {
+		data.List[i] = READ_HtmlKeyValueStr(buf)
+	}
+
+}
+func (data *MSG_USER_getContactLists_result) getQueryResultID() uint32 {
+	return data.QueryResultID
+}
+func (data *MSG_USER_getContactLists_result) setQueryResultID(id uint32) {
+	data.QueryResultID = id
+}
+
+type MSG_USER_getContactListByUid struct {
+	QueryID uint32
+	Uid int32
+}
+
+var pool_MSG_USER_getContactListByUid = sync.Pool{New: func() interface{} { return &MSG_USER_getContactListByUid{} }}
+
+func GET_MSG_USER_getContactListByUid() *MSG_USER_getContactListByUid {
+	return pool_MSG_USER_getContactListByUid.Get().(*MSG_USER_getContactListByUid)
+}
+
+func (data *MSG_USER_getContactListByUid) cmd() int32 {
+	return CMD_MSG_USER_getContactListByUid
+}
+
+func (data *MSG_USER_getContactListByUid) Put() {
+	data.QueryID = 0
+	data.Uid = 0
+	pool_MSG_USER_getContactListByUid.Put(data)
+}
+func (data *MSG_USER_getContactListByUid) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_getContactListByUid,buf)
+	WRITE_MSG_USER_getContactListByUid(data, buf)
+}
+
+func WRITE_MSG_USER_getContactListByUid(data *MSG_USER_getContactListByUid, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_int32(data.Uid, buf)
+}
+
+func READ_MSG_USER_getContactListByUid(buf *libraries.MsgBuffer) *MSG_USER_getContactListByUid {
+	data := pool_MSG_USER_getContactListByUid.Get().(*MSG_USER_getContactListByUid)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_getContactListByUid) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	data.Uid = READ_int32(buf)
+
+}
+func (data *MSG_USER_getContactListByUid) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_USER_getContactListByUid) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_USER_getContactListByUid_result struct {
+	QueryResultID uint32
+	List []HtmlKeyValueStr
+}
+
+var pool_MSG_USER_getContactListByUid_result = sync.Pool{New: func() interface{} { return &MSG_USER_getContactListByUid_result{} }}
+
+func GET_MSG_USER_getContactListByUid_result() *MSG_USER_getContactListByUid_result {
+	return pool_MSG_USER_getContactListByUid_result.Get().(*MSG_USER_getContactListByUid_result)
+}
+
+func (data *MSG_USER_getContactListByUid_result) cmd() int32 {
+	return CMD_MSG_USER_getContactListByUid_result
+}
+
+func (data *MSG_USER_getContactListByUid_result) Put() {
+	data.QueryResultID = 0
+	data.List = data.List[:0]
+	pool_MSG_USER_getContactListByUid_result.Put(data)
+}
+func (data *MSG_USER_getContactListByUid_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_getContactListByUid_result,buf)
+	WRITE_MSG_USER_getContactListByUid_result(data, buf)
+}
+
+func WRITE_MSG_USER_getContactListByUid_result(data *MSG_USER_getContactListByUid_result, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryResultID, buf)
+	WRITE_int32(int32(len(data.List)), buf)
+	for _, v := range data.List{
+		WRITE_HtmlKeyValueStr(v, buf)
+	}
+}
+
+func READ_MSG_USER_getContactListByUid_result(buf *libraries.MsgBuffer) *MSG_USER_getContactListByUid_result {
+	data := pool_MSG_USER_getContactListByUid_result.Get().(*MSG_USER_getContactListByUid_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_getContactListByUid_result) read(buf *libraries.MsgBuffer) {
+	data.QueryResultID = READ_uint32(buf)
+	List_len := int(READ_int32(buf))
+	if List_len>cap(data.List){
+		data.List= make([]HtmlKeyValueStr, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
+	for i := 0; i < List_len; i++ {
+		data.List[i] = READ_HtmlKeyValueStr(buf)
+	}
+
+}
+func (data *MSG_USER_getContactListByUid_result) getQueryResultID() uint32 {
+	return data.QueryResultID
+}
+func (data *MSG_USER_getContactListByUid_result) setQueryResultID(id uint32) {
+	data.QueryResultID = id
+}
+
+type MSG_USER_getContactListById struct {
+	QueryID uint32
+	Id int32
+}
+
+var pool_MSG_USER_getContactListById = sync.Pool{New: func() interface{} { return &MSG_USER_getContactListById{} }}
+
+func GET_MSG_USER_getContactListById() *MSG_USER_getContactListById {
+	return pool_MSG_USER_getContactListById.Get().(*MSG_USER_getContactListById)
+}
+
+func (data *MSG_USER_getContactListById) cmd() int32 {
+	return CMD_MSG_USER_getContactListById
+}
+
+func (data *MSG_USER_getContactListById) Put() {
+	data.QueryID = 0
+	data.Id = 0
+	pool_MSG_USER_getContactListById.Put(data)
+}
+func (data *MSG_USER_getContactListById) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_getContactListById,buf)
+	WRITE_MSG_USER_getContactListById(data, buf)
+}
+
+func WRITE_MSG_USER_getContactListById(data *MSG_USER_getContactListById, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_int32(data.Id, buf)
+}
+
+func READ_MSG_USER_getContactListById(buf *libraries.MsgBuffer) *MSG_USER_getContactListById {
+	data := pool_MSG_USER_getContactListById.Get().(*MSG_USER_getContactListById)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_getContactListById) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	data.Id = READ_int32(buf)
+
+}
+func (data *MSG_USER_getContactListById) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_USER_getContactListById) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_USER_getContactListById_result struct {
+	QueryResultID uint32
+	Result *MSG_USER_ContactList
+}
+
+var pool_MSG_USER_getContactListById_result = sync.Pool{New: func() interface{} { return &MSG_USER_getContactListById_result{} }}
+
+func GET_MSG_USER_getContactListById_result() *MSG_USER_getContactListById_result {
+	return pool_MSG_USER_getContactListById_result.Get().(*MSG_USER_getContactListById_result)
+}
+
+func (data *MSG_USER_getContactListById_result) cmd() int32 {
+	return CMD_MSG_USER_getContactListById_result
+}
+
+func (data *MSG_USER_getContactListById_result) Put() {
+	data.QueryResultID = 0
+	if data.Result != nil {
+		data.Result.Put()
+		data.Result = nil
+	}
+	pool_MSG_USER_getContactListById_result.Put(data)
+}
+func (data *MSG_USER_getContactListById_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_getContactListById_result,buf)
+	WRITE_MSG_USER_getContactListById_result(data, buf)
+}
+
+func WRITE_MSG_USER_getContactListById_result(data *MSG_USER_getContactListById_result, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryResultID, buf)
+	if data.Result == nil {
+		WRITE_int8(0, buf)
+	} else {
+		WRITE_int8(1, buf)
+		WRITE_MSG_USER_ContactList(data.Result, buf)
+	}
+}
+
+func READ_MSG_USER_getContactListById_result(buf *libraries.MsgBuffer) *MSG_USER_getContactListById_result {
+	data := pool_MSG_USER_getContactListById_result.Get().(*MSG_USER_getContactListById_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_getContactListById_result) read(buf *libraries.MsgBuffer) {
+	data.QueryResultID = READ_uint32(buf)
+	Result_len := int(READ_int8(buf))
+	if Result_len == 1 {
+		data.Result = READ_MSG_USER_ContactList(buf)
+	}else{
+		data.Result = nil
+	}
+
+}
+func (data *MSG_USER_getContactListById_result) getQueryResultID() uint32 {
+	return data.QueryResultID
+}
+func (data *MSG_USER_getContactListById_result) setQueryResultID(id uint32) {
+	data.QueryResultID = id
+}
+
+type MSG_USER_ContactList struct {
+	Id int32
+	Uid int32
+	ListName string
+	UserList []int32
+	Share bool
+}
+
+var pool_MSG_USER_ContactList = sync.Pool{New: func() interface{} { return &MSG_USER_ContactList{} }}
+
+func GET_MSG_USER_ContactList() *MSG_USER_ContactList {
+	return pool_MSG_USER_ContactList.Get().(*MSG_USER_ContactList)
+}
+
+func (data *MSG_USER_ContactList) cmd() int32 {
+	return CMD_MSG_USER_ContactList
+}
+
+func (data *MSG_USER_ContactList) Put() {
+	data.Id = 0
+	data.Uid = 0
+	data.ListName = ``
+	data.UserList = data.UserList[:0]
+	data.Share = false
+	pool_MSG_USER_ContactList.Put(data)
+}
+func (data *MSG_USER_ContactList) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_ContactList,buf)
+	WRITE_MSG_USER_ContactList(data, buf)
+}
+
+func WRITE_MSG_USER_ContactList(data *MSG_USER_ContactList, buf *libraries.MsgBuffer) {
+	WRITE_int32(data.Id, buf)
+	WRITE_int32(data.Uid, buf)
+	WRITE_string(data.ListName, buf)
+	WRITE_int32(int32(len(data.UserList)), buf)
+	for _, v := range data.UserList{
+		WRITE_int32(v, buf)
+	}
+	WRITE_bool(data.Share, buf)
+}
+
+func READ_MSG_USER_ContactList(buf *libraries.MsgBuffer) *MSG_USER_ContactList {
+	data := pool_MSG_USER_ContactList.Get().(*MSG_USER_ContactList)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_ContactList) read(buf *libraries.MsgBuffer) {
+	data.Id = READ_int32(buf)
+	data.Uid = READ_int32(buf)
+	data.ListName = READ_string(buf)
+	UserList_len := int(READ_int32(buf))
+	if UserList_len>cap(data.UserList){
+		data.UserList= make([]int32, UserList_len)
+	}else{
+		data.UserList = data.UserList[:UserList_len]
+	}
+	for i := 0; i < UserList_len; i++ {
+		data.UserList[i] = READ_int32(buf)
+	}
+	data.Share = READ_bool(buf)
+
+}
+
+type MSG_USER_insertUpdateContactList struct {
+	QueryID uint32
+	Insert *MSG_USER_ContactList
+}
+
+var pool_MSG_USER_insertUpdateContactList = sync.Pool{New: func() interface{} { return &MSG_USER_insertUpdateContactList{} }}
+
+func GET_MSG_USER_insertUpdateContactList() *MSG_USER_insertUpdateContactList {
+	return pool_MSG_USER_insertUpdateContactList.Get().(*MSG_USER_insertUpdateContactList)
+}
+
+func (data *MSG_USER_insertUpdateContactList) cmd() int32 {
+	return CMD_MSG_USER_insertUpdateContactList
+}
+
+func (data *MSG_USER_insertUpdateContactList) Put() {
+	data.QueryID = 0
+	if data.Insert != nil {
+		data.Insert.Put()
+		data.Insert = nil
+	}
+	pool_MSG_USER_insertUpdateContactList.Put(data)
+}
+func (data *MSG_USER_insertUpdateContactList) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_insertUpdateContactList,buf)
+	WRITE_MSG_USER_insertUpdateContactList(data, buf)
+}
+
+func WRITE_MSG_USER_insertUpdateContactList(data *MSG_USER_insertUpdateContactList, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	if data.Insert == nil {
+		WRITE_int8(0, buf)
+	} else {
+		WRITE_int8(1, buf)
+		WRITE_MSG_USER_ContactList(data.Insert, buf)
+	}
+}
+
+func READ_MSG_USER_insertUpdateContactList(buf *libraries.MsgBuffer) *MSG_USER_insertUpdateContactList {
+	data := pool_MSG_USER_insertUpdateContactList.Get().(*MSG_USER_insertUpdateContactList)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_insertUpdateContactList) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	Insert_len := int(READ_int8(buf))
+	if Insert_len == 1 {
+		data.Insert = READ_MSG_USER_ContactList(buf)
+	}else{
+		data.Insert = nil
+	}
+
+}
+func (data *MSG_USER_insertUpdateContactList) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_USER_insertUpdateContactList) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_USER_insertUpdateContactList_result struct {
+	QueryResultID uint32
+	Id int32
+}
+
+var pool_MSG_USER_insertUpdateContactList_result = sync.Pool{New: func() interface{} { return &MSG_USER_insertUpdateContactList_result{} }}
+
+func GET_MSG_USER_insertUpdateContactList_result() *MSG_USER_insertUpdateContactList_result {
+	return pool_MSG_USER_insertUpdateContactList_result.Get().(*MSG_USER_insertUpdateContactList_result)
+}
+
+func (data *MSG_USER_insertUpdateContactList_result) cmd() int32 {
+	return CMD_MSG_USER_insertUpdateContactList_result
+}
+
+func (data *MSG_USER_insertUpdateContactList_result) Put() {
+	data.QueryResultID = 0
+	data.Id = 0
+	pool_MSG_USER_insertUpdateContactList_result.Put(data)
+}
+func (data *MSG_USER_insertUpdateContactList_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_insertUpdateContactList_result,buf)
+	WRITE_MSG_USER_insertUpdateContactList_result(data, buf)
+}
+
+func WRITE_MSG_USER_insertUpdateContactList_result(data *MSG_USER_insertUpdateContactList_result, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryResultID, buf)
+	WRITE_int32(data.Id, buf)
+}
+
+func READ_MSG_USER_insertUpdateContactList_result(buf *libraries.MsgBuffer) *MSG_USER_insertUpdateContactList_result {
+	data := pool_MSG_USER_insertUpdateContactList_result.Get().(*MSG_USER_insertUpdateContactList_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_insertUpdateContactList_result) read(buf *libraries.MsgBuffer) {
+	data.QueryResultID = READ_uint32(buf)
+	data.Id = READ_int32(buf)
+
+}
+func (data *MSG_USER_insertUpdateContactList_result) getQueryResultID() uint32 {
+	return data.QueryResultID
+}
+func (data *MSG_USER_insertUpdateContactList_result) setQueryResultID(id uint32) {
+	data.QueryResultID = id
+}
+
+type MSG_USER_getGlobalContacts struct {
+	QueryID uint32
+}
+
+var pool_MSG_USER_getGlobalContacts = sync.Pool{New: func() interface{} { return &MSG_USER_getGlobalContacts{} }}
+
+func GET_MSG_USER_getGlobalContacts() *MSG_USER_getGlobalContacts {
+	return pool_MSG_USER_getGlobalContacts.Get().(*MSG_USER_getGlobalContacts)
+}
+
+func (data *MSG_USER_getGlobalContacts) cmd() int32 {
+	return CMD_MSG_USER_getGlobalContacts
+}
+
+func (data *MSG_USER_getGlobalContacts) Put() {
+	data.QueryID = 0
+	pool_MSG_USER_getGlobalContacts.Put(data)
+}
+func (data *MSG_USER_getGlobalContacts) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_getGlobalContacts,buf)
+	WRITE_MSG_USER_getGlobalContacts(data, buf)
+}
+
+func WRITE_MSG_USER_getGlobalContacts(data *MSG_USER_getGlobalContacts, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+}
+
+func READ_MSG_USER_getGlobalContacts(buf *libraries.MsgBuffer) *MSG_USER_getGlobalContacts {
+	data := pool_MSG_USER_getGlobalContacts.Get().(*MSG_USER_getGlobalContacts)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_getGlobalContacts) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+
+}
+func (data *MSG_USER_getGlobalContacts) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_USER_getGlobalContacts) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_USER_getGlobalContacts_result struct {
+	QueryResultID uint32
+	Result []*MSG_USER_ContactList
+}
+
+var pool_MSG_USER_getGlobalContacts_result = sync.Pool{New: func() interface{} { return &MSG_USER_getGlobalContacts_result{} }}
+
+func GET_MSG_USER_getGlobalContacts_result() *MSG_USER_getGlobalContacts_result {
+	return pool_MSG_USER_getGlobalContacts_result.Get().(*MSG_USER_getGlobalContacts_result)
+}
+
+func (data *MSG_USER_getGlobalContacts_result) cmd() int32 {
+	return CMD_MSG_USER_getGlobalContacts_result
+}
+
+func (data *MSG_USER_getGlobalContacts_result) Put() {
+	data.QueryResultID = 0
+	for _,v := range data.Result {
+		v.Put()
+	}
+	data.Result = data.Result[:0]
+	pool_MSG_USER_getGlobalContacts_result.Put(data)
+}
+func (data *MSG_USER_getGlobalContacts_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_getGlobalContacts_result,buf)
+	WRITE_MSG_USER_getGlobalContacts_result(data, buf)
+}
+
+func WRITE_MSG_USER_getGlobalContacts_result(data *MSG_USER_getGlobalContacts_result, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryResultID, buf)
+	WRITE_int32(int32(len(data.Result)), buf)
+	for _, v := range data.Result{
+		WRITE_MSG_USER_ContactList(v, buf)
+	}
+}
+
+func READ_MSG_USER_getGlobalContacts_result(buf *libraries.MsgBuffer) *MSG_USER_getGlobalContacts_result {
+	data := pool_MSG_USER_getGlobalContacts_result.Get().(*MSG_USER_getGlobalContacts_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_getGlobalContacts_result) read(buf *libraries.MsgBuffer) {
+	data.QueryResultID = READ_uint32(buf)
+	Result_len := int(READ_int32(buf))
+	if Result_len>cap(data.Result){
+		data.Result= make([]*MSG_USER_ContactList, Result_len)
+	}else{
+		data.Result = data.Result[:Result_len]
+	}
+	for i := 0; i < Result_len; i++ {
+		data.Result[i] = READ_MSG_USER_ContactList(buf)
+	}
+
+}
+func (data *MSG_USER_getGlobalContacts_result) getQueryResultID() uint32 {
+	return data.QueryResultID
+}
+func (data *MSG_USER_getGlobalContacts_result) setQueryResultID(id uint32) {
+	data.QueryResultID = id
 }
 

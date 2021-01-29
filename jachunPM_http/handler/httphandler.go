@@ -37,11 +37,12 @@ type HttpRequest interface {
 	WriteString(string)
 	Redirect(url string)
 	DelSession()
+	Close()
 }
 
-var httpHandlerMap = map[string]map[string]func(data *TemplateData) gnet.Action{
-	"GET":  make(map[string]func(data *TemplateData) gnet.Action),
-	"POST": make(map[string]func(data *TemplateData) gnet.Action),
+var httpHandlerMap = map[string]map[string]func(data *TemplateData){
+	"GET":  make(map[string]func(data *TemplateData)),
+	"POST": make(map[string]func(data *TemplateData)),
 }
 
 func HttpHandler(ws HttpRequest) gnet.Action {
@@ -62,11 +63,11 @@ func HttpHandler(ws HttpRequest) gnet.Action {
 				}
 			}
 			//检查权限
-			action := f(data)
+			f(data)
 			if data.User != nil {
 				data.User.Put()
 			}
-			return action
+			return gnet.None
 		}
 	}
 	return ws.StaticHandler()

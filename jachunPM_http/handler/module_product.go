@@ -4,13 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"jachunPM_http/js"
 	"libraries"
 	"protocol"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/luyu6056/gnet"
 )
 
 func init() {
@@ -23,8 +22,9 @@ func init() {
 	httpHandlerMap["GET"]["/product/view"] = get_product_view
 	httpHandlerMap["GET"]["/product/edit"] = get_product_edit
 	httpHandlerMap["POST"]["/product/edit"] = post_product_edit
+	httpHandlerMap["GET"]["/product/ajaxGetPlans"] = get_product_ajaxGetPlans
 }
-func get_product_index(data *TemplateData) (action gnet.Action) {
+func get_product_index(data *TemplateData) {
 
 	if data.ws.Query("locate") == "yes" {
 		data.ws.Redirect(createLink("product", "browse", nil))
@@ -45,7 +45,7 @@ func get_product_index(data *TemplateData) (action gnet.Action) {
 	templateOut("product.index.html", data)
 	return
 }
-func get_product_create(data *TemplateData) (action gnet.Action) {
+func get_product_create(data *TemplateData) {
 
 	productID, branch, err := product_saveState(data, 0)
 	if err != nil {
@@ -54,37 +54,27 @@ func get_product_create(data *TemplateData) (action gnet.Action) {
 	}
 	err = product_setMenu(data, productID, branch, "")
 	data.Data["groups"], _ = user_getGroupOptionMenu()
-	msg, err := HostConn.GetMsg()
+	msg, err := data.GetMsg()
 	if err != nil {
 		data.OutErr(err)
 		return
 	}
-	getuser := protocol.GET_MSG_USER_getPairs()
-	getuser.Params = "nodeleted|pofirst|noclosed"
-	var res *protocol.MSG_USER_getPairs_result
-	err = msg.SendMsgWaitResult(0, getuser, &res)
+	data.Data["poUsers"], err = user_getPairs("nodeleted|pofirst|noclosed")
 	if err != nil {
 		data.OutErr(err)
 		return
 	}
-	data.Data["poUsers"] = res.List
-	getuser.Params = "nodeleted|qdfirst|noclosed"
-	var res1 *protocol.MSG_USER_getPairs_result
-	err = msg.SendMsgWaitResult(0, getuser, &res1)
+	data.Data["qdUsers"], err = user_getPairs("nodeleted|qdfirst|noclosed")
 	if err != nil {
 		data.OutErr(err)
 		return
 	}
-	data.Data["qdUsers"] = res1.List
-	getuser.Params = "nodeleted|devfirst|noclosed"
-	var res2 *protocol.MSG_USER_getPairs_result
-	err = msg.SendMsgWaitResult(0, getuser, &res2)
+	data.Data["rdUsers"], err = user_getPairs("nodeleted|devfirst|noclosed")
 	if err != nil {
 		data.OutErr(err)
 		return
 	}
-	data.Data["rdUsers"] = res2.List
-	getuser.Put()
+
 	var productTypeList []protocol.HtmlKeyValueStr
 	for _, v := range data.Lang["product"]["typeList"].([]protocol.HtmlKeyValueStr) {
 		tip, _ := data.Lang["product"]["typeTips"].(map[string]string)[v.Key]
@@ -94,8 +84,7 @@ func get_product_create(data *TemplateData) (action gnet.Action) {
 	data.Data["productTypeList"] = productTypeList
 	getLinePairs := protocol.GET_MSG_PROJECT_tree_getLinePairs()
 	var res3 *protocol.MSG_PROJECT_tree_getLinePairs_result
-	err = msg.SendMsgWaitResult(0, getLinePairs, &res3)
-	if err != nil {
+	if err = msg.SendMsgWaitResult(0, getLinePairs, &res3); err != nil {
 		data.OutErr(err)
 		return
 	}
@@ -103,17 +92,14 @@ func get_product_create(data *TemplateData) (action gnet.Action) {
 	data.Data["lines"] = res3.List
 	data.Data["rootID"] = productID
 	templateOut("product.create.html", data)
-	res.Put()
-	res1.Put()
-	res2.Put()
 	res3.Put()
 	return
 }
-func post_product_create(data *TemplateData) (action gnet.Action) {
+func post_product_create(data *TemplateData) {
 	if !data.ajaxCheckPost() {
 		return
 	}
-	msg, err := HostConn.GetMsg()
+	msg, err := data.GetMsg()
 	if err != nil {
 		data.ajaxResult(false, err.Error())
 		return
@@ -158,47 +144,15 @@ func post_product_create(data *TemplateData) (action gnet.Action) {
 
 		}
 	}
-	m, _ := libraries.Preg_match_result(`<img src="/file/tmpimg\?fileID=(\d+)&amp;t=([^"]+)" alt="" \/>`, insert.Desc, -1)
-	var uploaderr error
-	var newimgids []int64
-	for _, match := range m {
-		b, ok := file_getTempFile(match[1])
-		if ok {
-			upload := protocol.GET_MSG_FILE_upload()
-			upload.AddBy = data.User.Id
-			upload.Data = b
-			upload.Name = time.Now().Format("20060102") + "_" + match[1] + "." + match[2]
-			var res *protocol.MSG_FILE_upload_result
-			uploaderr = msg.SendMsgWaitResult(0, upload, &res)
-			if uploaderr == nil {
-				newimgids = append(newimgids, res.FileID)
-				insert.Desc = strings.ReplaceAll(insert.Desc, match[0], `<img src="/file/read?fileID=`+strconv.FormatInt(res.FileID, 10)+` alt="" />`)
-			}
-			res.Put()
-			if uploaderr != nil {
-				deleteimg := protocol.GET_MSG_FILE_DeleteByID()
-				for _, id := range newimgids {
-					deleteimg.FileID = id
-					msg.SendMsg(0, deleteimg)
-				}
-				deleteimg.Put()
-				data.ajaxResult(false, map[string]string{"desc": fmt.Sprintf(data.Lang["file"]["imguploadFail"].(string), uploaderr)})
-				return
-			}
-		} else {
-			insert.Desc = strings.ReplaceAll(insert.Desc, match[0], "")
-		}
-
+	desc, newimgids, err := file_descProcessImgURLAnd2Bbcode(data, insert.Desc)
+	if err != nil {
+		data.ajaxResult(false, map[string]string{"desc": err.Error()})
+		return
 	}
-	insert.Desc = libraries.Html2bbcode(insert.Desc)
+	insert.Desc = desc
 	defer func() {
 		if err != nil { //以下使用err来判断图片删除
-			deleteimg := protocol.GET_MSG_FILE_DeleteByID()
-			for _, id := range newimgids {
-				deleteimg.FileID = id
-				msg.SendMsg(0, deleteimg)
-			}
-			deleteimg.Put()
+			file_deleteFromIds(newimgids)
 		}
 	}()
 	out.Data = insert
@@ -211,11 +165,12 @@ func post_product_create(data *TemplateData) (action gnet.Action) {
 	}
 	locate := createLink("product", "browse", []string{"productID=", strconv.Itoa(int(res.ID))})
 	data.ajaxResult(true, data.Lang["common"]["saveSuccess"], locate)
+	file_updateObject(newimgids, "product", res.ID)
 	out.Put()
 	res.Put()
 	return
 }
-func get_product_browse(data *TemplateData) (action gnet.Action) {
+func get_product_browse(data *TemplateData) {
 	productID, _ := strconv.Atoi(data.ws.Query("productID"))
 	branch, _ := strconv.Atoi(data.ws.Query("branch"))
 	moduleID, _ := strconv.Atoi(data.ws.Query("param"))
@@ -227,7 +182,7 @@ func get_product_browse(data *TemplateData) (action gnet.Action) {
 	if browseType == "" {
 		browseType = "unclosed"
 	}
-	msg, err := HostConn.GetMsg()
+	msg, err := data.GetMsg()
 	if err != nil {
 		data.OutErr(err)
 		return
@@ -386,7 +341,7 @@ func product_setMenu(data *TemplateData, productID, branch int32, extra string) 
 		buf.WriteString("'>")
 		buf.WriteString(currentProduct.Name)
 		buf.WriteString(`<span class='caret'></span></button><div id='dropMenu' class='dropdown-menu search-list' data-ride='searchList' data-url='`)
-		buf.WriteString(createLink("product", "ajaxGetDropMenu", []interface{}{"objectID=", productID, "&module=", currentModule, "&method=", currentMethod, "&extra=", extra}))
+		buf.WriteString(createLink("product", "ajaxGetDropMenu", []interface{}{"productID=", productID, "&module=", currentModule, "&method=", currentMethod, "&extra=", extra}))
 		buf.WriteString(`'><div class='input-control search-box has-icon-left has-icon-right search-example'><input type='search' class='form-control search-input' /><label class='input-control-icon-left search-icon'><i class='icon icon-search'></i></label><a class='input-control-icon-right search-clear-btn'><i class='icon icon-close icon-sm'></i></a></div></div></div>`)
 
 		//if($isMobile) $output = "<a id='currentItem' href=\"javascript:showSearchMenu('product', '$productID', '$currentModule', '$currentMethod', '$extra')\">{$currentProduct->name} <span class='icon-caret-down'></span></a><div id='currentItemDropMenu' class='hidden affix enter-from-bottom layer'></div>";
@@ -405,12 +360,11 @@ func product_setMenu(data *TemplateData, productID, branch int32, extra string) 
 			}
 
 			if true { //!$isMobile){
-
 				buf.WriteString(`<div class='btn-group'><button id='currentBranch' data-toggle='dropdown' type='button' class='btn btn-limit'>`)
 				buf.WriteString(branchName)
 				buf.WriteString(`<span class='caret'></span></button><div id='dropMenu' class='dropdown-menu search-list' data-ride='searchList' data-url='`)
-				buf.WriteString(createLink("branch", "ajaxGetDropMenu", []interface{}{"objectID=", productID, "&module=", currentModule, "&method=", currentMethod, "&extra=", extra}))
-				buf.WriteString(`><div class='input-control search-box has-icon-left has-icon-right search-example'><input type='search' class='form-control search-input' /><label class='input-control-icon-left search-icon'><i class='icon icon-search'></i></label><a class='input-control-icon-right search-clear-btn'><i class='icon icon-close icon-sm'></i></a></div></div></div>`)
+				buf.WriteString(createLink("branch", "ajaxGetDropMenu", []interface{}{"productID=", productID, "&module=", currentModule, "&method=", currentMethod, "&extra=", extra}))
+				buf.WriteString(`'><div class='input-control search-box has-icon-left has-icon-right search-example'><input type='search' class='form-control search-input' /><label class='input-control-icon-left search-icon'><i class='icon icon-search'></i></label><a class='input-control-icon-right search-clear-btn'><i class='icon icon-close icon-sm'></i></a></div></div></div>`)
 			} else {
 				buf.WriteString("<a id='currentBranch' href=\"javascript:showSearchMenu('branch', '")
 				buf.WriteString(strconv.Itoa(int(productID)))
@@ -463,6 +417,7 @@ func product_setMenu(data *TemplateData, productID, branch int32, extra string) 
 		data.App["menuReplace"] = make(map[string]string)
 	}
 	data.App["menuReplace"].(map[string]string)["productID"] = strconv.Itoa(int(productID))
+	data.App["menuReplace"].(map[string]string)["branch"] = strconv.Itoa(int(branch))
 	return nil
 }
 func product_saveState(data *TemplateData, id int32) (productID int32, preBranch int32, err error) {
@@ -503,11 +458,11 @@ func product_saveState(data *TemplateData, id int32) (productID int32, preBranch
 	}
 	return data.ws.Session().Load_int32("product"), int32(preBranchID), nil
 }
-func get_product_ajaxGetDropMenu(data *TemplateData) (action gnet.Action) {
+func get_product_ajaxGetDropMenu(data *TemplateData) {
 	method := data.ws.Query("method")
 	module := data.ws.Query("module")
 	productID, _ := strconv.Atoi(data.ws.Query("objectID"))
-	link := product_getProductLink(module, method, data.ws.Query("extra"), 0)
+	link := product_getProductLink(module, method, data.ws.Query("extra"), false)
 	data.Data["productID"] = productID
 	data.Data["module"] = module
 	data.Data["method"] = method
@@ -585,14 +540,14 @@ func get_product_ajaxGetDropMenu(data *TemplateData) (action gnet.Action) {
 	templateOut("product.ajaxGetDropMenu.html", data)
 	return
 }
-func product_getProductLink(module, method, extra string, branch int32) string {
+func product_getProductLink(module, method, extra string, branch bool) string {
 
 	switch module {
 	case "product", "roadmap", "bug", "testcase", "testtask", "story", "qa", "testsuite", "testreport", "build":
 		switch {
 		case module == "product" && method == "project":
-			if branch > 0 {
-				return createLink(module, method, "status=all&productID=%d&branch=%d")
+			if branch {
+				return createLink(module, method, "status=all&productID=%d&branch=%s")
 			} else {
 				return createLink(module, method, "status=all&productID=%d")
 			}
@@ -600,23 +555,23 @@ func product_getProductLink(module, method, extra string, branch int32) string {
 			return createLink(module, method, "productID=%d")
 
 		case (module == "qa" && method == "index"):
-			if branch > 0 {
-				return createLink("bug", "browse", "productID=%d&branch=%d")
+			if branch {
+				return createLink("bug", "browse", "productID=%d&branch=%s")
 			} else {
 				return createLink("bug", "browse", "productID=%d")
 			}
 
 		case (module == "product" && (method == "browse" || method == "index" || method == "all")):
 
-			if branch > 0 {
-				return createLink(module, "browse", "productID=%d&branch=%d")
+			if branch {
+				return createLink(module, "browse", "productID=%d&branch=%s")
 			} else {
 				return createLink(module, "browse", "productID=%d")
 			}
 
 		default:
-			if branch > 0 {
-				return createLink(module, method, "productID=%d&branch=%d")
+			if branch {
+				return createLink(module, method, "productID=%d&branch=%s")
 			} else {
 				return createLink(module, method, "productID=%d")
 			}
@@ -628,22 +583,25 @@ func product_getProductLink(module, method, extra string, branch int32) string {
 		if method != "browse" && method != "create" {
 			method = "browse"
 		}
-		if branch > 0 {
-			return createLink(module, method, "productID=%d&branch=%d")
+		if branch {
+			return createLink(module, method, "productID=%d&branch=%s")
 		} else {
 			return createLink(module, method, "productID=%d")
 		}
 
 	case "tree":
-		if branch > 0 {
-			return createLink(module, method, "productID=%d&type="+extra+"&currentModuleID=0&branch=%d")
+		if branch {
+			return createLink(module, method, "productID=%d&type="+extra+"&currentModuleID=0&branch=%s")
 		} else {
 			return createLink(module, method, "productID=%d&type="+extra+"&currentModuleID=0")
 		}
 
 	case "branch":
-
-		return createLink(module, method, "productID=%d")
+		if branch {
+			return createLink(module, method, "productID=%d&branch=%s")
+		} else {
+			return createLink(module, method, "productID=%d")
+		}
 
 	case "doc":
 		return createLink("doc", "objectLibs", "type=product&objectID=%d&from=product")
@@ -652,7 +610,7 @@ func product_getProductLink(module, method, extra string, branch int32) string {
 
 	return ""
 }
-func get_product_all(data *TemplateData) (action gnet.Action) {
+func get_product_all(data *TemplateData) {
 
 	//this->session->set("productList", this->app->getURI(true))
 	id, _ := strconv.Atoi(data.ws.Query("productID"))
@@ -921,7 +879,7 @@ func product_getList(data *TemplateData, order func(a, b *protocol.MSG_PROJECT_p
 
 	return
 }
-func get_product_view(data *TemplateData) (action gnet.Action) {
+func get_product_view(data *TemplateData) {
 	id, _ := strconv.Atoi(data.ws.Query("product"))
 	productID, branch, err := product_saveState(data, int32(id))
 	err = product_setMenu(data, productID, branch, "")
@@ -939,14 +897,11 @@ func get_product_view(data *TemplateData) (action gnet.Action) {
 	}
 
 	data.Data["product"] = list[0]
-	getuserPairs := protocol.GET_MSG_USER_getPairs()
-	getuserPairs.Params = "noletter"
-	var result *protocol.MSG_USER_getPairs_result
-	if err = HostConn.SendMsgWaitResultToDefault(getuserPairs, &result); err != nil {
+	data.Data["users"], err = user_getPairs("noletter")
+	if err != nil {
 		data.OutErr(err)
 		return
 	}
-	data.Data["users"] = result.List
 	lines, err := tree_getLinePairs(data)
 	if err != nil {
 		data.OutErr(err)
@@ -957,7 +912,7 @@ func get_product_view(data *TemplateData) (action gnet.Action) {
 	templateOut("product.view.html", data)
 	return
 }
-func get_product_edit(data *TemplateData) (action gnet.Action) {
+func get_product_edit(data *TemplateData) {
 	id, _ := strconv.Atoi(data.ws.Query("product"))
 	productID, branch, err := product_saveState(data, int32(id))
 	err = product_setMenu(data, productID, branch, "")
@@ -977,22 +932,20 @@ func get_product_edit(data *TemplateData) (action gnet.Action) {
 		data.OutErr(err)
 		return
 	}
-	getuserPairs := protocol.GET_MSG_USER_getPairs()
-	getuserPairs.Params = "nodeleted"
-	var result *protocol.MSG_USER_getPairs_result
-	if err = HostConn.SendMsgWaitResultToDefault(getuserPairs, &result); err != nil {
+	user, err := user_getPairs("nodeleted")
+	if err != nil {
 		data.OutErr(err)
 		return
 	}
-	data.Data["poUsers"] = result.List
-	data.Data["qdUsers"] = result.List
-	data.Data["rdUsers"] = result.List
+	data.Data["poUsers"] = user
+	data.Data["qdUsers"] = user
+	data.Data["rdUsers"] = user
 	data.Data["lines"] = append([]protocol.HtmlKeyValueStr{{"", ""}}, lines...)
 	data.Data["groups"], _ = user_getGroupOptionMenu()
 	templateOut("product.edit.html", data)
 	return
 }
-func post_product_edit(data *TemplateData) (action gnet.Action) {
+func post_product_edit(data *TemplateData) {
 	if !data.ajaxCheckPost() {
 		return
 	}
@@ -1002,7 +955,7 @@ func post_product_edit(data *TemplateData) (action gnet.Action) {
 		data.ajaxResult(false, data.Lang["product"]["error"].(map[string]string)["NotFound"])
 		return
 	}
-	msg, err := HostConn.GetMsg()
+	msg, err := data.GetMsg()
 	if err != nil {
 		data.ajaxResult(false, err.Error())
 		return
@@ -1090,9 +1043,7 @@ func post_product_edit(data *TemplateData) (action gnet.Action) {
 		}
 	}()
 	out.Data = product
-	err = msg.SendMsgWaitResult(0, out, nil)
-	fmt.Println(err)
-	if err != nil {
+	if err = msg.SendMsgWaitResult(0, out, nil); err != nil {
 		data.ajaxResult(false, err.Error())
 		return
 	}
@@ -1100,4 +1051,33 @@ func post_product_edit(data *TemplateData) (action gnet.Action) {
 	data.ajaxResult(true, data.Lang["common"]["saveSuccess"], locate)
 	out.Put()
 	return
+}
+func get_product_ajaxGetPlans(data *TemplateData) {
+	productID, _ := strconv.Atoi(data.ws.Query("productID"))
+	branch, _ := strconv.Atoi(data.ws.Query("branch"))
+	planID, _ := strconv.Atoi(data.ws.Query("planID"))
+	fieldID, _ := strconv.Atoi(data.ws.Query("fieldID"))
+	needCreate := data.ws.Query("needCreate") == "true"
+	plans, err := productplan_getPairs(data, int32(productID), int32(branch), data.ws.Query("expired"))
+	if err != nil {
+		data.ws.WriteString(js.Alert(err.Error()))
+		return
+	}
+	field := "plan"
+	if fieldID > 0 {
+		field = "plans[" + strconv.Itoa(fieldID) + "]"
+	}
+	buf := bufpool.Get().(*libraries.MsgBuffer)
+	buf.WriteString(html_select(field, plans, planID, "class='form-control chosen'"))
+
+	if len(plans) == 1 && needCreate {
+		buf.WriteString("<div class='input-group-btn'>")
+		buf.WriteString(html_a(createLink("productplan", "create", []interface{}{"productID=", productID, "&branch=", branch, true}), "<i class='icon icon-plus'></i>", "", "class='btn btn-icon' data-toggle='modal' data-type='iframe' data-width='95%' title='"+data.Lang["productplan"]["create"].(string)+"'"))
+		buf.WriteString("</div><div class='input-group-btn'>")
+		buf.WriteString(html_a("javascript:void(0)", "<i class='icon icon-refresh'></i>", "", "class='btn btn-icon refresh' data-toggle='tooltip' title='"+data.Lang["common"]["refresh"].(string)+"' onclick='loadProductPlans("+strconv.Itoa(productID)+")'"))
+		buf.WriteString("</div>")
+	}
+	data.ws.WriteString(buf.String())
+	buf.Reset()
+	bufpool.Put(buf)
 }

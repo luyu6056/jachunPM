@@ -4,15 +4,21 @@ import (
 	"jachunPM_http/config"
 	"protocol"
 	"strconv"
+	"time"
 )
 
 type checkType int
 
 const (
-	checkTypeNone    = 1 << iota
-	checkTypeRequire //不能为空
-	checkTypeNum
-	checkTypeUserId //允许0或者空,不允许错误的值
+	checkTypeNone    checkType = 1 << iota
+	checkTypeRequire           //不能为空
+	checkTypeInt
+	checkTypeFloat
+	checkTypePositive //正数
+	checkTypeZero     //包含0
+	checkTypeNegative //负数
+	checkTypeUserId   //允许0或者空,不允许错误的值
+	checkTypeDate     //2006-01-02
 
 )
 
@@ -37,6 +43,23 @@ var checkinfo = map[string]map[string]interface{}{ //目前接受checkType和[]p
 		"type":      config.Lang[protocol.DefaultLang]["product"]["typeList"].([]protocol.HtmlKeyValueStr),
 		"acl":       config.Lang[protocol.DefaultLang]["product"]["aclList"].([]protocol.HtmlKeyValueStr),
 	},
+	"/productplan/create": map[string]interface{}{
+		"title": checkTypeRequire,
+		"begin": checkTypeDate,
+		"end":   checkTypeDate,
+	},
+	"/productplan/edit": map[string]interface{}{
+		"title": checkTypeRequire,
+		"begin": checkTypeDate,
+		"end":   checkTypeDate,
+	},
+	"/story/create": map[string]interface{}{
+		"title":      checkTypeRequire,
+		"pri":        config.Lang[protocol.DefaultLang]["story"]["pri"].([]protocol.HtmlKeyValueStr),
+		"estimate":   checkTypeFloat | checkTypePositive,
+		"assignedTo": checkTypeUserId | checkTypePositive,
+		"mailto":     checkTypeUserId,
+	},
 }
 
 //post请求检查
@@ -45,42 +68,48 @@ func (data *TemplateData) ajaxCheckPost() bool {
 		for key, i := range check {
 			reskey, err := func() (string, string) {
 				list := data.ws.PostSlice(key)
-				switch typ := i.(type) {
-				case checkType:
-					switch typ {
-					case checkTypeRequire:
-						for _, v := range list {
+				require := false
+				if typ, ok := i.(checkType); ok && typ&checkTypeRequire == checkTypeRequire {
+					require = true
+					if len(list) == 0 {
+						return key, data.Lang["error"]["checkTypeRequire"].(string)
+					}
+				}
+
+				for _, v := range list {
+
+					switch typ := i.(type) {
+					case checkType:
+						if require {
 							if v == "" {
 								return key, data.Lang["error"]["checkTypeRequire"].(string)
 							}
+						} else if v == "" {
+							continue
 						}
-					case checkTypeNum:
-						for _, v := range list {
+						switch typ {
+						case checkTypeRequire:
+							//上面已处理
+						case checkTypeNum:
 							_, err := strconv.Atoi(v)
 							if err != nil {
 								return key, data.Lang["error"]["checkTypeNum"].(string)
 							}
-						}
-					case checkTypeUserId | checkTypeRequire: //必须是有效的userid且不能为空
-						for _, v := range list {
-							if v == "0" || v == "" {
-								return key, data.Lang["error"]["checkTypeRequire"].(string)
-							}
-						}
-						fallthrough
-					case checkTypeUserId:
-						for _, v := range list {
-							if v == "0" || v == "" {
-								continue
-							}
+
+						case checkTypeUserId:
 							id, _ := strconv.Atoi(v)
 							if HostConn.GetUserCacheById(int32(id)) == nil {
 								return key, data.Lang["error"]["checkTypeUserId"].(string)
 							}
+
+						case checkTypeDate:
+							_, err := time.Parse(protocol.TIMEFORMAT_MYSQLDATE, v)
+							if err != nil {
+								return key, data.Lang["error"]["checkTypeDate"].(string)
+							}
+
 						}
-					}
-				case []protocol.HtmlKeyValueStr:
-					for _, v := range list {
+					case []protocol.HtmlKeyValueStr:
 						find := false
 						for _, kv := range typ {
 							if kv.Key == v {
@@ -91,10 +120,9 @@ func (data *TemplateData) ajaxCheckPost() bool {
 						if !find {
 							return key, data.Lang["error"]["checkHtmlKeyValueStr"].(string)
 						}
-					}
-				case func() ([]protocol.HtmlKeyValueStr, error):
-					checklist, _ := typ()
-					for _, v := range list {
+
+					case func() ([]protocol.HtmlKeyValueStr, error):
+						checklist, _ := typ()
 						find := false
 						for _, kv := range checklist {
 							if kv.Key == v {
@@ -105,11 +133,13 @@ func (data *TemplateData) ajaxCheckPost() bool {
 						if !find {
 							return key, data.Lang["error"]["checkHtmlKeyValueStr"].(string)
 						}
+
 					}
 				}
 
 				return "", ""
 			}()
+
 			if reskey != "" {
 				data.ajaxResult(false, map[string]string{reskey: err})
 				return false

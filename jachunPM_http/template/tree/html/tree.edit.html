@@ -22,7 +22,7 @@
         {{end}}
         {{if ne .Data.module.Type "line"}}
         <tr{{if $hidden}} style='display:none'{{end}}>
-          <th class='w-80px'>{{if .Data.type "doc"}}{{.Lang.tree.parentCate}}{{else}}{{.Lang.tree.parent}}{{end}}</th>
+          <th class='w-80px'>{{if eq .Data.type "doc"}}{{.Lang.tree.parentCate}}{{else}}{{.Lang.tree.parent}}{{end}}</th>
           <td>{{html_select "parent" .Data.optionMenu .Data.module.Parent "class='form-control chosen'"}}</td>
         </tr>
         {{end}}

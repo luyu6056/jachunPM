@@ -1,0 +1,59 @@
+{{template "header.html" .}}
+{{template "kindeditor.html" .}}
+{{js_import (strAdd .Config.common.common.jsRoot "misc/date.js")}}
+<div id='mainContent'class='main-content'>
+  <div class='center-block'>
+    <div class='main-header'>
+      <h2> {{.Lang.productplan.create}}</h2>
+    </div>
+    <form class='load-indicator main-form form-ajax' method='post' target='hiddenwin' id='dataform'>
+      <table class='table table-form'> 
+        <tbody>
+          <tr>
+            <th>{{.Lang.productplan.product}}</th>
+            <td class='muted'>{{.Data.product.Name}}</td><td></td><td></td>
+          </tr>
+          {{if ne .Data.product.Type "normal"}}
+          <tr>
+            <th>{{printf .Lang.product.branch (index .Lang.product.branchName .Data.product.Type)}}</th>
+            <td>{{html_select "branch" .Data.branches .Data.branch "class='form-control chosen'"}}</td><td></td><td></td>
+          </tr>
+          {{end}}
+          <tr>
+            <th>{{.Lang.productplan.title}}</th>
+            <td>{{html_input "title" "" "class='form-control' autocomplete='off' required"}}</td>
+            <td colspan='2' class='muted'>{{if .Data.lastPlan}}({{.Lang.productplan.last}}:{{.Data.lastPlan.Title}}){{end}}</td>
+          </tr>
+          <tr>
+            <th>{{.Lang.productplan.begin}}</th>
+            <td>{{html_input "begin" .Data.begin "class='form-control form-date'"}}</td>
+            <td>
+              <div class='checkbox-primary'> 
+                <input type='checkbox' id='future' name='future' value='1' />
+                <label for='future'>{{.Lang.productplan.future}}</label>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <th>{{.Lang.productplan.end}}</th>
+            <td>{{html_input "end" "" "class='form-control form-date'"}}</td>
+            <td colspan='2'>{{html_radio "delta" .Lang.productplan.endList "" "onclick='computeEndDate(this.value)'"}}</td>
+          </tr>
+          <tr>
+            <th>{{.Lang.productplan.desc}}</th>
+            <td colspan='3'>{{html_textarea "desc" "" "rows='10' class='form-control kindeditor' hidefocus='true'"}}</td>
+          </tr>
+          <tr>
+            <td colspan='4' class='text-center form-actions'>
+              {{html_submitButton .}}
+              {{html_backButton .}}
+              {{html_hidden "product" .Data.product.Id}}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </form>
+  </div>
+</div>
+<script type="text/javascript">var weekend={{.Config.project.common.weekend}};</script>
+{{template "footer.html" .}}

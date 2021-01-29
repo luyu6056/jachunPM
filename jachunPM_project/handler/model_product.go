@@ -11,6 +11,7 @@ import (
 )
 
 func product_insert(data *protocol.MSG_PROJECT_product_insert, in *protocol.Msg) {
+
 	session, err := in.DB.BeginTransaction()
 	defer session.EndTransaction()
 	if err != nil {
@@ -78,11 +79,7 @@ func product_insert(data *protocol.MSG_PROJECT_product_insert, in *protocol.Msg)
 			return
 		}
 		session.CommitCallback(func() {
-			var newProduct *protocol.MSG_PROJECT_product_cache
-			in.DB.Table(db.TABLE_PRODUCT).Prepare().Where("Id=?", id).Find(&newProduct)
-			if newProduct != nil {
-				product_setCache(newProduct)
-			}
+			product_setCache(int32(id))
 		})
 		session.Commit()
 
@@ -96,8 +93,15 @@ func product_insert(data *protocol.MSG_PROJECT_product_insert, in *protocol.Msg)
 		in.WriteErr(errors.New("error insert id"))
 	}
 }
-func product_setCache(product *protocol.MSG_PROJECT_product_cache) {
-	HostConn.CacheSet(protocol.PATH_PROJECT_PRODUCT_CACHE, strconv.Itoa(int(product.Id)), product, 0)
+func product_setCache(id int32) {
+	product := protocol.GET_MSG_PROJECT_product_cache()
+	HostConn.DB.Table(db.TABLE_PRODUCT).Prepare().Where("Id=?", id).Find(&product)
+	if product.Id != 0 {
+		HostConn.DB.Table(db.TABLE_BRANCH).Prepare().Where("Product=?", id).Order("`Order` asc").Limit(0).Select(&product.Branchs)
+		HostConn.CacheSet(protocol.PATH_PROJECT_PRODUCT_CACHE, strconv.Itoa(int(product.Id)), product, 0)
+
+	}
+	product.Put()
 }
 func product_getStories(data *protocol.MSG_PROJECT_product_getStories, in *protocol.Msg) {
 	modules := tree_getAllChildId(data.ModuleID)
@@ -111,7 +115,7 @@ func product_getStories(data *protocol.MSG_PROJECT_product_getStories, in *proto
 	switch data.BrowseType {
 	case "unclosed":
 		var config map[string]map[string]interface{}
-		config, err = HostConn.LoadConfig("story")
+		config, err = in.LoadConfig("story")
 		if err != nil {
 			return
 		}
@@ -209,12 +213,92 @@ func product_update(data *protocol.MSG_PROJECT_product_update, in *protocol.Msg)
 	       return common::createChanges($oldProduct, $product);
 	   }*/
 	session.CommitCallback(func() {
-		var newProduct *protocol.MSG_PROJECT_product_cache
-		in.DB.Table(db.TABLE_PRODUCT).Prepare().Where("Id=?", oldProduct.Id).Find(&newProduct)
-		if newProduct != nil {
-			product_setCache(newProduct)
-		}
+		product_setCache(oldProduct.Id)
 	})
 	session.Commit()
 	in.WriteErr(nil)
+}
+func product_editBranch(data *protocol.MSG_PROJECT_product_editBranch, in *protocol.Msg) {
+	product := HostConn.GetProductById(data.ProductID)
+	if product != nil {
+		session, err := in.DB.BeginTransaction()
+		if err != nil {
+			in.WriteErr(err)
+		} else {
+			defer session.EndTransaction()
+			var insert []*protocol.MSG_PROJECT_branch_info
+			for _, branch := range data.Branchs {
+				if branch.Id > 0 {
+
+					_, err = session.Table(db.TABLE_BRANCH).Prepare().Where("Id=?", branch.Id).Update("Name=?,TimeStamp=?,`Order`=?", branch.Name, time.Now().Unix(), branch.Order)
+					if err != nil {
+						in.WriteErr(err)
+						return
+					}
+				} else {
+					insert = append(insert, branch)
+				}
+			}
+			if len(insert) > 0 {
+				_, err = session.Table(db.TABLE_BRANCH).InsertAll(insert)
+				if err != nil {
+					in.WriteErr(err)
+					return
+				}
+			}
+		}
+		session.CommitCallback(func() {
+			product_setCache(data.ProductID)
+		})
+		session.Commit()
+	}
+	in.WriteErr(nil)
+}
+func product_deleteBranch(data *protocol.MSG_PROJECT_product_deleteBranch, in *protocol.Msg) {
+	count, err := in.DB.Table(db.TABLE_PROJECT).Where("Branch=" + strconv.Itoa(int(data.BranchID)) + " and Deleted = 0").Count()
+	out := protocol.GET_MSG_PROJECT_product_deleteBranch_result()
+	out.Result = protocol.Success
+	defer func() {
+		if err != nil {
+			in.WriteErr(err)
+			return
+		}
+
+		in.SendResult(out)
+		out.Put()
+	}()
+	if err != nil || count != 0 {
+		out.Result = protocol.Err_ProjectBranchCanNotDelete_PROJECT
+		return
+	}
+	count, err = in.DB.Table(db.TABLE_MODULE).Where("Branch=" + strconv.Itoa(int(data.BranchID)) + " and Deleted = 0").Count()
+	if err != nil || count != 0 {
+		out.Result = protocol.Err_ProjectBranchCanNotDelete_MODULE
+		return
+	}
+	count, err = in.DB.Table(db.TABLE_STORY).Where("Branch=" + strconv.Itoa(int(data.BranchID)) + " and Deleted = 0").Count()
+	if err != nil || count != 0 {
+		out.Result = protocol.Err_ProjectBranchCanNotDelete_STORY
+		return
+	}
+	count, err = in.DB.Table(db.TABLE_PRODUCTPLAN).Where("Branch=" + strconv.Itoa(int(data.BranchID)) + " and Deleted = 0").Count()
+	if err != nil || count != 0 {
+		out.Result = protocol.Err_ProjectBranchCanNotDelete_PRODUCTPLAN
+		return
+	}
+	check := protocol.GET_MSG_TEST_product_deleteBranch_check()
+	check.BranchID = data.BranchID
+	var result *protocol.MSG_TEST_product_deleteBranch_result
+	err = in.SendMsgWaitResult(0, check, &result)
+	if err != nil {
+		return
+	}
+	out.Result = result.Result
+	check.Put()
+	result.Put()
+	if out.Result == protocol.Success {
+		_, err = in.DB.Table(db.TABLE_BRANCH).Where("Id = " + strconv.Itoa(int(data.BranchID))).Update(map[string]interface{}{"Deleted": true, "TimeStamp": time.Now().Unix()})
+		product_setCache(data.ProductID)
+	}
+	return
 }

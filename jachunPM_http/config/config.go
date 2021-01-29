@@ -22,13 +22,15 @@ type ConfigSearchParams struct {
 */
 func configInit(local protocol.CountryNo) {
 	Config[local]["common"] = make(map[string]map[string]interface{})
+	Config[local]["my"] = make(map[string]map[string]interface{})
 	Config[local]["common"]["common"] = map[string]interface{}{
-		"debug":        Server.Debug,
-		"webRoot":      Server.Origin + "/",
-		"jsRoot":       Server.Origin + "/js/",
-		"themeRoot":    Server.Origin + "/theme/",
-		"defaultTheme": Server.Origin + "/theme/default/",
-		"langs":        []protocol.HtmlKeyValueStr{{string(protocol.ZH_CN), protocol.ZH_CN.String()}},
+		"debug":         Server.Debug,
+		"webRoot":       Server.Origin + "/",
+		"jsRoot":        Server.Origin + "/js/",
+		"themeRoot":     Server.Origin + "/theme/",
+		"defaultTheme":  Server.Origin + "/theme/default/",
+		"langs":         []protocol.HtmlKeyValueStr{{string(protocol.ZH_CN), protocol.ZH_CN.String()}},
+		"maxUploadSize": "4000M",
 	}
 	Config[local]["user"] = make(map[string]map[string]interface{})
 	Config[local]["user"]["common"] = map[string]interface{}{
@@ -39,6 +41,14 @@ func configInit(local protocol.CountryNo) {
 		"showDeleted":      true,
 		"weakPasswordlen":  6,
 		"weakPasswordtype": protocol.CONIFG_weakPasswordAny,
+	}
+	if contacts, ok := Lang[local]["user"]["contacts"].(map[string]string); ok {
+		Config[local]["user"]["contacts"] = make(map[string]interface{}, len(contacts))
+		for k, v := range contacts {
+			Config[local]["user"]["contacts"][k] = v
+		}
+	} else {
+		Config[local]["user"]["contacts"] = map[string]interface{}{}
 	}
 
 	Config[local]["company"] = make(map[string]map[string]interface{})
@@ -402,13 +412,13 @@ func configInit(local protocol.CountryNo) {
 		"requiredFields": "assignedTo,reviewedBy",
 	}
 	Config[local]["story"]["editor"] = map[string]interface{}{
-		"create":   map[string]string{"id": "spec,verify", "tools": "simpleTools"},
-		"change":   map[string]string{"id": "spec,verify,comment", "tools": "simpleTools"},
-		"edit":     map[string]string{"id": "comment", "tools": "simpleTools"},
-		"view":     map[string]string{"id": "comment,lastComment", "tools": "simpleTools"},
-		"close":    map[string]string{"id": "comment", "tools": "simpleTools"},
-		"review":   map[string]string{"id": "comment", "tools": "simpleTools"},
-		"activate": map[string]string{"id": "comment", "tools": "simpleTools"},
+		"create":   map[string]interface{}{"id": []string{"spec", "verify"}, "tools": "simpleTools"},
+		"change":   map[string]interface{}{"id": []string{"spec", "verify", "comment"}, "tools": "simpleTools"},
+		"edit":     map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
+		"view":     map[string]interface{}{"id": []string{"comment", "lastComment"}, "tools": "simpleTools"},
+		"close":    map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
+		"review":   map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
+		"activate": map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
 	}
 
 	Config[local]["story"]["list"] = map[string]interface{}{
@@ -606,6 +616,17 @@ func configInit(local protocol.CountryNo) {
 			"fixed":    "right",
 			"width":    "150",
 			"required": "yes",
+		},
+	}
+	Config[local]["productplan"] = make(map[string]map[string]interface{})
+	Config[local]["productplan"]["editor"] = map[string]interface{}{
+		"create": map[string]interface{}{
+			"id":    []string{"desc"},
+			"tools": "simpleTools",
+		},
+		"edit": map[string]interface{}{
+			"id":    []string{"desc"},
+			"tools": "simpleTools",
 		},
 	}
 

@@ -7,8 +7,6 @@ import (
 	"protocol"
 	"strconv"
 	"strings"
-
-	"github.com/luyu6056/gnet"
 )
 
 func init() {
@@ -19,14 +17,14 @@ func init() {
 	httpHandlerMap["GET"]["/dept/edit"] = get_dept_edit
 	httpHandlerMap["POST"]["/dept/edit"] = post_dept_edit
 }
-func get_dept_browse(data *TemplateData) gnet.Action {
+func get_dept_browse(data *TemplateData) {
 	ws := data.ws
 	deptID, _ := strconv.Atoi(ws.Query("deptID"))
 	data.Data["deptID"] = deptID
-	msg, err := HostConn.GetMsg()
+	msg, err := data.GetMsg()
 	if err != nil {
 		data.OutErr(err)
-		return gnet.None
+		return
 	}
 	if int32(deptID) > 0 {
 		getParents := protocol.GET_MSG_USER_Dept_getParents()
@@ -34,7 +32,7 @@ func get_dept_browse(data *TemplateData) gnet.Action {
 		res, err := dept_getParents(int32(deptID))
 		if err != nil {
 			data.OutErr(err)
-			return gnet.None
+			return
 		}
 		data.Data["parentDepts"] = res
 
@@ -42,12 +40,12 @@ func get_dept_browse(data *TemplateData) gnet.Action {
 	data.Data["depts"], err = dept_getTreeMenu(data, 0, dept_createManageLink)
 	if err != nil {
 		data.OutErr(err)
-		return gnet.None
+		return
 	}
 	data.Data["sons"], err = dept_getSons(int32(deptID))
 	if err != nil {
 		data.OutErr(err)
-		return gnet.None
+		return
 	}
 	getDataStructure := protocol.GET_MSG_USER_Dept_getDataStructure()
 	getDataStructure.RootDeptID = int32(0)
@@ -55,16 +53,16 @@ func get_dept_browse(data *TemplateData) gnet.Action {
 	err = msg.SendMsgWaitResult(0, getDataStructure, &res)
 	if err != nil {
 		data.OutErr(err)
-		return gnet.None
+		return
 	}
 	data.Data["tree"] = res.List
 	getDataStructure.Put()
 	if err != nil {
 		data.OutErr(err)
-		return gnet.None
+		return
 	}
 	templateOut("dept.browse.html", data)
-	return gnet.None
+
 }
 func dept_getTree(rootDeptId int32) (deptList []*protocol.MSG_USER_Dept_cache, err error) {
 	res, err := HostConn.CacheGetPath(protocol.UserServerNo, protocol.PATH_USER_DEPT_CACHE)
@@ -214,14 +212,14 @@ func dept_createMemberLink(data *TemplateData, dept *protocol.MSG_USER_Dept_cach
 	buf.WriteString(html_a(createLink("company", "browse", "dept="+id), dept.Name, "_self", "id='dept"+id+"'"))
 	return
 }
-func post_dept_updateOrder(data *TemplateData) gnet.Action {
+func post_dept_updateOrder(data *TemplateData) {
 	ws := data.ws
 	post := ws.GetAllPost()
 
 	res, err := HostConn.CacheGetPath(protocol.UserServerNo, protocol.PATH_USER_DEPT_CACHE)
 	if err != nil {
 		ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrDeptInfo"], err))
-		return gnet.None
+		return
 	}
 	var m = make(map[int32]*protocol.MSG_USER_Dept_cache)
 	buf := bufpool.Get().(*libraries.MsgBuffer)
@@ -239,12 +237,12 @@ func post_dept_updateOrder(data *TemplateData) gnet.Action {
 		id, err := strconv.Atoi(deptId)
 		if err != nil {
 			ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrDeptIDType"], deptId) + js.Reload("parent"))
-			return gnet.None
+			return
 		}
 		o, err := strconv.Atoi(order[0])
 		if err != nil {
 			ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrOrderType"], deptId, order) + js.Reload("parent"))
-			return gnet.None
+			return
 		}
 
 		if deptinfo, ok := m[int32(id)]; ok {
@@ -255,7 +253,7 @@ func post_dept_updateOrder(data *TemplateData) gnet.Action {
 
 		} else {
 			ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrDeptInfoDeptID"], deptId) + js.Reload("parent"))
-			return gnet.None
+			return
 		}
 	}
 
@@ -263,17 +261,17 @@ func post_dept_updateOrder(data *TemplateData) gnet.Action {
 	update.Put()
 	if err != nil {
 		ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrUpdate"], err) + js.Reload("parent"))
-		return gnet.None
+		return
 	}
 	ws.WriteString(js.Reload("parent"))
-	return gnet.None
+	return
 }
-func post_dept_manageChild(data *TemplateData) gnet.Action {
+func post_dept_manageChild(data *TemplateData) {
 	ws := data.ws
 	res, err := HostConn.CacheGetPath(protocol.UserServerNo, protocol.PATH_USER_DEPT_CACHE)
 	if err != nil {
 		ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrDeptInfo"], err))
-		return gnet.None
+		return
 	}
 	var m = make(map[int32]*protocol.MSG_USER_Dept_cache)
 	buf := bufpool.Get().(*libraries.MsgBuffer)
@@ -334,7 +332,7 @@ func post_dept_manageChild(data *TemplateData) gnet.Action {
 			id, _ := strconv.Atoi(str_id)
 			if deptinfo, ok := m[int32(id)]; !ok {
 				//ws.WriteString(js.Alert(fmt.Sprintf(data.Lang["dept"]["error"].(map[string]string)["ErrDeptInfoDeptID"], str_id)) + js.Reload("parent"))
-				//return gnet.None
+				//return
 			} else {
 				deptinfo.Name = v[0]
 				update.List = append(update.List, deptinfo)
@@ -346,17 +344,17 @@ func post_dept_manageChild(data *TemplateData) gnet.Action {
 	update.Put()
 	if err != nil {
 		ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrUpdate"], err) + js.Reload("parent"))
-		return gnet.None
+		return
 	}
 	ws.WriteString(js.Reload("parent"))
-	return gnet.None
+	return
 }
-func get_dept_delete(data *TemplateData) gnet.Action {
+func get_dept_delete(data *TemplateData) {
 	ws := data.ws
 	deptid, _ := strconv.Atoi(ws.Query("deptid"))
 	if ws.Query("confirm") != "yes" {
 		ws.WriteString(js.Confirm(data.Lang["dept"]["confirmDelete"].(string), createLink(`dept`, `delete`, "deptid="+ws.Query("deptid")+"&confirm=yes"), ""))
-		return gnet.None
+		return
 	}
 	out := protocol.GET_MSG_USER_Dept_delete()
 	out.DeptId = int32(deptid)
@@ -365,21 +363,21 @@ func get_dept_delete(data *TemplateData) gnet.Action {
 	out.Put()
 	if err != nil {
 		ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrUpdate"], err))
-		return gnet.None
+		return
 	}
 	if res.Result != protocol.Success {
 		ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)[res.Result.String()]) + js.Reload("parent"))
-		return gnet.None
+		return
 	}
 	ws.WriteString(js.Reload("parent"))
-	return gnet.None
+	return
 }
-func get_dept_edit(data *TemplateData) gnet.Action {
+func get_dept_edit(data *TemplateData) {
 	deptid, _ := strconv.Atoi(data.ws.Query("deptid"))
 	deptinfo, err := dept_getCacheById(int32(deptid))
 	if err != nil || deptinfo == nil {
 		data.ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrDeptInfoDeptID"], deptid) + js.Reload("parent"))
-		return gnet.None
+		return
 	}
 	data.Data["dept"] = deptinfo
 	out := protocol.GET_MSG_USER_getDeptUserPairs()
@@ -389,7 +387,7 @@ func get_dept_edit(data *TemplateData) gnet.Action {
 	out.Put()
 	if err != nil {
 		data.ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrGetDeptUser"], err) + js.Reload("parent"))
-		return gnet.None
+		return
 	}
 	var users = []protocol.HtmlKeyValueStr{protocol.HtmlKeyValueStr{"0", ""}}
 	for _, v := range res.List {
@@ -398,22 +396,22 @@ func get_dept_edit(data *TemplateData) gnet.Action {
 	data.Data["users"] = users
 
 	templateOut("dept.edit.html", data)
-	return gnet.None
+	return
 }
-func post_dept_edit(data *TemplateData) gnet.Action {
+func post_dept_edit(data *TemplateData) {
 
 	deptid, _ := strconv.Atoi(data.ws.Query("deptid"))
 	deptinfo, err := dept_getCacheById(int32(deptid))
 	if err != nil || deptinfo == nil {
 		data.ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrDeptInfoDeptID"], deptid) + js.Reload("parent"))
-		return gnet.None
+		return
 	}
 	manager, _ := strconv.Atoi(data.ws.Post("manager"))
 	if manager != 0 {
 		managerUser := HostConn.GetUserCacheById(int32(manager))
 		if managerUser == nil {
 			data.ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrManager"]) + js.Reload("parent"))
-			return gnet.None
+			return
 		}
 		deptinfo.Manager = managerUser.Id
 		deptinfo.ManagerName = managerUser.Realname
@@ -432,10 +430,10 @@ func post_dept_edit(data *TemplateData) gnet.Action {
 	update.Put()
 	if err != nil {
 		data.ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrUpdate"], err) + js.Reload("parent"))
-		return gnet.None
+		return
 	}
 	data.ws.WriteString(js.Alert(data.Lang["dept"]["successSave"].(string)) + js.Reload("parent"))
-	return gnet.None
+	return
 }
 func dept_getCacheById(deptId int32) (deptinfo *protocol.MSG_USER_Dept_cache, err error) {
 	err = HostConn.CacheGet(protocol.UserServerNo, protocol.PATH_USER_DEPT_CACHE, strconv.Itoa(int(deptId)), &deptinfo)

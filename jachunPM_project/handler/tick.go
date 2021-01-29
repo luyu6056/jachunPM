@@ -89,10 +89,10 @@ func HandleTick(t time.Time) {
 	//同步缓存
 
 	for _, v := range products {
-		product_setCache(v)
+		product_setCache(v.Id)
 	}
 
 	for _, v := range modules {
-		tree_setCache(v)
+		tree_setCache(v.Id)
 	}
 }

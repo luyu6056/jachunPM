@@ -1,0 +1,57 @@
+
+<style>
+.file-input .file-editbox{max-width:40%;}
+.file-input-list .input-group-btn{float:left}
+</style>
+<div class="file-input-list" data-provide="fileInputList" data-each-file-max-size="{{.Config.common.common.maxUploadSize}}" data-file-size-error="{{printf .Lang.file.errorFileSize .Config.common.common.maxUploadSize}}">
+  <div class="file-input">
+    <div class="file-input-empty">
+      <button type="button" class="btn btn-link file-input-btn"><i class="icon icon-plus"></i> {{.Lang.file.addFile}}</button> <small class="muted">{{printf .Lang.file.maxUploadSize .Config.common.common.maxUploadSize}}</small>
+    </div>
+    <div class="file-input-edit input-group">
+      <div class="input-group-cell"><i class="icon icon-paper-clip text-muted"></i></div>
+      <input type="text" name="{{.Data.labelsName}}[]" class="form-control file-editbox" placeholder="{{.Lang.file.title}}">
+      <div class="input-group-btn">
+        <button type="button" class="btn btn-success file-name-confirm"><i class="icon icon-check"></i></button>
+        <button type="button" class="btn btn-gray file-name-cancel"><i class="icon icon-close"></i></button>
+      </div>
+    </div>
+    <div class="file-input-normal input-group">
+      <div class="input-group-cell"><i class="icon icon-paper-clip text-muted"></i></div>
+      <div class="input-group-cell">
+        <span class="file-title"></span>
+        <small class="file-size muted"></small>
+      </div>
+      <div class="input-group-btn">
+        <button type="button" class="btn btn-link file-input-rename">{{.Lang.file.edit}}</button>
+        <button type="button" class="btn btn-link file-input-delete">{{.Lang.delete}}</button>
+      </div>
+      <div class="input-group-btn" style="">
+      {{if eq .Data.action "task"}}
+      {{if .Data.examine}}
+        {{if .Data.isadmin}}
+          {{html_select "fileType" (mergeKeyValueStr .Lang.file.typeChoices .Lang.file.FinalFile) "" "class='form-control chosen'"}}
+        {{else}}
+      {{html_select "fileType" .Lang.file.FinalFile "" "class='form-control chosen'"}}
+        {{end}}
+      {{end}}
+      {{if not .Data.examine}}
+       {{if ne .Data.action "examine"}}
+       {{html_select "fileType" .Lang.file.typeChoices "" "class='form-control chosen'"}}
+       {{end}}
+       {{end}}
+       {{end}}
+       {{if eq .Data.action "examine"}}
+       {{html_select "fileType" .Lang.file.feedbackFile "" "class='form-control chosen'"}}
+       {{end}}
+       {{if eq .Data.action "internalaudit"}}
+       {{html_select "fileType" .Lang.file.processFile "" "class='form-control chosen'"}}
+       {{end}}
+       {{if eq .Data.action "project"}}
+       {{html_select "fileType" .Lang.file.specFile "" "class='form-control chosen'"}}
+       {{end}}
+      </div>
+    </div>
+    <input type="file" name="{{.Data.filesName}}">
+  </div>
+</div>

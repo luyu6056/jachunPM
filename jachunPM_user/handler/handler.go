@@ -69,7 +69,7 @@ func Handler(in *protocol.Msg) {
 		in.SendResult(out)
 		out.Put()
 	case *protocol.MSG_USER_getPairs:
-		list, err := user_getPairs(data.Params, data.UsersToAppended)
+		list, err := user_getPairs(data.Params, data.UsersToAppended, in)
 		if err != nil {
 			in.WriteErr(err)
 			return
@@ -80,6 +80,32 @@ func Handler(in *protocol.Msg) {
 		out.Put()
 	case *protocol.MSG_USER_updateUserView:
 		updateUserView(data, in)
+	case *protocol.MSG_USER_getContactLists:
+		user_getContactLists(data, in)
+	case *protocol.MSG_USER_getContactListByUid:
+		user_getContactListByUid(data, in)
+	case *protocol.MSG_USER_getContactListById:
+		user_getContactListById(data, in)
+	case *protocol.MSG_USER_insertUpdateContactList:
+		user_insertUpdateContactList(data, in)
+	case *protocol.MSG_USER_getGlobalContacts:
+		list, err := user_getGlobalContacts()
+		if err != nil {
+			in.WriteErr(err)
+			return
+		}
+		out := protocol.GET_MSG_USER_getGlobalContacts_result()
+		for _, v := range list {
+			tmp := protocol.GET_MSG_USER_ContactList()
+			tmp.Id = v.Id
+			tmp.ListName = v.ListName
+			tmp.Uid = v.Uid
+			tmp.UserList = v.UserList
+			tmp.Share = v.Share
+			out.Result = append(out.Result, tmp)
+		}
+		in.SendResult(out)
+		out.Put()
 	default:
 		libraries.ReleaseLog("未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 	}

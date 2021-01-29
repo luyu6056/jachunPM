@@ -171,3 +171,50 @@ type MSG_USER_updateUserView struct {
 	UserIds   []int32
 	GroupIds  []int32
 }
+type MSG_USER_getContactLists struct {
+	QueryID uint32
+	Uid     int32
+	Params  string
+}
+type MSG_USER_getContactLists_result struct {
+	QueryResultID uint32
+	List          []HtmlKeyValueStr
+}
+type MSG_USER_getContactListByUid struct {
+	QueryID uint32
+	Uid     int32
+}
+type MSG_USER_getContactListByUid_result struct {
+	QueryResultID uint32
+	List          []HtmlKeyValueStr
+}
+type MSG_USER_getContactListById struct {
+	QueryID uint32
+	Id      int32
+}
+type MSG_USER_getContactListById_result struct {
+	QueryResultID uint32
+	Result        *MSG_USER_ContactList
+}
+type MSG_USER_ContactList struct {
+	Id       int32
+	Uid      int32
+	ListName string
+	UserList []int32
+	Share    bool
+}
+type MSG_USER_insertUpdateContactList struct {
+	QueryID uint32
+	Insert  *MSG_USER_ContactList
+}
+type MSG_USER_insertUpdateContactList_result struct {
+	QueryResultID uint32
+	Id            int32
+}
+type MSG_USER_getGlobalContacts struct {
+	QueryID uint32
+}
+type MSG_USER_getGlobalContacts_result struct {
+	QueryResultID uint32
+	Result        []*MSG_USER_ContactList
+}

@@ -1,0 +1,15 @@
+<script type="text/javascript">var productID={{.Data.productID}},module={{.Data.module}},method={{.Data.method}},extra={{.Data.extra}};</script>
+
+
+<div class="table-row">
+  <div class="table-col col-left">
+    <div class="list-group">
+    {{range .Data.branches -}}
+      {{html_a (printf $.Data.link $.Data.productID .Key) (strAdd "<i class='icon-cube'></i>" .Value) "" ""}}
+{{end -}}
+    </div> 
+    <div class="col-footer">
+    <a href='{{helper_createLink "branch" "manage" "productID=" $.Data.productID}}' ><i class='icon icon-cards-view muted'></i> 维护平台</a>
+</div>  
+  </div>
+</div>

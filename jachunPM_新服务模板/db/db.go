@@ -19,7 +19,7 @@ func Init() *mysql.MysqlDB {
 	if config.Config.MysqlMaxConn > 0 {
 		db.MaxOpenConns = config.Config.MysqlMaxConn
 	}
-	errs := DB.StoreEngine("TokuDB").Sync2(
+	errs := db.StoreEngine("TokuDB").Sync2(
 		new(Log_msg),
 	)
 	if errs != nil {

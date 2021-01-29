@@ -27,6 +27,22 @@ func Handler(in *protocol.Msg) {
 		tree_delete(data, in)
 	case *protocol.MSG_PROJECT_product_update:
 		product_update(data, in)
+	case *protocol.MSG_PROJECT_productplan_getPairsForStory:
+		productplan_getPairsForStory(data, in)
+	case *protocol.MSG_PROJECT_productplan_getList:
+		productplan_getList(data, in)
+	case *protocol.MSG_PROJECT_productplan_getLast:
+		productplan_getLast(data, in)
+	case *protocol.MSG_PROJECT_product_editBranch:
+		product_editBranch(data, in)
+	case *protocol.MSG_PROJECT_product_deleteBranch:
+		product_deleteBranch(data, in)
+	case *protocol.MSG_PROJECT_productplan_getPairs:
+		productplan_getPairs(data, in)
+	case *protocol.MSG_PROJECT_productplan_insertUpdate:
+		productplan_insertUpdate(data, in)
+	case *protocol.MSG_PROJECT_productplan_delete:
+		productplan_delete(data, in)
 	default:
 		libraries.ReleaseLog("未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 	}

@@ -60,7 +60,7 @@
         <tr>
           <td class='c-id'>
             {{if $canBatchEdit}}
-            {{html_checkBox "users" (appendKeyValueStr $user.Account "") ""}}{{html_a (helper_createLink "user" "view" "account=" $user.Account) (printf "%03d" $user.Id)}}
+            {{html_checkbox "users" (appendKeyValueStr $user.Account "") ""}}{{html_a (helper_createLink "user" "view" "account=" $user.Account) (printf "%03d" $user.Id)}}
             {{else}}
             {{printf "%03d" $user.Id}}
             {{end}}

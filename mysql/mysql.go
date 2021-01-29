@@ -214,10 +214,13 @@ Retry:
 					record[key] = "NULL"
 					continue
 				}
-
-				record[key], err = binaryToStr(columns[i], data, &pos, row)
+				str, err := binaryToStr(columns[i], data, &pos, row)
+				if str == "NULL" {
+					str = ""
+				}
+				record[key] = str
 				if err != nil {
-					return
+					return nil, err
 				}
 			}
 			maps[index] = record
@@ -340,7 +343,7 @@ Retry:
 	if is_struct {
 		offset = 0
 		if is_ptr {
-			if reflect2.IsNil(*(*interface{})(unsafe.Pointer(ref_ptr))) {
+			if *(*uintptr)(unsafe.Pointer(ref_ptr)) == 0 {
 				*(*uintptr)(ref_ptr) = reflect.New(type_struct).Pointer()
 			}
 		}
@@ -368,7 +371,7 @@ Retry:
 		for index, mglen := range row.msg_len {
 			uint_ptr = uintptr(ref_ptr) + offset*uintptr(index)
 			if is_ptr {
-				if reflect2.IsNil(*(*interface{})(unsafe.Pointer(uint_ptr))) {
+				if *(*uintptr)(unsafe.Pointer(uint_ptr)) == 0 {
 					//obj_v.Index(index).Set(reflect.New(obj_v.Type().Elem()))
 					*((*uintptr)(unsafe.Pointer(uint_ptr))) = reflect.New(type_struct).Pointer()
 				}
@@ -484,7 +487,7 @@ Retry:
 		for index, msglen := range row.msg_len {
 			uint_ptr = uintptr(ref_ptr) + offset*uintptr(index)
 			if is_ptr {
-				if reflect2.IsNil(*(*interface{})(unsafe.Pointer(uint_ptr))) {
+				if *(*uintptr)(unsafe.Pointer(uint_ptr)) == 0 {
 					//obj_v.Index(index).Set(reflect.New(obj_v.Type().Elem()))
 					*((*uintptr)(unsafe.Pointer(uint_ptr))) = reflect.New(type_struct).Pointer()
 				}
@@ -510,7 +513,6 @@ Retry:
 					field_struct = v
 				} else {
 					real_key := string(column.name)
-
 					field, ok := type_struct.FieldByName(real_key)
 					if !ok {
 						field_m[real_key] = &Field_struct{Kind: reflect.Invalid}
@@ -695,11 +697,11 @@ Retry:
 					if err != nil {
 						return errors.New("字段" + string(column.name) + "读取错误1" + err.Error())
 					}
-					if field_struct.Kind == reflect.String {
-						*((*string)(unsafe.Pointer(uint_ptr + field_struct.Offset))) = str
+					if str == "" || str == "NULL" {
 						continue
 					}
-					if str == "" || str == "NULL" {
+					if field_struct.Kind == reflect.String {
+						*((*string)(unsafe.Pointer(uint_ptr + field_struct.Offset))) = str
 						continue
 					}
 					switch {
@@ -2186,6 +2188,12 @@ func binaryToStr(column MysqlColumn, data []byte, pos *int, row *MysqlRows) (str
 			}
 			str = string(t)
 			//case columns.conn.parseTime:
+		case column.fieldtype == fieldTypeDate || column.fieldtype == fieldTypeNewDate:
+			t, err := parseBinaryDateTime(uint64(n), data[*pos:], row.conn.loc)
+			if err != nil {
+				return "", err
+			}
+			str = t.Format("2006-01-02")
 		default:
 			t, err := parseBinaryDateTime(uint64(n), data[*pos:], row.conn.loc)
 			if err != nil {

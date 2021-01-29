@@ -4,6 +4,7 @@ import (
 	"jachunPM_project/db"
 	"protocol"
 	"strconv"
+	"time"
 )
 
 func tree_getLinePairs(data *protocol.MSG_PROJECT_tree_getLinePairs, in *protocol.Msg) {
@@ -52,23 +53,12 @@ func tree_getAllChildId(moduleID int32) (res []int32) {
 	return
 }
 
-func tree_setCache(m *db.Module) {
+func tree_setCache(id int32) {
 	data := protocol.GET_MSG_PROJECT_tree_cache()
-	data.Branch = m.Branch
-	data.Collector = m.Collector
-	data.Deleted = m.Deleted
-	data.Grade = m.Grade
-	data.Id = m.Id
-	data.Name = m.Name
-	data.Order = m.Order
-	data.Owner = m.Owner
-	data.OwnerID = m.OwnerID
-	data.Parent = m.Parent
-	data.Path = m.Path
-	data.Root = m.Root
-	data.Short = m.Short
-	data.Type = m.Type
-	HostConn.CacheSet(protocol.PATH_PROJECT_TREE_CACHE, strconv.Itoa(int(data.Id)), data, 0)
+	HostConn.DB.Table(db.TABLE_MODULE).Prepare().Where("Id=?", id).Find(&data)
+	if data.Id != 0 {
+		HostConn.CacheSet(protocol.PATH_PROJECT_TREE_CACHE, strconv.Itoa(int(data.Id)), data, 0)
+	}
 	data.Put()
 }
 func tree_manageChild(data *protocol.MSG_PROJECT_tree_manageChild, in *protocol.Msg) {
@@ -167,9 +157,7 @@ func tree_manageChild(data *protocol.MSG_PROJECT_tree_manageChild, in *protocol.
 		}
 	}
 	session.CommitCallback(func() {
-		var list []*db.Module
-		session.Table(db.TABLE_MODULE).Prepare().Where(map[string]interface{}{"id": ids}).Limit(0).Select(&list)
-		for _, v := range list {
+		for _, v := range ids {
 			tree_setCache(v)
 		}
 	})
@@ -222,25 +210,22 @@ func tree_checkUnique(module *protocol.MSG_PROJECT_tree_cache, modules []*protoc
 	return false, nil
 }
 func tree_updateList(data *protocol.MSG_PROJECT_tree_updateList, in *protocol.Msg) {
+	for _, v := range data.Modules {
+		v.TimeStamp = time.Now().Unix()
+	}
 	update, err := HostConn.DB.Table(db.TABLE_MODULE).ReplaceAll(data.Modules)
 	in.WriteErr(err)
 	if update {
-		var ids = make([]int32, len(data.Modules))
-		for k, v := range data.Modules {
-			ids[k] = v.Id
-		}
-		var list []*db.Module
-		HostConn.DB.Table(db.TABLE_MODULE).Where(map[string]interface{}{"id": ids}).Limit(0).Select(&list)
-		for _, v := range list {
-			tree_setCache(v)
+		for _, v := range data.Modules {
+			tree_setCache(v.Id)
 		}
 	}
 }
 func tree_delete(data *protocol.MSG_PROJECT_tree_delete, in *protocol.Msg) {
-	_, err := in.DB.Table(db.TABLE_MODULE).Where(map[string]interface{}{"Id": data.Ids}).Delete()
+	_, err := in.DB.Table(db.TABLE_MODULE).Where(map[string]interface{}{"Id": data.Ids}).Update(map[string]interface{}{"Deleted": true, "TimeStamp": time.Now().Unix()})
 	in.WriteErr(err)
 	for _, id := range data.Ids {
-		HostConn.CacheDel(protocol.PATH_PROJECT_TREE_CACHE, strconv.Itoa(int(id)))
+		tree_setCache(id)
 	}
 
 }

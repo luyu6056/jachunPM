@@ -10,6 +10,10 @@ const (
 	CMD_MSG_TEST_testsuite_info = 829781510
 	CMD_MSG_TEST_testsuite_getById = -143122426
 	CMD_MSG_TEST_testsuite_getById_result = -1951638010
+	CMD_MSG_TEST_bug_getCount = 614527750
+	CMD_MSG_TEST_buf_getCount_result = 298479622
+	CMD_MSG_TEST_product_deleteBranch_check = 1974311942
+	CMD_MSG_TEST_product_deleteBranch_result = -1650651898
 )
 
 type MSG_TEST_testsuite_info struct {
@@ -192,6 +196,198 @@ func (data *MSG_TEST_testsuite_getById_result) getQueryResultID() uint32 {
 	return data.QueryResultID
 }
 func (data *MSG_TEST_testsuite_getById_result) setQueryResultID(id uint32) {
+	data.QueryResultID = id
+}
+
+type MSG_TEST_bug_getCount struct {
+	QueryID uint32
+	Where map[string]interface{}
+}
+
+var pool_MSG_TEST_bug_getCount = sync.Pool{New: func() interface{} { return &MSG_TEST_bug_getCount{} }}
+
+func GET_MSG_TEST_bug_getCount() *MSG_TEST_bug_getCount {
+	return pool_MSG_TEST_bug_getCount.Get().(*MSG_TEST_bug_getCount)
+}
+
+func (data *MSG_TEST_bug_getCount) cmd() int32 {
+	return CMD_MSG_TEST_bug_getCount
+}
+
+func (data *MSG_TEST_bug_getCount) Put() {
+	data.QueryID = 0
+	data.Where = nil
+	pool_MSG_TEST_bug_getCount.Put(data)
+}
+func (data *MSG_TEST_bug_getCount) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_TEST_bug_getCount,buf)
+	WRITE_MSG_TEST_bug_getCount(data, buf)
+}
+
+func WRITE_MSG_TEST_bug_getCount(data *MSG_TEST_bug_getCount, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_map(data.Where,buf)
+}
+
+func READ_MSG_TEST_bug_getCount(buf *libraries.MsgBuffer) *MSG_TEST_bug_getCount {
+	data := pool_MSG_TEST_bug_getCount.Get().(*MSG_TEST_bug_getCount)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_TEST_bug_getCount) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	READ_map(&data.Where,buf)
+
+}
+func (data *MSG_TEST_bug_getCount) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_TEST_bug_getCount) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_TEST_buf_getCount_result struct {
+	QueryResultID uint32
+	Count int
+}
+
+var pool_MSG_TEST_buf_getCount_result = sync.Pool{New: func() interface{} { return &MSG_TEST_buf_getCount_result{} }}
+
+func GET_MSG_TEST_buf_getCount_result() *MSG_TEST_buf_getCount_result {
+	return pool_MSG_TEST_buf_getCount_result.Get().(*MSG_TEST_buf_getCount_result)
+}
+
+func (data *MSG_TEST_buf_getCount_result) cmd() int32 {
+	return CMD_MSG_TEST_buf_getCount_result
+}
+
+func (data *MSG_TEST_buf_getCount_result) Put() {
+	data.QueryResultID = 0
+	data.Count = 0
+	pool_MSG_TEST_buf_getCount_result.Put(data)
+}
+func (data *MSG_TEST_buf_getCount_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_TEST_buf_getCount_result,buf)
+	WRITE_MSG_TEST_buf_getCount_result(data, buf)
+}
+
+func WRITE_MSG_TEST_buf_getCount_result(data *MSG_TEST_buf_getCount_result, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryResultID, buf)
+	WRITE_int(data.Count, buf)
+}
+
+func READ_MSG_TEST_buf_getCount_result(buf *libraries.MsgBuffer) *MSG_TEST_buf_getCount_result {
+	data := pool_MSG_TEST_buf_getCount_result.Get().(*MSG_TEST_buf_getCount_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_TEST_buf_getCount_result) read(buf *libraries.MsgBuffer) {
+	data.QueryResultID = READ_uint32(buf)
+	data.Count = READ_int(buf)
+
+}
+func (data *MSG_TEST_buf_getCount_result) getQueryResultID() uint32 {
+	return data.QueryResultID
+}
+func (data *MSG_TEST_buf_getCount_result) setQueryResultID(id uint32) {
+	data.QueryResultID = id
+}
+
+type MSG_TEST_product_deleteBranch_check struct {
+	QueryID uint32
+	BranchID int32
+}
+
+var pool_MSG_TEST_product_deleteBranch_check = sync.Pool{New: func() interface{} { return &MSG_TEST_product_deleteBranch_check{} }}
+
+func GET_MSG_TEST_product_deleteBranch_check() *MSG_TEST_product_deleteBranch_check {
+	return pool_MSG_TEST_product_deleteBranch_check.Get().(*MSG_TEST_product_deleteBranch_check)
+}
+
+func (data *MSG_TEST_product_deleteBranch_check) cmd() int32 {
+	return CMD_MSG_TEST_product_deleteBranch_check
+}
+
+func (data *MSG_TEST_product_deleteBranch_check) Put() {
+	data.QueryID = 0
+	data.BranchID = 0
+	pool_MSG_TEST_product_deleteBranch_check.Put(data)
+}
+func (data *MSG_TEST_product_deleteBranch_check) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_TEST_product_deleteBranch_check,buf)
+	WRITE_MSG_TEST_product_deleteBranch_check(data, buf)
+}
+
+func WRITE_MSG_TEST_product_deleteBranch_check(data *MSG_TEST_product_deleteBranch_check, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_int32(data.BranchID, buf)
+}
+
+func READ_MSG_TEST_product_deleteBranch_check(buf *libraries.MsgBuffer) *MSG_TEST_product_deleteBranch_check {
+	data := pool_MSG_TEST_product_deleteBranch_check.Get().(*MSG_TEST_product_deleteBranch_check)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_TEST_product_deleteBranch_check) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	data.BranchID = READ_int32(buf)
+
+}
+func (data *MSG_TEST_product_deleteBranch_check) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_TEST_product_deleteBranch_check) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_TEST_product_deleteBranch_result struct {
+	QueryResultID uint32
+	Result ErrCode
+}
+
+var pool_MSG_TEST_product_deleteBranch_result = sync.Pool{New: func() interface{} { return &MSG_TEST_product_deleteBranch_result{} }}
+
+func GET_MSG_TEST_product_deleteBranch_result() *MSG_TEST_product_deleteBranch_result {
+	return pool_MSG_TEST_product_deleteBranch_result.Get().(*MSG_TEST_product_deleteBranch_result)
+}
+
+func (data *MSG_TEST_product_deleteBranch_result) cmd() int32 {
+	return CMD_MSG_TEST_product_deleteBranch_result
+}
+
+func (data *MSG_TEST_product_deleteBranch_result) Put() {
+	data.QueryResultID = 0
+	data.Result = 0
+	pool_MSG_TEST_product_deleteBranch_result.Put(data)
+}
+func (data *MSG_TEST_product_deleteBranch_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_TEST_product_deleteBranch_result,buf)
+	WRITE_MSG_TEST_product_deleteBranch_result(data, buf)
+}
+
+func WRITE_MSG_TEST_product_deleteBranch_result(data *MSG_TEST_product_deleteBranch_result, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryResultID, buf)
+	WRITE_ErrCode(data.Result, buf)
+}
+
+func READ_MSG_TEST_product_deleteBranch_result(buf *libraries.MsgBuffer) *MSG_TEST_product_deleteBranch_result {
+	data := pool_MSG_TEST_product_deleteBranch_result.Get().(*MSG_TEST_product_deleteBranch_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_TEST_product_deleteBranch_result) read(buf *libraries.MsgBuffer) {
+	data.QueryResultID = READ_uint32(buf)
+	data.Result = READ_ErrCode(buf)
+
+}
+func (data *MSG_TEST_product_deleteBranch_result) getQueryResultID() uint32 {
+	return data.QueryResultID
+}
+func (data *MSG_TEST_product_deleteBranch_result) setQueryResultID(id uint32) {
 	data.QueryResultID = id
 }
 

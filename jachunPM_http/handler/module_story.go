@@ -4,15 +4,15 @@ import (
 	"jachunPM_http/js"
 	"protocol"
 	"strconv"
-
-	"github.com/luyu6056/gnet"
+	"strings"
 )
 
 func init() {
 
 	httpHandlerMap["GET"]["/story/create"] = get_story_create
+	httpHandlerMap["POST"]["/story/create"] = post_story_create
 }
-func get_story_create(data *TemplateData) (action gnet.Action) {
+func get_story_create(data *TemplateData) {
 
 	/*extra = str_replace(array(",", " "), array("&", ""), extra)
 	  parse_str(extra, output)
@@ -57,7 +57,9 @@ func get_story_create(data *TemplateData) (action gnet.Action) {
 			return
 		}
 		if productID == 0 && len(products) > 0 {
-			productID, _ = strconv.Atoi(products[0].Key)
+			id, _ := strconv.Atoi(products[0].Key)
+			product = HostConn.GetProductById(int32(id))
+		} else {
 			product = HostConn.GetProductById(int32(productID))
 		}
 
@@ -66,15 +68,12 @@ func get_story_create(data *TemplateData) (action gnet.Action) {
 		data.ws.WriteString(js.Location(createLink("product", "create", nil), ""))
 		return
 	}
-	msg, err := HostConn.GetMsg()
+	msg, err := data.GetMsg()
 	if err != nil {
 		data.OutErr(err)
 		return
 	}
-	user_getPairs := protocol.GET_MSG_USER_getPairs()
-	user_getPairs.Params = "pdfirst|noclosed|nodeleted"
-	var result *protocol.MSG_USER_getPairs_result
-	err = msg.SendMsgWaitResult(0, user_getPairs, &result)
+	users, err := user_getPairs("pdfirst|noclosed|nodeleted")
 	if err != nil {
 		data.OutErr(err)
 		return
@@ -89,8 +88,7 @@ func get_story_create(data *TemplateData) (action gnet.Action) {
 		return
 	}
 
-	err = product_setMenu(data, int32(productID), int32(branch), "")
-	if err != nil {
+	if err = product_setMenu(data, int32(productID), int32(branch), ""); err != nil {
 		data.OutErr(err)
 		return
 	}
@@ -170,25 +168,32 @@ func get_story_create(data *TemplateData) (action gnet.Action) {
 	          storyField = fromObject->{fromObjectField}
 	      }
 	  }*/
-	var customFields = make(map[string]string, len(data.Config["story"]["list"]["customCreateFields"].([]string)))
-	for _, field := range data.Config["story"]["list"]["customCreateFields"].([]string) {
-		customFields[field] = data.Lang["story"][field].(string)
+	var customFields = make([]protocol.HtmlKeyValueStr, len(data.Config["story"]["list"]["customCreateFields"].([]string)))
+	for k, field := range data.Config["story"]["list"]["customCreateFields"].([]string) {
+		customFields[k] = protocol.HtmlKeyValueStr{Key: field, Value: data.Lang["story"][field].(string)}
 	}
 	data.Data["customFields"] = customFields
 
-	data.Data["showFields"] = data.Config["story"]["custom"]["createFields"]
+	data.Data["showFields"] = strings.Join(data.Config["story"]["custom"]["createFields"].([]string), ",")
 
 	data.Data["title"] = product.Name + data.Lang["common"]["colon"].(string) + data.Lang["story"]["create"].(string)
 	/*data.Data["position"][]       = html::a(this->createLink("product", "browse", "product=productID&branch=branch"), product->name)
 	  data.Data["position"][]       = this->lang->story->common
 	  data.Data["position"][]       = this->lang->story->create*/
 	data.Data["products"] = products
-	data.Data["users"] = result.List
-	user_getPairs.Put()
-	result.Put()
+	data.Data["users"] = users
 	data.Data["moduleID"] = moduleID
 	data.Data["moduleOptionMenu"] = moduleOptionMenu
-	//data.Data["plans"]            = this->loadModel("productplan")->getPairsForStory(productID, branch)
+	productplan_getPairsForStory := protocol.GET_MSG_PROJECT_productplan_getPairsForStory()
+	productplan_getPairsForStory.Product = int32(productID)
+	productplan_getPairsForStory.Branch = int32(branch)
+	var plans *protocol.MSG_PROJECT_productplan_getPairsForStory_result
+	if err = msg.SendMsgWaitResult(0, productplan_getPairsForStory, &plans); err != nil {
+		data.OutErr(err)
+		return
+	}
+	productplan_processFuture(data, plans.List)
+	data.Data["plans"] = plans.List
 	data.Data["planID"] = planID
 	data.Data["source"] = source
 	data.Data["sourceNote"] = sourceNote
@@ -208,10 +213,89 @@ func get_story_create(data *TemplateData) (action gnet.Action) {
 	data.Data["verify"] = verify
 	data.Data["keywords"] = keywords
 	data.Data["mailto"] = mailto
+	data.Data["customLink"] = createLink("custom", "ajaxSaveCustomFields", "module=story&section=custom&key=createFields")
 	if data.User.Id == product.PO || projectID > 0 || !data.Config["story"]["common"]["needReview"].(bool) {
 		data.Data["needReview"] = "checked='checked'"
 	}
 
 	templateOut("story.create.html", data)
-	return
+	productplan_getPairsForStory.Put()
+	plans.Put()
+}
+func post_story_create(data *TemplateData) {
+	if !data.ajaxCheckPost() {
+		return
+	}
+	msg, err := data.GetMsg()
+	defer func() {
+		if err != nil {
+			data.ajaxResult(false, err.Error())
+		}
+	}()
+	if err != nil {
+		return
+	}
+	out := protocol.GET_MSG_PROJECT_stroy_create()
+	for key, list := range data.ws.GetAllPost() {
+		switch key {
+		case "product":
+			i, _ := strconv.Atoi(list[0])
+			out.Product = int32(i)
+		case "branch":
+			i, _ := strconv.Atoi(list[0])
+			out.Branch = int32(i)
+		}
+	}
+	//response["result"]  = "success";
+	//response["message"] = this->lang->saveSuccess;
+
+	/*storyResult = this->story->create(projectID, bugID, from = isset(fromObjectIDKey) ? fromObjectIDKey : "");
+	  if(!storyResult or dao::isError())
+	  {
+	      response["result"]  = "fail";
+	      response["message"] = dao::getError();
+	      this->send(response);
+	  }
+	  storyID = storyResult["id"];
+	  if(storyResult["status"] == "exists")
+	  {
+	      response["message"] = sprintf(this->lang->duplicate, this->lang->story->common);
+	      if(projectID == 0)
+	      {
+	          response["locate"] = this->createLink("story", "view", "storyID={storyID}");
+	      }
+	      else
+	      {
+	          response["locate"] = this->createLink("project", "story", "projectID=projectID");
+	      }
+	      this->send(response);
+	  }
+
+	  action = bugID == 0 ? "Opened" : "Frombug";
+	  extra  = bugID == 0 ? "" : bugID;
+
+	  if(isset(fromObjectID))
+	  {
+	      action = fromObjectAction;
+	      extra  = fromObjectID;
+	  }
+	  actionID = this->action->create("story", storyID, action, "", extra);
+
+	  if(todoID > 0)
+	  {
+	      this->dao->update(TABLE_TODO)->set("status")->eq("done")->where("id")->eq(todoID)->exec();
+	      this->action->create("todo", todoID, "finished", "", "STORY:storyID");
+	  }
+
+	  if(this->post->newStory)
+	  {
+	      response["message"] = this->lang->story->successSaved . this->lang->story->newStory;
+	      response["locate"]  = this->createLink("story", "create", "productID=productID&branch=branch&moduleID=moduleID&story=0&projectID=projectID&bugID=bugID");
+	      this->send(response);
+	  }
+
+	  moduleID = this->post->module ? this->post->module : 0;
+	  response["locate"] = this->createLink("project", "story", "projectID=projectID&branch=&browseType=byModule&moduleID=moduleID");
+	  if(projectID == 0) response["locate"] = this->createLink("story", "view", "storyID=storyID");
+	  this->send(response);*/
 }

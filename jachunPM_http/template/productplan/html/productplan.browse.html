@@ -1,0 +1,103 @@
+{{template "header.html" .}}
+<div id="mainMenu" class="clearfix">
+  <div class="btn-toolbar pull-left">
+    {{- range $menuItem := .Data.featureMenu}}
+    {{- if not $menuItem.Hidden}}
+    {{$label := strAdd "<span class='text'>" $menuItem.Text "</span>" (or (and (eq $menuItem.Name $.Data.browseType) (strAdd "<span class='label label-light label-badge'>" $.Page.Total "</span>")) "")}}
+    {{$active := or (and (eq $menuItem.Name $.Data.browseType) "btn-active-text") ""}}
+    {{html_a (helper_createLink "productplan" "browse" "productID=" $.Data.productID "&branch=" $.Data.branch "&browseType=" $menuItem.Name) $label "" (strAdd "class='btn btn-link " $active "' id='" $menuItem.Name "'")}}
+    {{- end}}
+    {{- end}}
+  </div>
+  <div class="btn-toolbar pull-right">
+    {{common_printLink . "productplan" "create" (strAdd "productID=" .Data.product.Id "&branch=" .Data.branch) (strAdd "<i class='icon icon-plus'></i>" .Lang.productplan.create) "" "class='btn btn-primary'"}}
+  </div>
+</div>
+<div id="mainContent">
+  {{if not $.Data.plans}}
+  <div class="table-empty-tip">
+    <p>
+      <span class="text-muted">{{.Lang.productplan.noPlan}}</span>
+      {{if common_hasPriv . "productplan" "create"}}
+      <span class="text-muted">{{.Lang.common.youCould}}</span>
+      {{html_a (helper_createLink "productplan" "create" "productID=" .Data.product.Id "&branch=" .Data.branch) (strAdd "<i class='icon icon-plus'></i> " .Lang.productplan.create) "" "class='btn btn-info'"}}
+      {{end}}
+    </p>
+  </div>
+  {{else}}
+  <form class='main-table table-productplan' data-ride='table' method='post' id='productplanForm' action='{{helper_createLink "product" "batchEdit" "productID=" .Data.product.Id "&branch=" .Data.branch}}'>
+    <table class='table has-sort-head' id="productplanList">
+      <thead>
+      {{$vars := strAdd "productID=" .Data.productID "&branch=" .Data.branch "&browseType=" .Data.browseType "&orderBy=%s&recTotal=" .Page.Total "&recPerPage=" .Page.PerPage}}
+      <tr>
+        <th class='c-id'>
+          {{if common_hasPriv . "productplan" "batchEdit"}}
+          <div class="checkbox-primary check-all" title="{{.Lang.common.selectAll}}">
+            <label></label>
+          </div>
+          {{end}}
+          {{common_printOrderLink . "id" .Data.orderBy $vars .Lang.common.idAB}}
+        </th>
+        <th class='w-140px'>{{common_printOrderLink . "title" .Data.orderBy $vars .Lang.productplan.title}}</th>
+        {{- if ne .Data.currentProductType "normal"}}
+        <th class='w-100px'>{{common_printOrderLink . "branch" .Data.orderBy $vars (printf .Lang.product.branch (index .Lang.product.branchName .Data.product.Type))}}</th>
+        {{- end}}
+        <th class='w-100px'>{{common_printOrderLink . "begin" .Data.orderBy $vars .Lang.productplan.begin}}</th>
+        <th class='w-100px'>{{common_printOrderLink . "end" .Data.orderBy $vars .Lang.productplan.end}}</th>
+        <th class='w-70px'> {{.Lang.productplan.stories}}</th>
+        <th class='w-60px'> {{.Lang.productplan.bugs}}</th>
+        <th class='w-60px'> {{.Lang.productplan.hour}}</th>
+        <th class='w-60px'> {{.Lang.productplan.project}}</th>
+        <th>                {{.Lang.productplan.desc}}</th>
+        <th class='c-actions-5 text-center'>{{.Lang.common.actions}}</th>
+      </tr>
+      </thead>
+      <tbody>
+      {{range $plan := .Data.plans}}
+      <tr>
+        <td class='cell-id'>
+          {{if common_hasPriv $ "productplan" "batchEdit"}}
+          {{html_checkbox "planIDList" (appendKeyValueStr $plan.Id "") "" "" "block"}}{{html_a (helper_createLink "productplan" "view" "planID=" $plan.Id) (printf "%03s" $plan.Id)}}
+          {{else}}
+          {{printf "%03s" $plan.Id}}
+          {{end}}
+        </td>
+        <td class='text-left' title="{{$plan.Title}}">{{html_a (helper_createLink "productplan" "view" "id=" $plan.Id) $plan.Title}}</td>
+        {{if ne $.Data.currentProductType "normal"}}
+        <td>{{getValue $.Data.branches $plan.Branch}}</td>
+        {{end}}
+        <td>{{or (and (eq $plan.Begin  "2030-01-01") $.Lang.productplan.future) $plan.Begin}}</td>
+        <td>{{or (and (eq $plan.End "2030-01-01") $.Lang.productplan.future) $plan.End}}</td>
+        <td class='text-center'>{{$plan.Stories}}</td>
+        <td class='text-center'>{{$plan.Bugs}}</td>
+        <td class='text-center'>{{$plan.Hour}}</td>
+        <td class='text-center'>{{if $plan.ProjectID}}{{html_a (helper_createLink "project" "task" "projectID="  $plan.ProjectID) "<i class='icon-search'></i>"}}{{end}}</td>
+        <td title='{{$plan.Desc}}' class='text-left content'>{{bbcode2html $plan.Desc false}}</td>
+        <td class='c-actions'>
+          {{if common_hasPriv $ "project" "create"}}{{html_a (helper_createLink "project" "create" "projectID=&copyProjectID=&planID=" $plan.Id) "<i class='icon-plus'></i>" "" "class='btn' title='" $.Lang.project.create "'"}}{{end}}
+          {{if common_hasPriv $ "productplan" "linkStory"}}{{html_a (helper_createLink "productplan" "view" "planID=" $plan.Id "&type=story&orderBy=id_desc&link=true") "<i class='icon-link'></i>" "" "class='btn' title='" $.Lang.productplan.linkStory "'"}}{{end}}
+          {{if common_hasPriv $ "productplan" "linkBug"}}{{html_a (helper_createLink "productplan" "view" "planID=" $plan.Id "&type=bug&orderBy=id_desc&link=true") "<i class='icon-bug'></i>" "" "class='btn' title='" $.Lang.productplan.linkBug "'"}}{{end}}
+          {{common_printIcon $ "productplan" "edit" (strAdd "planID=" $plan.Id "&productID=" $.Data.product.Id) $plan "list" ""}}
+          {{if common_hasPriv $ "productplan" "delete"}}{{html_a (strAdd "javascript:ajaxDelete(\"" (helper_createLink "productplan" "delete" "planID=" $plan.Id "&productID=" $.Data.product.Id "&branch=" $.Data.branch "&confirm=yes") "\",\"productplanList\",confirmDelete)") "<i class='icon-close'></i>" "" "class='btn' title='" $.Lang.productplan.delete "'"}}{{end}}
+        </td>
+      </tr>
+      {{end}}
+      </tbody>
+    </table>
+    <div class="table-footer">
+      {{if common_hasPriv . "productplan" "batchEdit"}}
+      <div class="checkbox-primary check-all"><label>{{.Lang.common.selectAll}}</label></div>
+      <div class="table-actions btn-toolbar">
+        {{html_submitButton . .Lang.common.edit "" "btn"}}
+      </div>
+      {{end}}
+      {{pager_show . "right" "pagerjs"}}
+    </div>
+  </form>
+  {{end}}
+</div>
+<script type="text/javascript">
+var confirmDelete={{.Lang.productplan.confirmDelete}},
+browseType={{.Data.browseType}}
+</script>
+{{template "footer.html" .}}

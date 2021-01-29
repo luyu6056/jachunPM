@@ -1,0 +1,76 @@
+{{template "header.html" .}}
+<div id='mainContent' class='main-content{{if eq .Data.mode "edit"}} main-row{{end}}'>
+  {{if eq .Data.mode "edit"}}
+  <div class='side-col'>
+    {{range  .Data.lists}}
+        {{$listClass := or (and (eq .Key (string $.Data.listID)) "btn btn-block active") "btn btn-block"}}
+        {{$shareIcon := or (and (index $.Data.globalContacts .Key) "<i class='icon icon-share-sign'></i>") ""}}
+        {{html_a (helper_createLink "my" "managecontacts" "listID=" .Key "&mode=edit") (strAdd $shareIcon  .Value) "" (strAdd "class='" $listClass "' title='" .Value "'")}}
+    {{end}}
+    {{html_a (helper_createLink "my" "managecontacts" "listID=0&mode=new") (strAdd "<i class='icon icon-plus'></i> " .Lang.user.contacts.createList) "" "class='btn btn-block'" }}
+  </div>
+  <div class='main-col'>
+  {{end}}
+    <div class='main-header'>
+      <h2>
+        {{if eq .Data.mode "new"}}
+        <i class='icon-plus'></i> <strong>{{.Lang.user.contacts.createList}}</strong>
+        {{else}}
+        <i class='icon-cogs'></i> <strong>{{.Lang.user.contacts.manage}}</strong>
+        {{end}}
+      </h2>
+    </div>
+
+    <form method='post' target='hiddenwin' id='dataform'>
+      <table class='table table-form'> 
+        <tr>
+          <th class='w-80px'>{{.Lang.user.contacts.listName}}</th>
+          <td class='w-300px'>
+          <div class='required required-wrapper'></div>
+          {{$readonly := or (and (index .Data.disabled .Data.list.Id) (eq .Data.mode "edit") " readonly") ""}}
+          {{if eq .Data.mode "new"}}
+              {{html_input "newList" "" "class='form-control'"}}
+          {{else}}
+              {{html_input "listName" .Data.list.ListName (strAdd $readonly " class='form-control'")}}
+              {{html_hidden "listID" .Data.list.Id}}
+          {{end}}
+          </td>
+          <td></td>
+        </tr>
+        <tr>
+          <th>{{.Lang.user.contacts.selectedUsers}}</th>
+          <td colspan='2'>
+          {{if eq .Data.mode "new"}}
+              {{html_select "users" .Data.users "" "multiple class='form-control chosen' data-drop_direction='down'"}}
+          {{else}}
+              {{html_select "users" .Data.users .Data.list.UserList (strAdd "multiple " $readonly " class='form-control chosen' data-drop_direction='down'")}}
+          {{end}}
+          </td>
+        </tr>
+        {{if common_hasPriv . "datatable" "setGlobal"}}
+        <tr>
+          <th></th>
+          <td colspan="2">
+            <label class="checkbox-primary">
+              <input type="checkbox" name="share" value="1" id="shareCheckbox"{{if and (ne .Data.mode "new") (index .Data.globalContacts .Data.list.Id)}} checked{{end}}/>
+              <label for="shareCheckbox">{{.Lang.my.shareContacts}}</label>
+            </label>
+          </td>
+        </tr>
+        {{end}}
+        {{if or (eq .Data.mode "new") (not (index .Data.disabled .Data.list.Id))}}
+        <tr>
+          <td></td>
+          <td class="form-actions">
+          {{html_submitButton .}}{{html_hidden "mode" .Data.mode}}
+          {{if eq .Data.mode "edit"}}{{html_a (helper_createLink "my" "deleteContacts" "listID=" .Data.listID) .Lang.common.delete "hiddenwin" "class='btn btn-danger btn-wide'"}}{{end}}
+          </td>
+        </tr>
+        {{end}}
+      </table>
+    </form>
+  {{if eq .Data.mode "edit"}}
+  </div>
+  {{end}}
+</div>
+{{template "footer.html" .}}

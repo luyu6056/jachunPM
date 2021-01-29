@@ -53,8 +53,19 @@ func createLink(moduleName string, methodName string, vars interface{}) string {
 	case []interface{}:
 		if len(v) > 0 {
 			buf.WriteByte('?')
-			for _, s := range v {
-				buf.WriteString(libraries.I2S(s))
+			for k, s := range v {
+				str := libraries.I2S(s)
+				if k == len(v)-1 && str == "true" { //onlybody
+					if k == 0 {
+						buf.WriteString("onlybody=yes")
+					} else {
+						buf.WriteString("&onlybody=yes")
+					}
+
+				} else {
+					buf.WriteString(str)
+				}
+
 			}
 		}
 	default:
@@ -67,40 +78,11 @@ func createLink(moduleName string, methodName string, vars interface{}) string {
 	return res
 }
 func htmlFuncs() {
+	global_Funcs["helper_createLink"] = func(moduleName, methodName string, vars ...interface{}) string {
 
-	global_Funcs["html_checkBox"] = func(name string, options []protocol.HtmlKeyValueStr, checked string) template.HTML {
-		buf := bufpool.Get().(*libraries.MsgBuffer)
-
-		checked = "," + checked + ","
-		for _, option := range options {
-			key := strings.ReplaceAll(option.Key, "item", "")
-			value := option.Value
-			buf.WriteString("<div class='checkbox-primary'>")
-			buf.WriteString("<input type='checkbox' name='")
-			buf.WriteString(name)
-			buf.WriteString("' value='")
-			buf.WriteString(key)
-			buf.WriteString("' ")
-			if strings.Index(checked, ","+key+",") > -1 {
-				buf.WriteString(" checked ='checked'")
-			}
-			buf.WriteString(" id='")
-			buf.WriteString(name)
-			buf.WriteString(key)
-			buf.WriteString("' /> ")
-			buf.WriteString("<label for='")
-			buf.WriteString(name)
-			buf.WriteString(key)
-			buf.WriteString("'>")
-			buf.WriteString(value)
-			buf.WriteString("</label></div>")
-
-		}
-		res := buf.String()
-		buf.Reset()
-		bufpool.Put(buf)
-		return template.HTML(res)
+		return createLink(moduleName, methodName, vars)
 	}
+
 	global_Funcs["html_submitButton"] = func(label, class, misc string, data *TemplateData) template.HTML {
 		if label == "" {
 			label, _ = data.Lang["common"]["save"].(string)
@@ -125,7 +107,7 @@ func htmlFuncs() {
 		return template.HTML(res)
 	}
 	global_Funcs["html_linkButton"] = func(data *TemplateData, server string) string { return "待处理html_linkButton" }
-	global_Funcs["html_hidden"] = func(name string, value ...string) template.HTML {
+	global_Funcs["html_hidden"] = func(name string, value ...interface{}) template.HTML {
 		buf := bufpool.Get().(*libraries.MsgBuffer)
 		buf.WriteString("<input type='hidden' name='")
 		buf.WriteString(name)
@@ -133,11 +115,11 @@ func htmlFuncs() {
 		buf.WriteString(name)
 		buf.WriteString("' value='")
 		if len(value) > 0 {
-			buf.WriteString(value[0])
+			buf.WriteString(libraries.I2S(value[0]))
 		}
 		buf.WriteString("' ")
 		if len(value) == 2 {
-			buf.WriteString(value[1])
+			buf.WriteString(libraries.I2S(value[1]))
 		}
 		buf.WriteString(" />\n")
 		res := buf.String()
@@ -224,12 +206,18 @@ func htmlFuncs() {
 		bufpool.Put(buf)
 		return template.HTML(res)
 	}
-	global_Funcs["html_backButton"] = func(data *TemplateData, value ...string) template.HTML { //label = '', misc = '', class = 'btn-wide'
+	global_Funcs["html_backButton"] = func(data *TemplateData, value ...string) template.HTML { //label = '', misc = '', class = 'btn-wide',url
 		if data.onlybody() {
 			return template.HTML("")
 		}
 		buf := bufpool.Get().(*libraries.MsgBuffer)
-		buf.WriteString("<a href='javascript:history.go(-1);' class='btn btn-back ")
+		if len(value) > 3 {
+			buf.WriteString("<a href='")
+			buf.WriteString(value[3])
+			buf.WriteString("' class='btn btn-back ")
+		} else {
+			buf.WriteString("<a href='javascript:history.go(-1);' class='btn btn-back ")
+		}
 		if len(value) > 2 {
 			buf.WriteString(value[2]) //class
 		} else {
@@ -252,71 +240,7 @@ func htmlFuncs() {
 		return template.HTML(res)
 	}
 	global_Funcs["html_select"] = func(name string, options []protocol.HtmlKeyValueStr, selectedItem interface{}, attrib string, isappend ...bool) template.HTML {
-		var selectedItems []string
-		r := reflect.ValueOf(selectedItem)
-		if r.Kind() == reflect.Slice {
-			for i := 0; i < r.Len(); i++ {
-				selectedItems = append(selectedItems, libraries.I2S(r.Index(i).Interface()))
-			}
-		} else {
-			selectedItems = []string{libraries.I2S(selectedItem)}
-		}
-		if len(isappend) > 0 && isappend[0] {
-			for _, item := range selectedItems {
-				find := false
-				for _, v := range options {
-					if v.Key == item {
-						find = true
-						break
-					}
-				}
-				if !find {
-					options = append(options, protocol.HtmlKeyValueStr{item, item})
-				}
-			}
-
-		}
-		if len(options) == 0 {
-			return template.HTML("")
-		}
-
-		buf := bufpool.Get().(*libraries.MsgBuffer)
-		buf.WriteString("<select name='")
-		buf.WriteString(name)
-		buf.WriteString("' ")
-		if strings.Index(attrib, "id=") == -1 {
-			buf.WriteString("id='")
-			if strings.Index(name, "[") > -1 {
-				buf.WriteString(strings.Trim(strings.ReplaceAll(strings.ReplaceAll(name, "[", ""), "]", ""), " "))
-			} else {
-				buf.WriteString(name)
-			}
-			buf.WriteString("'")
-		}
-		buf.WriteString(" ")
-		buf.WriteString(attrib)
-		buf.WriteString(">\n")
-		for _, option := range options {
-			key := strings.ReplaceAll(option.Key, "item", "")
-			buf.WriteString("<option value='")
-			buf.WriteString(key)
-			buf.WriteString("'")
-			for _, v := range selectedItems {
-				if key == v {
-					buf.WriteString(" selected='selected'")
-					break
-				}
-			}
-			buf.WriteString(">")
-			buf.WriteString(option.Value)
-			buf.WriteString("</option>\n")
-		}
-
-		buf.WriteString("</select>\n")
-		res := buf.String()
-		buf.Reset()
-		bufpool.Put(buf)
-		return template.HTML(res)
+		return template.HTML(html_select(name, options, selectedItem, attrib, isappend...))
 	}
 	global_Funcs["pager_show"] = func(data *TemplateData, align, typ string) template.HTML { //($align = 'right', $type = 'full')
 
@@ -524,8 +448,19 @@ func htmlFuncs() {
 		bufpool.Put(buf)
 		return template.HTML(res)
 	}
-	global_Funcs["bbcode2html"] = func(code string) template.HTML {
-		return template.HTML(libraries.Bbcode2html(code, true, false, false, false, true, false))
+	global_Funcs["bbcode2html"] = func(code string, param ...bool) interface{} { //参数1 是否显示图片，参数2是否输出template.HTML
+		allowimgcode := true
+		if len(param) > 0 {
+			allowimgcode = param[0]
+		}
+		isHtml := true
+		if len(param) > 1 {
+			isHtml = param[1]
+		}
+		if isHtml {
+			return template.HTML(libraries.Bbcode2html(code, true, false, false, false, allowimgcode, false))
+		}
+		return libraries.Bbcode2html(code, true, false, false, false, allowimgcode, false)
 	}
 	global_Funcs["html_icon"] = func(name string, classExt ...string) template.HTML {
 		buf := bufpool.Get().(*libraries.MsgBuffer)
@@ -591,8 +526,10 @@ func html_a(href string, value ...string) string {
 	buf.WriteString("<a href='")
 	buf.WriteString(href)
 	buf.WriteString("' ")
-	if len(value) == 3 {
-		buf.WriteString(value[2])
+	if len(value) > 2 {
+		for i := 2; i < len(value); i++ {
+			buf.WriteString(value[i])
+		}
 	}
 	if len(value) > 1 && value[1] != "_self" && value[1] != "" {
 		buf.WriteString(" target='" + value[1])
@@ -629,6 +566,73 @@ func html_input(name string, value ...string) string { // value  attrib
 		buf.WriteString(value[1]) //attrib
 	}
 	buf.WriteString(" />")
+	res := buf.String()
+	buf.Reset()
+	bufpool.Put(buf)
+	return res
+}
+func html_select(name string, options []protocol.HtmlKeyValueStr, selectedItem interface{}, attrib string, isappend ...bool) string {
+	var selectedItems []string
+	r := reflect.ValueOf(selectedItem)
+	if r.Kind() == reflect.Slice {
+		for i := 0; i < r.Len(); i++ {
+			selectedItems = append(selectedItems, libraries.I2S(r.Index(i).Interface()))
+		}
+	} else {
+		selectedItems = []string{libraries.I2S(selectedItem)}
+	}
+	if len(isappend) > 0 && isappend[0] {
+		for _, item := range selectedItems {
+			find := false
+			for _, v := range options {
+				if v.Key == item {
+					find = true
+					break
+				}
+			}
+			if !find {
+				options = append(options, protocol.HtmlKeyValueStr{item, item})
+			}
+		}
+
+	}
+	if len(options) == 0 {
+		return ""
+	}
+
+	buf := bufpool.Get().(*libraries.MsgBuffer)
+	buf.WriteString("<select name='")
+	buf.WriteString(name)
+	buf.WriteString("' ")
+	if strings.Index(attrib, "id=") == -1 {
+		buf.WriteString("id='")
+		if strings.Index(name, "[") > -1 {
+			buf.WriteString(strings.Trim(strings.ReplaceAll(strings.ReplaceAll(name, "[", ""), "]", ""), " "))
+		} else {
+			buf.WriteString(name)
+		}
+		buf.WriteString("'")
+	}
+	buf.WriteString(" ")
+	buf.WriteString(attrib)
+	buf.WriteString(">\n")
+	for _, option := range options {
+		key := strings.ReplaceAll(option.Key, "item", "")
+		buf.WriteString("<option value='")
+		buf.WriteString(key)
+		buf.WriteString("'")
+		for _, v := range selectedItems {
+			if key == v {
+				buf.WriteString(" selected='selected'")
+				break
+			}
+		}
+		buf.WriteString(">")
+		buf.WriteString(option.Value)
+		buf.WriteString("</option>\n")
+	}
+
+	buf.WriteString("</select>\n")
 	res := buf.String()
 	buf.Reset()
 	bufpool.Put(buf)

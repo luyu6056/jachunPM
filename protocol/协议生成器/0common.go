@@ -95,6 +95,7 @@ type MSG_FILE_upload_result struct {
 type MSG_FILE_getByID struct {
 	QueryID uint32 //请求id
 	FileID  int64
+	NoData  bool //true不反回date
 }
 type MSG_FILE_getByID_result struct {
 	QueryResultID uint32 //返回请求id
@@ -106,7 +107,7 @@ type MSG_FILE_getByID_result struct {
 type MSG_FILE_updateByIDMap struct {
 	QueryID uint32 //请求id
 	FileID  int64
-	Update  map[string]string
+	Update  map[string]interface{}
 }
 
 type MSG_FILE_DeleteByID struct { //

@@ -27,6 +27,7 @@ github.com/luyu6056/cache v1.0.6/go.mod h1:AboJLuhFlejC5l0fCBQZcVufgUiLUuYe57DHl
 github.com/luyu6056/cache v1.1.0/go.mod h1:AboJLuhFlejC5l0fCBQZcVufgUiLUuYe57DHlo1vDIM=
 github.com/luyu6056/cache v1.1.1/go.mod h1:AboJLuhFlejC5l0fCBQZcVufgUiLUuYe57DHlo1vDIM=
 github.com/luyu6056/cache v1.1.2/go.mod h1:qohfWfwbyHaIPW6fkyqQcymSuLuG04iFrKxYvcvmKdA=
+github.com/luyu6056/cache v1.1.4/go.mod h1:qohfWfwbyHaIPW6fkyqQcymSuLuG04iFrKxYvcvmKdA=
 github.com/luyu6056/gnet v1.2.8 h1:5aWdLlBjeQzd4UhbhF2m742LDFvTQ+R809mlWFL/WQk=
 github.com/luyu6056/gnet v1.2.8/go.mod h1:hz3iz0j1ufNJiQgWzaYHCUeZLPcJbTrDgM+qYKx/SSA=
 github.com/luyu6056/reflect2 v1.0.2 h1:WFXUL/cBlc8qQPgu52EcXtte7CCjg5W5YAfMTPNj1iA=

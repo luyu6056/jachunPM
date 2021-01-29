@@ -390,19 +390,28 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["product"]["common"] = Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + `视图`
 	Lang[protocol.ZH_CN]["product"]["dividerMenu"] = []string{"plan", "project", "doc"}
 	Lang[protocol.ZH_CN]["product"]["menu"] = []protocol.HtmlMenu{
-		{"story", map[string]string{`link`: Lang[protocol.ZH_CN]["common"]["storyCommon"].(string) + "|product|browse|productID=%s", `alias`: `batchedit`, `subModule`: `story`}},
-		{"plan", map[string]string{`link`: `计划|productplan|browse|productID=%s`, `subModule`: `productplan`}},
-		{"release", map[string]string{`link`: `发布|release|browse|productID=%s`, `subModule`: `release`}},
-		{"roadmap", map[string]string{`link`: "路线图|product|roadmap|productID=%s"}},
-		{"project", map[string]string{`link`: Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "|product|project|status=all&productID=%s"}},
-		{"dynamic", map[string]string{`link`: "动态|product|dynamic|productID=%s"}},
+		{"story", map[string]string{`link`: Lang[protocol.ZH_CN]["common"]["storyCommon"].(string) + "|product|browse|productID=%s&branch=%s", `alias`: `batchedit`, `subModule`: `story`}},
+		{"plan", map[string]string{`link`: `计划|productplan|browse|productID=%s&branch=%s`, `subModule`: `productplan`}},
+		{"release", map[string]string{`link`: `发布|release|browse|productID=%s&branch=%s`, `subModule`: `release`}},
+		{"roadmap", map[string]string{`link`: "路线图|product|roadmap|productID=%s&branch=%s"}},
+		{"project", map[string]string{`link`: Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "|product|project|status=all&productID=%s&branch=%s"}},
+		{"dynamic", map[string]string{`link`: "动态|product|dynamic|productID=%s&branch=%s"}},
 		{"doc", map[string]string{`link`: `文档|doc|objectLibs|type=product&objectID=%s&from=product`, `subModule`: `doc`}},
-		//{"branch", map[string]string{`link`: "@branch@|branch|manage|productID=%s"}},
-		{"module", map[string]string{`link`: "模块|tree|browse|productID=%s&view=story"}},
-		{"view", map[string]string{`link`: `概况|product|view|productID=%s`, `alias`: `edit`}},
+		//{"branch", map[string]string{`link`: "@branch@|branch|manage|productID=%s&branch=%s"}},
+		{"module", map[string]string{`link`: "模块|tree|browse|productID=%s&branch=%s&&view=story"}},
+		{"view", map[string]string{`link`: `概况|product|view|productID=%s&branch=%s`, `alias`: `edit`}},
 	}
 	Lang[protocol.ZH_CN]["branch"] = make(map[string]interface{})
-	Lang[protocol.ZH_CN]["branch"]["canNotDelete"] = "该@branch@下已经有数据，不能删除！"
+	Lang[protocol.ZH_CN]["branch"]["canNotDelete"] = map[string]interface{}{
+		"BranchCanNotDeletePROJECTHasData":     "该@branch@下 项目有数据，不能删除！",
+		"BranchCanNotDeleteSTORYHasData":       "该@branch@下 需求有数据，不能删除！",
+		"BranchCanNotDeleteMODULEHasData":      "该@branch@下 模块有数据，不能删除！",
+		"BranchCanNotDeletePRODUCTPLANHasData": "该@branch@下 产品计划有数据，不能删除！",
+		"BranchCanNotDeleteBUGHasData":         "该@branch@下 BUG有数据，不能删除！",
+		"BranchCanNotDeleteCASEHasData":        "该@branch@下 测试有数据，不能删除！",
+		"BranchCanNotDeleteRELEASEHasData":     "该@branch@下 产品发布 有数据，不能删除！",
+		"BranchCanNotDeleteBUILDHasData":       "该@branch@下 测试版本有数据，不能删除！",
+	}
 	Lang[protocol.ZH_CN]["branch"]["confirmDelete"] = "是否删除该@branch@？"
 	Lang[protocol.ZH_CN]["branch"]["order"] = "排序"
 	Lang[protocol.ZH_CN]["branch"]["name"] = "名称"
@@ -543,10 +552,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["story"]["create"] = "提需求"
 	Lang[protocol.ZH_CN]["story"]["menu"] = Lang[protocol.ZH_CN]["product"]["menu"]
 	Lang[protocol.ZH_CN]["productplan"] = make(map[string]interface{})
-	Lang[protocol.ZH_CN]["productplan"]["beginGeEnd"] = "ID %s 开始时间不能大于结束时间"
-	Lang[protocol.ZH_CN]["productplan"]["errorNoEnd"] = "ID %s 结束时间不能为空"
-	Lang[protocol.ZH_CN]["productplan"]["errorNoBegin"] = "ID %s 开始时间不能为空"
-	Lang[protocol.ZH_CN]["productplan"]["errorNoTitle"] = "ID %s 标题不能为空"
+
 	Lang[protocol.ZH_CN]["productplan"]["project"] = Lang[protocol.ZH_CN]["common"]["projectCommon"].(string)
 	Lang[protocol.ZH_CN]["productplan"]["hour"] = "工时"
 	Lang[protocol.ZH_CN]["productplan"]["bugs"] = "Bug数"
@@ -1053,17 +1059,17 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["qa"]["index"] = "测试主页"
 	Lang[protocol.ZH_CN]["qa"]["common"] = "测试视图"
 	Lang[protocol.ZH_CN]["qa"]["menu"] = []protocol.HtmlMenu{
-		{"bug", map[string]string{`link`: `Bug|bug|browse|productID=%s`}},
-		{"testcase", map[string]string{`link`: `用例|testcase|browse|productID=%s`, `class`: `dropdown dropdown-hover`}},
-		{"testtask", map[string]string{`link`: `测试单|testtask|browse|productID=%s`}},
-		{"testsuite", map[string]string{`link`: `套件|testsuite|browse|productID=%s`}},
-		{"report", map[string]string{`link`: `报告|testreport|browse|productID=%s`}},
+		{"bug", map[string]string{`link`: `Bug|bug|browse|productID=%s&branch=%s`}},
+		{"testcase", map[string]string{`link`: `用例|testcase|browse|productID=%s&branch=%s`, `class`: `dropdown dropdown-hover`}},
+		{"testtask", map[string]string{`link`: `测试单|testtask|browse|productID=%s&branch=%s`}},
+		{"testsuite", map[string]string{`link`: `套件|testsuite|browse|productID=%s&branch=%s`}},
+		{"report", map[string]string{`link`: `报告|testreport|browse|productID=%s&branch=%s`}},
 		{"caselib", map[string]string{`link`: `用例库|caselib|browse`}},
 	}
 	Lang[protocol.ZH_CN]["qa"]["subMenu"] = []protocol.HtmlKeyValueInterface{
 		{"testcase", []protocol.HtmlMenu{
-			{"feature", map[string]string{`link`: `功能测试|testcase|browse|productID=%s`, `alias`: `view,create,batchcreate,edit,batchedit,showimport,groupcase,importfromlib`, `subModule`: `tree,story`}},
-			{"unit", map[string]string{`link`: `单元测试|testtask|browseUnits|productID=%s`}},
+			{"feature", map[string]string{`link`: `功能测试|testcase|browse|productID=%s&branch=%s`, `alias`: `view,create,batchcreate,edit,batchedit,showimport,groupcase,importfromlib`, `subModule`: `tree,story`}},
+			{"unit", map[string]string{`link`: `单元测试|testtask|browseUnits|productID=%s&branch=%s`}},
 		}},
 	}
 	Lang[protocol.ZH_CN]["bug"] = make(map[string]interface{})
@@ -1220,11 +1226,11 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["bug"]["common"] = "Bug"
 	Lang[protocol.ZH_CN]["bug"]["subMenu"] = Lang[protocol.ZH_CN]["qa"]["subMenu"]
 	Lang[protocol.ZH_CN]["bug"]["menu"] = []protocol.HtmlMenu{
-		{"bug", map[string]string{`link`: `Bug|bug|browse|productID=%s`, `alias`: `view,create,batchcreate,edit,resolve,close,activate,report,batchedit,batchactivate,confirmbug,assignto`, `subModule`: `tree`}},
-		{"testcase", map[string]string{`link`: `用例|testcase|browse|productID=%s`, `class`: `dropdown dropdown-hover`}},
-		{"testtask", map[string]string{`link`: `测试单|testtask|browse|productID=%s`}},
-		{"testsuite", map[string]string{`link`: `套件|testsuite|browse|productID=%s`}},
-		{"report", map[string]string{`link`: `报告|testreport|browse|productID=%s`}},
+		{"bug", map[string]string{`link`: `Bug|bug|browse|productID=%s&branch=%s`, `alias`: `view,create,batchcreate,edit,resolve,close,activate,report,batchedit,batchactivate,confirmbug,assignto`, `subModule`: `tree`}},
+		{"testcase", map[string]string{`link`: `用例|testcase|browse|productID=%s&branch=%s`, `class`: `dropdown dropdown-hover`}},
+		{"testtask", map[string]string{`link`: `测试单|testtask|browse|productID=%s&branch=%s`}},
+		{"testsuite", map[string]string{`link`: `套件|testsuite|browse|productID=%s&branch=%s`}},
+		{"report", map[string]string{`link`: `报告|testreport|browse|productID=%s&branch=%s`}},
 		{"caselib", map[string]string{`link`: `用例库|caselib|browse`}},
 	}
 	Lang[protocol.ZH_CN]["testcase"] = make(map[string]interface{})
@@ -1364,11 +1370,11 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["testcase"]["id"] = "用例编号"
 	Lang[protocol.ZH_CN]["testcase"]["subMenu"] = Lang[protocol.ZH_CN]["qa"]["subMenu"]
 	Lang[protocol.ZH_CN]["testcase"]["menu"] = []protocol.HtmlMenu{
-		{"bug", map[string]string{`link`: `Bug|bug|browse|productID=%s`}},
-		{"testcase", map[string]string{`link`: `用例|testcase|browse|productID=%s`, `alias`: `view,create,batchcreate,edit,batchedit,showimport,groupcase,importfromlib`, `subModule`: `tree,story`, `class`: `dropdown dropdown-hover`}},
-		{"testtask", map[string]string{`link`: `测试单|testtask|browse|productID=%s`}},
-		{"testsuite", map[string]string{`link`: `套件|testsuite|browse|productID=%s`}},
-		{"report", map[string]string{`link`: `报告|testreport|browse|productID=%s`}},
+		{"bug", map[string]string{`link`: `Bug|bug|browse|productID=%s&branch=%s`}},
+		{"testcase", map[string]string{`link`: `用例|testcase|browse|productID=%s&branch=%s`, `alias`: `view,create,batchcreate,edit,batchedit,showimport,groupcase,importfromlib`, `subModule`: `tree,story`, `class`: `dropdown dropdown-hover`}},
+		{"testtask", map[string]string{`link`: `测试单|testtask|browse|productID=%s&branch=%s`}},
+		{"testsuite", map[string]string{`link`: `套件|testsuite|browse|productID=%s&branch=%s`}},
+		{"report", map[string]string{`link`: `报告|testreport|browse|productID=%s&branch=%s`}},
 		{"caselib", map[string]string{`link`: `用例库|caselib|browse`}},
 	}
 	Lang[protocol.ZH_CN]["testtask"] = make(map[string]interface{})
@@ -1462,11 +1468,11 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["testtask"]["index"] = "版本首页"
 	Lang[protocol.ZH_CN]["testtask"]["subMenu"] = Lang[protocol.ZH_CN]["qa"]["subMenu"]
 	Lang[protocol.ZH_CN]["testtask"]["menu"] = []protocol.HtmlMenu{
-		{"bug", map[string]string{`link`: `Bug|bug|browse|productID=%s`}},
-		{"testcase", map[string]string{`link`: `用例|testcase|browse|productID=%s`, `class`: `dropdown dropdown-hover`}},
-		{"testtask", map[string]string{`link`: `测试单|testtask|browse|productID=%s`, `subModule`: `testtask`, `alias`: `view,create,edit,linkcase,cases,start,close,batchrun,groupcase,report`}},
-		{"testsuite", map[string]string{`link`: `套件|testsuite|browse|productID=%s`}},
-		{"report", map[string]string{`link`: `报告|testreport|browse|productID=%s`}},
+		{"bug", map[string]string{`link`: `Bug|bug|browse|productID=%s&branch=%s`}},
+		{"testcase", map[string]string{`link`: `用例|testcase|browse|productID=%s&branch=%s`, `class`: `dropdown dropdown-hover`}},
+		{"testtask", map[string]string{`link`: `测试单|testtask|browse|productID=%s&branch=%s`, `subModule`: `testtask`, `alias`: `view,create,edit,linkcase,cases,start,close,batchrun,groupcase,report`}},
+		{"testsuite", map[string]string{`link`: `套件|testsuite|browse|productID=%s&branch=%s`}},
+		{"report", map[string]string{`link`: `报告|testreport|browse|productID=%s&branch=%s`}},
 		{"caselib", map[string]string{`link`: `用例库|caselib|browse`}},
 	}
 	Lang[protocol.ZH_CN]["testsuite"] = make(map[string]interface{})
@@ -1511,11 +1517,11 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["testsuite"]["index"] = "套件首页"
 	Lang[protocol.ZH_CN]["testsuite"]["subMenu"] = Lang[protocol.ZH_CN]["qa"]["subMenu"]
 	Lang[protocol.ZH_CN]["testsuite"]["menu"] = []protocol.HtmlMenu{
-		{"bug", map[string]string{`link`: `Bug|bug|browse|productID=%s`}},
-		{"testcase", map[string]string{`link`: `用例|testcase|browse|productID=%s`, `class`: `dropdown dropdown-hover`}},
-		{"testtask", map[string]string{`link`: `测试单|testtask|browse|productID=%s`}},
-		{"testsuite", map[string]string{`link`: `套件|testsuite|browse|productID=%s`, `alias`: `view,create,edit,linkcase`}},
-		{"report", map[string]string{`link`: `报告|testreport|browse|productID=%s`}},
+		{"bug", map[string]string{`link`: `Bug|bug|browse|productID=%s&branch=%s`}},
+		{"testcase", map[string]string{`link`: `用例|testcase|browse|productID=%s&branch=%s`, `class`: `dropdown dropdown-hover`}},
+		{"testtask", map[string]string{`link`: `测试单|testtask|browse|productID=%s&branch=%s`}},
+		{"testsuite", map[string]string{`link`: `套件|testsuite|browse|productID=%s&branch=%s`, `alias`: `view,create,edit,linkcase`}},
+		{"report", map[string]string{`link`: `报告|testreport|browse|productID=%s&branch=%s`}},
 		{"caselib", map[string]string{`link`: `用例库|caselib|browse`}},
 	}
 	Lang[protocol.ZH_CN]["testreport"] = make(map[string]interface{})
@@ -1582,11 +1588,11 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["testreport"]["common"] = "测试报告"
 	Lang[protocol.ZH_CN]["testreport"]["subMenu"] = Lang[protocol.ZH_CN]["qa"]["subMenu"]
 	Lang[protocol.ZH_CN]["testreport"]["menu"] = []protocol.HtmlMenu{
-		{"bug", map[string]string{`link`: `Bug|bug|browse|productID=%s`}},
-		{"testcase", map[string]string{`link`: `用例|testcase|browse|productID=%s`, `class`: `dropdown dropdown-hover`}},
-		{"testtask", map[string]string{`link`: `测试单|testtask|browse|productID=%s`}},
-		{"testsuite", map[string]string{`link`: `套件|testsuite|browse|productID=%s`}},
-		{"report", map[string]string{`link`: `报告|testreport|browse|productID=%s`, `alias`: `view,create,edit`}},
+		{"bug", map[string]string{`link`: `Bug|bug|browse|productID=%s&branch=%s`}},
+		{"testcase", map[string]string{`link`: `用例|testcase|browse|productID=%s&branch=%s`, `class`: `dropdown dropdown-hover`}},
+		{"testtask", map[string]string{`link`: `测试单|testtask|browse|productID=%s&branch=%s`}},
+		{"testsuite", map[string]string{`link`: `套件|testsuite|browse|productID=%s&branch=%s`}},
+		{"report", map[string]string{`link`: `报告|testreport|browse|productID=%s&branch=%s`, `alias`: `view,create,edit`}},
 		{"caselib", map[string]string{`link`: `用例库|caselib|browse`}},
 	}
 	Lang[protocol.ZH_CN]["caselib"] = make(map[string]interface{})
@@ -4929,16 +4935,17 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["file"]["processFile"] = map[string]string{
 		"processFile": "过程文件",
 	}
-	Lang[protocol.ZH_CN]["file"]["typeChoices"] = map[string]string{
-		"processFile":  "过程文件",
-		"sourceFile":   "源文件",
-		"feedbackFile": "反馈文件",
+	Lang[protocol.ZH_CN]["file"]["typeChoices"] = []protocol.HtmlKeyValueStr{
+
+		{"processFile", "过程文件"},
+		{"sourceFile", "源文件"},
+		{"feedbackFile", "反馈文件"},
 	}
-	Lang[protocol.ZH_CN]["file"]["FinalFile"] = map[string]string{
-		"FinalFile": "最终文件",
+	Lang[protocol.ZH_CN]["file"]["FinalFile"] = []protocol.HtmlKeyValueStr{
+		{"FinalFile", "最终文件"},
 	}
-	Lang[protocol.ZH_CN]["file"]["feedbackFile"] = map[string]string{
-		"feedbackFile": "反馈文件",
+	Lang[protocol.ZH_CN]["file"]["feedbackFile"] = []protocol.HtmlKeyValueStr{
+		{"feedbackFile", "反馈文件"},
 	}
 	Lang[protocol.ZH_CN]["file"]["specFile"] = map[string]string{
 		"modelFile":     "模型规范文件",
@@ -5190,7 +5197,15 @@ func LangZH_CNInit() {
 		{"willclose", Lang[protocol.ZH_CN]["product"]["willClose"].(string)},
 		{"closedstory", Lang[protocol.ZH_CN]["product"]["closedStory"].(string)},
 	}
-	Lang[protocol.ZH_CN]["productplan"]["endList"] = []string{"一星期", `两星期`, `一个月`, `两个月`, `三个月`, `半年`, `一年`}
+	Lang[protocol.ZH_CN]["productplan"]["endList"] = []protocol.HtmlKeyValueStr{
+		{"7", "一星期"},
+		{"14", "两星期"},
+		{"31", "一个月"},
+		{"62", "两个月"},
+		{"93", "三个月"},
+		{"186", "半年"},
+		{"365", "一年"},
+	}
 	Lang[protocol.ZH_CN]["productplan"]["featureBar"] = map[string]interface{}{
 		"browse": map[string]string{
 			"all":       "全部",
@@ -5203,7 +5218,15 @@ func LangZH_CNInit() {
 		"waterfall": "长期" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string),
 		"ops":       "运维" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string),
 	}
-	Lang[protocol.ZH_CN]["project"]["endList"] = []string{"一星期", `两星期`, `一个月`, `两个月`, `三个月`, `半年`, `一年`}
+	Lang[protocol.ZH_CN]["project"]["endList"] = []protocol.HtmlKeyValueStr{
+		{"7", "一星期"},
+		{"14", "两星期"},
+		{"31", "一个月"},
+		{"62", "两个月"},
+		{"93", "三个月"},
+		{"186", "半年"},
+		{"365", "一年"},
+	}
 	Lang[protocol.ZH_CN]["team"] = make(map[string]interface{})
 	Lang[protocol.ZH_CN]["team"]["limited"] = "受限用户"
 	Lang[protocol.ZH_CN]["team"]["totalHours"] = "总计"
@@ -5352,8 +5375,8 @@ func LangZH_CNInit() {
 			"end":   "完成后",
 			"begin": "开始后",
 		},
-		"taskActions['']": "",
 		"taskActions": map[string]string{
+			"":      "",
 			"begin": "才能开始",
 			"end":   "才能完成",
 		},
@@ -6331,6 +6354,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["error"]["checkTypeNum"] = "必须为数字"
 	Lang[protocol.ZH_CN]["error"]["checkTypeUserId"] = "必须为有效的用户"
 	Lang[protocol.ZH_CN]["error"]["checkHtmlKeyValueStr"] = "该选项无效，请刷新重新选择"
+	Lang[protocol.ZH_CN]["error"]["checkTypeDate"] = "日期格式不对，必须为2020-01-01"
 	Lang[protocol.ZH_CN]["error"]["resultType"] = "远程服务器返回的结果不符合预期"
 	Lang[protocol.ZH_CN]["product"]["error"] = map[string]string{
 		"NotFound": "没有找到产品",
@@ -6338,6 +6362,22 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["tree"]["error"] = map[string]string{
 		"ModuleNameRepeat": "模块名已经存在！",
 		"ModuleNotFound":   "没有找到该模块请返回首页重试",
+	}
+	Lang[protocol.ZH_CN]["my"]["error"] = map[string]string{
+		"managecontactsEmptyListName": "列表名称不能为空",
+		"managecontactsEmptyUsers":    "用户列表不能为空",
+		"managecontactsErrorID":       "列表id错误，请刷新重试",
+	}
+	Lang[protocol.ZH_CN]["branch"]["error"] = map[string]string{
+		"ErrDelete": "删除失败，错误%v",
+	}
+	Lang[protocol.ZH_CN]["productplan"]["error"] = map[string]string{
+		"beginGeEnd":                           "开始时间不能大于结束时间",
+		"errorNoEnd":                           "结束时间不能为空",
+		"errorNoBegin":                         "开始时间不能为空",
+		"errorNoTitle":                         "标题不能为空",
+		"NotFoundProductPlanInfo":              "没有找到产品计划信息",
+		"Err_ProjectProductPlanParentNotFound": "没有找到上一级产品计划信息",
 	}
 
 }

@@ -31,10 +31,11 @@ type Msg struct {
 	cache              RpcCache
 	transactionTimeOut time.Duration
 	DB                 *MsgDB
+	lang               CountryNo
 }
 type MsgDB struct {
 	msg           *Msg
-	db            *mysql.MysqlDB
+	DB            *mysql.MysqlDB
 	transaction   *MsgDBTransaction
 	transactionNo uint32
 }
@@ -72,6 +73,7 @@ func ReadOneMsg(buf *libraries.MsgBuffer) (msg *Msg, err error) {
 	msg.Cmd = int32(data[16]) | int32(data[17])<<8 | int32(data[18])<<16 | int32(data[19])<<24
 	//msg.Data = data[MsgHeadLen : MsgHeadLen+datalen]
 	msg.buf = buf
+	msg.lang = DefaultLang //暂时默认语言
 	return msg, nil
 }
 func (m *Msg) ReadData() {
@@ -207,6 +209,17 @@ func (m *Msg) Cache_Set(key string, value MSG_DATA) error {
 func (m *Msg) Cache_Del(key string) error {
 	return m.cache.Del(key, "Msg:"+strconv.Itoa(int(m.Msgno)))
 }
+func (m *Msg) LoadConfig(key string) (res map[string]map[string]interface{}, err error) {
+	b, err := m.cache.Get(key, PATH_CONFIG_CACHE+m.lang.String())
+	if err != nil {
+		return nil, err
+	}
+	if len(b) == 0 {
+		return
+	}
+	err = libraries.JsonUnmarshal(b, &res)
+	return res, err
+}
 
 //解决其他地方无法调用小写方法
 func MSG_DATA_Write(data MSG_DATA, buf *libraries.MsgBuffer) {
@@ -279,7 +292,7 @@ func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint8, transactio
 				return nil
 			} else {
 				r1 := reflect.ValueOf(result)
-				return errors.New(fmt.Sprintf("实际返回的结果为MSG_COMMON_QueryErr,与请求的%s不相符", r1.Elem().Elem().Type().Name()))
+				return errors.New(fmt.Sprintf("实际返回的结果为MSG_COMMON_QueryErr,与请求的%s不相符", r1.Type().Elem().Elem().Name()))
 			}
 		}
 		return checkAndSetResult(r)
@@ -357,7 +370,7 @@ func (db *MsgDB) BeginTransaction() (*MsgDBTransaction, error) {
 		if err != nil {
 			return nil, err
 		}
-		transaction, err := msg.DB.db.BeginTransaction()
+		transaction, err := msg.DB.DB.BeginTransaction()
 		if err != nil {
 			return nil, err
 		}
@@ -379,12 +392,12 @@ func (db *MsgDB) BeginTransaction() (*MsgDBTransaction, error) {
 func (db *MsgDB) Table(tablename string) *mysql.Mysql_Build {
 	if db.transaction == nil {
 		if db.transactionNo == 0 {
-			return db.db.Table(tablename)
+			return db.DB.Table(tablename)
 		}
 		session, err := db.BeginTransaction()
 		//session失败的时候使用mysqlbuild去传递err
 		if err != nil {
-			b := db.db.Table(tablename)
+			b := db.DB.Table(tablename)
 			b.SetErr(err)
 			return b
 		}

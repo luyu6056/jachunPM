@@ -3,17 +3,18 @@ package handler
 import (
 	"encoding/base64"
 	"errors"
+	"fmt"
 	common_image "image"
 	"io"
 	"jachunPM/image"
 	"libraries"
 	"strconv"
 	"strings"
+	"time"
 
 	"protocol"
 
 	"github.com/luyu6056/cache"
-	"github.com/luyu6056/gnet"
 	"github.com/rubenfonseca/fastimage"
 	"golang.org/x/image/bmp"
 	"golang.org/x/image/webp"
@@ -23,9 +24,10 @@ func init() {
 	httpHandlerMap["POST"]["/file/ajaxPasteImage"] = post_file_ajaxPasteImage
 	httpHandlerMap["GET"]["/file/tmpimg"] = get_file_tmpimg
 	httpHandlerMap["GET"]["/file/read"] = get_file_read
+	httpHandlerMap["GET"]["/file/buildform"] = get_file_buildform
 }
 
-func post_file_ajaxPasteImage(data *TemplateData) (action gnet.Action) {
+func post_file_ajaxPasteImage(data *TemplateData) {
 	editor := data.ws.Post("editor")
 	result, err := libraries.Preg_match_result(`^<img src="data:image/([^;]+);base64,([^"]+)"`, editor, 1)
 	if len(result) != 1 && err == nil {
@@ -64,7 +66,7 @@ func post_file_ajaxPasteImage(data *TemplateData) (action gnet.Action) {
 	data.ws.WriteString(`<img src="/file/tmpimg?fileID=` + strID + `&t=` + ext + `" alt="" />`)
 	return
 }
-func get_file_tmpimg(data *TemplateData) (action gnet.Action) {
+func get_file_tmpimg(data *TemplateData) {
 	b, ok := file_getTempFile(data.ws.Query("fileID"))
 	if !ok {
 		data.ws.SetCode(404)
@@ -127,7 +129,7 @@ func file_getTempFile(fileID string) (b []byte, ok bool) {
 	ok = img.Get("img", &b)
 	return
 }
-func get_file_read(data *TemplateData) (action gnet.Action) {
+func get_file_read(data *TemplateData) {
 	out := protocol.GET_MSG_FILE_getByID()
 	out.FileID, _ = strconv.ParseInt(data.ws.Query("fileID"), 10, 64)
 	var result *protocol.MSG_FILE_getByID_result
@@ -135,6 +137,7 @@ func get_file_read(data *TemplateData) (action gnet.Action) {
 	if err != nil {
 		data.ws.SetCode(404)
 		data.ws.WriteString(err.Error())
+		return
 	}
 	if result.Ext == "webp" && !strings.Contains(data.ws.Header("Accept"), "image/webp") {
 		result.Ext = "jpg"
@@ -155,4 +158,107 @@ func get_file_read(data *TemplateData) (action gnet.Action) {
 	data.ws.SetContentType("image/" + result.Ext)
 	data.ws.Write(buf)
 	return
+}
+func get_file_buildform(data *TemplateData) {
+	if HostConn.Status&protocol.RpcClientStatuShutdown == protocol.RpcClientStatuShutdown {
+		data.ws.WriteString("文件服务器关闭,无法上传附件")
+		return
+	}
+	filesName := data.ws.Query("filesName")
+	if filesName == "" {
+		filesName = "files"
+	}
+	data.Data["filesName"] = filesName
+	labelsName := data.ws.Query("filesName")
+	if labelsName == "" {
+		labelsName = "labels"
+	}
+	data.Data["labelsName"] = labelsName
+	data.Data["examine"] = data.ws.Query("examine")
+	data.Data["isadmin"] = data.User.Role == "top"
+	data.Data["action"] = data.ws.Query("action")
+	templateOut("file.buildform.html", data)
+	return
+}
+func file_descProcessImgURLAnd2Bbcode(data *TemplateData, desc string) (res string, newimgids []int64, uploaderr error) {
+	if data.Msg == nil {
+		if _, uploaderr = data.GetMsg(); uploaderr != nil {
+			return
+		}
+	}
+	//检查移除失效的老文件
+	m, _ := libraries.Preg_match_result(`<img aid="attachimg_0" src="\/file\/read\?fileID=(\d+)" border="0" alt=""  \/>`, desc, -1)
+	for _, match := range m {
+		check := protocol.GET_MSG_FILE_getByID()
+		check.FileID, _ = strconv.ParseInt(match[1], 10, 64)
+		check.NoData = true
+		var result *protocol.MSG_FILE_getByID_result
+		if uploaderr = HostConn.SendMsgWaitResultToDefault(check, &result); uploaderr != nil {
+			if strings.Index(uploaderr.Error(), protocol.Err_FileNotFount.String()) == 0 {
+				//删掉失效文件
+				desc = strings.Replace(desc, match[0], "", 1)
+			} else {
+				return
+			}
+
+		} else {
+			result.Put()
+		}
+		check.Put()
+	}
+	//转换上传的临时文件
+	m, _ = libraries.Preg_match_result(`<img src="/file/tmpimg\?fileID=(\d+)&amp;t=([^"]+)" alt="" \/>`, desc, -1)
+	for _, match := range m {
+		b, ok := file_getTempFile(match[1])
+		if ok {
+			upload := protocol.GET_MSG_FILE_upload()
+			upload.AddBy = data.User.Id
+			upload.Data = b
+			upload.Name = time.Now().Format("20060102") + "_" + match[1] + "." + match[2]
+			var result *protocol.MSG_FILE_upload_result
+			uploaderr = data.Msg.SendMsgWaitResult(0, upload, &result)
+			if uploaderr == nil {
+				newimgids = append(newimgids, result.FileID)
+				desc = strings.ReplaceAll(desc, match[0], `<img src="/file/read?fileID=`+strconv.FormatInt(result.FileID, 10)+` alt="" />`)
+			}
+			result.Put()
+			if uploaderr != nil {
+				deleteimg := protocol.GET_MSG_FILE_DeleteByID()
+				for _, id := range newimgids {
+					deleteimg.FileID = id
+					data.Msg.SendMsg(0, deleteimg)
+				}
+				deleteimg.Put()
+				uploaderr = errors.New(fmt.Sprintf(data.Lang["file"]["imguploadFail"].(string), uploaderr))
+				return
+			}
+			upload.Put()
+		} else {
+			desc = strings.ReplaceAll(desc, match[0], "")
+		}
+
+	}
+
+	res = libraries.Html2bbcode(desc)
+	return
+}
+func file_deleteFromIds(newimgids []int64) {
+	deleteimg := protocol.GET_MSG_FILE_DeleteByID()
+	for _, id := range newimgids {
+		deleteimg.FileID = id
+		HostConn.SendMsgToDefault(deleteimg)
+	}
+	deleteimg.Put()
+}
+func file_updateObject(fileIds []int64, typ string, id int32) {
+	out := protocol.GET_MSG_FILE_updateByIDMap()
+	for _, id := range fileIds {
+		out.FileID = id
+		out.Update = map[string]interface{}{
+			"ObjectType": typ,
+			"ObjectID":   id,
+		}
+		HostConn.SendMsgToDefault(out)
+	}
+	out.Put()
 }

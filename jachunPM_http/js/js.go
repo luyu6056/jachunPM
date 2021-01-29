@@ -12,7 +12,7 @@ func Alert(format string, value ...interface{}) string {
 		message = fmt.Sprintf(format, value...)
 	}
 	message = strings.ReplaceAll(message, `"`, `\"`)
-	return fmt.Sprintf(`<script>alert("%s")</script>`, message, message)
+	return fmt.Sprintf(`<script>alert("%s")</script>`, message)
 }
 func Reload(value ...string) string {
 	buf := protocol.BufPoolGet()
@@ -70,4 +70,33 @@ func Location(str string, window string) string {
 		return "<script>history.back()</script>"
 	}
 	return "<script>" + window + ".location.href=\"" + strings.ReplaceAll(str, `"`, `\"`) + "\"</script>"
+}
+func CloseModal(window, location, callback string) string {
+	if window == "" {
+		window = "self"
+	}
+	if location == "" {
+		location = "this"
+	}
+	if callback == "" {
+		callback = "null"
+	}
+	buf := protocol.BufPoolGet()
+	buf.WriteString("<script>if(")
+	buf.WriteString(window)
+	buf.WriteString(".location.href == self.location.href){ ")
+	buf.WriteString(window)
+	buf.WriteString(".window.close();}else{")
+	buf.WriteString(window)
+	buf.WriteString(".$.cookie('selfClose', 1);")
+	buf.WriteString(window)
+	buf.WriteString(".$.closeModal(")
+	buf.WriteString(callback)
+	buf.WriteString(", '")
+	buf.WriteString(location)
+	buf.WriteString("');}</script>")
+	res := buf.String()
+	protocol.BufPoolPut(buf)
+	return res
+
 }

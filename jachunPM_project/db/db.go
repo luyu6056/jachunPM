@@ -8,11 +8,13 @@ import (
 )
 
 const (
-	TABLE_MODULE  = "module"
-	TABLE_PRODUCT = "product"
-	TABLE_DOCLIB  = "doclib"
-	TABLE_STORY   = "story"
-	TABLE_BRANCH  = "branch"
+	TABLE_MODULE      = "module"
+	TABLE_PRODUCT     = "product"
+	TABLE_DOCLIB      = "doclib"
+	TABLE_STORY       = "story"
+	TABLE_BRANCH      = "branch"
+	TABLE_PRODUCTPLAN = "productplan"
+	TABLE_PROJECT     = "project"
 )
 
 func Init() *mysql.MysqlDB {
@@ -30,6 +32,8 @@ func Init() *mysql.MysqlDB {
 		new(Product),
 		new(Story),
 		new(Branch),
+		new(Productplan),
+		new(Project),
 	)
 	if errs != nil {
 		log.Fatalf("数据库启动失败%v", errs)
@@ -134,8 +138,8 @@ type Story struct {
 	LinkStories    string `db:"type:varchar(255)"`
 	DuplicateStory int32
 	Deleted        bool
-	Version        int16 `db:"not null;default(1)"`
-	//Color          string  `db:"type:varchar(7)"`
+	Version        int16  `db:"not null;default(1)"`
+	Color          string `db:"type:varchar(7)"`
 	//Type           string  `db:"type:varchar(30)"`
 }
 
@@ -145,7 +149,7 @@ func (*Story) TableName() string {
 
 type Branch struct {
 	Id        int32  `db:"auto_increment;pk"`
-	Product   int32  `db:""`
+	Product   int32  `db:"index"`
 	Name      string `db:"type:varchar(255)"`
 	Order     int16  `db:""`
 	Deleted   bool
@@ -154,4 +158,62 @@ type Branch struct {
 
 func (*Branch) TableName() string {
 	return TABLE_BRANCH
+}
+
+type Productplan struct {
+	Id       int32 `db:"auto_increment;pk"`
+	Product  int32 `db:"index"`
+	Branch   int32 `db:"index"`
+	Parent   int32
+	Projects []int32
+	Title    string    `db:"type:varchar(255)"`
+	Desc     string    `db:"type:text"`
+	Begin    time.Time `db:"index;type:date"`
+	End      time.Time `db:"index;type:date"`
+	Order    string    `db:"type:text"`
+	Deleted  bool
+}
+
+func (*Productplan) TableName() string {
+	return TABLE_PRODUCTPLAN
+}
+
+type Project struct {
+	Id            int32 `db:"auto_increment;pk"`
+	IsCat         int8  `db:"default(1)"` // 0=1,1=0,
+	CatID         int32
+	Type          string    `db:"default('sprint');type:varchar(20)"`
+	Parent        int32     `db:"default(0)"`
+	Name          string    `db:"type:varchar(90)"`
+	Code          string    `db:"type:varchar(45)"`
+	Begin         time.Time `db:"not null"`
+	End           time.Time `db:"not null"`
+	Days          int16
+	Status        string `db:"type:varchar(10)"`
+	Statge        int8   `db:"default(0)"` // 0=1,1=2,2=3,3=4,4=5,
+	Pri           int8   `db:"default(0)"` // 0=1,1=2,2=3,3=4,
+	Desc          string `db:"type:text"`
+	OpenedBy      string `db:"type:varchar(30)"`
+	OpenedDate    time.Time
+	OpenedVersion string `db:"type:varchar(20)"`
+	ClosedBy      string `db:"type:varchar(30)"`
+	ClosedDate    time.Time
+	CanceledBy    string `db:"type:varchar(30)"`
+	CanceledDate  time.Time
+	PO            string `db:"type:varchar(30)"`
+	PM            string `db:"type:varchar(30)"`
+	QD            string `db:"type:varchar(30)"`
+	RD            string `db:"type:varchar(30)"`
+	Team          string `db:"type:varchar(90)"`
+	Acl           int8   `db:"default(0)"` // 0=open,1=private,2=custom,
+	Whitelist     string `db:"type:text"`
+	Order         int32
+	Deleted       bool
+	FtpPath       string `db:"type:varchar(255)"`
+	Product       int32  `db:"index"`
+	Branch        int32  `db:"index"`
+}
+
+func (Project) TableName() string {
+	return TABLE_PROJECT
 }

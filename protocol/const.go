@@ -60,13 +60,13 @@ const (
 	DefaultLang CountryNo = ZH_CN
 )
 
-var countryStr = map[CountryNo]string{
+var CountryToStr = map[CountryNo]string{
 	//EN:    "English",
 	ZH_CN: "简体中文",
 }
 
 func (c CountryNo) String() string {
-	return countryStr[c]
+	return CountryToStr[c]
 }
 
 //cache Path定义

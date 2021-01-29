@@ -797,10 +797,11 @@ func Bbcode2html(str string, allowbbcode, allowimgurl, allowhtml, allowsmilies, 
 			}
 			str, _ = Preg_replace(`\[img\]\s*([^\[\"\<\r\n]+?)\s*\[\/img\]`, `<img src="$1" border="0" alt=""  />`, str)
 
-		} else {
-			str, _ = Preg_replace(`\[img\]\s*([^\[\"\<\r\n]+?)\s*\[\/img\]`, `<a href="$1" target="_blank">$1</a>`, str)
-			str, _ = Preg_replace(`\[img=(\d{1,4})[x|\,](\d{1,4})\]\s*([^\[\"\<\r\n]+?)\s*\[\/img\]`, `<a href="$3" target="_blank">$3</a>`, str)
-
+		} else { //不允许imgcode就屏蔽掉图片
+			//str, _ = Preg_replace(`\[img\]\s*([^\[\"\<\r\n]+?)\s*\[\/img\]`, `<a href="$1" target="_blank">$1</a>`, str)
+			//str, _ = Preg_replace(`\[img=(\d{1,4})[x|\,](\d{1,4})\]\s*([^\[\"\<\r\n]+?)\s*\[\/img\]`, `<a href="$3" target="_blank">$3</a>`, str)
+			str, _ = Preg_replace(`\[img_(\d+)\]\s*([^\[\"\<\r\n]+?)\s*\[\/img\]`, ``, str)
+			str, _ = Preg_replace(`\[img_(\d+)=(\d{1,4})[x|\,](\d{1,4})\]\s*([^\[\"\<\r\n]+?)\s*\[\/img\]`, ``, str)
 		}
 
 	}

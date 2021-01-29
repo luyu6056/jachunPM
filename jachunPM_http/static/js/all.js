@@ -4526,8 +4526,12 @@ function(a) {
 						v = (B || x) && !w;
 					v && ("" == f && (f = A.url), A.url != f && (A.url = f), A.url = A.url.indexOf("&") >= 0 ? A.url + "&HTTP_X_REQUESTED_WITH=XMLHttpRequest" : A.url + "?HTTP_X_REQUESTED_WITH=XMLHttpRequest")
 				}
+				$('.form-ajax').addClass('percent_0');
 			},
 			success: function(z, s, r) {
+				for(var i=0;i<20;i++){
+					$('.form-ajax').removeClass('percent_'+(i*5));
+				}
 				if ((o && o(z, s, r, e)) !== !1) {
 					try {
 						"string" == typeof z && (z = JSON.parse(z))
@@ -4642,6 +4646,14 @@ function(a) {
 							return
 						}
 					}
+				}
+			},
+			uploadProgress: function(event,position,total,percentComplete){
+				if(percentComplete%5==0){
+					for(var i=0;i<20;i++){
+						$('.form-ajax').removeClass('percent_'+(i*5));
+					}
+					$('.form-ajax').addClass('percent_'+percentComplete);
 				}
 			},
 			error: function(l, h, r) {

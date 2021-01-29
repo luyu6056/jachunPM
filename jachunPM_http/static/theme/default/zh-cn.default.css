@@ -2748,8 +2748,8 @@ button.close {
 	display: -webkit-flex;
 	display: -ms-flexbox;
 	display: flex;
-	padding-top: 50px;
-	font-size: 12px;
+	padding-top: 70px;
+	font-size: 34px;
 	content: attr(data-loading);
 	background-color: rgba(255,255,255,.65);
 	-webkit-box-align: center;
@@ -2767,18 +2767,17 @@ button.close {
 	left: 50%;
 	z-index: 11;
 	display: block;
-	width: 30px;
-	height: 30px;
-	margin-top: -15px;
-	margin-left: -15px;
+	width: 40px;
+	height: 40px;
+	margin-top: -20px;
+	margin-left: -20px;
 	font-family: ZentaoIcon;
-	font-size: 18px;
-	font-size: 24px;
+	font-size: 34px;
 	font-style: normal;
 	font-weight: 400;
 	font-variant: normal;
 	line-height: 1;
-	line-height: 30px;
+	line-height: 40px;
 	text-transform: none;
 	content: "\e982";
 	-webkit-animation: spin 2s infinite linear;
@@ -2786,8 +2785,9 @@ button.close {
 	animation: spin 2s infinite linear;
 	speak: none;
 	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale
+	-moz-osx-font-smoothing: grayscale;
 }
+
 
 .load-indicator.loading:after,.load-indicator.loading:before {
 	visibility: visible;
@@ -13641,4 +13641,64 @@ details.detail[open] summary:after {
 }
 .border0{
 	border: 0
+}
+.percent_0:before{
+	content: "0%";
+}
+.percent_5:before{
+	content: "5%";
+}
+.percent_10:before{
+	content: "10%";
+}
+.percent_15:before{
+	content: "15%";
+}
+.percent_20:before{
+	content: "20%";
+}
+.percent_25:before{
+	content: "25%";
+}
+.percent_30:before{
+	content: "30%";
+}
+.percent_35:before{
+	content: "35%";
+}
+.percent_40:before{
+	content: "40%";
+}
+.percent_45:before{
+	content: "45%";
+}
+.percent_50:before{
+	content: "50%";
+}
+.percent_55:before{
+	content: "55%";
+}
+.percent_60:before{
+	content: "60%";
+}
+.percent_65:before{
+	content: "65%";
+}
+.percent_70:before{
+	content: "70%";
+}
+.percent_75:before{
+	content: "75%";
+}
+.percent_80:before{
+	content: "80%";
+}
+.percent_85:before{
+	content: "85%";
+}
+.percent_90:before{
+	content: "90%";
+}
+.percent_95:before{
+	content: "95%";
 }

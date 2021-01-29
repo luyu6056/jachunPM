@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"net/http"
+	_ "net/http/pprof"
 
 	"github.com/dlclark/regexp2"
 	"github.com/klauspost/compress/gzip"
@@ -46,6 +47,13 @@ func SetLogLever(level bool) {
 	IsRelease = level
 }
 func init() {
+
+	go func() {
+		port := uint8(rand.Int())
+		DebugLog("端口:%d", 8200+int(port))
+		http.ListenAndServe("0.0.0.0:"+strconv.Itoa(8200+int(port)), nil)
+
+	}()
 	rand.Seed(time.Now().Unix())
 	var _, publicfilename, _, _ = runtime.Caller(0)
 	publicPath := strings.Split(publicfilename, "/")

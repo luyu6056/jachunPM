@@ -110,6 +110,7 @@ type MSG_PROJECT_tree_cache struct {
 	Collector string
 	Short     string
 	Deleted   bool
+	TimeStamp int64
 }
 type MSG_PROJECT_tree_getParents struct {
 	QueryID  uint32
@@ -160,4 +161,111 @@ type MSG_PROJECT_tree_updateList struct {
 type MSG_PROJECT_tree_delete struct {
 	QueryID uint32
 	Ids     []int32
+}
+type MSG_PROJECT_productplan_getPairsForStory struct {
+	QueryID uint32
+	Product int32
+	Branch  int32
+}
+type MSG_PROJECT_productplan_getPairsForStory_result struct {
+	QueryResultID uint32
+	List          []HtmlKeyValueStr
+}
+type MSG_PROJECT_productplan_getList struct {
+	QueryID    uint32
+	Id         int32
+	ProductID  int32
+	Branch     int32
+	BrowseType string
+	Order      string
+	Page       int
+	PerPage    int
+	Total      int
+}
+type MSG_PROJECT_productplan_getList_result struct {
+	QueryResultID uint32
+	List          []map[string]string
+	Total         int
+}
+type MSG_PROJECT_productplan_getLast struct {
+	QueryID   uint32
+	ProductId int32
+	Branch    int32
+}
+type MSG_PROJECT_productplan_getLast_result struct {
+	QueryResultID uint32
+	Result        map[string]string
+}
+type MSG_PROJECT_product_editBranch struct {
+	QueryID   uint32
+	ProductID int32
+	Branchs   []*MSG_PROJECT_branch_info
+}
+type MSG_PROJECT_product_deleteBranch struct {
+	QueryID   uint32
+	ProductID int32
+	BranchID  int32
+}
+type MSG_PROJECT_product_deleteBranch_result struct {
+	QueryResultID uint32
+	Result        ErrCode
+}
+type MSG_PROJECT_productplan_getPairs struct {
+	QueryID   uint32
+	ProductID int32
+	BranchID  int32
+	Expired   string
+}
+type MSG_PROJECT_productplan_getPairs_result struct {
+	QueryResultID uint32
+	List          []HtmlKeyValueStr
+}
+type MSG_PROJECT_productplan_insertUpdate struct {
+	QueryID  uint32 `db:"-"`
+	Id       int32  `db:"pk"`
+	Product  int32
+	Branch   int32
+	Parent   int32
+	Projects []int32
+	Title    string
+	Desc     string
+	Begin    time.Time
+	End      time.Time
+	Order    string
+	Deleted  bool
+}
+
+type MSG_PROJECT_productplan_insertUpdate_result struct {
+	QueryResultID uint32
+	Id            int32
+	Result        ErrCode
+}
+type MSG_PROJECT_productplan_delete struct {
+	QueryID uint32
+	Id      int32
+	Product int32
+	Branch  int32
+}
+type MSG_PROJECT_stroy_create struct {
+	QueryID       uint32
+	Product       int32
+	Branch        int32
+	Module        int32
+	Plan          int32
+	Source        string //来源
+	SourceNote    string //来源备注
+	AssignedTo    int32  //评审
+	Title         string
+	Color         string
+	Pri           int8
+	Estimate      float32
+	Spec          string
+	Verify        string
+	mailto        []int32
+	Keywords      string
+	NeedNotReview bool
+}
+type MSG_PROJECT_stroy_create_result struct {
+	QueryResultID uint32
+	Id            int32
 }

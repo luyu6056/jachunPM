@@ -921,6 +921,7 @@ func (data *MSG_FILE_upload_result) setQueryResultID(id uint32) {
 type MSG_FILE_getByID struct {
 	QueryID uint32
 	FileID int64
+	NoData bool
 }
 
 var pool_MSG_FILE_getByID = sync.Pool{New: func() interface{} { return &MSG_FILE_getByID{} }}
@@ -936,6 +937,7 @@ func (data *MSG_FILE_getByID) cmd() int32 {
 func (data *MSG_FILE_getByID) Put() {
 	data.QueryID = 0
 	data.FileID = 0
+	data.NoData = false
 	pool_MSG_FILE_getByID.Put(data)
 }
 func (data *MSG_FILE_getByID) write(buf *libraries.MsgBuffer) {
@@ -946,6 +948,7 @@ func (data *MSG_FILE_getByID) write(buf *libraries.MsgBuffer) {
 func WRITE_MSG_FILE_getByID(data *MSG_FILE_getByID, buf *libraries.MsgBuffer) {
 	WRITE_uint32(data.QueryID, buf)
 	WRITE_int64(data.FileID, buf)
+	WRITE_bool(data.NoData, buf)
 }
 
 func READ_MSG_FILE_getByID(buf *libraries.MsgBuffer) *MSG_FILE_getByID {
@@ -957,6 +960,7 @@ func READ_MSG_FILE_getByID(buf *libraries.MsgBuffer) *MSG_FILE_getByID {
 func (data *MSG_FILE_getByID) read(buf *libraries.MsgBuffer) {
 	data.QueryID = READ_uint32(buf)
 	data.FileID = READ_int64(buf)
+	data.NoData = READ_bool(buf)
 
 }
 func (data *MSG_FILE_getByID) getQueryID() uint32 {
@@ -1032,7 +1036,7 @@ func (data *MSG_FILE_getByID_result) setQueryResultID(id uint32) {
 type MSG_FILE_updateByIDMap struct {
 	QueryID uint32
 	FileID int64
-	Update map[string]string
+	Update map[string]interface{}
 }
 
 var pool_MSG_FILE_updateByIDMap = sync.Pool{New: func() interface{} { return &MSG_FILE_updateByIDMap{} }}

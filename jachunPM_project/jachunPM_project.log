@@ -1,5 +1,0 @@
-2020-12-24 12:40:42 /mysql/mysql.go,line 822: 2020-12-24 12:40:42连接据库root:123456@tcp(192.168.1.180:3306)/jachunPM_project?charset=utf8&loc=Local
-/data/jachunPM/mysql/mysql.go,line 1559: 18 [modify column `Deleted` tinyint(1) NULL Default '0' ]
-/data/jachunPM/mysql/mysql.go,line 1726: ALTER TABLE `module` modify column `Deleted` tinyint(1) NULL Default '0' 
-2020-12-24 12:40:42 /protocol/rpcClient.go,line 432: 连接host成功，本服务ID0
-2020-12-24 12:40:42 /protocol/rpcClient.go,line 434: 连接host_cache成功,cacheId0

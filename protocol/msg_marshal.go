@@ -386,8 +386,8 @@ func READ_map(i interface{}, buf *libraries.MsgBuffer) {
 	}
 }
 func READ_any(i interface{}, buf *libraries.MsgBuffer) {
-	uint_ptr := reflect2.RTypeOf(i)
-	t := READ_uint(buf)
+	uint_ptr := reflect2.PtrOf(i)
+	t := READ_int8(buf)
 	switch t {
 	case interfaceTypeInt:
 		*((*int)(unsafe.Pointer(uint_ptr))) = READ_int(buf)

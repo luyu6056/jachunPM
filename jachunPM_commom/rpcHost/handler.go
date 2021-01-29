@@ -339,7 +339,7 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 			Type:       data.Type,
 		}
 		var id int64
-		id, err = db.DB.Table(db.TABLE_FILE).Insert(file)
+		id, err = in.DB.Table(db.TABLE_FILE).Insert(file)
 		if err != nil {
 			os.Remove(filepath + dir + data.Name)
 			return
@@ -360,13 +360,16 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 	case *protocol.MSG_FILE_getByID:
 		var file *db.File
 		err := db.DB.Table(db.TABLE_FILE).Prepare().Where("Id=?", data.FileID).Find(&file)
+		if file == nil && err == nil {
+			err = errors.New(protocol.Err_FileNotFount.String())
+		}
 		if err != nil {
 			in.WriteErr(err)
 			return
 		}
 		b, err := ioutil.ReadFile(filepath + file.Pathname)
 		if err != nil {
-			in.WriteErr(err)
+			err = errors.New(protocol.Err_FileNotFount.String() + " err:" + err.Error())
 			return
 		}
 		out := protocol.GET_MSG_FILE_getByID_result()
@@ -376,6 +379,9 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 		out.Type = file.Type
 		in.SendResult(out)
 		out.Put()
+	case *protocol.MSG_FILE_updateByIDMap:
+		_, err := in.DB.Table(db.TABLE_FILE).Where(map[string]interface{}{"Id": data.FileID}).Update(data.Update)
+		in.WriteErr(err)
 	case *protocol.MSG_COMMON_BeginTransaction:
 		//发起事务的服务器
 		startSvr := data.TransactionNo == 0

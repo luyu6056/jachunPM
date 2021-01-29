@@ -8,8 +8,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/luyu6056/gnet"
 )
 
 func init() {
@@ -20,20 +18,24 @@ func init() {
 	httpHandlerMap["GET"]["/tree/edit"] = get_tree_edit
 	httpHandlerMap["POST"]["/tree/edit"] = post_tree_edit
 	httpHandlerMap["GET"]["/tree/delete"] = get_tree_delete
+	httpHandlerMap["GET"]["/tree/ajaxGetOptionMenu"] = get_tree_ajaxGetOptionMenu
 }
-func get_tree_browse(data *TemplateData) (action gnet.Action) {
+func get_tree_browse(data *TemplateData) {
 	rootID, _ := strconv.Atoi(data.ws.Query("rootID"))
 	if rootID == 0 {
 		rootID, _ = strconv.Atoi(data.ws.Query("productID"))
 	}
 	currentModuleID, _ := strconv.Atoi(data.ws.Query("currentModuleID"))
 	branch, _ := strconv.Atoi(data.ws.Query("branch"))
+
 	viewType := data.ws.Query("view")
 	if viewType == "" {
 		viewType = data.ws.Query("type")
 	}
-
-	msg, err := HostConn.GetMsg()
+	if viewType == "" {
+		viewType = data.ws.Query("viewType")
+	}
+	msg, err := data.GetMsg()
 	defer func() {
 		if err != nil {
 			data.OutErr(err)
@@ -66,13 +68,16 @@ func get_tree_browse(data *TemplateData) (action gnet.Action) {
 			branches := []protocol.HtmlKeyValueStr{{"all", data.Lang["branch"]["all"].(string) + data.Lang["product"]["branchName"].(map[string]string)[product.Type]}}
 			if currentModuleID > 0 {
 				for _, b := range product.Branchs {
-					if b.Id == int32(branch) {
+					if b.Id == int32(branch) && !b.Deleted {
 						branches = []protocol.HtmlKeyValueStr{{strconv.Itoa(int(b.Id)), b.Name}}
 					}
 				}
 			} else {
 				for _, b := range product.Branchs {
-					branches = []protocol.HtmlKeyValueStr{{strconv.Itoa(int(b.Id)), b.Name}}
+					if !b.Deleted {
+						branches = append(branches, protocol.HtmlKeyValueStr{strconv.Itoa(int(b.Id)), b.Name})
+					}
+
 				}
 			}
 			data.Data["branches"] = branches
@@ -215,6 +220,7 @@ func get_tree_browse(data *TemplateData) (action gnet.Action) {
 	data.Data["tree"], err = tree_getProductStructure(data, int32(rootID), viewType)
 	data.Data["currentModuleID"] = currentModuleID
 	data.Data["viewType"] = viewType
+	data.Data["branch"] = branch
 	templateOut("tree.browse.html", data)
 	return
 }
@@ -226,13 +232,14 @@ func tree_getOptionMenu(data *TemplateData, rootID int32, typ string, startModul
 	branches := []protocol.HtmlKeyValueStr{protocol.HtmlKeyValueStr{strconv.Itoa(int(branch)), ""}}
 	if strings.Contains("story|bug|case", typ) {
 		product := HostConn.GetProductById(rootID)
+
 		if product != nil && product.Type != "normal" {
 			branches = []protocol.HtmlKeyValueStr{protocol.HtmlKeyValueStr{"null", ""}}
 			branches = append(branches, branch_getPairs(data, rootID, product, "noempty")...)
 			if branch > 0 {
-				for i := len(branches) - 1; i >= 0; i++ {
+				for i := len(branches) - 1; i >= 0; i-- {
 					kv := branches[i]
-					if kv.Key == "null" && kv.Key == strconv.Itoa(int(branch)) {
+					if kv.Key == "null" || kv.Key == strconv.Itoa(int(branch)) {
 						continue
 					}
 					branches = append(branches[:i], branches[i+1:]...)
@@ -252,9 +259,9 @@ func tree_getOptionMenu(data *TemplateData, rootID int32, typ string, startModul
 		for _, module := range list {
 			modules[module.Id] = module
 		}
-		param := "/"
-		if branch > 0 {
-			param = "/branch/"
+		param := ""
+		if branchkv.Value != "" && branchkv.Value != "null" {
+			param = "/" + branchkv.Value
 		}
 		for _, module := range modules {
 			tree_buildTreeArray(treeMenu, modules, module, param)
@@ -276,7 +283,6 @@ func tree_getOptionMenu(data *TemplateData, rootID int32, typ string, startModul
 	} else {
 		lastMenu = []protocol.HtmlKeyValueStr{{"", "/"}}
 	}
-
 	for _, str := range topMenu {
 		menu := strings.Split(str, "|")
 		if len(menu) == 2 {
@@ -386,7 +392,7 @@ func tree_buildTreeArray(treeMenu map[int32]string, modules map[int32]*protocol.
 		}
 
 	}
-	moduleName = strings.Join(moduleNames, "/") + "|$module->id\n"
+	moduleName = strings.Join(moduleNames, "/") + "|" + strconv.Itoa(int(module.Id)) + "\n"
 	treeMenu[module.Parent] += moduleName + treeMenu[module.Id]
 }
 func tree_getProductStructure(data *TemplateData, rootID int32, viewType string) (fullTrees []map[string]interface{}, err error) {
@@ -511,7 +517,7 @@ func tree_getLinePairs(data *TemplateData) (res []protocol.HtmlKeyValueStr, err 
 	}
 	return
 }
-func post_tree_manageChild(data *TemplateData) (action gnet.Action) {
+func post_tree_manageChild(data *TemplateData) {
 	if !data.ajaxCheckPost() {
 		return
 	}
@@ -745,9 +751,6 @@ func tree_buildTree(data *TemplateData, list []*protocol.MSG_PROJECT_tree_cache,
 func tree_createManageLink(data *TemplateData, viewType string, module *protocol.MSG_PROJECT_tree_cache, extra map[string]interface{}) (string, error) {
 	branchID, _ := strconv.Atoi(extra["branchID"].(string))
 
-	out := protocol.GET_MSG_USER_getPairs()
-	out.Params = "noletter"
-
 	buf := bufpool.Get().(*libraries.MsgBuffer)
 	defer func() {
 		buf.Reset()
@@ -804,7 +807,7 @@ func tree_createLineLink(data *TemplateData, viewType string, module *protocol.M
 	status, _ := extra["status"].(string)
 	return html_a(createLink("product", "all", []interface{}{"productID=", productID, "&line=", module.Id, "&status=", status}), module.Name, "_self", "id='module"+strconv.Itoa(int(module.Id))+"'"), nil
 }
-func post_tree_updateOrder(data *TemplateData) (action gnet.Action) {
+func post_tree_updateOrder(data *TemplateData) {
 	out := protocol.GET_MSG_PROJECT_tree_updateList()
 	list, err := tree_getAllcache(data)
 	if err != nil {
@@ -829,7 +832,7 @@ func post_tree_updateOrder(data *TemplateData) (action gnet.Action) {
 	data.ws.WriteString(js.Location("reload", "_self"))
 	return
 }
-func get_tree_edit(data *TemplateData) (action gnet.Action) {
+func get_tree_edit(data *TemplateData) {
 	moduleID, _ := strconv.Atoi(data.ws.Query("moduleID"))
 	branch, _ := strconv.Atoi(data.ws.Query("branch"))
 	viewType := data.ws.Query("type")
@@ -857,16 +860,11 @@ func get_tree_edit(data *TemplateData) (action gnet.Action) {
 	data.Data["type"] = viewType
 	// data.Data["libs"]   = $this->loadModel('doc')->getLibs($type = 'all', $extra = 'withObject');
 	data.Data["branch"] = branch
-	userGetPairs := protocol.GET_MSG_USER_getPairs()
-	userGetPairs.Params = "noclosed|nodeleted"
-	userGetPairs.UsersToAppended = module.OwnerID
-	var result *protocol.MSG_USER_getPairs_result
-	err = HostConn.SendMsgWaitResultToDefault(userGetPairs, &result)
+	data.Data["users"], err = user_getPairs("noclosed|nodeleted")
 	if err != nil {
 		data.ws.WriteString(js.Alert(err.Error()) + js.Reload("parent"))
 		return
 	}
-	data.Data["users"] = result.List
 	data.Data["showProduct"] = strings.Contains("story|bug|case", viewType)
 	if data.Data["showProduct"].(bool) {
 		data.Data["products"], err = product_getPairs(data)
@@ -992,7 +990,7 @@ func tree_getAllChildId(data *TemplateData, moduleID int32) (res []int32) {
 	}
 	return
 }
-func post_tree_edit(data *TemplateData) (action gnet.Action) {
+func post_tree_edit(data *TemplateData) {
 	moduleID, _ := strconv.Atoi(data.ws.Query("module"))
 	module := HostConn.GetTreeById(int32(moduleID))
 	if module == nil {
@@ -1012,8 +1010,7 @@ func post_tree_edit(data *TemplateData) (action gnet.Action) {
 	module.Short = data.ws.Post("short")
 	out.Modules = append(out.Modules, module)
 	var result *protocol.MSG_PROJECT_tree_manageChild_result
-	err = HostConn.SendMsgWaitResultToDefault(out, &result)
-	if err != nil {
+	if err = HostConn.SendMsgWaitResultToDefault(out, &result); err != nil {
 		data.ws.WriteString(js.Alert(err.Error()) + js.Reload("parent"))
 		return
 	}
@@ -1024,7 +1021,7 @@ func post_tree_edit(data *TemplateData) (action gnet.Action) {
 	}
 	return
 }
-func get_tree_delete(data *TemplateData) (action gnet.Action) {
+func get_tree_delete(data *TemplateData) {
 	confirm := data.ws.Query("confirm")
 	if confirm != "yes" {
 		moduleID, _ := strconv.Atoi(data.ws.Query("moduleID"))
@@ -1042,12 +1039,86 @@ func get_tree_delete(data *TemplateData) (action gnet.Action) {
 		out := protocol.GET_MSG_PROJECT_tree_delete()
 		moduleID, _ := strconv.Atoi(data.ws.Query("moduleID"))
 		out.Ids = append(out.Ids, int32(moduleID))
-		err := HostConn.SendMsgWaitResultToDefault(out, nil)
-		if err != nil {
+		if err := HostConn.SendMsgWaitResultToDefault(out, nil); err != nil {
 			data.ws.WriteString(js.Alert(err.Error()) + js.Reload("parent"))
 		} else {
 			data.ws.WriteString(js.Reload("parent"))
 		}
 	}
 	return
+}
+func get_tree_ajaxGetOptionMenu(data *TemplateData) {
+	viewType := data.ws.Query("viewtype")
+	rootID, _ := strconv.Atoi(data.ws.Query("rootID"))
+	branch, _ := strconv.Atoi(data.ws.Query("branch"))
+	rootModuleID, _ := strconv.Atoi(data.ws.Query("rootModuleID"))
+	returnType := data.ws.Query("returnType")
+	fieldID := data.ws.Query("fieldID")
+	needManage := data.ws.Query("needManage") == "true"
+	var optionMenu []protocol.HtmlKeyValueStr
+	var err error
+	if viewType == "task" {
+		optionMenu, err = tree_getTaskOptionMenu(int32(rootID), 0, 0)
+	} else {
+		optionMenu, err = tree_getOptionMenu(data, int32(rootID), viewType, int32(rootModuleID), int32(branch))
+	}
+	if err != nil {
+		data.OutErr(err)
+		return
+	}
+	if returnType == "html" {
+		buf := bufpool.Get().(*libraries.MsgBuffer)
+		if viewType == "line" {
+			list, err := tree_getAllcache(data)
+			if err != nil {
+				data.OutErr(err)
+				return
+			}
+			var id int32
+			for _, module := range list {
+				if module.Deleted || module.Type != "line" {
+					continue
+				}
+				if id < module.Id {
+					id = module.Id
+				}
+			}
+			buf.WriteString(html_select("line", optionMenu, id, "class='form-control'"))
+
+			buf.WriteString("<span class='input-group-addon' style='border-radius: 0px 2px 2px 0px; border-right-width: 1px;'>")
+			buf.WriteString(html_a(createLink("tree", "browse", []interface{}{"rootID=", rootID, "&view=", viewType, "&currentModuleID=0&branch=", branch, true}), data.Lang["tree"]["manageLine"].(string), "", "class='text-primary' data-toggle='modal' data-type='iframe' data-width='95%'"))
+			buf.WriteString("</span>")
+		} else {
+			changeFunc := ""
+			if viewType == "task" || viewType == "bug" || viewType == "case" {
+				changeFunc = "onchange='loadModuleRelated()'"
+			}
+			field := "module"
+			if fieldID != "" {
+				field = "modules[" + fieldID + "]"
+			}
+			buf.WriteString(html_select(field, optionMenu, "", "class='form-control' "+changeFunc))
+			if len(optionMenu) == 1 && needManage {
+				buf.WriteString("<span class='input-group-addon'>")
+				buf.WriteString(html_a(createLink("tree", "browse", []interface{}{"rootID=", rootID, "&view=", viewType, "&currentModuleID=0&branch=", branch, true}), data.Lang["tree"]["manage"].(string), "", "class='text-primary' data-toggle='modal' data-type='iframe' data-width='95%'"))
+				buf.WriteString("&nbsp; ")
+				buf.WriteString(html_a("javascript:void(0)", data.Lang["common"]["refresh"].(string), "", "class='refresh' onclick='loadProductModules("+strconv.Itoa(rootID)+")'"))
+				buf.WriteString("</span>")
+			}
+		}
+
+		data.ws.Write(buf)
+		buf.Reset()
+		bufpool.Put(buf)
+	}
+	/*if(returnType == "mhtml"){
+	   changeFunc = "";
+	    if(viewType == "task" or viewType == "bug" or viewType == "case") changeFunc = "onchange="loadModuleRelated()"";
+	    field = fieldID ? "modules[fieldID]" : "module";
+	    output = html::select("field", optionMenu, "", "class="input" changeFunc");
+	    die(output);
+	}*/
+	if returnType == "json" {
+		data.ws.WriteString(libraries.JsonMarshalToString(optionMenu))
+	}
 }
