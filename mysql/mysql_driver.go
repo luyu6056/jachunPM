@@ -156,16 +156,16 @@ func (mysqldb *MysqlDB) ping() {
 			if n != int(mysqldb.Conn_num) {
 				DEBUG("数量不一致", n, mysqldb.Conn_num)
 			}
+			var connMap = make(map[uint32]*Mysql_Conn)
 		pingfor:
 			for {
-				var connMap = make(map[uint32]*mysql_conn)
 				select {
 				case conn := <-mysqldb.Conn_chan: //优先处理Conn1并且把结果放到conn2去
 					if conn.ping(now.Unix()) {
 						select {
 						case mysqldb.Conn_chan2 <- conn:
 						default:
-							connMap[conn.Thread_id] = conn //conn2满了，放到临时列表
+							connMap[conn.Thread_id] = &Mysql_Conn{mysql_conn: conn} //conn2满了，放到临时列表
 						}
 					}
 				default:
@@ -176,20 +176,19 @@ func (mysqldb *MysqlDB) ping() {
 								select {
 								case mysqldb.Conn_chan <- conn: //优先放回conn
 								default:
-									connMap[conn.Thread_id] = conn
+									connMap[conn.Thread_id] = &Mysql_Conn{mysql_conn: conn}
 								}
 							}
 						default:
-							for _, conn := range connMap {
-								mysqldb.putConn(conn) //最终再丢回去
-							}
 							break pingfor
 						}
 
 					}
 					break pingfor
 				}
-
+			}
+			for _, c := range connMap {
+				c.putOnce.Do(func() { mysqldb.putConn(c.mysql_conn) }) //最终再丢回去
 			}
 			if mysqldb.Conn_num < mysqldb.MaxIdleConns {
 				go func() {
@@ -205,7 +204,7 @@ func (mysqldb *MysqlDB) ping() {
 								mysqldb.Lock.Lock()
 								DEBUG("发生致命错误,mysql conn_num不足，无法新增入库")
 								if _, ok := mysqldb.Conn_m.LoadAndDelete(conn.Thread_id); ok {
-									mysqldb.Conn_num--
+									atomic.AddInt32(&mysqldb.Conn_num, -1)
 								}
 								mysqldb.Lock.Unlock()
 							}
@@ -333,7 +332,7 @@ func (mysqldb *MysqlDB) connect_new() (*mysql_conn, error) {
 	}
 	mysqldb.Lock.Lock()
 	if _, ok := mysqldb.Conn_m.LoadOrStore(new_connect.Thread_id, new_connect); !ok {
-		mysqldb.Conn_num++
+		atomic.AddInt32(&mysqldb.Conn_num, 1)
 	} else {
 		mysqldb.Conn_m.Store(new_connect.Thread_id, new_connect)
 	}

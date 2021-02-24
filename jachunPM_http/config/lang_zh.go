@@ -458,8 +458,6 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["story"]["legendRelated"] = "相关信息"
 	Lang[protocol.ZH_CN]["story"]["legendLifeTime"] = "需求的一生"
 	Lang[protocol.ZH_CN]["story"]["legendBasicInfo"] = "基本信息"
-	Lang[protocol.ZH_CN]["story"]["reviewResultList['']"] = ""
-
 	Lang[protocol.ZH_CN]["story"]["dittoNotice"] = "该需求与上一需求不属于同一产品！"
 	Lang[protocol.ZH_CN]["story"]["ditto"] = "同上"
 	Lang[protocol.ZH_CN]["story"]["deleted"] = "已删除"
@@ -596,7 +594,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["productplan"]["common"] = Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + `计划`
 	Lang[protocol.ZH_CN]["productplan"]["menu"] = Lang[protocol.ZH_CN]["product"]["menu"]
 	Lang[protocol.ZH_CN]["release"] = make(map[string]interface{})
-	Lang[protocol.ZH_CN]["release"]["statusList['']"] = ""
+
 	Lang[protocol.ZH_CN]["release"]["scmPath"] = "版本库地址："
 	Lang[protocol.ZH_CN]["release"]["filePath"] = "下载地址："
 	Lang[protocol.ZH_CN]["release"]["yesterday"] = "昨日发布"
@@ -884,9 +882,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["task"]["legendLife"] = "任务的一生"
 	Lang[protocol.ZH_CN]["task"]["legendEffort"] = "工时信息"
 	Lang[protocol.ZH_CN]["task"]["legendBasic"] = "基本信息"
-	Lang[protocol.ZH_CN]["task"]["reasonList['']"] = ""
-	Lang[protocol.ZH_CN]["task"]["typeList['']"] = ""
-	Lang[protocol.ZH_CN]["task"]["statusList['']"] = ""
+
 	Lang[protocol.ZH_CN]["task"]["allTasks"] = "总任务"
 	Lang[protocol.ZH_CN]["task"]["yesterdayFinished"] = "昨日完成"
 	Lang[protocol.ZH_CN]["task"]["noClosed"] = "未关闭"
@@ -1073,11 +1069,6 @@ func LangZH_CNInit() {
 		}},
 	}
 	Lang[protocol.ZH_CN]["bug"] = make(map[string]interface{})
-	Lang[protocol.ZH_CN]["bug"]["resolutionList['']"] = ""
-	Lang[protocol.ZH_CN]["bug"]["statusList['']"] = ""
-	Lang[protocol.ZH_CN]["bug"]["typeList['']"] = ""
-	Lang[protocol.ZH_CN]["bug"]["browserList['']"] = ""
-	Lang[protocol.ZH_CN]["bug"]["osList['']"] = ""
 	Lang[protocol.ZH_CN]["bug"]["tplExpect"] = "<p>[期望]</p><br/>"
 	Lang[protocol.ZH_CN]["bug"]["tplResult"] = "<p>[结果]</p><br/>"
 	Lang[protocol.ZH_CN]["bug"]["tplStep"] = "<p>[步骤]</p><br/>"
@@ -1244,12 +1235,6 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["testcase"]["noFunction"] = "不存在iconv和mb_convert_encoding转码方法，不能将数据转成想要的编码！"
 	Lang[protocol.ZH_CN]["testcase"]["errorEncode"] = "无数据，请选择正确的编码重新上传！"
 	Lang[protocol.ZH_CN]["testcase"]["buttonToList"] = "返回"
-	Lang[protocol.ZH_CN]["testcase"]["resultList['n/a']"] = "忽略"
-	Lang[protocol.ZH_CN]["testcase"]["statusList['']"] = ""
-	Lang[protocol.ZH_CN]["testcase"]["groups['']"] = "分组查看"
-	Lang[protocol.ZH_CN]["testcase"]["reviewResultList['']"] = ""
-	Lang[protocol.ZH_CN]["testcase"]["stageList['']"] = ""
-	Lang[protocol.ZH_CN]["testcase"]["typeList['']"] = ""
 	Lang[protocol.ZH_CN]["testcase"]["dittoNotice"] = "该用例与上一用例不属于同一产品！"
 	Lang[protocol.ZH_CN]["testcase"]["ditto"] = "同上"
 	Lang[protocol.ZH_CN]["testcase"]["confirmBatchDelete"] = "您确认要批量删除这些测试用例吗？"
@@ -2362,7 +2347,6 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["mail"]["inputFromEmail"] = "请输入发信邮箱："
 	Lang[protocol.ZH_CN]["mail"]["noticeResend"] = "已经重新发信！"
 	Lang[protocol.ZH_CN]["mail"]["more"] = "更多..."
-	Lang[protocol.ZH_CN]["mail"]["secureList['']"] = "不加密"
 	Lang[protocol.ZH_CN]["mail"]["failReason"] = "失败原因"
 	Lang[protocol.ZH_CN]["mail"]["status"] = "状态"
 	Lang[protocol.ZH_CN]["mail"]["sendTime"] = "发送时间"
@@ -4078,6 +4062,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["bug"]["severityList"] = []string{"1", `2`, `3`, `4`}
 	Lang[protocol.ZH_CN]["bug"]["priList"] = []string{"", `1`, `2`, `3`, `4`}
 	Lang[protocol.ZH_CN]["bug"]["osList"] = map[string]string{
+		"":        "",
 		"all":     "全部",
 		"windows": "Windows",
 		"win8":    "Windows 8",
@@ -4100,6 +4085,7 @@ func LangZH_CNInit() {
 		"others":  "其他",
 	}
 	Lang[protocol.ZH_CN]["bug"]["browserList"] = map[string]string{
+		"":         "",
 		"all":      "全部",
 		"ie":       "IE系列",
 		"ie11":     "IE11",
@@ -4123,6 +4109,7 @@ func LangZH_CNInit() {
 		"other":    "其他",
 	}
 	Lang[protocol.ZH_CN]["bug"]["typeList"] = map[string]string{
+		"":             "",
 		"codeerror":    "代码错误",
 		"interface":    "界面优化",
 		"config":       "配置相关",
@@ -4138,12 +4125,15 @@ func LangZH_CNInit() {
 		"trackthings":  "事务跟踪",
 	}
 	Lang[protocol.ZH_CN]["bug"]["statusList"] = map[string]string{
+		"":         "",
 		"active":   "激活",
 		"resolved": "已解决",
 		"closed":   "已关闭",
 	}
 	Lang[protocol.ZH_CN]["bug"]["confirmedList"] = []string{"已确认", `未确认`}
 	Lang[protocol.ZH_CN]["bug"]["resolutionList"] = map[string]string{
+
+		"":           "",
 		"bydesign":   "设计如此",
 		"duplicate":  "重复Bug",
 		"external":   "外部原因",
@@ -5063,6 +5053,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["mail"]["debugList"] = []string{"关闭", `一般`, `较高`}
 	Lang[protocol.ZH_CN]["mail"]["authList"] = []string{"需要", `不需要`}
 	Lang[protocol.ZH_CN]["mail"]["secureList"] = map[string]string{
+		"":    "不加密",
 		"ssl": "ssl",
 		"tls": "tls",
 	}
@@ -5439,6 +5430,7 @@ func LangZH_CNInit() {
 		"leftbug": "遗留Bug",
 	}
 	Lang[protocol.ZH_CN]["release"]["statusList"] = map[string]string{
+		"":          "",
 		"normal":    "正常",
 		"terminate": "停止维护",
 	}
@@ -5528,8 +5520,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["crystal"]["codePlaceholder"] = "报表的唯一代号"
 	Lang[protocol.ZH_CN]["crystal"]["sumPlaceholder"] = "选择求和字段"
 	Lang[protocol.ZH_CN]["crystal"]["sqlPlaceholder"] = "直接写入一句SQL查询语句，只能进行查询操作，禁止其他SQL操作"
-	Lang[protocol.ZH_CN]["crystal"]["moduleList['']"] = ""
-	Lang[protocol.ZH_CN]["crystal"]["selectList['project.status']"] = Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + `状态列表`
+
 	Lang[protocol.ZH_CN]["crystal"]["default"] = "默认值"
 	Lang[protocol.ZH_CN]["crystal"]["desc"] = "描述"
 	Lang[protocol.ZH_CN]["crystal"]["lang"] = "语言"
@@ -5579,12 +5570,14 @@ func LangZH_CNInit() {
 		"select": "下拉菜单",
 	}
 	Lang[protocol.ZH_CN]["crystal"]["selectList"] = map[string]string{
-		"user":    "用户列表",
-		"product": Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "列表",
-		"project": Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "列表",
-		"dept":    "部门列表",
+		"project.status": Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + `状态列表`,
+		"user":           "用户列表",
+		"product":        Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "列表",
+		"project":        Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "列表",
+		"dept":           "部门列表",
 	}
 	Lang[protocol.ZH_CN]["crystal"]["moduleList"] = map[string]string{
+		"":        "",
 		"product": Lang[protocol.ZH_CN]["common"]["productCommon"].(string),
 		"project": Lang[protocol.ZH_CN]["common"]["projectCommon"].(string),
 		"test":    "测试",
@@ -5693,11 +5686,12 @@ func LangZH_CNInit() {
 		{"cancel", "已取消"},
 		{"bydesign", "设计如此"},
 	}
-	Lang[protocol.ZH_CN]["story"]["reviewResultList"] = map[string]string{
-		"pass":    "确认通过",
-		"revert":  "撤销变更",
-		"clarify": "有待明确",
-		"reject":  "拒绝",
+	Lang[protocol.ZH_CN]["story"]["reviewResultList"] = []protocol.HtmlKeyValueStr{
+		{"", ""},
+		{"pass", "确认通过"},
+		{"revert", "撤销变更"},
+		{"clarify", "有待明确"},
+		{"reject", "拒绝"},
 	}
 	Lang[protocol.ZH_CN]["story"]["reviewList"] = []string{"否", `是`}
 	Lang[protocol.ZH_CN]["story"]["sourceList"] = []protocol.HtmlKeyValueStr{
@@ -5835,6 +5829,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["task"]["proofreadingPass"] = []string{"是", "否"}
 
 	Lang[protocol.ZH_CN]["task"]["statusList"] = map[string]string{
+		"":              "",
 		"wait":          "未开始",
 		"doing":         "进行中",
 		"done":          "已完成",
@@ -5845,6 +5840,7 @@ func LangZH_CNInit() {
 	}
 
 	Lang[protocol.ZH_CN]["task"]["typeList"] = map[string]string{
+		"":                 "",
 		"character2d":      "2D_人物",
 		"scene2d":          "2D_场景",
 		"ui2d":             "2D_UI",
@@ -5862,6 +5858,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["task"]["priList"] = []string{"1", `2`, `3`, `4`}
 
 	Lang[protocol.ZH_CN]["task"]["reasonList"] = map[string]string{
+		"":       "",
 		"done":   "已完成",
 		"cancel": "已取消",
 	}
@@ -5982,6 +5979,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["testcase"]["priList"] = []string{"", `3`, `1`, `2`, `4`}
 
 	Lang[protocol.ZH_CN]["testcase"]["typeList"] = map[string]string{
+		"":            "",
 		"feature":     "功能测试",
 		"performance": "性能测试",
 		"config":      "配置相关",
@@ -5992,6 +5990,7 @@ func LangZH_CNInit() {
 	}
 
 	Lang[protocol.ZH_CN]["testcase"]["stageList"] = map[string]string{
+		"":           "",
 		"unittest":   "单元测试阶段",
 		"feature":    "功能测试阶段",
 		"intergrate": "集成测试阶段",
@@ -6001,16 +6000,19 @@ func LangZH_CNInit() {
 	}
 
 	Lang[protocol.ZH_CN]["testcase"]["reviewResultList"] = map[string]string{
+		"":        "",
 		"pass":    "确认通过",
 		"clarify": "继续完善",
 	}
 
 	Lang[protocol.ZH_CN]["testcase"]["groups"] = map[string]string{
+		"":           "分组查看",
 		"story":      "需求分组",
 		"assignedTo": "指派分组",
 	}
 
 	Lang[protocol.ZH_CN]["testcase"]["statusList"] = map[string]string{
+		"":            "",
 		"wait":        "待评审",
 		"normal":      "正常",
 		"blocked":     "被阻塞",
@@ -6018,6 +6020,7 @@ func LangZH_CNInit() {
 	}
 
 	Lang[protocol.ZH_CN]["testcase"]["resultList"] = map[string]string{
+		"n/a":     "忽略",
 		"pass":    "通过",
 		"fail":    "失败",
 		"blocked": "阻塞",
@@ -6351,10 +6354,14 @@ func LangZH_CNInit() {
 		"ErrImgType": "上传图片失败，格式识别错误",
 	}
 	Lang[protocol.ZH_CN]["error"]["checkTypeRequire"] = "不能为空"
-	Lang[protocol.ZH_CN]["error"]["checkTypeNum"] = "必须为数字"
+	Lang[protocol.ZH_CN]["error"]["checkTypeInt"] = "必须为整数"
 	Lang[protocol.ZH_CN]["error"]["checkTypeUserId"] = "必须为有效的用户"
 	Lang[protocol.ZH_CN]["error"]["checkHtmlKeyValueStr"] = "该选项无效，请刷新重新选择"
 	Lang[protocol.ZH_CN]["error"]["checkTypeDate"] = "日期格式不对，必须为2020-01-01"
+	Lang[protocol.ZH_CN]["error"]["checkPositiveAndZero"] = "数值必须大于或等于0"
+	Lang[protocol.ZH_CN]["error"]["checkPositive"] = "数值必须大于0"
+	Lang[protocol.ZH_CN]["error"]["checkNegativeAndZero"] = "数值必须小于或等于0"
+	Lang[protocol.ZH_CN]["error"]["checkNegative"] = "数值必须小于0"
 	Lang[protocol.ZH_CN]["error"]["resultType"] = "远程服务器返回的结果不符合预期"
 	Lang[protocol.ZH_CN]["product"]["error"] = map[string]string{
 		"NotFound": "没有找到产品",

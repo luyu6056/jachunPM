@@ -580,6 +580,9 @@ func (client *RpcClient) SetConfig(lang CountryNo, key string, config map[string
 	return client.cache.Set(key, PATH_CONFIG_CACHE+lang.String(), libraries.JsonMarshal(config), 0)
 }
 func (client *RpcClient) GetUserCacheById(id int32) (user *MSG_USER_INFO_cache) {
+	if id <= 0 {
+		return nil
+	}
 	err := client.CacheGet(UserServerNo, PATH_USER_INFO_CACHE, strconv.Itoa(int(id)), &user)
 	if err != nil {
 		libraries.DebugLog("获取user缓存失败%+v", err)

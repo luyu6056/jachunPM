@@ -43,6 +43,10 @@ func Handler(in *protocol.Msg) {
 		productplan_insertUpdate(data, in)
 	case *protocol.MSG_PROJECT_productplan_delete:
 		productplan_delete(data, in)
+	case *protocol.MSG_PROJECT_stroy_create:
+		story_create(data, in)
+	case *protocol.MSG_PROJECT_story_batchGetStoryStage:
+		story_batchGetStoryStage(data, in)
 	default:
 		libraries.ReleaseLog("未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 	}

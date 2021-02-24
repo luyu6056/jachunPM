@@ -1,7 +1,11 @@
 package handler
 
 import (
+	"fmt"
+	"html/template"
+	"jachunPM_http/config"
 	"jachunPM_http/js"
+	"libraries"
 	"protocol"
 	"strconv"
 	"strings"
@@ -41,9 +45,8 @@ func get_story_create(data *TemplateData) {
 	productID, _ := strconv.Atoi(data.ws.Query("productID"))
 	moduleID, _ := strconv.Atoi(data.ws.Query("moduleID"))
 	planID, _ := strconv.Atoi(data.ws.Query("planID"))
-	branch, _ := strconv.Atoi(data.ws.Query("branch"))
 	//storyID, _ := strconv.Atoi(data.ws.Query("storyID"))
-
+	branch, _ := strconv.Atoi(data.ws.Query("storyID"))
 	var product *protocol.MSG_PROJECT_product_cache
 	var products []protocol.HtmlKeyValueStr
 	var err error
@@ -226,6 +229,9 @@ func post_story_create(data *TemplateData) {
 	if !data.ajaxCheckPost() {
 		return
 	}
+	projectID, _ := strconv.Atoi(data.ws.Query("projectID"))
+	bugID, _ := strconv.Atoi(data.ws.Query("bugID"))
+
 	msg, err := data.GetMsg()
 	defer func() {
 		if err != nil {
@@ -235,67 +241,360 @@ func post_story_create(data *TemplateData) {
 	if err != nil {
 		return
 	}
+
 	out := protocol.GET_MSG_PROJECT_stroy_create()
-	for key, list := range data.ws.GetAllPost() {
-		switch key {
-		case "product":
-			i, _ := strconv.Atoi(list[0])
-			out.Product = int32(i)
-		case "branch":
-			i, _ := strconv.Atoi(list[0])
-			out.Branch = int32(i)
+	data.SetValueFromPost(out)
+	out.FromBug = int32(bugID)
+	out.ProjectID = int32(projectID)
+	for i := len(out.Mailto) - 1; i >= 0; i-- {
+		if user := HostConn.GetUserCacheById(out.Mailto[i]); user == nil {
+			out.Mailto = append(out.Mailto[:i], out.Mailto[i+1:]...)
 		}
 	}
-	//response["result"]  = "success";
-	//response["message"] = this->lang->saveSuccess;
+	out.OpenedBy = data.User.Id
 
-	/*storyResult = this->story->create(projectID, bugID, from = isset(fromObjectIDKey) ? fromObjectIDKey : "");
-	  if(!storyResult or dao::isError())
-	  {
-	      response["result"]  = "fail";
-	      response["message"] = dao::getError();
-	      this->send(response);
-	  }
-	  storyID = storyResult["id"];
-	  if(storyResult["status"] == "exists")
-	  {
-	      response["message"] = sprintf(this->lang->duplicate, this->lang->story->common);
-	      if(projectID == 0)
-	      {
-	          response["locate"] = this->createLink("story", "view", "storyID={storyID}");
-	      }
-	      else
-	      {
-	          response["locate"] = this->createLink("project", "story", "projectID=projectID");
-	      }
-	      this->send(response);
-	  }
+	var result *protocol.MSG_PROJECT_stroy_create_result
+	if err = msg.SendMsgWaitResult(0, out, &result); err != nil {
+		return
+	}
 
-	  action = bugID == 0 ? "Opened" : "Frombug";
-	  extra  = bugID == 0 ? "" : bugID;
+	storyID := result.Result
+	result.Put()
+	defer out.Put()
+	if storyID == int32(protocol.Err_ProjectStoryTitleExists) {
 
-	  if(isset(fromObjectID))
-	  {
-	      action = fromObjectAction;
-	      extra  = fromObjectID;
-	  }
-	  actionID = this->action->create("story", storyID, action, "", extra);
+		data.ajaxResult(false, map[string]string{"title": fmt.Sprintf(data.Lang["common"]["duplicate"].(string), data.Lang["story"]["common"])})
+		return
+	}
+	/*
+		action := "Opened"
+		extra := ""
+		if bugID > 0 {
+			action = "Frombug"
+			extra = strconv.Itoa(bugID)
+		}
+		if(isset(fromObjectID)){
+		      action = fromObjectAction;
+		      extra  = fromObjectID;
+		  }
+		  actionID = this->action->create("story", storyID, action, "", extra);
 
-	  if(todoID > 0)
-	  {
-	      this->dao->update(TABLE_TODO)->set("status")->eq("done")->where("id")->eq(todoID)->exec();
-	      this->action->create("todo", todoID, "finished", "", "STORY:storyID");
-	  }
+		  if(todoID > 0){//代办
+		      this->dao->update(TABLE_TODO)->set("status")->eq("done")->where("id")->eq(todoID)->exec();
+		      this->action->create("todo", todoID, "finished", "", "STORY:storyID");
+		  }
+	*/
 
-	  if(this->post->newStory)
-	  {
-	      response["message"] = this->lang->story->successSaved . this->lang->story->newStory;
-	      response["locate"]  = this->createLink("story", "create", "productID=productID&branch=branch&moduleID=moduleID&story=0&projectID=projectID&bugID=bugID");
-	      this->send(response);
-	  }
+	if data.ws.Post("newStory") != "" {
 
-	  moduleID = this->post->module ? this->post->module : 0;
-	  response["locate"] = this->createLink("project", "story", "projectID=projectID&branch=&browseType=byModule&moduleID=moduleID");
-	  if(projectID == 0) response["locate"] = this->createLink("story", "view", "storyID=storyID");
-	  this->send(response);*/
+		data.ajaxResult(true, data.Lang["story"]["successSaved"].(string)+data.Lang["story"]["newStory"].(string), createLink("story", "create", []interface{}{"productID=", out.Product, "&branch=", out.Branch, "&moduleID=", out.Module, "&story=0&projectID=", projectID, "&bugID=", bugID}))
+		return
+	}
+	var locate string
+	if projectID == 0 {
+		locate = createLink("story", "view", "storyID="+strconv.Itoa(int(storyID)))
+	} else {
+		locate = createLink("project", "story", "projectID="+strconv.Itoa(int(projectID))+"&branch=&browseType=byModule&moduleID="+strconv.Itoa(int(out.Module)))
+	}
+	data.ajaxResult(true, data.Lang["common"]["saveSuccess"].(string), locate)
+}
+func storyFuncs() {
+	global_Funcs["story_printCell"] = func(data *TemplateData, col *config.ConfigDatatable, story *protocol.MSG_PROJECT_story, users []protocol.HtmlKeyValueStr, branches []protocol.HtmlKeyValueStr, storyStages map[int32][]protocol.HtmlKeyValueStr, modulePairs []protocol.HtmlKeyValueStr, storyTasks, storyBugs, storyCases map[int32]int, mode string) template.HTML { //mode = 'datatable'
+		if mode == "" {
+			mode = "datatable"
+		}
+		canView := hasPriv(data, "story", "view")
+		storyLink := createLink("story", "view", "storyID="+strconv.Itoa(int(story.Id)))
+		buf := bufpool.Get().(*libraries.MsgBuffer)
+		if col.Show {
+			buf.WriteString("<td class='c-")
+			buf.WriteString(col.Id)
+			switch col.Id {
+			case "id":
+				buf.WriteString("'>")
+				buf.WriteString(html_checkbox("storyIDList", []protocol.HtmlKeyValueStr{{strconv.Itoa(int(story.Id)), ""}}, "", "", "block"))
+				buf.WriteString(html_a(createLink("story", "view", "storyID="+strconv.Itoa(int(story.Id))), fmt.Sprintf("%03d", story.Id)))
+
+			case "pri":
+				var pri = strconv.Itoa(int(story.Pri))
+				buf.WriteString("'>")
+				buf.WriteString("<span class='label-pri label-pri-")
+				buf.WriteString(pri)
+				buf.WriteString("' title='")
+				for _, kv := range data.Lang["story"]["priList"].([]protocol.HtmlKeyValueStr) {
+					if kv.Key == pri {
+						pri = kv.Value
+						break
+					}
+				}
+				buf.WriteString(pri)
+				buf.WriteString("'>")
+				buf.WriteString(pri)
+				buf.WriteString("</span>")
+			case "title":
+				buf.WriteString("' title='")
+				buf.WriteString(story.Title)
+				buf.WriteString("'>")
+				if story.Branch > 0 {
+					for _, branch := range branches {
+						if branch.Key == strconv.Itoa(int(story.Branch)) {
+							buf.WriteString("<span class='label label-outline label-badge'>")
+							buf.WriteString(branch.Value)
+							buf.WriteString("</span> ")
+							break
+						}
+					}
+				}
+				if story.Module > 0 {
+					for _, module := range modulePairs {
+						if module.Key == strconv.Itoa(int(story.Module)) {
+							buf.WriteString("<span class='label label-gray label-badge'>")
+							buf.WriteString(module.Value)
+							buf.WriteString("</span> ")
+							break
+						}
+					}
+				}
+				if canView {
+					buf.WriteString(html_a(storyLink, story.Title, "", "style='color: "+story.Color+"'"))
+				} else {
+					buf.WriteString("<span style='color: ")
+					buf.WriteString(story.Color)
+					buf.WriteString("'>")
+					buf.WriteString(story.Title)
+					buf.WriteString("</span>")
+				}
+
+			case "plan":
+				buf.WriteString(" text-ellipsis")
+				buf.WriteString("' title='")
+				buf.WriteString(story.PlanTitle)
+				buf.WriteString("'>")
+				buf.WriteString(story.PlanTitle)
+			case "branch":
+				buf.WriteString("'>")
+				for _, branch := range branches {
+					if branch.Key == strconv.Itoa(int(story.Branch)) {
+						buf.WriteString(branch.Value)
+						break
+					}
+				}
+			case "keywords":
+				buf.WriteString("'>")
+				buf.WriteString(story.Keywords)
+			case "source":
+				buf.WriteString("'>")
+				source := story.Source
+				for _, kv := range data.Lang["story"]["sourceList"].([]protocol.HtmlKeyValueStr) {
+					if kv.Key == source {
+						source = kv.Value
+						break
+					}
+				}
+				buf.WriteString(source)
+
+			case "sourceNote":
+				buf.WriteString(" text-ellipsis")
+				buf.WriteString("' title='")
+				buf.WriteString(story.SourceNote)
+				buf.WriteString("'>")
+				buf.WriteString(story.SourceNote)
+			case "status":
+				buf.WriteString("'>")
+				buf.WriteString("<span class='status-")
+				buf.WriteString(story.Status)
+				buf.WriteString("'>")
+
+				for _, kv := range data.Lang["story"]["statusList"].([]protocol.HtmlKeyValueStr) {
+					if kv.Key == story.Status {
+						buf.WriteString(kv.Value)
+						break
+					}
+				}
+				buf.WriteString("</span>")
+
+			case "estimate":
+				buf.WriteString("'>")
+				buf.WriteString(fmt.Sprintf("%.1f", story.Estimate))
+
+			case "stage":
+				buf.WriteString("'>")
+				if v, ok := storyStages[story.Id]; ok {
+					buf.WriteString("<div class='dropdown dropdown-hover'>")
+					for _, kv := range data.Lang["story"]["stageList"].([]protocol.HtmlKeyValueStr) {
+						if kv.Key == story.Stage {
+							buf.WriteString(kv.Value)
+							break
+						}
+					}
+					buf.WriteString("<span class='caret'></span><ul class='dropdown-menu pull-right'>")
+
+					for _, storyStage := range v {
+						buf.WriteString("<li class='text-ellipsis'>")
+						for _, branch := range branches {
+							if branch.Key == storyStage.Key {
+								buf.WriteString(branch.Value)
+								break
+							}
+						}
+						buf.WriteString(": ")
+						for _, kv := range data.Lang["story"]["stageList"].([]protocol.HtmlKeyValueStr) {
+							if kv.Key == storyStage.Value {
+								buf.WriteString(kv.Value)
+								break
+							}
+						}
+						buf.WriteString("</li>")
+					}
+
+					buf.WriteString("</ul></div>")
+
+				} else {
+
+					for _, kv := range data.Lang["story"]["stageList"].([]protocol.HtmlKeyValueStr) {
+						if kv.Key == story.Stage {
+							buf.WriteString(kv.Value)
+							break
+						}
+					}
+				}
+			case "taskCount":
+				buf.WriteString("'>")
+				if n, ok := storyTasks[story.Id]; ok {
+					buf.WriteString(html_a(createLink("story", "tasks", "storyID="+strconv.Itoa(int(story.Id))), strconv.Itoa(n), "", "class='iframe'"))
+				} else {
+					buf.WriteString("0")
+				}
+			case "bugCount":
+				buf.WriteString("'>")
+				if n, ok := storyBugs[story.Id]; ok {
+					buf.WriteString(html_a(createLink("story", "bugs", "storyID="+strconv.Itoa(int(story.Id))), strconv.Itoa(n), "", "class='iframe'"))
+				} else {
+					buf.WriteString("0")
+				}
+			case "caseCount":
+				buf.WriteString("'>")
+				if n, ok := storyCases[story.Id]; ok {
+					buf.WriteString(html_a(createLink("story", "cases", "storyID="+strconv.Itoa(int(story.Id))), strconv.Itoa(n), "", "class='iframe'"))
+				} else {
+					buf.WriteString("0")
+				}
+			case "openedBy":
+				var username string
+				for _, user := range users {
+					if user.Key == strconv.Itoa(int(story.OpenedBy)) {
+						username = user.Value
+						break
+					}
+				}
+				buf.WriteString("' title='")
+				buf.WriteString(username)
+				buf.WriteString("'>")
+				buf.WriteString(username)
+
+			case "openedDate":
+				buf.WriteString("'>")
+				buf.WriteString(story.OpenedDate.Format("01-02 15:04"))
+			case "assignedTo":
+				if story.AssignedTo == data.User.Id {
+					buf.WriteString(" red")
+				}
+				var username string
+				for _, user := range users {
+					if user.Key == strconv.Itoa(int(story.AssignedTo)) {
+						username = user.Value
+						break
+					}
+				}
+				buf.WriteString("' title='")
+				buf.WriteString(username)
+				buf.WriteString("'>")
+				buf.WriteString("<span style='padding-left:10px;' ")
+				if story.AssignedTo == data.User.Id {
+					buf.WriteString("class='text-red' ")
+				}
+				buf.WriteString(">")
+				buf.WriteString(username)
+				buf.WriteString("</span>")
+			case "assignedDate":
+				buf.WriteString("'>")
+				buf.WriteString(story.AssignedDate.Format("01-02 15:04"))
+			case "reviewedBy":
+				buf.WriteString("'>")
+				for _, user := range users {
+					if user.Key == strconv.Itoa(int(story.ReviewedBy)) {
+						buf.WriteString(user.Value)
+						break
+					}
+				}
+			case "reviewedDate":
+				buf.WriteString("'>")
+				buf.WriteString(story.ReviewedDate.Format("01-02 15:04"))
+			case "closedBy":
+				buf.WriteString("'>")
+				for _, user := range users {
+					if user.Key == strconv.Itoa(int(story.ClosedBy)) {
+						buf.WriteString(user.Value)
+						break
+					}
+				}
+			case "closedDate":
+				buf.WriteString("'>")
+				buf.WriteString(story.ClosedDate.Format("01-02 15:04"))
+			case "closedReason":
+				buf.WriteString("'>")
+				reason := story.ClosedReason
+				for _, kv := range data.Lang["story"]["reasonList"].([]protocol.HtmlKeyValueStr) {
+					if kv.Key == reason {
+						reason = kv.Value
+						break
+					}
+				}
+				buf.WriteString(reason)
+
+			case "lastEditedBy":
+				buf.WriteString("'>")
+				for _, user := range users {
+					if user.Key == strconv.Itoa(int(story.LastEditedBy)) {
+						buf.WriteString(user.Value)
+						break
+					}
+				}
+			case "lastEditedDate":
+				buf.WriteString("'>")
+				buf.WriteString(story.LastEditedDate.Format("01-02 15:04"))
+			case "mailto":
+				buf.WriteString("'>")
+
+				for _, id := range story.Mailto {
+					for _, user := range users {
+						if user.Key == strconv.Itoa(int(id)) {
+							buf.WriteString(user.Value)
+							buf.WriteString("&nbsp;")
+							break
+						}
+					}
+
+				}
+			case "version":
+				buf.WriteString("'>")
+				buf.WriteString(strconv.Itoa(int(story.Version)))
+
+			case "actions":
+				buf.WriteString("'>")
+				vars := "story=" + strconv.Itoa(int(story.Id))
+				buf.WriteString(common_printIcon(data, "story", "change", vars, story, "list", "fork"))
+				buf.WriteString(common_printIcon(data, "story", "review", vars, story, "list", "glasses"))
+				buf.WriteString(common_printIcon(data, "story", "close", vars, story, "list", "off", "", "iframe", "true"))
+				buf.WriteString(common_printIcon(data, "story", "edit", vars, story, "list", ""))
+				buf.WriteString(common_printIcon(data, "story", "createCase", "productID="+strconv.Itoa(int(story.Product))+"&branch="+strconv.Itoa(int(story.Branch))+"&module=0&from=&param=0&"+vars, story, "list", "sitemap"))
+
+			}
+			buf.WriteString("</td>")
+		}
+		res := buf.String()
+		buf.Reset()
+		bufpool.Put(buf)
+		return template.HTML(res)
+	}
 }

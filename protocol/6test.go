@@ -14,6 +14,7 @@ const (
 	CMD_MSG_TEST_buf_getCount_result = 298479622
 	CMD_MSG_TEST_product_deleteBranch_check = 1974311942
 	CMD_MSG_TEST_product_deleteBranch_result = -1650651898
+	CMD_MSG_TEST_bug_updateMapById = 1967635718
 )
 
 type MSG_TEST_testsuite_info struct {
@@ -389,5 +390,57 @@ func (data *MSG_TEST_product_deleteBranch_result) getQueryResultID() uint32 {
 }
 func (data *MSG_TEST_product_deleteBranch_result) setQueryResultID(id uint32) {
 	data.QueryResultID = id
+}
+
+type MSG_TEST_bug_updateMapById struct {
+	QueryID uint32
+	Id int32
+	Update map[string]interface{}
+}
+
+var pool_MSG_TEST_bug_updateMapById = sync.Pool{New: func() interface{} { return &MSG_TEST_bug_updateMapById{} }}
+
+func GET_MSG_TEST_bug_updateMapById() *MSG_TEST_bug_updateMapById {
+	return pool_MSG_TEST_bug_updateMapById.Get().(*MSG_TEST_bug_updateMapById)
+}
+
+func (data *MSG_TEST_bug_updateMapById) cmd() int32 {
+	return CMD_MSG_TEST_bug_updateMapById
+}
+
+func (data *MSG_TEST_bug_updateMapById) Put() {
+	data.QueryID = 0
+	data.Id = 0
+	data.Update = nil
+	pool_MSG_TEST_bug_updateMapById.Put(data)
+}
+func (data *MSG_TEST_bug_updateMapById) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_TEST_bug_updateMapById,buf)
+	WRITE_MSG_TEST_bug_updateMapById(data, buf)
+}
+
+func WRITE_MSG_TEST_bug_updateMapById(data *MSG_TEST_bug_updateMapById, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_int32(data.Id, buf)
+	WRITE_map(data.Update,buf)
+}
+
+func READ_MSG_TEST_bug_updateMapById(buf *libraries.MsgBuffer) *MSG_TEST_bug_updateMapById {
+	data := pool_MSG_TEST_bug_updateMapById.Get().(*MSG_TEST_bug_updateMapById)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_TEST_bug_updateMapById) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	data.Id = READ_int32(buf)
+	READ_map(&data.Update,buf)
+
+}
+func (data *MSG_TEST_bug_updateMapById) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_TEST_bug_updateMapById) setQueryID(id uint32) {
+	data.QueryID = id
 }
 

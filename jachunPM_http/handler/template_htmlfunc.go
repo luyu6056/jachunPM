@@ -283,12 +283,14 @@ func htmlFuncs() {
 	global_Funcs["html_commonButton"] = func(label string, value ...string) template.HTML { // $misc = '', $class = 'btn', $icon = '')
 		buf := bufpool.Get().(*libraries.MsgBuffer)
 		buf.WriteString("<button type='button'")
-		if len(value) > 0 {
+		if len(value) > 1 {
 			buf.WriteString(" class='")
 			buf.WriteString(value[1]) //class
 			buf.WriteString("'")
+		} else {
+			buf.WriteString(" class='btn'")
 		}
-		if len(value) > 1 {
+		if len(value) > 0 {
 			buf.WriteString(" ")
 			buf.WriteString(value[0]) //misc
 		}
@@ -391,62 +393,7 @@ func htmlFuncs() {
 
 	}
 	global_Funcs["html_checkbox"] = func(name string, options []protocol.HtmlKeyValueStr, value ...interface{}) template.HTML { //$checked = "", $attrib = "", $type = 'inline'){
-		if len(options) == 0 {
-			return template.HTML("")
-		}
-		var checked []string
-		if len(value) > 0 {
-			r := reflect.ValueOf(value[0])
-			if r.Kind() == reflect.Slice {
-				for i := 0; i < r.Len(); i++ {
-					checked = append(checked, libraries.I2S(r.Index(i).Interface()))
-				}
-			} else {
-				checked = []string{libraries.I2S(value[0])}
-			}
-		}
-		var isBlock bool
-		if len(value) == 3 {
-			isBlock = value[2].(string) == "block"
-		}
-
-		buf := bufpool.Get().(*libraries.MsgBuffer)
-		for _, option := range options {
-			key := strings.ReplaceAll(option.Key, "item", "")
-			if isBlock {
-				buf.WriteString("<div class='checkbox-primary'>")
-			} else {
-				buf.WriteString("<div class='checkbox-primary checkbox-inline'>")
-			}
-			buf.WriteString("<input type='checkbox' name='")
-			buf.WriteString(name)
-			buf.WriteString("' value='")
-			buf.WriteString(key)
-			buf.WriteString("' ")
-			for _, c := range checked {
-				if c == key {
-					buf.WriteString("checked ='checked' ")
-					break
-				}
-			}
-			if len(value) > 1 {
-				buf.WriteString(libraries.I2S(value[1])) //$attrib
-			}
-			buf.WriteString(" id='")
-			buf.WriteString(name)
-			buf.WriteString(key)
-			buf.WriteString("' />")
-			buf.WriteString("<label for='")
-			buf.WriteString(name)
-			buf.WriteString(key)
-			buf.WriteString("'>")
-			buf.WriteString(option.Value)
-			buf.WriteString("</label></div>")
-		}
-		res := buf.String()
-		buf.Reset()
-		bufpool.Put(buf)
-		return template.HTML(res)
+		return template.HTML(html_checkbox(name, options, value...))
 	}
 	global_Funcs["bbcode2html"] = func(code string, param ...bool) interface{} { //参数1 是否显示图片，参数2是否输出template.HTML
 		allowimgcode := true
@@ -478,6 +425,7 @@ func htmlFuncs() {
 		return template.HTML(res)
 
 	}
+
 }
 func hookFuncs() {
 	global_Funcs["importHeaderHook"] = func(data *TemplateData) (res template.HTML) {
@@ -661,4 +609,62 @@ func isClickableFuncs() {
 		}
 		return true
 	}
+}
+func html_checkbox(name string, options []protocol.HtmlKeyValueStr, value ...interface{}) string {
+	if len(options) == 0 {
+		return ""
+	}
+	var checked []string
+	if len(value) > 0 {
+		r := reflect.ValueOf(value[0])
+		if r.Kind() == reflect.Slice {
+			for i := 0; i < r.Len(); i++ {
+				checked = append(checked, libraries.I2S(r.Index(i).Interface()))
+			}
+		} else {
+			checked = []string{libraries.I2S(value[0])}
+		}
+	}
+	var isBlock bool
+	if len(value) == 3 {
+		isBlock = value[2].(string) == "block"
+	}
+
+	buf := bufpool.Get().(*libraries.MsgBuffer)
+	for _, option := range options {
+		key := strings.ReplaceAll(option.Key, "item", "")
+		if isBlock {
+			buf.WriteString("<div class='checkbox-primary'>")
+		} else {
+			buf.WriteString("<div class='checkbox-primary checkbox-inline'>")
+		}
+		buf.WriteString("<input type='checkbox' name='")
+		buf.WriteString(name)
+		buf.WriteString("' value='")
+		buf.WriteString(key)
+		buf.WriteString("' ")
+		for _, c := range checked {
+			if c == key {
+				buf.WriteString("checked ='checked' ")
+				break
+			}
+		}
+		if len(value) > 1 {
+			buf.WriteString(libraries.I2S(value[1])) //$attrib
+		}
+		buf.WriteString(" id='")
+		buf.WriteString(name)
+		buf.WriteString(key)
+		buf.WriteString("' />")
+		buf.WriteString("<label for='")
+		buf.WriteString(name)
+		buf.WriteString(key)
+		buf.WriteString("'>")
+		buf.WriteString(option.Value)
+		buf.WriteString("</label></div>")
+	}
+	res := buf.String()
+	buf.Reset()
+	bufpool.Put(buf)
+	return res
 }

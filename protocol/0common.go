@@ -27,7 +27,7 @@ const (
 	CMD_MSG_FILE_upload_result = -2057389056
 	CMD_MSG_FILE_getByID = -1871273216
 	CMD_MSG_FILE_getByID_result = -1484540160
-	CMD_MSG_FILE_updateByIDMap = -1777243392
+	CMD_MSG_FILE_updateMapByWhere = -671290624
 	CMD_MSG_FILE_DeleteByID = -1568529408
 	CMD_MSG_COMMON_BeginTransaction = 1527289600
 	CMD_MSG_COMMON_BeginTransaction_result = 1407092224
@@ -1033,55 +1033,55 @@ func (data *MSG_FILE_getByID_result) setQueryResultID(id uint32) {
 	data.QueryResultID = id
 }
 
-type MSG_FILE_updateByIDMap struct {
+type MSG_FILE_updateMapByWhere struct {
 	QueryID uint32
-	FileID int64
+	Where map[string]interface{}
 	Update map[string]interface{}
 }
 
-var pool_MSG_FILE_updateByIDMap = sync.Pool{New: func() interface{} { return &MSG_FILE_updateByIDMap{} }}
+var pool_MSG_FILE_updateMapByWhere = sync.Pool{New: func() interface{} { return &MSG_FILE_updateMapByWhere{} }}
 
-func GET_MSG_FILE_updateByIDMap() *MSG_FILE_updateByIDMap {
-	return pool_MSG_FILE_updateByIDMap.Get().(*MSG_FILE_updateByIDMap)
+func GET_MSG_FILE_updateMapByWhere() *MSG_FILE_updateMapByWhere {
+	return pool_MSG_FILE_updateMapByWhere.Get().(*MSG_FILE_updateMapByWhere)
 }
 
-func (data *MSG_FILE_updateByIDMap) cmd() int32 {
-	return CMD_MSG_FILE_updateByIDMap
+func (data *MSG_FILE_updateMapByWhere) cmd() int32 {
+	return CMD_MSG_FILE_updateMapByWhere
 }
 
-func (data *MSG_FILE_updateByIDMap) Put() {
+func (data *MSG_FILE_updateMapByWhere) Put() {
 	data.QueryID = 0
-	data.FileID = 0
+	data.Where = nil
 	data.Update = nil
-	pool_MSG_FILE_updateByIDMap.Put(data)
+	pool_MSG_FILE_updateMapByWhere.Put(data)
 }
-func (data *MSG_FILE_updateByIDMap) write(buf *libraries.MsgBuffer) {
-	WRITE_int32(CMD_MSG_FILE_updateByIDMap,buf)
-	WRITE_MSG_FILE_updateByIDMap(data, buf)
+func (data *MSG_FILE_updateMapByWhere) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_FILE_updateMapByWhere,buf)
+	WRITE_MSG_FILE_updateMapByWhere(data, buf)
 }
 
-func WRITE_MSG_FILE_updateByIDMap(data *MSG_FILE_updateByIDMap, buf *libraries.MsgBuffer) {
+func WRITE_MSG_FILE_updateMapByWhere(data *MSG_FILE_updateMapByWhere, buf *libraries.MsgBuffer) {
 	WRITE_uint32(data.QueryID, buf)
-	WRITE_int64(data.FileID, buf)
+	WRITE_map(data.Where,buf)
 	WRITE_map(data.Update,buf)
 }
 
-func READ_MSG_FILE_updateByIDMap(buf *libraries.MsgBuffer) *MSG_FILE_updateByIDMap {
-	data := pool_MSG_FILE_updateByIDMap.Get().(*MSG_FILE_updateByIDMap)
+func READ_MSG_FILE_updateMapByWhere(buf *libraries.MsgBuffer) *MSG_FILE_updateMapByWhere {
+	data := pool_MSG_FILE_updateMapByWhere.Get().(*MSG_FILE_updateMapByWhere)
 	data.read(buf)
 	return data
 }
 
-func (data *MSG_FILE_updateByIDMap) read(buf *libraries.MsgBuffer) {
+func (data *MSG_FILE_updateMapByWhere) read(buf *libraries.MsgBuffer) {
 	data.QueryID = READ_uint32(buf)
-	data.FileID = READ_int64(buf)
+	READ_map(&data.Where,buf)
 	READ_map(&data.Update,buf)
 
 }
-func (data *MSG_FILE_updateByIDMap) getQueryID() uint32 {
+func (data *MSG_FILE_updateMapByWhere) getQueryID() uint32 {
 	return data.QueryID
 }
-func (data *MSG_FILE_updateByIDMap) setQueryID(id uint32) {
+func (data *MSG_FILE_updateMapByWhere) setQueryID(id uint32) {
 	data.QueryID = id
 }
 

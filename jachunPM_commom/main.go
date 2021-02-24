@@ -20,7 +20,6 @@ import (
 func init() {
 	libraries.SetLogLever(libraries.LogLeverDebug)
 	rand.Seed(time.Now().UnixNano())
-
 	db.Init()
 	rpcHost.MsgnoInit()
 	go rpcHost.HostServerHandlerMsgIn()

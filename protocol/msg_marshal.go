@@ -292,6 +292,13 @@ func write_reflect(v reflect.Value, buf *libraries.MsgBuffer) {
 		}
 	case reflect.Interface:
 		WRITE_any(v.Interface(), buf)
+	case reflect.Struct:
+		switch i := v.Interface().(type) {
+		case HtmlKeyValueStr:
+			WRITE_HtmlKeyValueStr(i, buf)
+		default:
+			panic("无法处理的map写入Struct类型" + v.Type().Name())
+		}
 	default:
 
 		panic("无法处理的map写入类型" + v.Kind().String())
@@ -679,6 +686,13 @@ func read_reflect(v reflect.Type, buf *libraries.MsgBuffer) reflect.Value {
 		}
 	case reflect.Interface:
 		return reflect.ValueOf(read_any_result(buf))
+	case reflect.Struct:
+		switch v.Name() {
+		case "HtmlKeyValueStr":
+			return reflect.ValueOf(READ_HtmlKeyValueStr(buf))
+		default:
+			panic("无法处理的map读取Struct类型" + v.Name())
+		}
 	default:
 		panic("无法处理的map读取类型" + v.Kind().String())
 	}

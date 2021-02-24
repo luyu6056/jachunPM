@@ -311,30 +311,7 @@ func commonModelFuncs() {
 		return template.HTML(html_a(createLink(module, method, vars), label, target, misc))
 	}
 	global_Funcs["common_printOrderLink"] = func(data *TemplateData, fieldName, orderBy, vars, label string, moduleMethod ...string) template.HTML {
-		module := data.App["moduleName"].(string)
-		method := data.App["methodName"].(string)
-		if len(moduleMethod) == 2 {
-			module = moduleMethod[0]
-			method = moduleMethod[1]
-		}
-		className := "header"
-		order := strings.Split(orderBy, "_")
-		order[0] = strings.Trim(order[0], "`")
-		if order[0] == fieldName {
-			if len(order) > 1 && order[1] == "asc" {
-				orderBy = order[0] + "_desc"
-				className = "sort-up"
-			} else {
-				orderBy = order[0] + "_asc"
-				className = "sort-down"
-			}
-		} else {
-			orderBy = strings.Trim(fieldName, "`") + "_asc"
-			className = "header"
-		}
-		link := createLink(module, method, fmt.Sprintf(vars, orderBy))
-
-		return template.HTML(html_a(link, label, "", "class='"+className+"'"))
+		return template.HTML(common_printOrderLink(data, fieldName, orderBy, vars, label, moduleMethod...))
 	}
 	global_Funcs["appendKeyValueStr"] = func(strs ...interface{}) (res []protocol.HtmlKeyValueStr) {
 		for i := 0; i < len(strs); i += 2 {
@@ -382,128 +359,7 @@ func commonModelFuncs() {
 		return
 	}
 	global_Funcs["common_printIcon"] = func(data *TemplateData, module, method, vars string, object interface{}, typ, icon string, extvalue ...string) template.HTML { //($target = '', $extraClass = '', $onlyBody = false, $misc = '', $title = '')
-		target := ""
-		extraClass := ""
-		misc := ""
-		title := ""
-		//onlyBody := false
-		if len(extvalue) > 0 {
-			target = extvalue[0]
-			if len(extvalue) > 1 {
-				if data.ws.Query("isonlybody") == "yes" {
-					if strings.Index(extvalue[1], "showinonlybody") == -1 {
-						return template.HTML("")
-					}
-					extvalue[1] = strings.ReplaceAll(extvalue[1], "iframe", "")
-				}
-				extraClass = extvalue[1]
-			}
-			if len(extvalue) > 2 {
-				//onlyBody = extvalue[2] == "true"
-			}
-			if len(extvalue) > 3 {
-				misc = extvalue[3]
-			}
-			if len(extvalue) > 4 {
-				title = extvalue[4]
-			}
-		}
-
-		switch module {
-		case "story":
-			if method == "createcase" {
-				module = "testcase"
-				method = "create"
-			}
-		case "bug":
-			if method == "tostory" {
-				module = "story"
-				method = "create"
-			}
-			if method == "createcase" {
-				module = "testcase"
-				method = "create"
-			}
-		}
-		if !hasPriv(data, module, method) {
-			return template.HTML("")
-		}
-		clickable := true
-		if object != nil {
-			key := ""
-			r := reflect.ValueOf(object)
-			switch r.Kind() {
-			case reflect.Ptr:
-				key = r.Elem().Type().Name()
-			case reflect.Map:
-				if k := r.MapIndex(reflect.ValueOf("isClickableKey")); k.Kind() == reflect.String {
-					key = k.String()
-				}
-			}
-			if f_interface, ok := global_Funcs[key+"_isClickable"]; ok {
-				if f, ok := f_interface.(func(*TemplateData, interface{}, string) bool); ok {
-					clickable = f(data, object, method)
-				}
-			}
-		}
-		link := createLink(module, method, vars)
-		if title == "" {
-			title = method
-			if method == "create" && icon == "copy" {
-				method = "copy"
-			}
-			if icon == "toStory" {
-				title = data.Lang["bug"]["toStory"].(string)
-			} else if icon == "createBug" {
-				title = data.Lang["testtask"]["createBug"].(string)
-			} else {
-				if str, ok := data.Lang["common"][method].(string); ok {
-					title = str
-				}
-				if str, ok := data.Lang[module][method].(string); ok {
-					title = str
-				}
-			}
-		}
-
-		if icon == "" {
-			if v, ok := data.Lang["common"]["icons"].(map[string]string)[method]; ok {
-				icon = v
-			} else {
-				icon = method
-			}
-		}
-		for _, v := range []string{"edit", "copy", "report", "export", "delete"} {
-			if v == method {
-				module = "common"
-			}
-
-		}
-		class := fmt.Sprintf("icon-%s-%s", module, method)
-		if !clickable {
-			class += " disabled"
-		}
-		if icon != "" {
-			class += " icon-" + icon
-		}
-		if clickable {
-
-			if typ == "button" {
-				if method != "edit" && method != "copy" && method != "delete" {
-					return template.HTML(html_a(link, "<i class='"+class+"'></i> "+"<span class='text'>"+title+"</span>", target, "class='btn btn-link "+extraClass+"' "+misc))
-				} else {
-					return template.HTML(html_a(link, "<i class='"+class+"'></i>", target, "class='btn btn-link "+extraClass+"' title='"+title+"' "+misc))
-				}
-			} else {
-				return template.HTML(html_a(link, "<i class='"+class+"'></i>", target, "class='btn "+extraClass+"' title='"+title+"' "+misc) + "\n")
-			}
-		} else {
-			if typ == "list" {
-				return template.HTML("<button type='button' class='disabled btn " + extraClass + "'><i class='" + class + "' title='" + title + "' " + misc + "></i></button>\n")
-			}
-		}
-
-		return template.HTML("")
+		return template.HTML(common_printIcon(data, module, method, vars, object, typ, icon, extvalue...))
 	}
 	global_Funcs["json_marshal"] = func(i interface{}) string {
 		return libraries.JsonMarshalToString(i)
@@ -591,6 +447,9 @@ func commonModelFuncs() {
 		title := data.Lang["common"]["goback"].(string) + data.Lang["common"]["backShortcutKey"].(string)
 		return template.HTML(html_a(link, "<i class='icon-goback icon-back'></i> "+data.Lang["common"]["goback"].(string), "", "id='back' class='"+class+"' title='"+title+"'"))
 	}
+	global_Funcs["session"] = func(data *TemplateData, key string) string {
+		return data.ws.Session().Load_str(key)
+	}
 }
 
 func getModuleMenu(module string, data *TemplateData) (menu []moduleMenu) {
@@ -633,4 +492,167 @@ func getModuleMenu(module string, data *TemplateData) (menu []moduleMenu) {
 		}
 	}
 	return
+}
+func common_printOrderLink(data *TemplateData, fieldName, orderBy, vars, label string, moduleMethod ...string) string {
+	module := data.App["moduleName"].(string)
+	method := data.App["methodName"].(string)
+	if len(moduleMethod) == 2 {
+		module = moduleMethod[0]
+		method = moduleMethod[1]
+	}
+	className := "header"
+	order := strings.Split(orderBy, "_")
+	order[0] = strings.Trim(order[0], "`")
+	if order[0] == fieldName {
+		if len(order) > 1 && order[1] == "asc" {
+			orderBy = order[0] + "_desc"
+			className = "sort-up"
+		} else {
+			orderBy = order[0] + "_asc"
+			className = "sort-down"
+		}
+	} else {
+		orderBy = strings.Trim(fieldName, "`") + "_asc"
+		className = "header"
+	}
+	link := createLink(module, method, fmt.Sprintf(vars, orderBy))
+
+	return html_a(link, label, "", "class='"+className+"'")
+}
+func common_printIcon(data *TemplateData, module, method, vars string, object interface{}, typ, icon string, extvalue ...string) string { //($target = '', $extraClass = '', $onlyBody = false, $misc = '', $title = '')
+	target := ""
+	extraClass := ""
+	misc := ""
+	title := ""
+	onlyBody := false
+	if len(extvalue) > 0 {
+		target = extvalue[0]
+		if len(extvalue) > 1 {
+			if data.ws.Query("isonlybody") == "yes" {
+				if strings.Index(extvalue[1], "showinonlybody") == -1 {
+					return ""
+				}
+				extvalue[1] = strings.ReplaceAll(extvalue[1], "iframe", "")
+			}
+			extraClass = extvalue[1]
+		}
+		if len(extvalue) > 2 {
+			onlyBody = extvalue[2] == "true"
+		}
+		if len(extvalue) > 3 {
+			misc = extvalue[3]
+		}
+		if len(extvalue) > 4 {
+			title = extvalue[4]
+		}
+	}
+
+	switch module {
+	case "story":
+		if method == "createcase" {
+			module = "testcase"
+			method = "create"
+		}
+	case "bug":
+		if method == "tostory" {
+			module = "story"
+			method = "create"
+		}
+		if method == "createcase" {
+			module = "testcase"
+			method = "create"
+		}
+	}
+	if !hasPriv(data, module, method) {
+		return ""
+	}
+	clickable := true
+	if object != nil {
+		key := ""
+		r := reflect.ValueOf(object)
+		switch r.Kind() {
+		case reflect.Ptr:
+			key = r.Elem().Type().Name()
+		case reflect.Map:
+			if k := r.MapIndex(reflect.ValueOf("isClickableKey")); k.Kind() == reflect.String {
+				key = k.String()
+			}
+		}
+		if f_interface, ok := global_Funcs[key+"_isClickable"]; ok {
+			if f, ok := f_interface.(func(*TemplateData, interface{}, string) bool); ok {
+				clickable = f(data, object, method)
+			}
+		}
+	}
+	link := createLink(module, method, []interface{}{vars, onlyBody})
+	if title == "" {
+		title = method
+		if method == "create" && icon == "copy" {
+			method = "copy"
+		}
+		if icon == "toStory" {
+			title = data.Lang["bug"]["toStory"].(string)
+		} else if icon == "createBug" {
+			title = data.Lang["testtask"]["createBug"].(string)
+		} else {
+			if str, ok := data.Lang["common"][method].(string); ok {
+				title = str
+			} else {
+				if str, ok := data.Lang[module][method].(string); ok {
+					title = str
+				} else {
+					if v, ok := data.Lang[module][method].(map[string]interface{}); ok {
+						if str, ok := v["common"].(string); ok {
+							title = str
+						}
+					}
+					if v, ok := data.Lang[module][method].(map[string]string); ok {
+						if str, ok := v["common"]; ok {
+							title = str
+						}
+					}
+				}
+			}
+
+		}
+	}
+
+	if icon == "" {
+		if v, ok := data.Lang["common"]["icons"].(map[string]string)[method]; ok {
+			icon = v
+		} else {
+			icon = method
+		}
+	}
+	for _, v := range []string{"edit", "copy", "report", "export", "delete"} {
+		if v == method {
+			module = "common"
+		}
+
+	}
+	class := fmt.Sprintf("icon-%s-%s", module, method)
+	if !clickable {
+		class += " disabled"
+	}
+	if icon != "" {
+		class += " icon-" + icon
+	}
+	if clickable {
+
+		if typ == "button" {
+			if method != "edit" && method != "copy" && method != "delete" {
+				return html_a(link, "<i class='"+class+"'></i> "+"<span class='text'>"+title+"</span>", target, "class='btn btn-link "+extraClass+"' "+misc)
+			} else {
+				return html_a(link, "<i class='"+class+"'></i>", target, "class='btn btn-link "+extraClass+"' title='"+title+"' "+misc)
+			}
+		} else {
+			return html_a(link, "<i class='"+class+"'></i>", target, "class='btn "+extraClass+"' title='"+title+"' "+misc) + "\n"
+		}
+	} else {
+		if typ == "list" {
+			return "<button type='button' class='disabled btn " + extraClass + "'><i class='" + class + "' title='" + title + "' " + misc + "></i></button>\n"
+		}
+	}
+
+	return ""
 }

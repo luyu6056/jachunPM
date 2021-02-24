@@ -379,8 +379,8 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 		out.Type = file.Type
 		in.SendResult(out)
 		out.Put()
-	case *protocol.MSG_FILE_updateByIDMap:
-		_, err := in.DB.Table(db.TABLE_FILE).Where(map[string]interface{}{"Id": data.FileID}).Update(data.Update)
+	case *protocol.MSG_FILE_updateMapByWhere:
+		_, err := in.DB.Table(db.TABLE_FILE).Where(data.Where).Update(data.Update)
 		in.WriteErr(err)
 	case *protocol.MSG_COMMON_BeginTransaction:
 		//发起事务的服务器

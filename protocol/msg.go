@@ -221,6 +221,28 @@ func (m *Msg) LoadConfig(key string) (res map[string]map[string]interface{}, err
 	return res, err
 }
 
+//解析具体某个值
+func (m *Msg) LoadConfigToValue(key, key1, key2 string, value interface{}) error {
+	b, err := m.cache.Get(key, PATH_CONFIG_CACHE+m.lang.String())
+	if err != nil {
+		return err
+	}
+	if len(b) == 0 {
+		return nil
+	}
+	var res map[string]map[string]interface{}
+	err = libraries.JsonUnmarshal(b, &res)
+	if err != nil {
+		return err
+	}
+	if v1, ok := res[key1]; ok {
+		if v2, ok := v1[key2]; ok {
+			err = libraries.JsonUnmarshal(libraries.JsonMarshal(v2), value)
+		}
+	}
+	return err
+}
+
 //解决其他地方无法调用小写方法
 func MSG_DATA_Write(data MSG_DATA, buf *libraries.MsgBuffer) {
 	data.write(buf)
@@ -360,8 +382,7 @@ func SendMsg(local, remote uint16, msgno uint32, ttl uint8, transactionNo uint32
 		outchan <- buf
 	}
 }
-func (db *MsgDB) BeginTransaction() (*MsgDBTransaction, error) {
-	msg := db.msg
+func (msg *Msg) BeginTransaction() (*MsgDBTransaction, error) {
 	if msg.DB.transaction == nil {
 		result := GET_MSG_COMMON_BeginTransaction_result()
 		out := GET_MSG_COMMON_BeginTransaction()
@@ -370,22 +391,43 @@ func (db *MsgDB) BeginTransaction() (*MsgDBTransaction, error) {
 		if err != nil {
 			return nil, err
 		}
-		transaction, err := msg.DB.DB.BeginTransaction()
-		if err != nil {
-			return nil, err
-		}
-		no := result.TransactionNo
-		transactionMap.Store(no, transaction)
-		msg.DB.transaction = &MsgDBTransaction{t: transaction, msg: msg, newTransactionNo: no}
-		time.AfterFunc(MsgTimeOut*10*time.Second, func() {
-			transactionMap.Delete(no)
-			msg.DB.transaction.t.EndTransaction()
+		if msg.DB.DB != nil {
+			transaction, err := msg.DB.DB.BeginTransaction()
+			if err != nil {
+				return nil, err
+			}
+			no := result.TransactionNo
+			transactionMap.Store(no, transaction)
+			msg.DB.transaction = &MsgDBTransaction{t: transaction, msg: msg, newTransactionNo: no}
+			time.AfterFunc(MsgTimeOut*10*time.Second, func() {
+				transactionMap.Delete(no)
+				msg.DB.transaction.t.EndTransaction()
 
-		})
+			})
+		}
 		result.Put()
 		out.Put()
+		return msg.DB.transaction, nil
 	}
-	return msg.DB.transaction, nil
+	//沿用旧的事务conn给予新的DB，transactionNo，拦截后续申请的子事务
+	newMsg := &Msg{
+		Msgno:              msg.Msgno,
+		Ttl:                msg.Ttl,
+		Local:              msg.Local,
+		Remote:             msg.Remote,
+		Cmd:                msg.Cmd,
+		Data:               msg.Data,
+		buf:                msg.buf,
+		datalen:            msg.datalen,
+		svr:                msg.svr,
+		cache:              msg.cache,
+		transactionTimeOut: msg.transactionTimeOut,
+		DB:                 &MsgDB{transactionNo: msg.DB.transaction.newTransactionNo},
+		lang:               msg.lang,
+	}
+	newMsg.DB.msg = newMsg
+	newMsg.DB.transaction = &MsgDBTransaction{t: msg.DB.transaction.t, msg: newMsg, newTransactionNo: msg.DB.transaction.newTransactionNo}
+	return newMsg.DB.transaction, nil
 }
 
 //封装一下，如果事务存在，则自动切换到事务
@@ -394,7 +436,7 @@ func (db *MsgDB) Table(tablename string) *mysql.Mysql_Build {
 		if db.transactionNo == 0 {
 			return db.DB.Table(tablename)
 		}
-		session, err := db.BeginTransaction()
+		session, err := db.msg.BeginTransaction()
 		//session失败的时候使用mysqlbuild去传递err
 		if err != nil {
 			b := db.DB.Table(tablename)

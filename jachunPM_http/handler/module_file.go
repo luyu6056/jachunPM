@@ -251,9 +251,9 @@ func file_deleteFromIds(newimgids []int64) {
 	deleteimg.Put()
 }
 func file_updateObject(fileIds []int64, typ string, id int32) {
-	out := protocol.GET_MSG_FILE_updateByIDMap()
+	out := protocol.GET_MSG_FILE_updateMapByWhere()
 	for _, id := range fileIds {
-		out.FileID = id
+		out.Where = map[string]interface{}{"Id": id}
 		out.Update = map[string]interface{}{
 			"ObjectType": typ,
 			"ObjectID":   id,

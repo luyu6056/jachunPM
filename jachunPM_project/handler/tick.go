@@ -50,7 +50,7 @@ func HandleTick(t time.Time) {
 		if err != nil {
 			libraries.ReleaseLog("检查module刷新缓存失败%v", err)
 		}
-		err = HostConn.DB.Table(db.TABLE_BRANCH).Limit(0).Select(&branchs)
+		err = HostConn.DB.Table(db.TABLE_BRANCH).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&branchs)
 		if err != nil {
 			libraries.ReleaseLog("检查branch刷新缓存失败%v", err)
 		}
@@ -64,26 +64,33 @@ func HandleTick(t time.Time) {
 				}
 			}
 		}
-		var productids []int32
-		for _, b := range branchs {
-			productids = append(productids, b.Product)
-		}
-		var new_products []*protocol.MSG_PROJECT_product_cache
-		err = HostConn.DB.Table(db.TABLE_PRODUCT).Where(map[string]interface{}{"Id": productids}).Limit(0).Select(&new_products)
-		if err != nil {
-			libraries.ReleaseLog("检查product刷新缓存失败%v", err)
-		}
-		products = append(products, new_products...)
-		for _, p := range products {
-			for i := len(branchs) - 1; i >= 0; i-- {
-				b := branchs[i]
-				if b.Product == p.Id {
-					p.Branchs = append(p.Branchs, b)
-					branchs = append(branchs[:i], branchs[i+1:]...)
-					break
+		if len(branchs) > 0 {
+			productids := map[int32]int{}
+			for _, b := range branchs {
+				productids[b.Product] = 1
+			}
+			var ids []int32
+			for id := range productids {
+				ids = append(ids, id)
+			}
+			var new_products []*protocol.MSG_PROJECT_product_cache
+			err = HostConn.DB.Table(db.TABLE_PRODUCT).Where(map[string]interface{}{"Id": ids}).Limit(0).Select(&new_products)
+			if err != nil {
+				libraries.ReleaseLog("检查product刷新缓存失败%v", err)
+			}
+			products = append(products, new_products...)
+			for _, p := range products {
+				for i := len(branchs) - 1; i >= 0; i-- {
+					b := branchs[i]
+					if b.Product == p.Id {
+						p.Branchs = append(p.Branchs, b)
+						branchs = append(branchs[:i], branchs[i+1:]...)
+						break
+					}
 				}
 			}
 		}
+
 	}
 
 	//同步缓存

@@ -280,6 +280,7 @@ func (code *Tlscodec) Decode(c gnet.Conn) (data []byte, err error) {
 			default:
 				http := Httppool.Get().(*Httpserver)
 				http.c = c
+				http.Recovery()
 				c.SetContext(http)
 				return code.Decode(c)
 			}

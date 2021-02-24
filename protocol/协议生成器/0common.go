@@ -104,9 +104,9 @@ type MSG_FILE_getByID_result struct {
 	Data          []byte
 	Type          string
 }
-type MSG_FILE_updateByIDMap struct {
+type MSG_FILE_updateMapByWhere struct {
 	QueryID uint32 //请求id
-	FileID  int64
+	Where   map[string]interface{}
 	Update  map[string]interface{}
 }
 

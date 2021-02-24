@@ -1,20 +1,26 @@
 package handler
 
 import (
+	"errors"
+	"fmt"
 	"html"
 	"html/template"
 	"io/ioutil"
 	"jachunPM_http/config"
 	"libraries"
+	"mysql"
 	"os"
 	"path/filepath"
 	"protocol"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+	"unsafe"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/luyu6056/reflect2"
 )
 
 type TemplateData struct {
@@ -52,6 +58,8 @@ func loadFuncs() {
 	commonModelFuncs()
 	htmlFuncs()
 	hookFuncs()
+	datatableFuncs()
+	storyFuncs()
 	isClickableFuncs()
 	actionModelFuncs()
 	global_t.Funcs(global_Funcs)
@@ -157,6 +165,13 @@ func templateDataInit(ws HttpRequest) *TemplateData {
 		if d.Page.Page < 1 {
 			d.Page.Page = 1
 		}
+		datatableId := d.App["moduleName"].(string) + strings.ToUpper(d.App["methodName"].(string)[:1]) + d.App["methodName"].(string)[1:]
+		if v1, ok := d.Config["datatable"][datatableId]; ok {
+			if v2, ok := v1["mode"].(string); ok && v2 == "datatable" {
+				d.Data["useDatatable"] = true
+				d.Data["datatableId"] = datatableId
+			}
+		}
 	} else {
 		d.App["moduleName"] = ""
 		d.App["methodName"] = ""
@@ -166,7 +181,6 @@ func templateDataInit(ws HttpRequest) *TemplateData {
 	d.App["company"] = getCompanyInfo()
 	d.Config["common"]["common"]["langTheme"] = d.Config["common"]["common"]["themeRoot"].(string) + "lang/" + d.App["ClientLang"].(string) + ".css"
 	d.App["onlybody"] = ws.Query("onlybody")
-
 	return d
 }
 func (data *TemplateData) onlybody() bool {
@@ -258,4 +272,84 @@ func (data *TemplateData) GetMsg() (*protocol.Msg, error) {
 }
 func (data *TemplateData) isajax() bool {
 	return data.ws.Header("X-Requested-With") == "XMLHttpRequest"
+}
+
+//从post获取值赋值到struct，忽略错误，请在ajaxCheckPost里面提前规范好输入
+func (data *TemplateData) SetValueFromPost(i interface{}) {
+	t := reflect.TypeOf(i).Elem()
+	ref_ptr := uintptr(reflect2.PtrOf(i))
+	for i := 0; i < t.NumField(); i++ {
+		if field := t.Field(i); field.Type.Kind() != reflect.Invalid {
+			value := data.ws.PostSlice(strings.ToLower(field.Name))
+			if len(value) == 0 {
+				value = data.ws.PostSlice(field.Name)
+			}
+			if len(value) == 0 {
+				continue
+			}
+			if err := setValueUnsafe(ref_ptr+field.Offset, field.Type, value); err != nil {
+				libraries.DebugLog("Name %s,err %v", field.Name, err)
+			}
+		}
+	}
+}
+func setValueUnsafe(ptr uintptr, t reflect.Type, value []string) error {
+	switch t.Kind() {
+	case reflect.Int:
+		ii, _ := strconv.Atoi(value[0])
+		*((*int)(unsafe.Pointer(ptr))) = ii
+	case reflect.Int8:
+		ii, _ := strconv.Atoi(value[0])
+		*((*int8)(unsafe.Pointer(ptr))) = int8(ii)
+	case reflect.Int16:
+		ii, _ := strconv.Atoi(value[0])
+		*((*int16)(unsafe.Pointer(ptr))) = int16(ii)
+	case reflect.Int32:
+		ii, _ := strconv.Atoi(value[0])
+		*((*int32)(unsafe.Pointer(ptr))) = int32(ii)
+	case reflect.Int64:
+		ii, _ := strconv.Atoi(value[0])
+		*((*int64)(unsafe.Pointer(ptr))) = int64(ii)
+	case reflect.Uint:
+		ii, _ := strconv.Atoi(value[0])
+		*((*uint)(unsafe.Pointer(ptr))) = uint(ii)
+	case reflect.Uint8:
+		ii, _ := strconv.Atoi(value[0])
+		*((*uint8)(unsafe.Pointer(ptr))) = uint8(ii)
+	case reflect.Uint16:
+		ii, _ := strconv.Atoi(value[0])
+		*((*uint16)(unsafe.Pointer(ptr))) = uint16(ii)
+	case reflect.Uint32:
+		ii, _ := strconv.Atoi(value[0])
+		*((*uint32)(unsafe.Pointer(ptr))) = uint32(ii)
+	case reflect.Uint64:
+		ii, _ := strconv.Atoi(value[0])
+		*((*uint64)(unsafe.Pointer(ptr))) = uint64(ii)
+	case reflect.String:
+		*((*string)(unsafe.Pointer(ptr))) = value[0]
+	case reflect.Float32:
+		ii, _ := strconv.ParseFloat(value[0], 32)
+		*((*float32)(unsafe.Pointer(ptr))) = float32(ii)
+	case reflect.Float64:
+		ii, _ := strconv.ParseFloat(value[0], 64)
+		*((*float64)(unsafe.Pointer(ptr))) = float64(ii)
+	case reflect.Slice:
+		header := (*mysql.SliceHeader)(unsafe.Pointer(ptr))
+		if uintptr(header.Data) == 0 || header.Cap < len(value) {
+			header.Data = unsafe.Pointer(reflect.MakeSlice(t, len(value), len(value)).Pointer())
+			header.Len = len(value)
+			header.Cap = len(value)
+		} else {
+			header.Len = len(value)
+		}
+		memberT := t.Elem()
+		for i := 0; i < len(value); i++ {
+			if err := setValueUnsafe(uintptr(header.Data)+memberT.Size()*uintptr(i), memberT, []string{value[i]}); err != nil {
+				return err
+			}
+		}
+	default:
+		return errors.New(fmt.Sprintf("未处理的Kind %v", t.Kind()))
+	}
+	return nil
 }

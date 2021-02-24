@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"jachunPM_http/config"
 	"jachunPM_http/js"
 	"libraries"
 	"protocol"
@@ -174,7 +175,7 @@ func get_product_browse(data *TemplateData) {
 	productID, _ := strconv.Atoi(data.ws.Query("productID"))
 	branch, _ := strconv.Atoi(data.ws.Query("branch"))
 	moduleID, _ := strconv.Atoi(data.ws.Query("param"))
-	browseType := data.ws.Query("browseType")
+	browseType := strings.ToLower(data.ws.Query("browseType"))
 	orderBy := data.ws.Query("orderBy")
 	if orderBy == "" {
 		orderBy = "id_desc"
@@ -187,23 +188,61 @@ func get_product_browse(data *TemplateData) {
 		data.OutErr(err)
 		return
 	}
-	err = product_setMenu(data, int32(productID), int32(branch), "")
-	if err != nil {
+	if err = product_setMenu(data, int32(productID), int32(branch), ""); err != nil {
 		data.OutErr(err)
 		return
 	}
+	if data.Data["modules"], err = tree_getOptionMenu(data, int32(productID), "story", 0, int32(branch)); err != nil {
+		data.OutErr(err)
+		return
+	}
+	if plans, err := productplan_getPairs(data, int32(productID), int32(branch), data.ws.Query("expired")); err != nil {
+		data.OutErr(err)
+		return
+	} else {
+		if len(plans) > 0 && plans[0].Key == "" && plans[0].Value == "" {
+			plans = append([]protocol.HtmlKeyValueStr{{"0", data.Lang["common"]["null"].(string)}}, plans[1:]...)
+		}
+		data.Data["plans"] = plans
+	}
+
 	getStories := protocol.GET_MSG_PROJECT_product_getStories()
 	getStories.ProductID = int32(productID)
 	getStories.Branch = int32(branch)
-	getStories.BrowseType = browseType
+
+	if browseType == "bymodule" {
+		if sessionBrowseType := data.ws.Session().Load_str("storyBrowseType"); sessionBrowseType != "" && sessionBrowseType != "bysearch" {
+			getStories.BrowseType = sessionBrowseType
+		} else {
+			getStories.BrowseType = browseType
+		}
+		data.ws.SetCookie("storyModule", strconv.Itoa(moduleID), 0)
+	} else {
+		if browseType == "bysearch" {
+			if data.App["moduleName"] == "release" || data.App["moduleName"] == "build" {
+				if getStories.Where == nil {
+					getStories.Where = make(map[string]interface{})
+				}
+
+				getStories.Where["Status"] = []interface{}{"not in", "draft"}
+			} else {
+				getStories.Where["Status"] = []interface{}{"not in", []string{"draft", "closed"}}
+			}
+		}
+		getStories.BrowseType = browseType
+		data.ws.Session().Set("storyBrowseType", browseType)
+	}
 	getStories.ModuleID = int32(moduleID)
 	getStories.Sort = orderBy
 	getStories.Page = data.Page.Page
 	getStories.PerPage = data.Page.PerPage
 	getStories.Total = data.Page.Total
+	if data.Data["users"], err = user_getPairs("noletter|pofirst|nodeleted"); err != nil {
+		data.OutErr(err)
+		return
+	}
 	var stories *protocol.MSG_PROJECT_product_getStories_result
-	err = msg.SendMsgWaitResult(0, getStories, &stories)
-	if err != nil {
+	if err = msg.SendMsgWaitResult(0, getStories, &stories); err != nil {
 		data.OutErr(err)
 		return
 	}
@@ -211,17 +250,32 @@ func get_product_browse(data *TemplateData) {
 		if module := HostConn.GetTreeById(int32(moduleID)); module != nil {
 			data.Data["moduleName"] = module.Name
 		}
-
 	}
 	if data.Data["moduleName"] == nil {
 		data.Data["moduleName"] = data.Lang["tree"]["all"].(string)
 	}
+	story_batchGetStoryStage := protocol.GET_MSG_PROJECT_story_batchGetStoryStage()
+	story_batchGetStoryStage.Ids = make([]int32, len(stories.List))
+	data.Page.Total = stories.Total
+	for k, s := range stories.List {
+		story_batchGetStoryStage.Ids[k] = s.Id
+	}
+	var storyStages *protocol.MSG_PROJECT_story_batchGetStoryStage_result
+	if err = msg.SendMsgWaitResult(0, story_batchGetStoryStage, &storyStages); err != nil {
+		data.OutErr(err)
+		return
+	}
 
+	data.Data["storyStages"] = storyStages.List
 	data.Data["stories"] = stories.List
 	data.Data["productID"] = productID
 	data.Data["branch"] = branch
 	data.Data["moduleID"] = moduleID
 	data.Data["browseType"] = browseType
+	data.Data["setting"] = datatable_getSetting(data, "product", "browse")
+	data.Data["widths"] = datatable_setFixedFieldWidth(data.Data["setting"].([]*config.ConfigDatatable))
+	data.Data["branches"] = branch_getPairs(data, int32(productID), nil)
+	data.Data["orderBy"] = data.ws.Query("orderBy")
 	templateOut("product.browse.html", data)
 	return
 }

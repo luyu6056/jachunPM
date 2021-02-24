@@ -138,7 +138,7 @@ func productplan_getPairs(data *protocol.MSG_PROJECT_productplan_getPairs, in *p
 		where["end"] = []interface{}{"ge", time.Now().Format("2006-01-02")}
 	}
 	var list []*db.Productplan
-	err := in.DB.Table(db.TABLE_PRODUCTPLAN).Where(where).Order("begin desc").Limit(0).Select(&list)
+	err := in.DB.Table(db.TABLE_PRODUCTPLAN).Field(`Id,CONCAT(title, " [", begin, " ~ ", end, "]") as Title`).Where(where).Order("begin desc").Limit(0).Select(&list)
 	if err != nil {
 		in.WriteErr(err)
 		return

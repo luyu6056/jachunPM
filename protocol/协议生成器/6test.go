@@ -39,3 +39,8 @@ type MSG_TEST_product_deleteBranch_result struct {
 	QueryResultID uint32
 	Result        ErrCode
 }
+type MSG_TEST_bug_updateMapById struct {
+	QueryID uint32
+	Id      int32
+	Update  map[string]interface{}
+}

@@ -42,6 +42,8 @@ const (
 	CMD_MSG_PROJECT_productplan_delete = -1670634235
 	CMD_MSG_PROJECT_stroy_create = -426602747
 	CMD_MSG_PROJECT_stroy_create_result = 1356456453
+	CMD_MSG_PROJECT_story_batchGetStoryStage = 577900805
+	CMD_MSG_PROJECT_story_batchGetStoryStage_result = 3743749
 )
 
 type MSG_PROJECT_tree_getLinePairs struct {
@@ -461,7 +463,7 @@ type MSG_PROJECT_product_getStories struct {
 	Sort string
 	Page int
 	PerPage int
-	Where string
+	Where map[string]interface{}
 	Total int
 }
 
@@ -484,7 +486,7 @@ func (data *MSG_PROJECT_product_getStories) Put() {
 	data.Sort = ``
 	data.Page = 0
 	data.PerPage = 0
-	data.Where = ``
+	data.Where = nil
 	data.Total = 0
 	pool_MSG_PROJECT_product_getStories.Put(data)
 }
@@ -502,7 +504,7 @@ func WRITE_MSG_PROJECT_product_getStories(data *MSG_PROJECT_product_getStories, 
 	WRITE_string(data.Sort, buf)
 	WRITE_int(data.Page, buf)
 	WRITE_int(data.PerPage, buf)
-	WRITE_string(data.Where, buf)
+	WRITE_map(data.Where,buf)
 	WRITE_int(data.Total, buf)
 }
 
@@ -521,7 +523,7 @@ func (data *MSG_PROJECT_product_getStories) read(buf *libraries.MsgBuffer) {
 	data.Sort = READ_string(buf)
 	data.Page = READ_int(buf)
 	data.PerPage = READ_int(buf)
-	data.Where = READ_string(buf)
+	READ_map(&data.Where,buf)
 	data.Total = READ_int(buf)
 
 }
@@ -603,7 +605,7 @@ type MSG_PROJECT_story struct {
 	Product int32
 	Branch int32
 	Module int32
-	Plan string
+	Plan int32
 	Source string
 	SourceNote string
 	FromBug int32
@@ -613,16 +615,16 @@ type MSG_PROJECT_story struct {
 	Estimate float32
 	Status string
 	Stage string
-	Mailto string
-	OpenedBy string
+	Mailto []int32
+	OpenedBy int32
 	OpenedDate time.Time
-	AssignedTo string
+	AssignedTo int32
 	AssignedDate time.Time
-	LastEditedBy string
+	LastEditedBy int32
 	LastEditedDate time.Time
-	ReviewedBy string
+	ReviewedBy int32
 	ReviewedDate time.Time
-	ClosedBy string
+	ClosedBy int32
 	ClosedDate time.Time
 	ClosedReason string
 	ToBug int32
@@ -631,6 +633,8 @@ type MSG_PROJECT_story struct {
 	DuplicateStory int32
 	Deleted bool
 	Version int16
+	Color string
+	PlanTitle string `db:-`
 }
 
 var pool_MSG_PROJECT_story = sync.Pool{New: func() interface{} { return &MSG_PROJECT_story{} }}
@@ -648,7 +652,7 @@ func (data *MSG_PROJECT_story) Put() {
 	data.Product = 0
 	data.Branch = 0
 	data.Module = 0
-	data.Plan = ``
+	data.Plan = 0
 	data.Source = ``
 	data.SourceNote = ``
 	data.FromBug = 0
@@ -658,16 +662,16 @@ func (data *MSG_PROJECT_story) Put() {
 	data.Estimate = 0
 	data.Status = ``
 	data.Stage = ``
-	data.Mailto = ``
-	data.OpenedBy = ``
+	data.Mailto = data.Mailto[:0]
+	data.OpenedBy = 0
 	data.OpenedDate = time.Unix(0,0)
-	data.AssignedTo = ``
+	data.AssignedTo = 0
 	data.AssignedDate = time.Unix(0,0)
-	data.LastEditedBy = ``
+	data.LastEditedBy = 0
 	data.LastEditedDate = time.Unix(0,0)
-	data.ReviewedBy = ``
+	data.ReviewedBy = 0
 	data.ReviewedDate = time.Unix(0,0)
-	data.ClosedBy = ``
+	data.ClosedBy = 0
 	data.ClosedDate = time.Unix(0,0)
 	data.ClosedReason = ``
 	data.ToBug = 0
@@ -676,6 +680,8 @@ func (data *MSG_PROJECT_story) Put() {
 	data.DuplicateStory = 0
 	data.Deleted = false
 	data.Version = 0
+	data.Color = ``
+	data.PlanTitle = ``
 	pool_MSG_PROJECT_story.Put(data)
 }
 func (data *MSG_PROJECT_story) write(buf *libraries.MsgBuffer) {
@@ -688,7 +694,7 @@ func WRITE_MSG_PROJECT_story(data *MSG_PROJECT_story, buf *libraries.MsgBuffer) 
 	WRITE_int32(data.Product, buf)
 	WRITE_int32(data.Branch, buf)
 	WRITE_int32(data.Module, buf)
-	WRITE_string(data.Plan, buf)
+	WRITE_int32(data.Plan, buf)
 	WRITE_string(data.Source, buf)
 	WRITE_string(data.SourceNote, buf)
 	WRITE_int32(data.FromBug, buf)
@@ -698,16 +704,19 @@ func WRITE_MSG_PROJECT_story(data *MSG_PROJECT_story, buf *libraries.MsgBuffer) 
 	WRITE_float32(data.Estimate, buf)
 	WRITE_string(data.Status, buf)
 	WRITE_string(data.Stage, buf)
-	WRITE_string(data.Mailto, buf)
-	WRITE_string(data.OpenedBy, buf)
+	WRITE_int32(int32(len(data.Mailto)), buf)
+	for _, v := range data.Mailto{
+		WRITE_int32(v, buf)
+	}
+	WRITE_int32(data.OpenedBy, buf)
 	WRITE_int64(data.OpenedDate.UnixNano(), buf)
-	WRITE_string(data.AssignedTo, buf)
+	WRITE_int32(data.AssignedTo, buf)
 	WRITE_int64(data.AssignedDate.UnixNano(), buf)
-	WRITE_string(data.LastEditedBy, buf)
+	WRITE_int32(data.LastEditedBy, buf)
 	WRITE_int64(data.LastEditedDate.UnixNano(), buf)
-	WRITE_string(data.ReviewedBy, buf)
+	WRITE_int32(data.ReviewedBy, buf)
 	WRITE_int64(data.ReviewedDate.UnixNano(), buf)
-	WRITE_string(data.ClosedBy, buf)
+	WRITE_int32(data.ClosedBy, buf)
 	WRITE_int64(data.ClosedDate.UnixNano(), buf)
 	WRITE_string(data.ClosedReason, buf)
 	WRITE_int32(data.ToBug, buf)
@@ -716,6 +725,8 @@ func WRITE_MSG_PROJECT_story(data *MSG_PROJECT_story, buf *libraries.MsgBuffer) 
 	WRITE_int32(data.DuplicateStory, buf)
 	WRITE_bool(data.Deleted, buf)
 	WRITE_int16(data.Version, buf)
+	WRITE_string(data.Color, buf)
+	WRITE_string(data.PlanTitle, buf)
 }
 
 func READ_MSG_PROJECT_story(buf *libraries.MsgBuffer) *MSG_PROJECT_story {
@@ -729,7 +740,7 @@ func (data *MSG_PROJECT_story) read(buf *libraries.MsgBuffer) {
 	data.Product = READ_int32(buf)
 	data.Branch = READ_int32(buf)
 	data.Module = READ_int32(buf)
-	data.Plan = READ_string(buf)
+	data.Plan = READ_int32(buf)
 	data.Source = READ_string(buf)
 	data.SourceNote = READ_string(buf)
 	data.FromBug = READ_int32(buf)
@@ -739,16 +750,24 @@ func (data *MSG_PROJECT_story) read(buf *libraries.MsgBuffer) {
 	data.Estimate = READ_float32(buf)
 	data.Status = READ_string(buf)
 	data.Stage = READ_string(buf)
-	data.Mailto = READ_string(buf)
-	data.OpenedBy = READ_string(buf)
+	Mailto_len := int(READ_int32(buf))
+	if Mailto_len>cap(data.Mailto){
+		data.Mailto= make([]int32, Mailto_len)
+	}else{
+		data.Mailto = data.Mailto[:Mailto_len]
+	}
+	for i := 0; i < Mailto_len; i++ {
+		data.Mailto[i] = READ_int32(buf)
+	}
+	data.OpenedBy = READ_int32(buf)
 	data.OpenedDate = time.Unix(0, READ_int64(buf))
-	data.AssignedTo = READ_string(buf)
+	data.AssignedTo = READ_int32(buf)
 	data.AssignedDate = time.Unix(0, READ_int64(buf))
-	data.LastEditedBy = READ_string(buf)
+	data.LastEditedBy = READ_int32(buf)
 	data.LastEditedDate = time.Unix(0, READ_int64(buf))
-	data.ReviewedBy = READ_string(buf)
+	data.ReviewedBy = READ_int32(buf)
 	data.ReviewedDate = time.Unix(0, READ_int64(buf))
-	data.ClosedBy = READ_string(buf)
+	data.ClosedBy = READ_int32(buf)
 	data.ClosedDate = time.Unix(0, READ_int64(buf))
 	data.ClosedReason = READ_string(buf)
 	data.ToBug = READ_int32(buf)
@@ -757,6 +776,8 @@ func (data *MSG_PROJECT_story) read(buf *libraries.MsgBuffer) {
 	data.DuplicateStory = READ_int32(buf)
 	data.Deleted = READ_bool(buf)
 	data.Version = READ_int16(buf)
+	data.Color = READ_string(buf)
+	data.PlanTitle = READ_string(buf)
 
 }
 
@@ -2264,9 +2285,12 @@ type MSG_PROJECT_stroy_create struct {
 	Estimate float32
 	Spec string
 	Verify string
-	mailto []int32
+	Mailto []int32
 	Keywords string
 	NeedNotReview bool
+	FromBug int32
+	OpenedBy int32
+	ProjectID int32
 }
 
 var pool_MSG_PROJECT_stroy_create = sync.Pool{New: func() interface{} { return &MSG_PROJECT_stroy_create{} }}
@@ -2294,9 +2318,12 @@ func (data *MSG_PROJECT_stroy_create) Put() {
 	data.Estimate = 0
 	data.Spec = ``
 	data.Verify = ``
-	data.mailto = data.mailto[:0]
+	data.Mailto = data.Mailto[:0]
 	data.Keywords = ``
 	data.NeedNotReview = false
+	data.FromBug = 0
+	data.OpenedBy = 0
+	data.ProjectID = 0
 	pool_MSG_PROJECT_stroy_create.Put(data)
 }
 func (data *MSG_PROJECT_stroy_create) write(buf *libraries.MsgBuffer) {
@@ -2319,12 +2346,15 @@ func WRITE_MSG_PROJECT_stroy_create(data *MSG_PROJECT_stroy_create, buf *librari
 	WRITE_float32(data.Estimate, buf)
 	WRITE_string(data.Spec, buf)
 	WRITE_string(data.Verify, buf)
-	WRITE_int32(int32(len(data.mailto)), buf)
-	for _, v := range data.mailto{
+	WRITE_int32(int32(len(data.Mailto)), buf)
+	for _, v := range data.Mailto{
 		WRITE_int32(v, buf)
 	}
 	WRITE_string(data.Keywords, buf)
 	WRITE_bool(data.NeedNotReview, buf)
+	WRITE_int32(data.FromBug, buf)
+	WRITE_int32(data.OpenedBy, buf)
+	WRITE_int32(data.ProjectID, buf)
 }
 
 func READ_MSG_PROJECT_stroy_create(buf *libraries.MsgBuffer) *MSG_PROJECT_stroy_create {
@@ -2348,17 +2378,20 @@ func (data *MSG_PROJECT_stroy_create) read(buf *libraries.MsgBuffer) {
 	data.Estimate = READ_float32(buf)
 	data.Spec = READ_string(buf)
 	data.Verify = READ_string(buf)
-	mailto_len := int(READ_int32(buf))
-	if mailto_len>cap(data.mailto){
-		data.mailto= make([]int32, mailto_len)
+	Mailto_len := int(READ_int32(buf))
+	if Mailto_len>cap(data.Mailto){
+		data.Mailto= make([]int32, Mailto_len)
 	}else{
-		data.mailto = data.mailto[:mailto_len]
+		data.Mailto = data.Mailto[:Mailto_len]
 	}
-	for i := 0; i < mailto_len; i++ {
-		data.mailto[i] = READ_int32(buf)
+	for i := 0; i < Mailto_len; i++ {
+		data.Mailto[i] = READ_int32(buf)
 	}
 	data.Keywords = READ_string(buf)
 	data.NeedNotReview = READ_bool(buf)
+	data.FromBug = READ_int32(buf)
+	data.OpenedBy = READ_int32(buf)
+	data.ProjectID = READ_int32(buf)
 
 }
 func (data *MSG_PROJECT_stroy_create) getQueryID() uint32 {
@@ -2370,7 +2403,7 @@ func (data *MSG_PROJECT_stroy_create) setQueryID(id uint32) {
 
 type MSG_PROJECT_stroy_create_result struct {
 	QueryResultID uint32
-	Id int32
+	Result int32
 }
 
 var pool_MSG_PROJECT_stroy_create_result = sync.Pool{New: func() interface{} { return &MSG_PROJECT_stroy_create_result{} }}
@@ -2385,7 +2418,7 @@ func (data *MSG_PROJECT_stroy_create_result) cmd() int32 {
 
 func (data *MSG_PROJECT_stroy_create_result) Put() {
 	data.QueryResultID = 0
-	data.Id = 0
+	data.Result = 0
 	pool_MSG_PROJECT_stroy_create_result.Put(data)
 }
 func (data *MSG_PROJECT_stroy_create_result) write(buf *libraries.MsgBuffer) {
@@ -2395,7 +2428,7 @@ func (data *MSG_PROJECT_stroy_create_result) write(buf *libraries.MsgBuffer) {
 
 func WRITE_MSG_PROJECT_stroy_create_result(data *MSG_PROJECT_stroy_create_result, buf *libraries.MsgBuffer) {
 	WRITE_uint32(data.QueryResultID, buf)
-	WRITE_int32(data.Id, buf)
+	WRITE_int32(data.Result, buf)
 }
 
 func READ_MSG_PROJECT_stroy_create_result(buf *libraries.MsgBuffer) *MSG_PROJECT_stroy_create_result {
@@ -2406,13 +2439,120 @@ func READ_MSG_PROJECT_stroy_create_result(buf *libraries.MsgBuffer) *MSG_PROJECT
 
 func (data *MSG_PROJECT_stroy_create_result) read(buf *libraries.MsgBuffer) {
 	data.QueryResultID = READ_uint32(buf)
-	data.Id = READ_int32(buf)
+	data.Result = READ_int32(buf)
 
 }
 func (data *MSG_PROJECT_stroy_create_result) getQueryResultID() uint32 {
 	return data.QueryResultID
 }
 func (data *MSG_PROJECT_stroy_create_result) setQueryResultID(id uint32) {
+	data.QueryResultID = id
+}
+
+type MSG_PROJECT_story_batchGetStoryStage struct {
+	QueryID uint32
+	Ids []int32
+}
+
+var pool_MSG_PROJECT_story_batchGetStoryStage = sync.Pool{New: func() interface{} { return &MSG_PROJECT_story_batchGetStoryStage{} }}
+
+func GET_MSG_PROJECT_story_batchGetStoryStage() *MSG_PROJECT_story_batchGetStoryStage {
+	return pool_MSG_PROJECT_story_batchGetStoryStage.Get().(*MSG_PROJECT_story_batchGetStoryStage)
+}
+
+func (data *MSG_PROJECT_story_batchGetStoryStage) cmd() int32 {
+	return CMD_MSG_PROJECT_story_batchGetStoryStage
+}
+
+func (data *MSG_PROJECT_story_batchGetStoryStage) Put() {
+	data.QueryID = 0
+	data.Ids = data.Ids[:0]
+	pool_MSG_PROJECT_story_batchGetStoryStage.Put(data)
+}
+func (data *MSG_PROJECT_story_batchGetStoryStage) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_PROJECT_story_batchGetStoryStage,buf)
+	WRITE_MSG_PROJECT_story_batchGetStoryStage(data, buf)
+}
+
+func WRITE_MSG_PROJECT_story_batchGetStoryStage(data *MSG_PROJECT_story_batchGetStoryStage, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_int32(int32(len(data.Ids)), buf)
+	for _, v := range data.Ids{
+		WRITE_int32(v, buf)
+	}
+}
+
+func READ_MSG_PROJECT_story_batchGetStoryStage(buf *libraries.MsgBuffer) *MSG_PROJECT_story_batchGetStoryStage {
+	data := pool_MSG_PROJECT_story_batchGetStoryStage.Get().(*MSG_PROJECT_story_batchGetStoryStage)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_PROJECT_story_batchGetStoryStage) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	Ids_len := int(READ_int32(buf))
+	if Ids_len>cap(data.Ids){
+		data.Ids= make([]int32, Ids_len)
+	}else{
+		data.Ids = data.Ids[:Ids_len]
+	}
+	for i := 0; i < Ids_len; i++ {
+		data.Ids[i] = READ_int32(buf)
+	}
+
+}
+func (data *MSG_PROJECT_story_batchGetStoryStage) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_PROJECT_story_batchGetStoryStage) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_PROJECT_story_batchGetStoryStage_result struct {
+	QueryResultID uint32
+	List map[int32][]HtmlKeyValueStr
+}
+
+var pool_MSG_PROJECT_story_batchGetStoryStage_result = sync.Pool{New: func() interface{} { return &MSG_PROJECT_story_batchGetStoryStage_result{} }}
+
+func GET_MSG_PROJECT_story_batchGetStoryStage_result() *MSG_PROJECT_story_batchGetStoryStage_result {
+	return pool_MSG_PROJECT_story_batchGetStoryStage_result.Get().(*MSG_PROJECT_story_batchGetStoryStage_result)
+}
+
+func (data *MSG_PROJECT_story_batchGetStoryStage_result) cmd() int32 {
+	return CMD_MSG_PROJECT_story_batchGetStoryStage_result
+}
+
+func (data *MSG_PROJECT_story_batchGetStoryStage_result) Put() {
+	data.QueryResultID = 0
+	data.List = nil
+	pool_MSG_PROJECT_story_batchGetStoryStage_result.Put(data)
+}
+func (data *MSG_PROJECT_story_batchGetStoryStage_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_PROJECT_story_batchGetStoryStage_result,buf)
+	WRITE_MSG_PROJECT_story_batchGetStoryStage_result(data, buf)
+}
+
+func WRITE_MSG_PROJECT_story_batchGetStoryStage_result(data *MSG_PROJECT_story_batchGetStoryStage_result, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryResultID, buf)
+	WRITE_map(data.List,buf)
+}
+
+func READ_MSG_PROJECT_story_batchGetStoryStage_result(buf *libraries.MsgBuffer) *MSG_PROJECT_story_batchGetStoryStage_result {
+	data := pool_MSG_PROJECT_story_batchGetStoryStage_result.Get().(*MSG_PROJECT_story_batchGetStoryStage_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_PROJECT_story_batchGetStoryStage_result) read(buf *libraries.MsgBuffer) {
+	data.QueryResultID = READ_uint32(buf)
+	READ_map(&data.List,buf)
+
+}
+func (data *MSG_PROJECT_story_batchGetStoryStage_result) getQueryResultID() uint32 {
+	return data.QueryResultID
+}
+func (data *MSG_PROJECT_story_batchGetStoryStage_result) setQueryResultID(id uint32) {
 	data.QueryResultID = id
 }
 

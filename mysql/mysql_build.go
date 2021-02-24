@@ -1,7 +1,6 @@
 package mysql
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"reflect"
@@ -209,9 +208,7 @@ func (this *Mysql_Build) Where(conditions ...interface{}) *Mysql_Build {
 	}
 	this.sql.where.Truncate(this.sql.where.Len() - 5)
 	//this.sql.where = ` where ` + strings.Join(str, " and ")
-	if this.sql.join.Len() > 0 {
-		this.sql.where.Write(bytes.Replace(this.sql.where.Next(this.sql.where.Len()), []byte{96}, nil, -1))
-	}
+
 	return this
 }
 
@@ -232,9 +229,7 @@ func (this *Mysql_Build) WhereOr(condition map[string]interface{}) *Mysql_Build 
 		this.sql.where.Write([]byte{32, 111, 114, 32})
 	}
 	this.sql.where.Truncate(this.sql.where.Len() - 4)
-	if this.sql.join.Len() > 0 {
-		this.sql.where.Write(bytes.Replace(this.sql.where.Next(this.sql.where.Len()), []byte{96}, nil, -1))
-	}
+
 	return this
 }
 
@@ -632,7 +627,7 @@ func (this *Mysql_Build) Select(s interface{}) (err error) {
 	this.buffer.Write(this.sql.field.Bytes())
 	this.buffer.Write([]byte{32, 102, 114, 111, 109, 32})
 	this.buffer.Write(this.sql.table.Bytes())
-	//this.buffer.Write(this.sql.join.Bytes())
+	this.buffer.Write(this.sql.join.Bytes())
 	this.buffer.Write(this.sql.on.Bytes())
 	this.buffer.Write(this.sql.where.Bytes())
 	for _, v := range this.sql.where_prepare_arg {
@@ -649,6 +644,9 @@ func (this *Mysql_Build) Select(s interface{}) (err error) {
 
 	e := query(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction, s)
 	//DEBUG(`sql语句`, this.buffer.String())
+	if this.buffer.String() == "select * from `product` where `Id` IN (5,5,5,5)" {
+		panic("")
+	}
 	if e != nil {
 		err = errors.New(`执行Select出错,sql错误信息：` + e.Error() + `,错误sql：` + this.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.prepare_arg))
 	}
@@ -665,7 +663,7 @@ func (this *Mysql_Build) SelectKey(key string) (map[string]map[string]string, er
 	this.buffer.Write(this.sql.field.Bytes())
 	this.buffer.Write([]byte{32, 102, 114, 111, 109, 32})
 	this.buffer.Write(this.sql.table.Bytes())
-	//this.buffer.Write(this.sql.join.Bytes())
+	this.buffer.Write(this.sql.join.Bytes())
 	this.buffer.Write(this.sql.on.Bytes())
 	this.buffer.Write(this.sql.where.Bytes())
 	for _, v := range this.sql.where_prepare_arg {

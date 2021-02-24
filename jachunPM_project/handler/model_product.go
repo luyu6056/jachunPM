@@ -12,7 +12,7 @@ import (
 
 func product_insert(data *protocol.MSG_PROJECT_product_insert, in *protocol.Msg) {
 
-	session, err := in.DB.BeginTransaction()
+	session, err := in.BeginTransaction()
 	defer session.EndTransaction()
 	if err != nil {
 		in.WriteErr(err)
@@ -98,6 +98,11 @@ func product_setCache(id int32) {
 	HostConn.DB.Table(db.TABLE_PRODUCT).Prepare().Where("Id=?", id).Find(&product)
 	if product.Id != 0 {
 		HostConn.DB.Table(db.TABLE_BRANCH).Prepare().Where("Product=?", id).Order("`Order` asc").Limit(0).Select(&product.Branchs)
+		var ids = make([]int32, len(product.Branchs))
+		for k, b := range product.Branchs {
+			ids[k] = b.Id
+		}
+		HostConn.DB.Table(db.TABLE_PRODUCT).Prepare().Where("Id=?", id).Update(map[string]interface{}{"Branch": ids})
 		HostConn.CacheSet(protocol.PATH_PROJECT_PRODUCT_CACHE, strconv.Itoa(int(product.Id)), product, 0)
 
 	}
@@ -114,34 +119,57 @@ func product_getStories(data *protocol.MSG_PROJECT_product_getStories, in *proto
 	var list []*protocol.MSG_PROJECT_story
 	switch data.BrowseType {
 	case "unclosed":
-		var config map[string]map[string]interface{}
-		config, err = in.LoadConfig("story")
+		var statusList []protocol.HtmlKeyValueStr
+		err = in.LoadConfigToValue("story", "common", "statusList", &statusList)
 		if err != nil {
 			return
 		}
+
 		var unclosedStatus []string
-		for k, _ := range config["statusList"] {
-			if k == "closed" {
+		for _, kv := range statusList {
+			if kv.Key == "closed" {
 				continue
 			}
-			unclosedStatus = append(unclosedStatus, k)
+			unclosedStatus = append(unclosedStatus, kv.Key)
 		}
 
 		list, err = story_getProductStories(data.ProductID, data.Branch, modules, unclosedStatus, data.Sort, data.Page, data.PerPage, &data.Total)
-		if err != nil {
-			return
-		}
 	case "unplan":
 		list, err = story_getByPlan(data.ProductID, data.Branch, modules, "", data.Sort, data.Page, data.PerPage, &data.Total)
+	case "allstory":
+		list, err = story_getProductStories(data.ProductID, data.Branch, modules, []string{"all"}, data.Sort, data.Page, data.PerPage, &data.Total)
+	case "bymodule":
+		list, err = story_getProductStories(data.ProductID, data.Branch, modules, []string{"all"}, data.Sort, data.Page, data.PerPage, &data.Total)
+	case "bysearch":
+		list, err = story_getBySearch(data.ProductID, data.Branch, 0, data.Where, data.Sort, data.Page, data.PerPage, &data.Total)
 	}
+	if err != nil {
+		return
+	}
+	//获取planTitle
+	var planids = make([]int32, len(list))
+	for k, story := range list {
+		planids[k] = story.Plan
+	}
+	var plans []*db.Productplan
+	if err = in.DB.Table(db.TABLE_PRODUCTPLAN).Where(map[string]interface{}{"Id": planids}).Select(&plans); err != nil {
+		return
+	}
+	for _, story := range list {
+		for _, plan := range plans {
+			if story.Plan == plan.Id {
+				story.PlanTitle = plan.Title
+			}
+		}
+	}
+
 	out := protocol.GET_MSG_PROJECT_product_getStories_result()
 	out.Total = data.Total
 	out.List = list
 	in.SendResult(out)
 	out.Put()
-	/*if($browseType == 'unplan')       $stories = $this->story->getByPlan($productID, $queryID, $modules, '', $sort, $pager);
-	  if($browseType == 'allstory')     $stories = $this->story->getProductStories($productID, $branch, $modules, 'all', $sort, $pager);
-	  if($browseType == 'bymodule')     $stories = $this->story->getProductStories($productID, $branch, $modules, 'all', $sort, $pager);
+	/*
+
 	  if($browseType == 'bysearch')     $stories = $this->story->getBySearch($productID, $queryID, $sort, $pager, '', $branch);
 	  if($browseType == 'assignedtome') $stories = $this->story->getByAssignedTo($productID, $branch, $modules, $this->app->user->account, $sort, $pager);
 	  if($browseType == 'openedbyme')   $stories = $this->story->getByOpenedBy($productID, $branch, $modules, $this->app->user->account, $sort, $pager);
@@ -183,7 +211,7 @@ func product_update(data *protocol.MSG_PROJECT_product_update, in *protocol.Msg)
 		in.WriteErr(nil)
 		return
 	}
-	session, err := in.DB.BeginTransaction()
+	session, err := in.BeginTransaction()
 	defer session.EndTransaction()
 	if err != nil {
 		in.WriteErr(err)
@@ -221,7 +249,7 @@ func product_update(data *protocol.MSG_PROJECT_product_update, in *protocol.Msg)
 func product_editBranch(data *protocol.MSG_PROJECT_product_editBranch, in *protocol.Msg) {
 	product := HostConn.GetProductById(data.ProductID)
 	if product != nil {
-		session, err := in.DB.BeginTransaction()
+		session, err := in.BeginTransaction()
 		if err != nil {
 			in.WriteErr(err)
 		} else {

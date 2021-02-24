@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"jachunPM_http/config"
 	"protocol"
 	"strconv"
@@ -55,7 +56,7 @@ var checkinfo = map[string]map[string]interface{}{ //目前接受checkType和[]p
 	},
 	"/story/create": map[string]interface{}{
 		"title":      checkTypeRequire,
-		"pri":        config.Lang[protocol.DefaultLang]["story"]["pri"].([]protocol.HtmlKeyValueStr),
+		"pri":        config.Lang[protocol.DefaultLang]["story"]["priList"].([]protocol.HtmlKeyValueStr),
 		"estimate":   checkTypeFloat | checkTypePositive,
 		"assignedTo": checkTypeUserId | checkTypePositive,
 		"mailto":     checkTypeUserId,
@@ -69,11 +70,20 @@ func (data *TemplateData) ajaxCheckPost() bool {
 			reskey, err := func() (string, string) {
 				list := data.ws.PostSlice(key)
 				require := false
-				if typ, ok := i.(checkType); ok && typ&checkTypeRequire == checkTypeRequire {
-					require = true
-					if len(list) == 0 {
-						return key, data.Lang["error"]["checkTypeRequire"].(string)
+				positive := false
+				zero := false
+				negative := false
+				if typ, ok := i.(checkType); ok {
+					if typ&checkTypeRequire == checkTypeRequire {
+						if len(list) == 0 {
+							fmt.Println("这里1", key, list)
+							return key, data.Lang["error"]["checkTypeRequire"].(string)
+						}
+						require = true
 					}
+					positive = typ&checkTypePositive == checkTypePositive
+					zero = typ&checkTypeZero == checkTypeZero
+					negative = typ&checkTypeNegative == checkTypeNegative
 				}
 
 				for _, v := range list {
@@ -82,33 +92,69 @@ func (data *TemplateData) ajaxCheckPost() bool {
 					case checkType:
 						if require {
 							if v == "" {
+								fmt.Println("这里2")
 								return key, data.Lang["error"]["checkTypeRequire"].(string)
 							}
 						} else if v == "" {
 							continue
 						}
-						switch typ {
-						case checkTypeRequire:
-							//上面已处理
-						case checkTypeNum:
-							_, err := strconv.Atoi(v)
+						if typ&checkTypeInt == checkTypeInt {
+							i, err := strconv.Atoi(v)
 							if err != nil {
-								return key, data.Lang["error"]["checkTypeNum"].(string)
+								return key, data.Lang["error"]["checkTypeInt"].(string)
 							}
-
-						case checkTypeUserId:
-							id, _ := strconv.Atoi(v)
-							if HostConn.GetUserCacheById(int32(id)) == nil {
-								return key, data.Lang["error"]["checkTypeUserId"].(string)
+							switch {
+							case positive && i <= 0:
+								if zero && i < 0 { //不能小于0
+									return key, data.Lang["error"]["checkPositiveAndZero"].(string)
+								} else {
+									return key, data.Lang["error"]["checkPositive"].(string)
+								}
+							case negative && i >= 0:
+								if zero && i > 0 { //小于等于0
+									return key, data.Lang["error"]["checkNegativeAndZero"].(string)
+								} else {
+									return key, data.Lang["error"]["checkNegative"].(string)
+								}
 							}
-
-						case checkTypeDate:
-							_, err := time.Parse(protocol.TIMEFORMAT_MYSQLDATE, v)
+						} else if typ&checkTypeFloat == checkTypeFloat {
+							f, err := strconv.ParseFloat(v, 64)
 							if err != nil {
-								return key, data.Lang["error"]["checkTypeDate"].(string)
+								return key, data.Lang["error"]["checkTypeInt"].(string)
 							}
+							switch {
+							case positive && f <= 0:
+								if zero && f < 0 { //不能小于0
+									return key, data.Lang["error"]["checkPositiveAndZero"].(string)
+								} else {
+									return key, data.Lang["error"]["checkPositive"].(string)
+								}
+							case negative && f >= 0:
+								if zero && f > 0 { //小于等于0
+									return key, data.Lang["error"]["checkNegativeAndZero"].(string)
+								} else {
+									return key, data.Lang["error"]["checkNegative"].(string)
+								}
+							}
+						} else {
+							switch typ {
+							case checkTypeRequire, checkTypeInt, checkTypeFloat:
+								//上面已处理
+							case checkTypeUserId:
+								id, _ := strconv.Atoi(v)
+								if HostConn.GetUserCacheById(int32(id)) == nil {
+									return key, data.Lang["error"]["checkTypeUserId"].(string)
+								}
 
+							case checkTypeDate:
+								_, err := time.Parse(protocol.TIMEFORMAT_MYSQLDATE, v)
+								if err != nil {
+									return key, data.Lang["error"]["checkTypeDate"].(string)
+								}
+
+							}
 						}
+
 					case []protocol.HtmlKeyValueStr:
 						find := false
 						for _, kv := range typ {

@@ -15,6 +15,10 @@ const (
 	TABLE_BRANCH      = "branch"
 	TABLE_PRODUCTPLAN = "productplan"
 	TABLE_PROJECT     = "project"
+	TABLE_STORYSPEC   = "storyspec"
+	TABLE_STORYSTAGE  = "storystage"
+	TABLE_TASK        = "task"
+	TABLE_RELEASE     = "release"
 )
 
 func Init() *mysql.MysqlDB {
@@ -34,6 +38,10 @@ func Init() *mysql.MysqlDB {
 		new(Branch),
 		new(Productplan),
 		new(Project),
+		new(StorySpec),
+		new(StoryStage),
+		new(Task),
+		new(Release),
 	)
 	if errs != nil {
 		log.Fatalf("数据库启动失败%v", errs)
@@ -71,6 +79,7 @@ type Product struct {
 	Type        string `db:"default('normal');type:varchar(30)"`
 	Status      string `db:"type:varchar(30)"`
 	Desc        string `db:"type:text"`
+	Branch      int32
 	PO          int32
 	QD          int32
 	RD          int32
@@ -111,7 +120,7 @@ type Story struct {
 	Product        int32   `db:"default(0)"`
 	Branch         int32   `db:"default(0)"`        //平台
 	Module         int32   `db:"default(0)"`        //模块
-	Plan           string  `db:"type:text"`         //计划
+	Plan           int32   `db:"type:text"`         //计划
 	Source         string  `db:"type:varchar(20)"`  //需求来源
 	SourceNote     string  `db:"type:varchar(255)"` //备注
 	FromBug        int32   `db:"default(0)"`
@@ -121,16 +130,16 @@ type Story struct {
 	Estimate       float32 `db:""`
 	Status         string  `db:"type:enum('','changed','active','draft','closed')"`                                                                                //
 	Stage          string  `db:"type:enum('','wait','planned','projected','developing','developed','testing','tested','verified','released','closed');default(1)"` //
-	Mailto         string  `db:"type:text"`                                                                                                                        //抄送
-	OpenedBy       string  `db:"type:varchar(30)"`
+	Mailto         []int32 `db:"type:json"`                                                                                                                        //抄送
+	OpenedBy       int32   `db:"type:varchar(30)"`
 	OpenedDate     time.Time
-	AssignedTo     string `db:"type:varchar(30)"` //指派
+	AssignedTo     int32 `db:"type:varchar(30)"` //指派
 	AssignedDate   time.Time
-	LastEditedBy   string `db:"type:varchar(30)"`
+	LastEditedBy   int32 `db:"type:varchar(30)"`
 	LastEditedDate time.Time
-	ReviewedBy     string `db:"type:varchar(255)"`
+	ReviewedBy     int32 `db:"type:varchar(255)"`
 	ReviewedDate   time.Time
-	ClosedBy       string `db:"type:varchar(30)"`
+	ClosedBy       int32 `db:"type:varchar(30)"`
 	ClosedDate     time.Time
 	ClosedReason   string `db:"type:varchar(30)"`
 	ToBug          int32
@@ -212,8 +221,99 @@ type Project struct {
 	FtpPath       string `db:"type:varchar(255)"`
 	Product       int32  `db:"index"`
 	Branch        int32  `db:"index"`
+	Story         int32  `db:"index"`
 }
 
-func (Project) TableName() string {
+func (*Project) TableName() string {
 	return TABLE_PROJECT
+}
+
+type StorySpec struct {
+	Story   int32  `db:"index"`
+	Version int16  `db:"index"`
+	Title   string `db:"type:varchar(255)"`
+	Spec    string `db:"type:text"`
+	Verify  string `db:"type:text"`
+}
+
+func (*StorySpec) TableName() string {
+	return TABLE_STORYSPEC
+}
+
+type StoryStage struct {
+	Story  int32  `db:""`
+	Branch int32  `db:""`
+	Stage  string `db:"type:varchar(50)"`
+}
+
+func (*StoryStage) TableName() string {
+	return TABLE_STORYSTAGE
+}
+
+type Task struct {
+	Id             int32     `db:"auto_increment;pk"`
+	Ancestor       int32     `db:"null"`
+	Parent         int32     `db:"not null;default(0)"`
+	Project        int32     `db:"default(0)"`
+	Module         int32     `db:"default(0)"`
+	Story          int32     `db:"default(0)"`
+	StoryVersion   int16     `db:"not null;default(1)"`
+	FromBug        int32     `db:"default(0)"`
+	Name           string    `db:"type:varchar(255)"`
+	Type           string    `db:"type:varchar(20)"`
+	Pri            int8      `db:"default(0)"`
+	Estimate       float32   `db:""`
+	Consumed       float32   `db:""`
+	Left           float32   `db:""`
+	Deadline       time.Time `db:"not null"`
+	Status         string    `db:"type:varchar(32)"`
+	Color          string    `db:"type:varchar(7)"`
+	Mailto         []int32   `db:"type:json"`
+	Desc           string    `db:"type:text"`
+	OpenedBy       int32     `db:"type:varchar(30)"`
+	OpenedDate     time.Time `db:"not null"`
+	AssignedTo     int32     `db:"type:varchar(30)"`
+	AssignedDate   time.Time `db:"not null"`
+	EstStarted     time.Time `db:"not null"`
+	RealStarted    time.Time `db:"not null"`
+	FinishedBy     int32     `db:"type:varchar(30)"`
+	FinishedDate   time.Time `db:"not null"`
+	FinishedList   string    `db:"type:text"`
+	CanceledBy     int32     `db:"type:varchar(30)"`
+	CanceledDate   time.Time `db:"not null"`
+	ClosedBy       int32     `db:"type:varchar(30)"`
+	ClosedDate     time.Time `db:"not null"`
+	ClosedReason   string    `db:"type:varchar(30)"`
+	LastEditedBy   string    `db:"type:varchar(30)"`
+	LastEditedDate time.Time `db:"not null"`
+	Examine        int8      `db:"not null;default(0)"`
+	ExamineDate    time.Time `db:"not null"`
+	ExamineBy      string    `db:"type:varchar(30)"`
+	Deleted        bool
+	Finalfile      string `db:"default('0');type:varchar(3)"`
+	Proofreading   bool
+}
+
+func (*Task) TableName() string {
+	return TABLE_TASK
+}
+
+type Release struct {
+	Id       int32  `db:"auto_increment;pk"`
+	Product  int32  `db:"default(0)"`
+	Branch   int32  `db:"default(0)"`
+	Build    int32  `db:""`
+	Name     string `db:"type:varchar(30)"`
+	Marker   bool
+	Date     time.Time `db:"not null"`
+	Stories  []int32   `db:"type:text"`
+	Bugs     string    `db:"type:text"`
+	LeftBugs string    `db:"type:text"`
+	Desc     string    `db:"type:text"`
+	Status   string    `db:"default('normal');type:varchar(20)"`
+	Deleted  bool
+}
+
+func (*Release) TableName() string {
+	return TABLE_RELEASE
 }

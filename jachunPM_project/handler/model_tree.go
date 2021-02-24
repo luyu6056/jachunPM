@@ -92,7 +92,7 @@ func tree_manageChild(data *protocol.MSG_PROJECT_tree_manageChild, in *protocol.
 	}
 
 	var updates []*protocol.MSG_PROJECT_tree_cache
-	session, err := in.DB.BeginTransaction()
+	session, err := in.BeginTransaction()
 	if err != nil {
 		in.WriteErr(err)
 		return

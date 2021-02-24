@@ -8,24 +8,25 @@
     </div>
   </div>
   <div class="btn-toolbar pull-left">
-    {{range $menuItem:=.Lang.product.featureBar.browse}}
+    {{- range $menuItem:=.Lang.product.featureBar.browse}}
         {{- if eq $menuItem.Key  "more"}}
             {{- if $.Lang.product.moreSelects}}
                 {{- $moreLabel       := $.Lang.common.more}}
                 {{- $moreLabelActive := ""}}
                 {{- if getValue $.Lang.product.moreSelects $.Data.browseType}}    
-                    {{$moreLabel       = strAdd "<span class='text'>" (getValue $.Lang.product.moreSelects $.Data.browseType) "</span> <span class='label label-light label-badge'>" $.Page.Total "</span>"}}
-                    {{$moreLabelActive = "btn-active-text"}}
+                    {{- $moreLabel       = strAdd "<span class='text'>" (getValue $.Lang.product.moreSelects $.Data.browseType) "</span> <span class='label label-light label-badge'>" $.Page.Total "</span>"}}
+                    {{- $moreLabelActive = "btn-active-text"}}
                 {{- end}}
-                <div class="btn-group">
+              <div class="btn-group">
                 {{html_a "javascript:;" (strAdd $moreLabel  " <span class='caret'></span>") "" (strAdd "data-toggle='dropdown' class='btn btn-link " $moreLabelActive "'")}}
                 <ul class='dropdown-menu'>
                 {{range $item := $.Lang.product.moreSelects}}
                     {{- $active := and (or (eq $item.Key $.Data.browseType) "")  "btn-active-text" -}}
                     <li>{{html_a (helper_createLink "product" "browse" "productID=" $.Data.productID "&branch=" $.Data.branch "&browseType=" $item.Key) (strAdd "<span class='text'>" $item.Value "</span>") "" (strAdd "class='btn btn-link " $active "'")}}</li>
-                {{end}}
-                </ul></div>
-            {{end}}
+                {{- end}}
+                </ul>
+              </div>
+            {{- end}}
         {{- else}}
             {{- html_a (helper_createLink "product" "browse" "productID=" $.Data.productID "&branch=" $.Data.branch "&browseType=" $menuItem.Key) (strAdd "<span class='text'>" $menuItem.Value "</span>" (and (or (eq $menuItem.Key $.Data.browseType) "") (strAdd "<span class='label label-light label-badge'>" $.Page.Total "</span>"))) "" (strAdd "id='" $menuItem.Key "Tab' class='btn btn-link"  (and (or (eq $menuItem.Key $.Data.browseType) "") " btn-active-text") "'")}}
         {{end -}}
@@ -56,7 +57,7 @@
         {{.Lang.product.noModule}}
       </div>
       <hr class="space">
-      {{end}}
+      {{- end}}
       {{.Data.moduleTree}}
       <div class="text-center">
         {{common_printLink . "tree" "browse" (strAdd "productID=" .Data.productID "&view=story") .Lang.tree.manage "" "class='btn btn-info btn-wide'"}}
@@ -81,228 +82,150 @@
       <div class="table-header fixed-right">
         <nav class="btn-toolbar pull-right"></nav>
       </div>
-      <?php
-      $datatableId  = .ModuleName . ucfirst($this->methodName);
-      $useDatatable = (isset(.Config.datatable->$datatableId->mode) and .Config.datatable->$datatableId->mode == 'datatable');
-      $vars         = "productID=$productID&branch=$branch&browseType=$browseType&param=$param&orderBy=%s&recTotal={$pager->recTotal}&recPerPage={$pager->recPerPage}";
-
-      if($useDatatable) include '../../common/view/datatable.html.php';
-      $setting = $this->datatable->getSetting('product');
-      $widths  = $this->datatable->setFixedFieldWidth($setting);
-      $columns = 0;
-      ?>
-      {{if eq .Data.useDatatable nil}}<div class="table-responsive">{{end}}
+      {{- $vars := (strAdd "productID=" .Data.productID "&branch=" .Data.branch "&browseType=" .Data.browseType "&param=" .Data.param "&orderBy=%s&recTotal=" .Page.Total "&recPerPage=" .Page.PerPage)}}
+      {{template "datatable.html" .}}
+      {{if not .Data.useDatatable}}<div class="table-responsive">{{end}}
       <table class='table has-sort-head{{if .Data.useDatatable}} datatable{{end}}' id='storyList' data-fixed-left-width='{{index .Data.widths "leftWidth"}}' data-fixed-right-width='{{index .Data.widths "rightWidth"}}'>
         <thead>
           <tr>
-          <?php
-          foreach($setting as $key => $value)
-          {
-              if($value->show)
-              {
-                  $this->datatable->printHead($value, $orderBy, $vars);
-                  $columns ++;
-              }
-          }
-          ?>
+          {{- range $value := .Data.setting}}
+              {{if $value.Show}}{{datatable_printHead $ $value $.Data.orderBy $vars true}}{{end}}
+          {{- end}}
           </tr>
         </thead>
         <tbody>
           {{range $story := .Data.stories}}
-          <tr data-id='{{$story.Id}}' data-estimate='{{$story.Estimate}}' data-cases='{{index .Data.storyCases $story.Id}}'>
-            {{range  $key,$value := .Data.setting}} $this->story->printCell($value, $story, $users, $branches, $storyStages, $modulePairs, $storyTasks, $storyBugs, $storyCases, $useDatatable ? 'datatable' : 'table'){{end}}
+          <tr data-id='{{$story.Id}}' data-estimate='{{$story.Estimate}}' data-cases='{{if $.Data.storyCases}}{{index $.Data.storyCases $story.Id}}{{else}}0{{end}}'>
+            {{range  $key,$value := $.Data.setting}}{{story_printCell $ $value $story $.Data.users $.Data.branches $.Data.storyStages $.Data.modulePairs $.Data.storyTasks $.Data.storyBugs $.Data.storyCases (or (and $.Data.useDatatable "datatable") "table")}}{{end}}
           </tr>
           {{end}}
         </tbody>
       </table>
-      {{if eq .Data.useDatatable}}</div>{{end}}
+      {{if not .Data.useDatatable}}</div>{{end}}
       <div class="table-footer">
-        <div class="checkbox-primary check-all"><label>{{.Lang.selectAll}}</label></div>
+        <div class="checkbox-primary check-all"><label>{{.Lang.common.selectAll}}</label></div>
         <div class="table-actions btn-toolbar">
           <div class='btn-group dropup'>
-            <?php
-            $canBatchEdit  = common_hasPriv "story" "batchEdit"
-            $disabled   = $canBatchEdit ? '' : "disabled='disabled'";
-            $actionLink = $this->createLink('story', 'batchEdit', "productID=$productID&projectID=0&branch=$branch");
-            ?>
-            {{html_commonButton .Lang.edit "data-form-action='$actionLink' $disabled"}}
+            {{html_commonButton .Lang.common.edit (strAdd "data-form-action='" (helper_createLink "story" "batchEdit" "productID=" .Data.productID "&projectID=0&branch=" .Data.branch) "' " (or (and (common_hasPriv . "story" "batchEdit") " ") "disabled='disabled'"))}}
             <button type='button' class='btn dropdown-toggle' data-toggle='dropdown'><span class='caret'></span></button>
             <ul class='dropdown-menu'>
-              <?php
-              $class = "class='disabled'";
-              $canBatchClose = common_hasPriv "story" "batchClose" && strtolower($browseType) != 'closedbyme' && strtolower($browseType) != 'closedstory';
-              $actionLink    = $this->createLink('story', 'batchClose', "productID=$productID&projectID=0");
-              $misc = $canBatchClose ? "onclick=\"setFormAction('$actionLink')\"" : $class;
-              "<li>" . html_a "#" .Lang.close "" $misc . "</li>";
-
-              if(common_hasPriv "story" "batchReview")
-              {
-                  "<li class='dropdown-submenu'>";
-                  html::a('javascript:;', .Lang.story.review, '', "id='reviewItem'");
-                  "<ul class='dropdown-menu'>";
-                  unset(.Lang.story.reviewResultList['']);
-                  unset(.Lang.story.reviewResultList['revert']);
-                  foreach(.Lang.story.reviewResultList as $key => $result)
-                  {
-                      $actionLink = $this->createLink('story', 'batchReview', "result=$key");
-                      if($key == 'reject')
-                      {
-                          "<li class='dropdown-submenu'>";
-                          html_a "#" $result "" "id='rejectItem'"
-                          "<ul class='dropdown-menu'>";
-                          unset(.Lang.story.reasonList['']);
-                          unset(.Lang.story.reasonList['subdivided']);
-                          unset(.Lang.story.reasonList['duplicate']);
-
-                          foreach(.Lang.story.reasonList as $key => $reason)
-                          {
-                              $actionLink = $this->createLink('story', 'batchReview', "result=reject&reason=$key");
-                              "<li>";
-                              html_a "#" $reason "" "onclick=\"setFormAction('$actionLink','hiddenwin'\"");
-                              "</li>";
-                          }
+              {{- $class := "class='disabled'"}}
+              {{- $canBatchClose := and (common_hasPriv . "story" "batchClose") (ne .Data.browseType "closedbyme") (ne .Data.browseType "closedstory")}}
+              {{- $misc := or (and $canBatchClose (strAdd "onclick=\"setFormAction('" (helper_createLink "story" "batchClose" "productID=" .Data.productID "&projectID=0") "')\"")) $class}}
+              <li>{{html_a "#" .Lang.common.close "" $misc}}</li>
+              {{if common_hasPriv . "story" "batchReview"}}
+                  <li class='dropdown-submenu'>
+                  {{html_a "javascript:;" .Lang.story.review "" "id='reviewItem'"}}
+                  <ul class='dropdown-menu'>
+                  {{- range $kv := .Lang.story.reviewResultList}}{{if not (or (eq $kv.Key "") (eq $kv.Key "revert"))}}
+                      {{- if eq $kv.Key "reject"}}
+                          <li class='dropdown-submenu'>
+                          {{html_a "#" $kv.Value "" "id='rejectItem'"}}
+                          <ul class='dropdown-menu'>
+                          {{- range $kv := $.Lang.story.reasonList}}{{if not (or (eq $kv.Key "") (eq $kv.Key "subdivided") (eq $kv.Key "duplicate"))}}
+                              <li>{{html_a "#" $kv.Value "" (strAdd "onclick=\"setFormAction('" (helper_createLink "story" "batchReview" "result=reject&reason=" $kv.Key) "','hiddenwin')\"")}}</li>
+                          {{- end}}{{end}}
                           '</ul></li>';
-                      }
-                      else
-                      {
-                        '<li>' . html_a "#" $result "" "onclick=\"setFormAction('$actionLink','hiddenwin'\"") . '</li>';
-                      }
-                  }
-                  '</ul></li>';
-              }
-              else
-              {
-                  '<li>' . html::a('javascript:;', .Lang.story.review,  '', $class) . '</li>';
-              }
-
-              if(common_hasPriv "story" "batchChangeBranch" and $this->session->currentProductType != 'normal')
-              {
-                  {{$withSearch := gt (len .Data.branches) 8}}
-             
-                  "<li class='dropdown-submenu'>";
-                  html::a('javascript:;', .Lang.product.branchName[$this->session->currentProductType], '', "id='branchItem'");
+                      {{- else}}
+                        <li>{{html_a "#" $kv.Value "" (strAdd "onclick=\"setFormAction('" (helper_createLink "story" "batchReview" "result=" $kv.Key) "','hiddenwin')\"")}}</li>
+                  {{- end}}{{end}}{{end}}
+                  '</ul></li>
+              {{else}}
+                  <li>{{html_a "javascript:;" .Lang.story.review  "" $class}}</li>
+              {{end}}
+             {{- if and (common_hasPriv . "story" "batchChangeBranch") (ne (session . "currentProductType") "normal")}}
+                  {{- $withSearch := gt (len .Data.branches) 8}}
+                  <li class='dropdown-submenu'>
+                  {{html_a "javascript:;" (getValue .Lang.product.branchName (session . "currentProductType")) "" "id='branchItem'"}}
                   <div class='dropdown-menu{{if $withSearch}} with-search{{end}}'>
-                  "<ul class='dropdown-list'>";
-                  foreach($branches as $branchID => $branchName)
-                  {
-                      $actionLink = $this->createLink('story', 'batchChangeBranch', "branchID=$branchID");
-                      "<li class='option' data-key='$branchID'>" . html_a "#" $branchName "" "onclick=\"setFormAction('$actionLink', 'hiddenwin'\"") . "</li>";
-                  }
-                  '</ul>';
-                  if($withSearch) "<div class='menu-search'><div class='input-group input-group-sm'><input type='text' class='form-control' placeholder=''><span class='input-group-addon'><i class='icon-search'></i></span></div></div>";
-                  '</div></li>';
-              }
-
-              if(common_hasPriv "story" "batchChangeStage")
-              {
-                  "<li class='dropdown-submenu'>";
-                  html::a('javascript:;', .Lang.story.stageAB, '', "id='stageItem'");
-                  "<ul class='dropdown-menu'>";
-                  foreach(.Lang.story.stageList as $key => $stage)
-                  {
-                      if(empty($key)) continue;
-                      $actionLink = $this->createLink('story', 'batchChangeStage', "stage=$key");
-                      "<li>" . html_a "#" $stage "" "onclick=\"setFormAction('$actionLink','hiddenwin'\"") . "</li>";
-                  }
-                  '</ul></li>';
-              }
-              else
-              {
-                  '<li>' . html::a('javascript:;', .Lang.story.stageAB, '', $class) . '</li>';
-              }
-              ?>
+                  <ul class='dropdown-list'>
+                  {{- range $kv := .Data.branches}}
+                      <li class='option' data-key='$branchID'>{{html_a "#" $kv.Value "" (strAdd "onclick=\"setFormAction('" (helper_createLink "story" "batchChangeBranch" "branchID=" $kv.Key) "', 'hiddenwin')\"")}}</li>
+                  {{- end}}
+                  </ul>
+                  {{if $withSearch}}<div class='menu-search'><div class='input-group input-group-sm'><input type='text' class='form-control' placeholder=''><span class='input-group-addon'><i class='icon-search'></i></span></div></div>{{end}}
+                  </div>
+                </li>
+              {{- end}}
+              {{- if common_hasPriv . "story" "batchChangeStage"}}
+                  <li class='dropdown-submenu'>
+                  {{html_a "javascript:;" .Lang.story.stageAB "" "id='stageItem'"}}
+                  <ul class='dropdown-menu'>
+                  {{- range $kv := .Lang.story.stageList}}{{if ne $kv.Key ""}}
+                      <li>{{html_a "#" $kv.Value "" "onclick=\"setFormAction('" (helper_createLink "story" "batchChangeStage" "stage=" $kv.Key) "','hiddenwin')\""}}</li>
+                  {{- end}}{{- end}}
+                  </ul>
+                </li>
+              {{else}}
+                  <li>{{html_a "javascript:;" .Lang.story.stageAB "" $class}}</li>
+              {{end}}
             </ul>
           </div>
-
           {{if common_hasPriv . "story" "batchChangeModule"}}
           <div class="btn-group dropup">
             <button data-toggle="dropdown" type="button" class="btn">{{.Lang.story.moduleAB}} <span class="caret"></span></button>
-            {{$withSearch := gt (len .Data.modules) 8}}
+            {{- $withSearch := gt (len .Data.modules) 8}}
             <div class="dropdown-menu search-list{{and $withSearch " search-box-sink"}}" data-ride="searchList">
-              {{if $withSearch}}
+              {{- if $withSearch}}
               <div class="input-control search-box has-icon-left has-icon-right search-example">
                 <input id="moduleSearchBox" type="search" autocomplete="off" class="form-control search-input">
                 <label for="moduleSearchBox" class="input-control-icon-left search-icon"><i class="icon icon-search"></i></label>
                 <a class="input-control-icon-right search-clear-btn"><i class="icon icon-close icon-sm"></i></a>
               </div>
-              $modulesPinYin = common::convert2Pinyin($modules)
-              {{end}}
+              {{- end}}
               <div class="list-group">
-                <?php
-                foreach($modules as $moduleId => $module)
-                {
-                    $searchKey = $withSearch ? ('data-key="' . zget($modulesPinYin, $module, '') . '"') : '';
-                    $actionLink = $this->createLink('story', 'batchChangeModule', "moduleID=$moduleId");
-                    html_a "#" empty($module) ? '/' : $module "" "$searchKey onclick=\"setFormAction('$actionLink', 'hiddenwin'\"");
-                }
-                ?>
+                {{- range $kv:= .Data.modules}}
+                    {{html_a "#" (or (and $kv.Value $kv.Value) "/") "" (strAdd (or (and $withSearch (strAdd "data-key='" $kv.Value "'")) "") " onclick=\"setFormAction('" (helper_createLink "story" "batchChangeModule" "moduleID=" $kv.Key) "', 'hiddenwin')\"")}}
+                {{- end}}   
               </div>
             </div>
           </div>
-          {{end}}
-          {{if common_hasPriv "story" "batchChangePlan"}}
+          {{- end}}
+          {{- if common_hasPriv . "story" "batchChangePlan"}}
           <div class="btn-group dropup">
             <button data-toggle="dropdown" type="button" class="btn">{{.Lang.story.planAB}} <span class="caret"></span></button>
-            <?php
-            unset($plans['']);
-            $plans      = array(0 => .Lang.null) + $plans;
-            {{$withSearch := gt (len .Data.plans) 8}}
-            ?>
-            <div class="dropdown-menu search-list{{and $withSearch " search-box-sink"}}" data-ride="searchList">
-              {{if $withSearch}}
+            {{- $withSearch := gt (len .Data.plans) 8}}
+            <div class="dropdown-menu search-list {{and $withSearch "search-box-sink"}}" data-ride="searchList">
+              {{- if $withSearch}}
               <div class="input-control search-box has-icon-left has-icon-right search-example">
                 <input id="planSearchBox" type="search" autocomplete="off" class="form-control search-input">
                 <label for="planSearchBox" class="input-control-icon-left search-icon"><i class="icon icon-search"></i></label>
                 <a class="input-control-icon-right search-clear-btn"><i class="icon icon-close icon-sm"></i></a>
               </div>
-              $plansPinYin = common::convert2Pinyin($plans)
-              {{end}}
+              {{- end}}
               <div class="list-group">
-                <?php
-                foreach($plans as $planID => $plan)
-                {
-                    $searchKey = $withSearch ? ('data-key="' . zget($plansPinYin, $plan, '') . '"') : '';
-                    $actionLink = $this->createLink('story', 'batchChangePlan', "planID=$planID");
-                    html_a "#" $plan "" "$searchKey onclick=\"setFormAction('$actionLink', 'hiddenwin'\"");
-                }
-                ?>
+                {{- range $kv := .Data.plans}}
+                    {{html_a "#" $kv.Value "" (strAdd (or (and $withSearch (strAdd "data-key='" $kv.Value "'")) "") " onclick=\"setFormAction('" (helper_createLink "story" "batchChangePlan" "planID=" $kv.Key) "', 'hiddenwin')\"")}}
+                {{- end}}
               </div>
             </div>
           </div>
-          {{end}}
-
-          {{if common_hasPriv . "story" "batchAssignTo"}}
+          {{- end}}
+          {{- if common_hasPriv . "story" "batchAssignTo"}}
           <div class="btn-group dropup">
             <button data-toggle="dropdown" type="button" class="btn">{{.Lang.story.assignedTo}} <span class="caret"></span></button>
-            <?php
-            {{$withSearch := gt (len .Data.users) 10}}
-            $actionLink = $this->createLink('story', 'batchAssignTo', "productID=$productID");
-            html_select "assignedTo" $users "" "class="hidden""
-            ?>
+            {{- $withSearch := gt (len .Data.users) 10}}
+            {{- $actionLink := helper_createLink "story" "batchAssignTo" "productID=" .Data.productID}}
+            {{- html_select "assignedTo" .Data.users "" "class='hidden'"}}
             <div class="dropdown-menu search-list{{and $withSearch " search-box-sink"}}" data-ride="searchList">
-              {{if $withSearch}}
-              $usersPinYin = common::convert2Pinyin($users)
+              {{- if $withSearch}}
               <div class="input-control search-box has-icon-left has-icon-right search-example">
                 <input id="userSearchBox" type="search" autocomplete="off" class="form-control search-input">
                 <label for="userSearchBox" class="input-control-icon-left search-icon"><i class="icon icon-search"></i></label>
                 <a class="input-control-icon-right search-clear-btn"><i class="icon icon-close icon-sm"></i></a>
               </div>
-              {{end}}
+              {{- end}}
               <div class="list-group">
-              {{range $key,$value := .data.users}}
-              <?php
-              if(empty($key) or $key == 'closed') continue;
-              $searchKey = $withSearch ? ('data-key="' . zget($usersPinYin, $value, '') . " @$key\"") : "data-key='@$key'";
-              html_a "javascript:$(\"#assignedTo\".val(\"$key\");setFormAction(\"$actionLink\", \"hiddenwin\")", $value, '', $searchKey);
-              ?>
-              {{end}}
+              {{- range $kv := .Data.users}}{{if not (or (eq $kv.Key "") (eq $kv.Key "closed"))}}
+              {{html_a (strAdd "javascript:$(\"#assignedTo\").val(\"" $kv.Key "\");setFormAction(\"" $actionLink " \", \"hiddenwin\")") $kv.Value "" (or (and $withSearch (strAdd "data-key='" $kv.Value " @" $kv.Key "'")) (strAdd "data-key=' @" $kv.Key "'"))}}
+              {{- end}}{{- end}}
               </div>
             </div>
           </div>
           {{end}}
         </div>
         <div class="table-statistic">{{.Data.summary}}</div>
-        {{pager_show "right" "pagerjs"}}
+        {{pager_show . "right" "pagerjs"}}
       </div>
     </form>
     {{end}}

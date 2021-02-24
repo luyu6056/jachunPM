@@ -18,6 +18,7 @@ require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/luyu6056/cache v1.1.4
 	github.com/luyu6056/gnet v1.2.8
+	github.com/luyu6056/reflect2 v1.0.2
 	github.com/luyu6056/tls v0.15.1
 	github.com/rubenfonseca/fastimage v0.0.0-20170112075114-7e006a27a95b
 	golang.org/x/image v0.0.0-20200927104501-e162460cd6b5

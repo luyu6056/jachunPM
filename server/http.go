@@ -652,6 +652,7 @@ func (hs *Httpserver) Recovery() {
 	hs.Request.QueryCache = nil
 	hs.Request.PostForm = nil
 	hs.Request.Form = nil
+	hs.Request.MultipartForm = nil
 	hs.OutCode = 0
 	hs.OutContentType = ""
 	hs.Request.query = hs.Request.query[:0]
@@ -736,6 +737,7 @@ func (hs *Httpserver) PostForm(key string) string {
 }
 func (req *Request) getFormCache() {
 	if req.FormCache == nil {
+		req.ParseMultipartForm(2 ^ 16)
 		if err := req.ParseForm(); err != nil {
 			if err != http.ErrNotMultipart {
 				libraries.DebugLog("error on parse multipart form array: %v", err)
@@ -862,6 +864,7 @@ func parsePostForm(r *Request) (vs url.Values, err error) {
 		// Clean this up and write more tests.
 		// request_test.go contains the start of this,
 		// in TestParseMultipartFormOrder and others.
+
 	}
 	return
 }

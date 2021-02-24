@@ -53,7 +53,7 @@ type MSG_PROJECT_product_getStories struct {
 	Sort       string
 	Page       int
 	PerPage    int
-	Where      string
+	Where      map[string]interface{}
 	Total      int
 }
 type MSG_PROJECT_product_getStories_result struct {
@@ -66,7 +66,7 @@ type MSG_PROJECT_story struct {
 	Product        int32
 	Branch         int32
 	Module         int32
-	Plan           string
+	Plan           int32
 	Source         string
 	SourceNote     string
 	FromBug        int32
@@ -76,16 +76,16 @@ type MSG_PROJECT_story struct {
 	Estimate       float32
 	Status         string
 	Stage          string
-	Mailto         string
-	OpenedBy       string
+	Mailto         []int32
+	OpenedBy       int32
 	OpenedDate     time.Time
-	AssignedTo     string
+	AssignedTo     int32
 	AssignedDate   time.Time
-	LastEditedBy   string
+	LastEditedBy   int32
 	LastEditedDate time.Time
-	ReviewedBy     string
+	ReviewedBy     int32
 	ReviewedDate   time.Time
-	ClosedBy       string
+	ClosedBy       int32
 	ClosedDate     time.Time
 	ClosedReason   string
 	ToBug          int32
@@ -94,6 +94,8 @@ type MSG_PROJECT_story struct {
 	DuplicateStory int32
 	Deleted        bool
 	Version        int16
+	Color          string
+	PlanTitle      string `db:-`
 }
 type MSG_PROJECT_tree_cache struct {
 	Id        int32
@@ -261,11 +263,22 @@ type MSG_PROJECT_stroy_create struct {
 	Estimate      float32
 	Spec          string
 	Verify        string
-	mailto        []int32
+	Mailto        []int32
 	Keywords      string
 	NeedNotReview bool
+	FromBug       int32
+	OpenedBy      int32
+	ProjectID     int32
 }
 type MSG_PROJECT_stroy_create_result struct {
 	QueryResultID uint32
-	Id            int32
+	Result        int32 //小于0为ErrCode,大于0位新增ID
+}
+type MSG_PROJECT_story_batchGetStoryStage struct {
+	QueryID uint32
+	Ids     []int32
+}
+type MSG_PROJECT_story_batchGetStoryStage_result struct {
+	QueryResultID uint32
+	List          map[int32][]HtmlKeyValueStr
 }
