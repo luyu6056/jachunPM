@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"reflect"
@@ -10,6 +11,26 @@ import (
 	"unsafe"
 
 	"github.com/modern-go/reflect2"
+)
+
+const (
+	WhereOperatorIN           = "in"
+	WhereOperatorNOTIN        = "notin"
+	WhereOperatorTIME         = "time"
+	WhereOperatorBETWEEN      = "between"
+	WhereOperatorLT           = "lt" //<
+	WhereOperatorGT           = "gt" //>
+	WhereOperatorGE           = "ge" //>=
+	WhereOperatorLE           = "le" //<=
+	WhereOperatorNE           = "ne" //!=
+	WhereOperatorEQ           = "eq" //=
+	WhereOperatorLIKE         = "like"
+	WhereOperatorNOTLIKE      = "notlike"
+	WhereOperatorMATCH        = "match"
+	WhereOperatorJSONCONTAINS = "JSON_CONTAINS" //传入切片或者单个int string，则被当成JSON_ARRAY[]类查询，传入map则被当成JSON_OBJECT{}进行查询
+	WhereOperatorRAW          = "raw"           //只接受string，不进行任何转义处理
+	WhereOperatorRAWEQ        = "raweq"
+	WhereOperatorRAWNE        = "rawne"
 )
 
 var Tablepre []byte
@@ -48,6 +69,10 @@ func New_mysqlBuild() *Mysql_Build {
 	t := &Mysql_Build{buffer: new(MsgBuffer), sql: new(sql_buffer)}
 	return t
 }
+
+const (
+	whereDefault = " where "
+)
 
 //拼装mysql语句
 func (this *Mysql_Build) Reset(db *MysqlDB) {
@@ -137,13 +162,13 @@ func (this *Mysql_Build) Where(conditions ...interface{}) *Mysql_Build {
 		this.sql.where.WriteString(" where 1=1")
 		return this
 	}
+
 	var where map[string]interface{}
 	if len(conditions) == 1 {
 		condition := conditions[0]
-
 		switch condition.(type) {
 		case string:
-			this.sql.where.Write([]byte{32, 119, 104, 101, 114, 101, 32})
+			this.sql.where.WriteString(whereDefault) // where
 			this.sql.where.WriteString(condition.(string))
 			return this
 		case map[string]interface{}:
@@ -159,7 +184,7 @@ func (this *Mysql_Build) Where(conditions ...interface{}) *Mysql_Build {
 			return this
 		}
 	} else if str, ok := conditions[0].(string); ok {
-		this.sql.where.Write([]byte{32, 119, 104, 101, 114, 101, 32})
+		this.sql.where.WriteString(whereDefault) // where
 		if this.prepare {
 			this.sql.where.WriteString(str)
 			for i := 1; i < len(conditions); i++ {
@@ -183,7 +208,7 @@ func (this *Mysql_Build) Where(conditions ...interface{}) *Mysql_Build {
 	}
 	sort.Strings(where_s)*/
 	//支持where[`a|b`]=`c`,等于语句( a=c or b=c )
-	this.sql.where.Write([]byte{32, 119, 104, 101, 114, 101, 32})
+	this.sql.where.WriteString(whereDefault) // where
 	for keys, value := range where {
 		//value := where[keys]
 		this.buffer.Reset()
@@ -218,7 +243,7 @@ func (this *Mysql_Build) WhereOr(condition map[string]interface{}) *Mysql_Build 
 		this.sql.where.WriteString(" where 1=1")
 		return this
 	}
-	this.sql.where.Write([]byte{32, 119, 104, 101, 114, 101, 32})
+	this.sql.where.WriteString(whereDefault) // where
 	for key, value := range condition {
 		this.buffer.Reset()
 		this.err = this._where(key, value)
@@ -244,7 +269,7 @@ func (this *Mysql_Build) _where(key string, value interface{}) error {
 			this.buffer.WriteByte(61)
 			this.buffer.WriteString(Getvalue(value))
 		}
-	case []int, []int8, []int16, []int32, []int64, []uint, []uint8, []uint16, []uint32, []uint64, []string: // where key in (...)
+	case []int, []int8, []int16, []int32, []int64, []uint, []uint8, []uint16, []uint32, []uint64, []string, []float32, []float64: // where key in (...)
 		ref := reflect.ValueOf(value)
 		if ref.Len() == 0 {
 			this.buffer.WriteString(Getkey(key))
@@ -290,7 +315,7 @@ func (this *Mysql_Build) _where_interface(key string, value interface{}) error {
 		switch cmd {
 		case "in":
 			switch v := value.([]interface{})[1].(type) {
-			case []int, []int8, []int16, []int32, []int64, []uint, []uint8, []uint16, []uint32, []uint64, []string:
+			case []int, []int8, []int16, []int32, []int64, []uint, []uint8, []uint16, []uint32, []uint64, []string, []float32, []float64:
 				ref := reflect.ValueOf(v)
 				if ref.Len() == 0 {
 					this.buffer.WriteString(Getkey(key))
@@ -334,7 +359,7 @@ func (this *Mysql_Build) _where_interface(key string, value interface{}) error {
 			fallthrough
 		case `between`:
 			switch v := value.([]interface{})[1].(type) {
-			case []int, []int8, []int16, []int32, []int64, []uint, []uint8, []uint16, []uint32, []uint64, []string:
+			case []int, []int8, []int16, []int32, []int64, []uint, []uint8, []uint16, []uint32, []uint64, []string, []float32, []float64:
 				ref := reflect.ValueOf(v)
 				if ref.Len() != 2 {
 					return errors.New(`where []interface{} between参数错误,传入参数len必须为2，模式为between slice[0] and slice[1]`)
@@ -427,6 +452,14 @@ func (this *Mysql_Build) _where_interface(key string, value interface{}) error {
 			} else {
 				this.buffer.WriteString(Getvalue(value.([]interface{})[1]))
 			}
+		case WhereOperatorRAWNE:
+			if str, ok := value.([]interface{})[1].(string); ok {
+				this.buffer.WriteString(Getkey(key))
+				this.buffer.Write([]byte{33, 61})
+				this.buffer.WriteString(str)
+			} else {
+				return errors.New(`where []interface{} 操作符 rawne 仅接受 string类型`)
+			}
 		//return key + ` != ` + Getvalue(value.([]interface{})[1])
 		case `eq`, "=":
 			this.buffer.WriteString(Getkey(key))
@@ -436,6 +469,14 @@ func (this *Mysql_Build) _where_interface(key string, value interface{}) error {
 				this.sql.where_prepare_arg = append(this.sql.where_prepare_arg, value.([]interface{})[1])
 			} else {
 				this.buffer.WriteString(Getvalue(value.([]interface{})[1]))
+			}
+		case WhereOperatorRAWEQ:
+			if str, ok := value.([]interface{})[1].(string); ok {
+				this.buffer.WriteString(Getkey(key))
+				this.buffer.Write([]byte{61})
+				this.buffer.WriteString(str)
+			} else {
+				return errors.New(`where []interface{} 操作符 raweq 仅接受 string类型`)
 			}
 		case `notlike`:
 			this.buffer.WriteString(Getkey(key))
@@ -465,7 +506,7 @@ func (this *Mysql_Build) _where_interface(key string, value interface{}) error {
 			}
 		case `not in`, `notin`:
 			switch v := value.([]interface{})[1].(type) {
-			case []int, []int8, []int16, []int32, []int64, []uint, []uint8, []uint16, []uint32, []uint64, []string:
+			case []int, []int8, []int16, []int32, []int64, []uint, []uint8, []uint16, []uint32, []uint64, []string, []float32, []float64:
 				ref := reflect.ValueOf(v)
 				if ref.Len() == 0 {
 					this.buffer.WriteString(Getkey(key))
@@ -501,6 +542,100 @@ func (this *Mysql_Build) _where_interface(key string, value interface{}) error {
 				t := reflect.TypeOf(v)
 				return errors.New(`where []interface{} not in未设置类型` + t.Name())
 			}
+		case WhereOperatorJSONCONTAINS:
+			switch v := value.([]interface{})[1].(type) {
+			case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, string, float32, float64:
+				this.buffer.Write([]byte{32, 74, 83, 79, 78, 95, 67, 79, 78, 84, 65, 73, 78, 83, 40}) // JSON_CONTAINS(
+				this.buffer.WriteString(Getkey(key))
+				this.buffer.Write([]byte{44, 32, 74, 83, 79, 78, 95, 65, 82, 82, 65, 89, 40}) //, JSON_ARRAY(
+				if this.prepare {
+					this.sql.where_prepare_arg = append(this.sql.where_prepare_arg, v)
+					this.buffer.Write([]byte{63, 44}) //?,
+				} else {
+					this.buffer.WriteString(Getvalue(v))
+					this.buffer.WriteByte(44) //,
+				}
+				this.buffer.Truncate(this.buffer.Len() - 1)
+				this.buffer.Write([]byte{41, 41}) //))
+			case []int, []int8, []int16, []int32, []int64, []uint, []uint8, []uint16, []uint32, []uint64, []string, []float32, []float64:
+				ref := reflect.ValueOf(v)
+				if ref.Len() == 0 {
+					this.buffer.WriteByte(40)
+					this.buffer.WriteString(Getkey(key))
+					this.buffer.WriteString(" is null or ")
+					this.buffer.WriteString(Getkey(key))
+					this.buffer.WriteString("='[]'")
+					this.buffer.WriteByte(41)
+					return nil
+				}
+
+				this.buffer.Write([]byte{32, 74, 83, 79, 78, 95, 67, 79, 78, 84, 65, 73, 78, 83, 40}) // JSON_CONTAINS(
+				this.buffer.WriteString(Getkey(key))
+				this.buffer.Write([]byte{44, 32, 74, 83, 79, 78, 95, 65, 82, 82, 65, 89, 40}) //, JSON_ARRAY(
+				if this.prepare {
+					for i := 0; i < ref.Len(); i++ {
+						this.sql.where_prepare_arg = append(this.sql.where_prepare_arg, ref.Index(i).Interface())
+						this.buffer.Write([]byte{63, 44}) //?,
+					}
+				} else {
+					for i := 0; i < ref.Len(); i++ {
+						this.buffer.WriteString(Getvalue(ref.Index(i).Interface()))
+						this.buffer.WriteByte(44) //,
+					}
+				}
+				this.buffer.Truncate(this.buffer.Len() - 1)
+				this.buffer.Write([]byte{41, 41}) //))
+			case nil:
+				this.buffer.WriteByte(40)
+				this.buffer.WriteString(Getkey(key))
+				this.buffer.WriteString(" is null or ")
+				this.buffer.WriteString(Getkey(key))
+				this.buffer.WriteString("='[]'")
+				this.buffer.WriteByte(41)
+				return nil
+			default: //识别是否map
+				ref := reflect.ValueOf(v)
+				if ref.Kind() != reflect.Map {
+					return errors.New(`where []interface{} JSONCONTAINS 无法处理类型` + ref.Kind().String())
+				}
+				if ref.Len() == 0 {
+					this.buffer.WriteByte(40)
+					this.buffer.WriteString(Getkey(key))
+					this.buffer.WriteString(" is null or ")
+					this.buffer.WriteString(Getkey(key))
+					this.buffer.WriteString("='[]'")
+					this.buffer.WriteByte(41)
+					return nil
+				}
+
+				if ref.Len() != 1 {
+					return errors.New(`where []interface{} JSONCONTAINS 只接受一个map的kv值` + ref.Kind().String())
+				}
+				this.buffer.Write([]byte{32, 74, 83, 79, 78, 95, 67, 79, 78, 84, 65, 73, 78, 83, 40}) // JSON_CONTAINS(
+				this.buffer.WriteString(Getkey(key))
+				this.buffer.Write([]byte{44, 32, 74, 83, 79, 78, 95, 79, 66, 74, 69, 67, 84, 40}) //, JSON_OBJECT(
+				m := ref.MapRange()
+				for m.Next() {
+					this.buffer.WriteString(Getkey(m.Key().Interface()))
+					this.buffer.WriteByte(44)
+					if this.prepare {
+						this.sql.where_prepare_arg = append(this.sql.where_prepare_arg, m.Value())
+						this.buffer.WriteByte(63) //?
+					} else {
+						this.buffer.WriteString(Getvalue(m.Value()))
+					}
+				}
+				this.buffer.Write([]byte{41, 41}) //))
+			}
+		case WhereOperatorRAW:
+			if str, ok := value.([]interface{})[1].(string); ok {
+				this.buffer.WriteByte(40)
+				this.buffer.WriteString(str)
+				this.buffer.WriteByte(41)
+			} else {
+				return errors.New(`where []interface{} 操作符 raw 仅接受 string类型`)
+			}
+
 		default:
 
 			return errors.New(`where []interface{}未设置操作符` + cmd)
@@ -523,7 +658,9 @@ func (this *Mysql_Build) _where_interface(key string, value interface{}) error {
 	}
 	return this
 }*/
-
+func (this *Mysql_Build) GetWhereString() string {
+	return string(bytes.TrimLeft(this.sql.where.Bytes(), whereDefault))
+}
 func (this *Mysql_Build) Field(field string) *Mysql_Build {
 	if field != `` && this.err == nil {
 		this.sql.field.Reset()

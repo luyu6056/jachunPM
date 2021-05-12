@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"jachunPM_http/js"
 	"libraries"
 	"protocol"
 	"runtime/debug"
@@ -40,9 +41,13 @@ type HttpRequest interface {
 	Close()
 }
 
-var httpHandlerMap = map[string]map[string]func(data *TemplateData){
-	"GET":  make(map[string]func(data *TemplateData)),
-	"POST": make(map[string]func(data *TemplateData)),
+var httpHandlerMap = map[string]map[string]func(data *TemplateData) error{
+	"GET":  make(map[string]func(data *TemplateData) error),
+	"POST": make(map[string]func(data *TemplateData) error),
+}
+var httpHandlerModuleInit = map[string]map[string]func(data *TemplateData) error{
+	"GET":  make(map[string]func(data *TemplateData) error),
+	"POST": make(map[string]func(data *TemplateData) error),
 }
 
 func HttpHandler(ws HttpRequest) gnet.Action {
@@ -58,12 +63,31 @@ func HttpHandler(ws HttpRequest) gnet.Action {
 			data := templateDataInit(ws)
 			if data.User == nil {
 				if !strings.Contains("/user/login|/user/getsalt", ws.Path()) {
+					if strings.Contains(ws.Path(), "onlyBody=yes") {
+						ws.WriteString(js.Location(createLink("user", "login", nil), "parent"))
+						return gnet.None
+					}
+					if strings.Contains(data.ws.Header("X-Requested-With"), "XMLHttpRequest") || strings.Contains(data.ws.Header("x-requested-with"), "XMLHttpRequest") {
+						data.ajaxResult(false, data.Lang["user"]["relogin"], createLink("user", "login", nil))
+						return gnet.None
+					}
 					ws.Redirect(createLink("user", "login", nil))
 					return gnet.None
 				}
 			}
 			//检查权限
-			f(data)
+			//执行moduleInit
+			if init, ok := httpHandlerModuleInit[ws.Method()][data.App["moduleName"].(string)]; ok {
+				if err := init(data); err != nil {
+					data.outErr(err)
+					return gnet.None
+				}
+			}
+
+			//执行路由
+			if err := f(data); err != nil {
+				data.outErr(err)
+			}
 			if data.User != nil {
 				data.User.Put()
 			}

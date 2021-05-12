@@ -1,7 +1,7 @@
 package db
 
 import (
-	"jachunPM_user/config"
+	"jachunPM_log/config"
 	"log"
 	"mysql"
 	"time"
@@ -17,10 +17,13 @@ func Init() *mysql.MysqlDB {
 		log.Fatalf("数据库连接失败 %v", err)
 	}
 	if config.Config.MysqlMaxConn > 0 {
-		db.MaxOpenConns = config.Config.MysqlMaxConn
+		db.SetMaxOpenConns(config.Config.MysqlMaxConn)
 	}
-	errs := DB.StoreEngine("TokuDB").Sync2(
-		new(TABLE_ACTION),
+	if err = db.Ping(); err != nil {
+		log.Fatalf("数据库启动失败 %v", err)
+	}
+	errs := db.StoreEngine("TokuDB").Sync2(
+		new(Action),
 	)
 	if errs != nil {
 		log.Fatalf("数据库启动失败%v", errs)
@@ -29,11 +32,11 @@ func Init() *mysql.MysqlDB {
 }
 
 type Action struct {
-	Id         int64  `db:"auto_increment;pk"`
-	ObjectType string `db:"type:varchar(30)"`
-	ObjectID   int32  `db:"default(0)"`
-	Product    int32
-	Project    int32
+	Id         int64   `db:"auto_increment;pk"`
+	ObjectType string  `db:"type:varchar(30)"`
+	ObjectID   int32   `db:"default(0)"`
+	Products   []int32 `db:"type:json"`
+	Projects   []int32 `db:"type:json"`
 	ActorId    int32
 	Actor      string    `db:"type:varchar(30)"`
 	Action     string    `db:"type:varchar(30)"`

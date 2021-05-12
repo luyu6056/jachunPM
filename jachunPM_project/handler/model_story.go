@@ -168,8 +168,8 @@ func story_create(data *protocol.MSG_PROJECT_stroy_create, in *protocol.Msg) {
 			if err = in.SendMsgWaitResult(0, bug, nil); err != nil {
 				return
 			}
+			in.ActionCreate("bug", data.FromBug, "ToStory", "", strconv.Itoa(int(insertId)), []int32{data.Product}, []int32{data.ProjectID})
 
-			// $this->loadModel('action')->create('bug', $bugID, 'ToStory', '', $storyID);
 			//$this->action->create('bug', $bugID, 'Closed');
 
 			/* add files to story from bug. */
@@ -190,6 +190,20 @@ func story_create(data *protocol.MSG_PROJECT_stroy_create, in *protocol.Msg) {
 		out.Result = int32(insertId)
 		/* Callback the callable method to process the related data for object that is transfered to story. */
 		//if($from && is_callable(array($this, $this->config->story->fromObjects[$from]['callback']))) call_user_func(array($this, $this->config->story->fromObjects[$from]['callback']), $storyID);
+		session.CommitCallback(func() {
+			action := "Opened"
+			extra := ""
+			if data.FromBug > 0 {
+				action = "Frombug"
+				extra = strconv.Itoa(int(data.FromBug))
+			}
+			/*if(isset(fromObjectID)){
+			    action = fromObjectAction;
+			    extra  = fromObjectID;
+			}*/
+
+			in.ActionCreate("story", int32(insertId), action, "", extra, []int32{data.Product}, []int32{data.ProjectID})
+		})
 		session.Commit()
 	}
 }
@@ -226,7 +240,7 @@ func story_setStage(storyId int32, in *protocol.Msg) (err error) {
 	}
 	product := HostConn.GetProductById(story.Product)
 	var projects []*db.Project
-	if err = session.Table(db.TABLE_PROJECT).Where(map[string]interface{}{"Product": product.Id, "Story": story.Id}).Select(&projects); err != nil {
+	if err = session.Table(db.TABLE_PROJECT).Prepare().Where("JSON_CONTAINS(`Products`,?) and JSON_CONTAINS(`Storys`,?)", product.Id, story.Id).Select(&projects); err != nil {
 		return
 	}
 
@@ -296,7 +310,9 @@ func story_setStage(storyId int32, in *protocol.Msg) (err error) {
 
 	if hasBranch {
 		for _, project := range projects {
-			stages[project.Branch] = "projected"
+			for _, id := range project.Branchs {
+				stages[id] = "projected"
+			}
 		}
 	}
 
@@ -317,28 +333,30 @@ func story_setStage(storyId int32, in *protocol.Msg) (err error) {
 
 		}
 
-		var branch int32
+		var branchs []int32
 		for _, p := range projects {
 			if p.Id == task.Project {
-				branch = p.Branch
+				branchs = p.Branchs
 				break
 			}
 		}
-		if _, ok := branchStatusList[branch]; !ok {
-			branchStatusList[branch] = map[string]map[string]int{
-				"devel": map[string]int{"wait": 0, "doing": 0, "done": 0},
-				"test":  map[string]int{"wait": 0, "doing": 0, "done": 0},
+		for _, branch := range branchs {
+			if _, ok := branchStatusList[branch]; !ok {
+				branchStatusList[branch] = map[string]map[string]int{
+					"devel": map[string]int{"wait": 0, "doing": 0, "done": 0},
+					"test":  map[string]int{"wait": 0, "doing": 0, "done": 0},
+				}
 			}
-		}
-		if _, ok := branchStatusList[branch][task.Type]; !ok {
-			branchStatusList[branch][task.Type] = make(map[string]int)
-		}
+			if _, ok := branchStatusList[branch][task.Type]; !ok {
+				branchStatusList[branch][task.Type] = make(map[string]int)
+			}
 
-		branchStatusList[branch][task.Type][status]++
-		if task.Type == "devel" {
-			branchDevelTasks[branch]++
-		} else if task.Type == "test" {
-			branchTestTasks[branch]++
+			branchStatusList[branch][task.Type][status]++
+			if task.Type == "devel" {
+				branchDevelTasks[branch]++
+			} else if task.Type == "test" {
+				branchTestTasks[branch]++
+			}
 		}
 
 	}
@@ -467,7 +485,9 @@ func story_getBySearch(productID int32, branch int32, projectID int32, where map
 		var ids = make([]int32, len(products))
 		for k, product := range products {
 			ids[k] = product.Id
-			branches[product.Branch] = 0
+			for _, id := range product.Branch {
+				branches[id] = 0
+			}
 		}
 		where["Product"] = ids
 	}
@@ -497,4 +517,128 @@ func story_getBySearch(productID int32, branch int32, projectID int32, where map
 		*total, err = HostConn.DB.Table(db.TABLE_STORY).Where(where).Count()
 	}
 	return
+}
+func story_getByAssignedTo(productID int32, branch int32, modules []int32, uid int32, orderBy string, page int, perpage int, total *int) (list []*protocol.MSG_PROJECT_story, err error) {
+	return story_getByField(productID, branch, modules, "AssignedTo", strconv.Itoa(int(uid)), orderBy, page, perpage, total)
+}
+func story_getByOpenedBy(productID int32, branch int32, modules []int32, uid int32, orderBy string, page int, perpage int, total *int) (list []*protocol.MSG_PROJECT_story, err error) {
+	return story_getByField(productID, branch, modules, "OpenedBy", strconv.Itoa(int(uid)), orderBy, page, perpage, total)
+}
+func story_getByReviewedBy(productID int32, branch int32, modules []int32, uid int32, orderBy string, page int, perpage int, total *int) (list []*protocol.MSG_PROJECT_story, err error) {
+	return story_getByField(productID, branch, modules, "ReviewedBy", strconv.Itoa(int(uid)), orderBy, page, perpage, total)
+}
+func story_getByClosedBy(productID int32, branch int32, modules []int32, uid int32, orderBy string, page int, perpage int, total *int) (list []*protocol.MSG_PROJECT_story, err error) {
+	return story_getByField(productID, branch, modules, "ClosedBy", strconv.Itoa(int(uid)), orderBy, page, perpage, total)
+}
+func story_getByStatus(productID int32, branch int32, modules []int32, status string, orderBy string, page int, perpage int, total *int) (list []*protocol.MSG_PROJECT_story, err error) {
+	return story_getByField(productID, branch, modules, "Status", status, orderBy, page, perpage, total)
+}
+func story_get2BeClosed(productID int32, branch int32, modules []int32, orderBy string, page int, perpage int, total *int) (list []*protocol.MSG_PROJECT_story, err error) {
+	where := map[string]interface{}{
+		"Product": productID,
+		"Deleted": false,
+		"Stage":   []string{"developed", "released"},
+		"Status":  []interface{}{"ne", "closed"},
+	}
+	if len(modules) > 0 {
+		where["module"] = modules
+	}
+
+	if branch > 0 {
+		where["branch"] = branch
+	}
+	err = HostConn.DB.Table(db.TABLE_STORY).Where(where).Order(orderBy).Limit((page-1)*perpage, perpage).Select(&list)
+	if err != nil {
+		return
+	}
+	if *total == 0 {
+		*total, err = HostConn.DB.Table(db.TABLE_STORY).Where(where).Count()
+	}
+	return
+}
+func story_getById(id int32, version int16) (story *protocol.MSG_PROJECT_story, err error) {
+	if err = HostConn.DB.Table(db.TABLE_STORY).Where("Id = ?", id).Find(&story); err != nil {
+		return
+	}
+	if version == 0 {
+		version = story.Version
+	}
+	var storyspec *db.StorySpec
+	if err = HostConn.DB.Table(db.TABLE_STORYSPEC).Where("`Story` = ? and `Version` = ?", id, version).Find(&storyspec); err != nil {
+		return
+	}
+	story.Title = storyspec.Title
+	story.Spec = storyspec.Spec
+	story.Verify = storyspec.Verify
+	if story.Plan > 0 {
+		var plan *db.Productplan
+		if err = HostConn.DB.Table(db.TABLE_PRODUCTPLAN).Where(map[string]interface{}{"Id": story.Plan}).Find(&plan); err != nil {
+			return
+		}
+		story.PlanTitle = plan.Title
+	}
+	if err = HostConn.DB.Table(db.TABLE_STORYSTAGE).Where("Story=?", story.Id).Select(&story.Stages); err != nil {
+		return
+	}
+	if err = HostConn.DB.Table(db.TABLE_TASK).Prepare().Where("Story=? and Deleted = 0", story.Id).Order("Id desc").Select(&story.Tasks); err != nil {
+		return
+	}
+	var projects []*db.Project
+	if err = HostConn.DB.Table(db.TABLE_PROJECT).Field("Id").Where("Story=?", story.Id).Order("`order` desc").Select(&projects); err != nil {
+		return
+	}
+	for _, p := range projects {
+		story.Projects = append(story.Projects, p.Id)
+	}
+	var idsMap = map[int32]int{}
+	if story.DuplicateStory > 0 {
+		idsMap[story.DuplicateStory] = 1
+	}
+	for _, id := range story.LinkStories {
+		idsMap[id] = 1
+	}
+	for _, id := range story.ChildStories {
+		idsMap[id] = 1
+	}
+	if len(idsMap) > 0 {
+		var ids []int32
+		for id := range idsMap {
+			ids = append(ids, id)
+		}
+		err = HostConn.DB.Table(db.TABLE_STORY).Where(map[string]interface{}{"Id": ids}).Limit(0).Select(&story.ExtraStories)
+	}
+
+	return
+}
+func story_getPlanStories(data *protocol.MSG_PROJECT_story_getPlanStories, in *protocol.Msg) {
+	if data.OrderBy == "" {
+		data.OrderBy = "id_desc"
+	}
+	where := map[string]interface{}{
+		"Plan":    data.PlanID,
+		"Deleted": false,
+	}
+	if data.Status != "" && data.Status != "all" {
+		where["Status"] = data.Status
+	}
+	out := protocol.GET_MSG_PROJECT_story_getPlanStories_result()
+	if err := in.DB.Table(db.TABLE_STORY).Where(where).Limit(0).Select(&out.List); err != nil {
+		in.WriteErr(err)
+		return
+	}
+	in.SendResult(out)
+	out.Put()
+}
+func story_getPairsByIds(data *protocol.MSG_PROJECT_story_getPairsByIds, in *protocol.Msg) {
+	var storys []*db.Story
+	if err := in.DB.Table(db.TABLE_STORY).Field("Id,Title").Where(map[string]interface{}{"Id": data.Ids}).Limit(0).Select(&storys); err != nil {
+		in.WriteErr(err)
+		return
+	}
+	out := protocol.GET_MSG_PROJECT_story_getPairsByIds_result()
+	for _, s := range storys {
+		out.List = append(out.List, protocol.HtmlKeyValueStr{strconv.Itoa(int(s.Id)), s.Title})
+	}
+	in.SendResult(out)
+	out.Put()
 }

@@ -1,5 +1,7 @@
 package main
 
+import "time"
+
 type MSG_USER_GET_LoginSalt struct {
 	QueryID uint32
 	Name    string
@@ -33,6 +35,7 @@ type MSG_USER_INFO_cache struct {
 	Address     string
 	AclProducts map[int32]bool //允许访问的产品
 	AclProjects map[int32]bool //允许访问的项目
+	IsAdmin     bool           `db:"-"` //暂定id为1是admin
 }
 
 //检查密码是否正确，有Id优先查询Id，Id为0，Name查询account，realname，Mobile
@@ -165,11 +168,11 @@ type MSG_USER_getPairs_result struct {
 	List          []HtmlKeyValueStr
 }
 type MSG_USER_updateUserView struct {
-	QueryID   uint32
-	ProjectId int32
-	ProductId int32
-	UserIds   []int32
-	GroupIds  []int32
+	QueryID    uint32
+	ProjectIds []int32
+	ProductIds []int32
+	UserIds    []int32
+	GroupIds   []int32
 }
 type MSG_USER_getContactLists struct {
 	QueryID uint32
@@ -217,4 +220,41 @@ type MSG_USER_getGlobalContacts struct {
 type MSG_USER_getGlobalContacts_result struct {
 	QueryResultID uint32
 	Result        []*MSG_USER_ContactList
+}
+type MSG_USER_team_getByTypeRoot struct {
+	QueryID uint32
+	Type    string
+	Root    int32
+}
+type MSG_USER_team_getByTypeRoot_result struct {
+	QueryResultID uint32
+	List          []*MSG_USER_team_info
+}
+type MSG_USER_team_info struct {
+	Id       int32
+	Root     int32
+	Type     string
+	Uid      int32
+	Account  string
+	Role     string
+	Limited  string
+	Join     time.Time
+	Days     int16
+	Hours    float64
+	Estimate float64
+	Consumed float64
+	Left     float64
+	Order    int8
+	Realname string `db:"-"`
+}
+type MSG_USER_team_addByList struct {
+	QueryID uint32
+	List    []*MSG_USER_team_info
+}
+type MSG_USER_Group_getPairs struct {
+	QueryID uint32
+}
+type MSG_USER_Group_getPairs_result struct {
+	QueryResultID uint32
+	List          []HtmlKeyValueStr
 }

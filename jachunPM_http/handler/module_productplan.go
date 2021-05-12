@@ -18,7 +18,7 @@ func init() {
 	httpHandlerMap["POST"]["/productplan/edit"] = post_productplan_create
 	httpHandlerMap["GET"]["/productplan/delete"] = get_productplan_delete
 }
-func get_productplan_browse(data *TemplateData) {
+func get_productplan_browse(data *TemplateData) (err error) {
 	productID, _ := strconv.Atoi(data.ws.Query("productID"))
 	branch, _ := strconv.Atoi(data.ws.Query("branch"))
 	browseType := data.ws.Query("browseType")
@@ -31,7 +31,6 @@ func get_productplan_browse(data *TemplateData) {
 	}
 	product, err := productplan_commonAction(data, int32(productID), int32(branch))
 	if err != nil {
-		data.OutErr(err)
 		return
 	}
 	data.Data["currentProductType"] = product.Type
@@ -48,12 +47,15 @@ func get_productplan_browse(data *TemplateData) {
 	out.PerPage = data.Page.PerPage
 	out.Total = data.Page.Total
 	var result *protocol.MSG_PROJECT_productplan_getList_result
-	if err = HostConn.SendMsgWaitResultToDefault(out, &result); err != nil {
-		data.OutErr(err)
+	if err = data.SendMsgWaitResultToDefault(out, &result); err != nil {
 		return
+	}
+	for _, v := range result.List {
+		v["isClickableKey"] = "null"
 	}
 	data.Data["plans"] = result.List
 	templateOut("productplan.browse.html", data)
+	return
 }
 func productplan_commonAction(data *TemplateData, productID, branch int32) (product *protocol.MSG_PROJECT_product_cache, err error) {
 	product = HostConn.GetProductById(int32(productID))
@@ -70,27 +72,24 @@ func productplan_commonAction(data *TemplateData, productID, branch int32) (prod
 	err = product_setMenu(data, productID, branch, "")
 	return
 }
-func get_productplan_create(data *TemplateData) {
+func get_productplan_create(data *TemplateData) (err error) {
 	productID, _ := strconv.Atoi(data.ws.Query("productID"))
 	branch, _ := strconv.Atoi(data.ws.Query("branch"))
 
 	product, err := productplan_commonAction(data, int32(productID), int32(branch))
 	if err != nil {
-		data.OutErr(err)
 		return
 	}
 	out := protocol.GET_MSG_PROJECT_productplan_getLast()
 	out.ProductId = int32(productID)
 	var result *protocol.MSG_PROJECT_productplan_getLast_result
-	if err = HostConn.SendMsgWaitResultToDefault(out, &result); err != nil {
-		data.OutErr(err)
+	if err = data.SendMsgWaitResultToDefault(out, &result); err != nil {
 		return
 	}
 	if len(result.Result) > 0 {
 		t, err := time.Parse("2006-01-02", result.Result["End"])
 		if err != nil {
-			data.OutErr(err)
-			return
+			return err
 		}
 		delta := 1
 		if int(t.Weekday()) == 5 || int(t.Weekday()) == 6 {
@@ -105,6 +104,7 @@ func get_productplan_create(data *TemplateData) {
 	data.Data["title"] = product.Name + data.Lang["common"]["colon"].(string) + data.Lang["productplan"]["create"].(string)
 	data.Data["lastPlan"] = result.Result
 	templateOut("productplan.create.html", data)
+	return
 }
 func productplan_getPairs(data *TemplateData, product int32, branch int32, expired string) ([]protocol.HtmlKeyValueStr, error) {
 	out := protocol.GET_MSG_PROJECT_productplan_getPairs()
@@ -112,7 +112,7 @@ func productplan_getPairs(data *TemplateData, product int32, branch int32, expir
 	out.BranchID = branch
 	out.Expired = expired
 	var result *protocol.MSG_PROJECT_productplan_getPairs_result
-	if err := HostConn.SendMsgWaitResultToDefault(out, &result); err != nil {
+	if err := data.SendMsgWaitResultToDefault(out, &result); err != nil {
 		return nil, err
 	}
 	productplan_processFuture(data, result.List)
@@ -123,7 +123,7 @@ func productplan_processFuture(data *TemplateData, res []protocol.HtmlKeyValueSt
 		res[k] = protocol.HtmlKeyValueStr{v.Key, strings.Replace(v.Value, "[2030-01-01 ~ 2030-01-01]", "["+data.Lang["productplan"]["future"].(string)+"]", 1)}
 	}
 }
-func post_productplan_create(data *TemplateData) {
+func post_productplan_create(data *TemplateData) (e error) {
 	if !data.ajaxCheckPost() {
 		return
 	}
@@ -186,7 +186,7 @@ func post_productplan_create(data *TemplateData) {
 	insert.Desc = desc
 	defer func() {
 		if err != nil { //以下使用err来判断图片删除
-			file_deleteFromIds(newimgids)
+			file_deleteFromIds(data, newimgids)
 		}
 	}()
 	var result *protocol.MSG_PROJECT_productplan_insertUpdate_result
@@ -202,7 +202,7 @@ func post_productplan_create(data *TemplateData) {
 		}
 		insert.Id = result.Id
 	}
-	file_updateObject(newimgids, "productplan", insert.Id)
+	file_updateObject(data, newimgids, "productplan", insert.Id)
 	if data.onlybody() {
 		data.ws.WriteString(js.CloseModal("parent.parent", "", "function(){parent.parent.$('a.refresh').click()}"))
 	} else {
@@ -210,32 +210,32 @@ func post_productplan_create(data *TemplateData) {
 	}
 	insert.Put()
 	result.Put()
+
+	return
 }
-func get_productplan_edit(data *TemplateData) {
+func get_productplan_edit(data *TemplateData) (err error) {
 	productID, _ := strconv.Atoi(data.ws.Query("productID"))
 	branch, _ := strconv.Atoi(data.ws.Query("branch"))
 	planID, _ := strconv.Atoi(data.ws.Query("planID"))
 	product, err := productplan_commonAction(data, int32(productID), int32(branch))
 	if err != nil {
-		data.OutErr(err)
 		return
 	}
 	out := protocol.GET_MSG_PROJECT_productplan_getList()
-	out.Id = int32(planID)
+	out.Ids = []int32{int32(planID)}
 	var result *protocol.MSG_PROJECT_productplan_getList_result
-	if err = HostConn.SendMsgWaitResultToDefault(out, &result); err != nil {
-		data.OutErr(err)
+	if err = data.SendMsgWaitResultToDefault(out, &result); err != nil {
 		return
 	}
 	if len(result.List) == 0 {
-		data.OutErr(errors.New(data.Lang["productplan"]["error"].(map[string]string)["NotFoundProductPlanInfo"]))
-		return
+		return errors.New(data.Lang["productplan"]["error"].(map[string]string)["NotFoundProductPlanInfo"])
 	}
 	data.Data["plan"] = result.List[0]
 	data.Data["product"] = product
 	templateOut("productplan.edit.html", data)
+	return
 }
-func get_productplan_delete(data *TemplateData) {
+func get_productplan_delete(data *TemplateData) (e error) {
 	confirm := data.ws.Query("confirm")
 	planID, _ := strconv.Atoi(data.ws.Query("planID"))
 	productID, _ := strconv.Atoi(data.ws.Query("productID"))
@@ -248,7 +248,7 @@ func get_productplan_delete(data *TemplateData) {
 	out.Id = int32(planID)
 	out.Product = int32(productID)
 	out.Branch = int32(branch)
-	err := HostConn.SendMsgWaitResultToDefault(out, nil)
+	err := data.SendMsgWaitResultToDefault(out, nil)
 	if data.isajax() {
 		if err != nil {
 			data.ajaxResult(false, err.Error())
@@ -262,5 +262,7 @@ func get_productplan_delete(data *TemplateData) {
 			data.ws.WriteString(js.Location(createLink("productplan", "browse", []interface{}{"productID=", productID, "&branch=", branch}), "parent"))
 		}
 	}
-
+	return
+}
+func productplanFuncs() {
 }

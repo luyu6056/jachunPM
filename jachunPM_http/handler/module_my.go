@@ -12,14 +12,12 @@ func init() {
 	httpHandlerMap["GET"]["/my/managecontacts"] = get_my_managecontacts
 	httpHandlerMap["POST"]["/my/managecontacts"] = post_my_managecontacts
 }
-func get_my_buildContactLists(data *TemplateData) {
+func get_my_buildContactLists(data *TemplateData) (err error) {
 	out := protocol.GET_MSG_USER_getContactLists()
 	out.Uid = data.User.Id
 	out.Params = "withnote"
 	var result *protocol.MSG_USER_getContactLists_result
-	err := HostConn.SendMsgWaitResultToDefault(out, &result)
-	if err != nil {
-		data.OutErr(err)
+	if err = data.SendMsgWaitResultToDefault(out, &result); err != nil {
 		return
 	}
 	data.Data["contactLists"] = result.List
@@ -28,7 +26,7 @@ func get_my_buildContactLists(data *TemplateData) {
 	result.Put()
 	return
 }
-func get_my_managecontacts(data *TemplateData) {
+func get_my_managecontacts(data *TemplateData) (err error) {
 	mode := data.ws.Query("mode")
 	if mode == "" {
 		mode = "edit"
@@ -37,16 +35,12 @@ func get_my_managecontacts(data *TemplateData) {
 	out := protocol.GET_MSG_USER_getContactLists()
 	out.Uid = data.User.Id
 	var result *protocol.MSG_USER_getContactLists_result
-	err := HostConn.SendMsgWaitResultToDefault(out, &result)
-	if err != nil {
-		data.OutErr(err)
+	if err = data.SendMsgWaitResultToDefault(out, &result); err != nil {
 		return
 	}
 	lists := result.List
 	var globalContacts_result *protocol.MSG_USER_getGlobalContacts_result
-	err = HostConn.SendMsgWaitResultToDefault(&protocol.MSG_USER_getGlobalContacts{}, &globalContacts_result)
-	if err != nil {
-		data.OutErr(err)
+	if err = data.SendMsgWaitResultToDefault(&protocol.MSG_USER_getGlobalContacts{}, &globalContacts_result); err != nil {
 		return
 	}
 	globalContacts := make(map[int32]bool, len(globalContacts_result.Result))
@@ -60,21 +54,16 @@ func get_my_managecontacts(data *TemplateData) {
 	get_list := protocol.GET_MSG_USER_getContactListByUid()
 	get_list.Uid = data.User.Id
 	var get_list_result *protocol.MSG_USER_getContactListByUid_result
-	err = HostConn.SendMsgWaitResultToDefault(get_list, &get_list_result)
-
-	myContacts := get_list_result.List
-
-	if err != nil {
-		data.OutErr(err)
+	if err = data.SendMsgWaitResultToDefault(get_list, &get_list_result); err != nil {
 		return
 	}
-	if len(myContacts) > 0 && len(globalContacts) > 0 {
+	myContacts := get_list_result.List
 
+	if len(myContacts) > 0 && len(globalContacts) > 0 {
 		for _, kv := range myContacts {
 			id, _ := strconv.Atoi(kv.Key)
 			delete(disabled, int32(id))
 		}
-
 	}
 	if listID == 0 && len(lists) > 0 {
 		listID, _ = strconv.Atoi(lists[0].Key)
@@ -91,9 +80,7 @@ func get_my_managecontacts(data *TemplateData) {
 		getContactList := protocol.GET_MSG_USER_getContactListById()
 		getContactList.Id = int32(listID)
 		var result *protocol.MSG_USER_getContactListById_result
-		err = HostConn.SendMsgWaitResultToDefault(getContactList, &result)
-		if err != nil {
-			data.OutErr(err)
+		if err = data.SendMsgWaitResultToDefault(getContactList, &result); err != nil {
 			return
 
 		}
@@ -102,9 +89,7 @@ func get_my_managecontacts(data *TemplateData) {
 	data.Data["mode"] = mode
 	data.Data["lists"] = lists
 	data.Data["listID"] = listID
-	data.Data["users"], err = user_getPairs("noletter|noempty|noclosed|noclosed|nodeleted")
-	if err != nil {
-		data.OutErr(err)
+	if data.Data["users"], err = user_getPairs(data, "noletter|noempty|noclosed|noclosed|nodeleted"); err != nil {
 		return
 	}
 	data.Data["disabled"] = disabled
@@ -114,7 +99,7 @@ func get_my_managecontacts(data *TemplateData) {
 	result.Put()
 	return
 }
-func post_my_managecontacts(data *TemplateData) {
+func post_my_managecontacts(data *TemplateData) (err error) {
 	mode := data.ws.Post("mode")
 	ListName := ""
 	var users []int32
@@ -156,10 +141,9 @@ func post_my_managecontacts(data *TemplateData) {
 		insert.Insert.Uid = data.User.Id
 		insert.Insert.Share = share
 		var result *protocol.MSG_USER_insertUpdateContactList_result
-		err := HostConn.SendMsgWaitResultToDefault(insert, &result)
-		if err != nil {
-			data.OutErr(err)
-			return
+		if err := data.SendMsgWaitResultToDefault(insert, &result); err != nil {
+			data.ws.WriteString(js.Alert(err.Error()))
+			return nil
 		}
 		if data.onlybody() {
 			data.ws.WriteString(js.CloseModal("parent.parent", "", "function(){parent.parent.ajaxGetContacts('#mailto')}"))
@@ -180,10 +164,9 @@ func post_my_managecontacts(data *TemplateData) {
 		insert.Insert.Uid = data.User.Id
 		insert.Insert.Share = share
 		insert.Insert.Id = int32(id)
-		err := HostConn.SendMsgWaitResultToDefault(insert, nil)
-		if err != nil {
-			data.OutErr(err)
-			return
+		if err := data.SendMsgWaitResultToDefault(insert, nil); err != nil {
+			data.ws.WriteString(js.Alert(err.Error()))
+			return nil
 		}
 		data.ws.WriteString(js.Location(createLink("my", "manageContacts", "listID="+strconv.Itoa(id)), "parent"))
 

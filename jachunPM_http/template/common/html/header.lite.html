@@ -26,7 +26,7 @@
 {{- js_import (strAdd .Config.common.common.webRoot  "jquery/placeholder/min.js") }}
 <![endif]-->
 <style type="text/css">{{getTemplateCss . .App.TemplateName}}</style>
-<script>config.onlybody = "{{if eq .App.onlybody ""}}no{{else}}yes{{end}}";
+<script>config.onlybody = {{.App.onlybody}};
 config.currentMethod='{{.App.methodName}}';
 config.currentModule='{{.App.moduleName}}';
 var lang={};

@@ -19,6 +19,10 @@ type HtmlKeyValueStr struct {
 	Key   string
 	Value string
 }
+type HtmlKeyValueInterface struct {
+	Key   string
+	Value interface{}
+}
 
 //本代码是给msg加入chan bytes.Buffer
 var msg = make(map[int32]string)

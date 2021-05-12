@@ -1,4 +1,4 @@
-{{$modueConfig :=index .Config .App.moduleName}}{{$editor:= index $modueConfig.editor .App.methodName}}{{$uid:=generateUid}}
+{{$modueConfig :=index .Config .App.moduleName}}{{if $modueConfig}}{{$editor:= index $modueConfig.editor .App.methodName}}{{$uid:=generateUid}}
 {{- if and $modueConfig $editor -}}
 <script src='{{.Config.common.common.jsRoot}}kindeditor/kindeditor-all-min.js'></script>
 <script src='{{.Config.common.common.jsRoot}}kindeditor/lang/{{.App.ClientLang}}.js'></script>
@@ -264,6 +264,7 @@
             $submitBtn.after("<input type='hidden' id='uid' name='uid' value=" + kuid + ">");
         }
         if($.isFunction(afterInit)) afterInit();
+        if(typeof editor.id == "string") editor.id=[editor.id];
         $.each(editor.id, function(key, editorID)
         {
             setKindeditor('#' + editorID);
@@ -274,4 +275,5 @@
     $(initKindeditor);
 }(jQuery));
 </script>
+{{end}}
 {{end}}

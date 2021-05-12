@@ -632,5 +632,147 @@ func configInit(local protocol.CountryNo) {
 			"tools": "simpleTools",
 		},
 	}
+	Config[local]["project"] = make(map[string]map[string]interface{})
+	Config[local]["project"]["common"] = make(map[string]interface{})
+	Config[local]["project"]["common"]["defaultWorkhours"] = float64(7.0)
+	Config[local]["project"]["common"]["orderBy"] = "isDone,status,order_desc"
+	Config[local]["project"]["common"]["maxBurnDay"] = 31
+	Config[local]["project"]["common"]["weekend"] = 2
+	Config[local]["project"]["list"] = make(map[string]interface{})
 
+	Config[local]["project"]["list"]["exportFields"] = []string{"id", "name", "code", "PM", "end", "status", "totalEstimate", "totalConsumed", "totalLeft", "progress"}
+
+	Config[local]["project"]["create"] = make(map[string]interface{})
+	Config[local]["project"]["edit"] = make(map[string]interface{})
+
+	Config[local]["project"]["create"]["requiredFields"] = []string{"name", "code", "begin", "end"}
+	Config[local]["project"]["edit"]["requiredFields"] = []string{"name", "code", "begin", "end"}
+
+	Config[local]["project"]["common"]["customBatchEditFields"] = "days,type,teamname,status,desc,PO,QD,PM,RD"
+	Config[local]["project"]["custom"] = make(map[string]interface{})
+	Config[local]["project"]["custom"]["batchEditFields"] = []string{"days", "status", "PM"}
+
+	Config[local]["project"]["editor"] = make(map[string]interface{})
+	Config[local]["project"]["editor"]["create"] = map[string]string{"id": "desc", "tools": "simpleTools"}
+	Config[local]["project"]["editor"]["edit"] = map[string]string{"id": "desc", "tools": "simpleTools"}
+	Config[local]["project"]["editor"]["putoff"] = map[string]string{"id": "comment", "tools": "simpleTools"}
+	Config[local]["project"]["editor"]["activate"] = map[string]string{"id": "comment", "tools": "simpleTools"}
+	Config[local]["project"]["editor"]["close"] = map[string]string{"id": "comment", "tools": "simpleTools"}
+	Config[local]["project"]["editor"]["start"] = map[string]string{"id": "comment", "tools": "simpleTools"}
+	Config[local]["project"]["editor"]["suspend"] = map[string]string{"id": "comment", "tools": "simpleTools"}
+	Config[local]["project"]["editor"]["tree"] = map[string]string{"id": "comment", "tools": "simpleTools"}
+
+	Config[local]["project"]["search"] = make(map[string]interface{})
+	Config[local]["project"]["search"]["module"] = "task"
+
+	Config[local]["project"]["search"]["fields"] = map[string]string{
+		"name":           Lang[local]["task"]["name"].(string),
+		"id":             Lang[local]["task"]["id"].(string),
+		"status":         Lang[local]["task"]["status"].(string),
+		"desc":           Lang[local]["task"]["desc"].(string),
+		"assignedTo":     Lang[local]["task"]["assignedTo"].(string),
+		"pri":            Lang[local]["task"]["pri"].(string),
+		"project":        Lang[local]["task"]["project"].(string),
+		"module":         Lang[local]["task"]["module"].(string),
+		"estimate":       Lang[local]["task"]["estimate"].(string),
+		"left":           Lang[local]["task"]["left"].(string),
+		"consumed":       Lang[local]["task"]["consumed"].(string),
+		"type":           Lang[local]["task"]["type"].(string),
+		"fromBug":        Lang[local]["task"]["fromBug"].(string),
+		"closedReason":   Lang[local]["task"]["closedReason"].(string),
+		"openedBy":       Lang[local]["task"]["openedBy"].(string),
+		"finishedBy":     Lang[local]["task"]["finishedBy"].(string),
+		"closedBy":       Lang[local]["task"]["closedBy"].(string),
+		"canceledBy":     Lang[local]["task"]["canceledBy"].(string),
+		"lastEditedBy":   Lang[local]["task"]["lastEditedBy"].(string),
+		"parent":         Lang[local]["task"]["parent"].(string),
+		"proofreading":   Lang[local]["task"]["proofreading"].(string),
+		"examine":        Lang[local]["task"]["examine"].(string),
+		"mailto":         Lang[local]["task"]["mailto"].(string),
+		"finishedList":   Lang[local]["task"]["finishedList"].(string),
+		"openedDate":     Lang[local]["task"]["openedDate"].(string),
+		"deadline":       Lang[local]["task"]["deadline"].(string),
+		"estStarted":     Lang[local]["task"]["estStarted"].(string),
+		"realStarted":    Lang[local]["task"]["realStarted"].(string),
+		"placeOrder":     Lang[local]["task"]["placeOrder"].(string),
+		"assignedDate":   Lang[local]["task"]["assignedDate"].(string),
+		"finishedDate":   Lang[local]["task"]["finishedDate"].(string),
+		"closedDate":     Lang[local]["task"]["closedDate"].(string),
+		"canceledDate":   Lang[local]["task"]["canceledDate"].(string),
+		"lastEditedDate": Lang[local]["task"]["lastEditedDate"].(string),
+	}
+
+	Config[local]["project"]["search"]["params"] = map[string]interface{}{
+		"name":       map[string]string{"operator": "include", "control": "input", "values": ""},
+		"status":     map[string]interface{}{"operator": "=", "control": "select", "values": Lang[local]["task"]["statusList"]},
+		"desc":       map[string]string{"operator": "include", "control": "input", "values": ""},
+		"assignedTo": map[string]string{"operator": "=", "control": "select", "values": "users"},
+		"pri":        map[string]interface{}{"operator": "=", "control": "select", "values": append([]string{""}, Lang[local]["task"]["priList"].([]string)...)},
+
+		"project":      map[string]string{"operator": "=", "control": "select", "values": ""},
+		"module":       map[string]string{"operator": "belong", "control": "select", "values": ""},
+		"estimate":     map[string]string{"operator": "=", "control": "input", "values": ""},
+		"left":         map[string]string{"operator": "=", "control": "input", "values": ""},
+		"consumed":     map[string]string{"operator": "=", "control": "input", "values": ""},
+		"type":         map[string]interface{}{"operator": "=", "control": "select", "values": Lang[local]["task"]["typeList"]},
+		"fromBug":      map[string]interface{}{"operator": "=", "control": "input", "values": Lang[local]["task"]["typeList"]},
+		"closedReason": map[string]interface{}{"operator": "=", "control": "select", "values": Lang[local]["task"]["reasonList"]},
+
+		"openedBy":     map[string]string{"operator": "=", "control": "select", "values": "users"},
+		"finishedBy":   map[string]string{"operator": "=", "control": "select", "values": "users"},
+		"closedBy":     map[string]string{"operator": "=", "control": "select", "values": "users"},
+		"cancelBy":     map[string]string{"operator": "=", "control": "select", "values": "users"},
+		"lastEditedBy": map[string]string{"operator": "=", "control": "select", "values": "users"},
+
+		"mailto":       map[string]string{"operator": "include", "control": "select", "values": "users"},
+		"finishedList": map[string]string{"operator": "include", "control": "select", "values": "users"},
+
+		"openedDate":     map[string]string{"operator": "=", "control": "input", "values": "", "class": "date"},
+		"deadline":       map[string]string{"operator": "=", "control": "input", "values": "", "class": "date"},
+		"estStarted":     map[string]string{"operator": "=", "control": "input", "values": "", "class": "date"},
+		"realStarted":    map[string]string{"operator": "=", "control": "input", "values": "", "class": "date"},
+		"assignedDate":   map[string]string{"operator": "=", "control": "input", "values": "", "class": "date"},
+		"finishedDate":   map[string]string{"operator": "=", "control": "input", "values": "", "class": "date"},
+		"closedDate":     map[string]string{"operator": "=", "control": "input", "values": "", "class": "date"},
+		"canceledDate":   map[string]string{"operator": "=", "control": "input", "values": "", "class": "date"},
+		"lastEditedDate": map[string]string{"operator": "=", "control": "input", "values": "", "class": "date"},
+		"proofreading":   map[string]string{"operator": "=", "control": "input", "values": ""},
+		"activatedCount": map[string]string{"operator": "=", "control": "input", "values": ""},
+		"examine":        map[string]string{"operator": "=", "control": "input", "values": ""},
+		"placeOrder":     map[string]string{"operator": "=", "control": "input", "values": ""},
+	}
+	Config[local]["printKanban"] = make(map[string]map[string]interface{})
+	Config[local]["printKanban"]["col"] = make(map[string]interface{})
+	Config[local]["printKanban"]["col"]["story"] = 1
+	Config[local]["printKanban"]["col"]["wait"] = 2
+	Config[local]["printKanban"]["col"]["doing"] = 3
+	Config[local]["printKanban"]["col"]["done"] = 4
+	Config[local]["printKanban"]["col"]["closed"] = 5
+	Config[local]["project"]["kanbanSetting"] = make(map[string]interface{})
+	Config[local]["project"]["kanbanSetting"]["colorList"] = map[string]interface{}{
+		"wait":   "#7EC5FF",
+		"doing":  "#0991FF",
+		"pause":  "#fdc137",
+		"done":   "#0BD986",
+		"cancel": "#CBD0DB",
+		"closed": "#838A9D",
+	}
+	Config[local]["action"] = make(map[string]map[string]interface{})
+	Config[local]["action"]["common"] = map[string]interface{}{
+		"commonImgSize": 870,
+	}
+	Config[local]["action"]["objectTypes"] = make(map[string]interface{})
+	for k, v := range Lang[local]["action"]["objectTypes"].(map[string]string) {
+		Config[local]["action"]["objectTypes"][k] = v
+	}
+	Config[local]["action"]["majorList"] = map[string]interface{}{
+		"task":    []string{"assigned", "finished", "activated"},
+		"bug":     []string{"assigned", "resolved"},
+		"release": []string{"opened"},
+		"build":   []string{"opened"},
+	}
+	Config[local]["action"]["label"] = make(map[string]interface{})
+	for k, v := range Lang[local]["action"]["label"].(map[string]interface{}) {
+		Config[local]["action"]["label"][k] = v
+	}
 }

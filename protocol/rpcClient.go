@@ -34,11 +34,16 @@ type RpcQueryResult interface {
 	setQueryResultID(id uint32)
 }
 
+//封装一个用于发消息的，外部包通过msg发消息
+type RpclientSend struct {
+	*RpcClient
+}
+
 var (
 	RpcClientQueryResultErrType = errors.New("result结构体必须为& *MSG_,并且包含QueryResultID")
 	RpcClientQueryTimeOutErr    = errors.New("请求超时")
 	rpcHanleMsgNum              = runtime.NumCPU()
-	rpcClientQueryLock          sync.RWMutex
+	rpcClientQueryLock          sync.Mutex
 	rpcClientQueryMap           = make(map[uint32]chan RpcQueryResult)
 	rpcClientQueryId            = cache.Hget("rpcClientQueryId", "rpcClientQuery")
 )
@@ -65,6 +70,7 @@ type RpcClient struct {
 	cache                    *RpcCache
 	tick                     *time.Ticker
 	handleTick               func(time.Time)
+	sendStruct               *RpclientSend
 }
 
 func NewClient(no uint8, hostAddr string, tokenKey string) (*RpcClient, error) {
@@ -111,7 +117,9 @@ func NewClient(no uint8, hostAddr string, tokenKey string) (*RpcClient, error) {
 		tick:      time.NewTicker(RpcTickDefaultTime * time.Second),
 		HandleMsg: HandleCache,
 	}
-	client.cache = &RpcCache{Svr: cache}
+	client.sendStruct = &RpclientSend{client}
+	cache.sendStruct = &RpclientSend{cache}
+	client.cache = &RpcCache{Svr: cache.sendStruct}
 	return client, nil
 }
 func (client *RpcClient) Start() {
@@ -122,7 +130,7 @@ func (client *RpcClient) Start() {
 		go client.handleMsg()
 	}
 	if client.cache != nil {
-		client.cache.Svr.(*RpcClient).Start()
+		client.cache.Svr.(*RpclientSend).Start()
 		client.waitshutdown.Add(6)
 	}
 
@@ -142,7 +150,7 @@ func (client *RpcClient) reg() {
 	data.Time = time.Now().Unix()
 	data.Token = libraries.SHA256_S(client.tokenKey + strconv.Itoa(int(data.Time)))
 	data.Window = client.window
-	client.SendMsgToDefault(data)
+	client.sendStruct.SendMsgToDefault(data)
 	data.Put()
 }
 func (client *RpcClient) resetWindow() {
@@ -150,31 +158,14 @@ func (client *RpcClient) resetWindow() {
 	data := GET_MSG_COMMON_ResetWindow()
 	client.window = DefaultWindowSize
 	data.Window = client.window
-	client.SendMsgToDefault(data)
+	client.sendStruct.SendMsgToDefault(data)
 	data.Put()
 }
 
-//SendMsg允许多协程调用，是协程安全的
-func (client *RpcClient) SendMsg(remote uint16, msgno uint32, ttl uint8, transactionNo uint32, out MSG_DATA) {
-	SendMsg(uint16(client.No)|uint16(client.Id)<<8, remote, msgno, ttl, transactionNo, out, client.outchan)
-}
-
-func (client *RpcClient) SendMsgWaitResult(remote uint16, msgno uint32, ttl uint8, transactionNo uint32, out MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
-	return SendMsgWaitResult(uint16(client.No)|uint16(client.Id)<<8, remote, msgno, ttl, transactionNo, out, result, client.outchan, timeout...)
-}
-
-//没有remote,msgno,ttl,transactionNo发送
-func (client *RpcClient) SendMsgToDefault(out MSG_DATA) {
-	SendMsg(uint16(client.No)|uint16(client.Id)<<8, 0, 0, 0, 0, out, client.outchan)
-}
-
-func (client *RpcClient) SendMsgWaitResultToDefault(out MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
-	return SendMsgWaitResult(uint16(client.No)|uint16(client.Id)<<8, 0, 0, 0, 0, out, result, client.outchan, timeout...)
-}
 func (client *RpcClient) handleWrite() {
 	defer func() {
 		if err := recover(); err != nil {
-			client.ErrChan <- fmt.Sprint(err) + string(debug.Stack())
+			client.ErrChan <- fmt.Sprintf("%v\r\n", err) + string(debug.Stack())
 			atomic.AddUint32(&client.ErrNum, 1)
 		}
 		if client.outchan != nil {
@@ -334,7 +325,7 @@ func (client *RpcClient) handleWrite() {
 func (client *RpcClient) handleRead() {
 	defer func() {
 		if err := recover(); err != nil {
-			client.ErrChan <- fmt.Sprint(err) + string(debug.Stack())
+			client.ErrChan <- fmt.Sprintf("%v\r\n", err) + string(debug.Stack())
 			atomic.AddUint32(&client.ErrNum, 1)
 			go client.handleRead()
 		}
@@ -410,7 +401,7 @@ func (client *RpcClient) handleRead() {
 			data.Add = DefaultWindowSize - client.window
 			client.window = DefaultWindowSize
 			//libraries.DebugLog("增加窗口%d，实际窗口%d", data.Add, client.window)
-			client.SendMsgToDefault(data)
+			client.sendStruct.SendMsgToDefault(data)
 			data.Put()
 		}
 
@@ -421,7 +412,7 @@ func (client *RpcClient) handleMsg() {
 
 	defer func() {
 		if err := recover(); err != nil {
-			client.ErrChan <- fmt.Sprint(err) + string(debug.Stack())
+			client.ErrChan <- fmt.Sprint(err) + string("\r\n") + string(debug.Stack())
 			atomic.AddUint32(&client.ErrNum, 1)
 			go client.handleMsg()
 		}
@@ -436,7 +427,7 @@ func (client *RpcClient) handleMsg() {
 			if client.cache != nil {
 				msg.SetServer(client.cache.Svr) //使用cache的conn处理msg.SendResult等消息内发送，减少对主连接的协程阻塞
 			} else {
-				msg.SetServer(client)
+				msg.SetServer(client.sendStruct)
 			}
 			switch data := i.(type) {
 			case *MSG_COMMON_regServer_result:
@@ -456,7 +447,7 @@ func (client *RpcClient) handleMsg() {
 				client.tick.Reset(RpcTickDefaultTime * time.Second)
 			case *MSG_COMMON_PING:
 				out := GET_MSG_COMMON_PONG()
-				client.SendMsgToDefault(out)
+				client.sendStruct.SendMsgToDefault(out)
 				out.Put()
 			case *MSG_COMMON_Transaction_Check:
 
@@ -504,6 +495,23 @@ func (client *RpcClient) runTick() {
 			return
 		}
 	}
+}
+
+func (client *RpclientSend) SendMsg(remote uint16, msgno uint32, ttl uint8, transactionNo uint32, out MSG_DATA) {
+	SendMsg(uint16(client.No)|uint16(client.Id)<<8, remote, msgno, ttl, transactionNo, out, client.outchan)
+}
+
+func (client *RpclientSend) SendMsgWaitResult(remote uint16, msgno uint32, ttl uint8, transactionNo uint32, out MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
+	return SendMsgWaitResult(uint16(client.No)|uint16(client.Id)<<8, remote, msgno, ttl, transactionNo, out, result, client.outchan, timeout...)
+}
+
+//没有remote,msgno,ttl,transactionNo发送
+func (client *RpclientSend) SendMsgToDefault(out MSG_DATA) {
+	SendMsg(uint16(client.No)|uint16(client.Id)<<8, 0, 0, 0, 0, out, client.outchan)
+}
+
+func (client *RpclientSend) SendMsgWaitResultToDefault(out MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
+	return SendMsgWaitResult(uint16(client.No)|uint16(client.Id)<<8, 0, 0, 0, 0, out, result, client.outchan, timeout...)
 }
 func (client *RpcClient) CacheGet(serverNo uint8, path, key string, value interface{}) (err error) {
 	b, err := client.cache.Get(key, strconv.Itoa(int(serverNo))+"_"+path)
@@ -563,18 +571,18 @@ func (client *RpcClient) CacheDelPath(path string) error {
 }
 
 //暂时不开放getMsg接口
-func (client *RpcClient) getMsg() (*Msg, error) {
+/*func (client *RpcClient) getMsg() (*Msg, error) {
 	data := GET_MSG_COMMON_GET_Msgno()
 	defer data.Put()
 	var resdata *MSG_COMMON_GET_Msgno_result
-	err := client.SendMsgWaitResultToDefault(data, &resdata)
+	err := client.sendStruct.SendMsgWaitResultToDefault(data, &resdata)
 	if err != nil {
 		return nil, err
 	}
 	msg := &Msg{Msgno: resdata.Msgno, DB: &MsgDB{DB: client.DB}}
-	msg.SetServer(client)
+	msg.SetServer(client.sendStruct)
 	return msg, nil
-}
+}*/
 
 func (client *RpcClient) SetConfig(lang CountryNo, key string, config map[string]map[string]interface{}) (err error) {
 	return client.cache.Set(key, PATH_CONFIG_CACHE+lang.String(), libraries.JsonMarshal(config), 0)
@@ -605,4 +613,11 @@ func (client *RpcClient) GetProductById(productID int32) (res *MSG_PROJECT_produ
 }
 func (client *RpcClient) SetTickHand(f func(time.Time)) {
 	client.handleTick = f
+}
+func (client *RpcClient) GetProjectById(id int32) (res *MSG_PROJECT_project_cache) {
+	err := client.CacheGet(ProjectServerNo, PATH_PROJECT_PROJECT_CACHE, strconv.Itoa(int(id)), &res)
+	if err != nil {
+		libraries.DebugLog("获取project缓存失败%+v", err)
+	}
+	return
 }

@@ -4,10 +4,8 @@ import (
 	"html/template"
 	"jachunPM_http/config"
 	"libraries"
-	"net/url"
 	"protocol"
 	"reflect"
-	"runtime/debug"
 	"strconv"
 	"strings"
 )
@@ -17,65 +15,7 @@ const (
 )
 
 func createLink(moduleName string, methodName string, vars interface{}) string {
-	buf := bufpool.Get().(*libraries.MsgBuffer)
-	buf.WriteString(config.Server.Origin)
-	buf.WriteString("/")
-	buf.WriteString(moduleName)
-	buf.WriteString("/")
-	buf.WriteString(methodName)
-	switch v := vars.(type) {
-	case []protocol.HtmlKeyValueStr:
-		if len(v) > 0 {
-			buf.WriteByte('?')
-			for _, v := range v {
-				buf.WriteString(url.QueryEscape(v.Key))
-				buf.WriteByte('=')
-				buf.WriteString(v.Value)
-				buf.WriteByte('&')
-			}
-			buf.Truncate(buf.Len() - 1)
-		}
-	case []string:
-		if len(v) > 0 {
-			buf.WriteByte('?')
-			for _, s := range v {
-				buf.WriteString(s)
-			}
-
-		}
-	case string:
-		if v != "" {
-			buf.WriteByte('?')
-			buf.WriteString(v)
-		}
-
-	case nil:
-	case []interface{}:
-		if len(v) > 0 {
-			buf.WriteByte('?')
-			for k, s := range v {
-				str := libraries.I2S(s)
-				if k == len(v)-1 && str == "true" { //onlybody
-					if k == 0 {
-						buf.WriteString("onlybody=yes")
-					} else {
-						buf.WriteString("&onlybody=yes")
-					}
-
-				} else {
-					buf.WriteString(str)
-				}
-
-			}
-		}
-	default:
-		libraries.DebugLog("createLink不识别类型%s\r\n%s", reflect.TypeOf(v).String(), string(debug.Stack()))
-	}
-
-	res := buf.String()
-	buf.Reset()
-	bufpool.Put(buf)
-	return res
+	return config.Server.Origin + protocol.CreateLink(moduleName, methodName, vars)
 }
 func htmlFuncs() {
 	global_Funcs["helper_createLink"] = func(moduleName, methodName string, vars ...interface{}) string {
@@ -172,8 +112,12 @@ func htmlFuncs() {
 		return template.HTML(res)
 
 	}
-	global_Funcs["html_input"] = func(name string, value ...string) template.HTML { // value  attrib
-		return template.HTML(html_input(name, value...))
+	global_Funcs["html_input"] = func(name string, value ...interface{}) template.HTML { // value  attrib
+		var strValue []string
+		for _, v := range value {
+			strValue = append(strValue, libraries.I2S(v))
+		}
+		return template.HTML(html_input(name, strValue...))
 	}
 
 	global_Funcs["html_submitButton"] = func(data *TemplateData, value ...string) template.HTML { //label,class,misc
@@ -587,6 +531,7 @@ func html_select(name string, options []protocol.HtmlKeyValueStr, selectedItem i
 	return res
 }
 func isClickableFuncs() {
+	global_Funcs["null_isClickable"] = func(data *TemplateData, obj interface{}, action string) bool { return true }
 	global_Funcs["MSG_USER_INFO_cache_isClickable"] = func(data *TemplateData, obj interface{}, action string) bool {
 		v := obj.(*protocol.MSG_USER_INFO_cache)
 		lockMinutes, _ := data.Config["user"]["common"]["lockMinutes"].(int)
@@ -609,6 +554,7 @@ func isClickableFuncs() {
 		}
 		return true
 	}
+
 }
 func html_checkbox(name string, options []protocol.HtmlKeyValueStr, value ...interface{}) string {
 	if len(options) == 0 {

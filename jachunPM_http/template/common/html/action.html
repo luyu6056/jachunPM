@@ -33,7 +33,7 @@
     <button type="button" class="btn btn-mini btn-icon btn-expand-all" title='{{.Lang.switchDisplay}}'>
       <i class="icon icon-plus icon-sm"></i>
     </button>
-    {{if .Data.actionFormLink}}{{common_printCommentIcon . .Data.actionFormLink}}{{end}}
+    {{if .Data.actionFormLink}}{{common_printCommentIcon . .Data.actionFormLink nil}}{{end}}
   </div>
   {{if .Data.blockHistory}}
   </div>
@@ -46,10 +46,10 @@
     <ol class='histories-list'>
       {{range $key,$action :=.Data.actions}}
       {{- $i:=intsum $key 1 -}}
-      {{- $canEditComment := and (eq $i (len $.Data.actions)) (ne (strlen $action.Comment) 0) (eq $.App.methodName "view") (eq $action.ActorId $.user.Id) (common_hasPriv . "action" "editComment") -}}
+      {{- $canEditComment := and (eq $i (len $.Data.actions)) (ne (strlen $action.Comment) 0) (eq $.App.methodName "view") (eq $action.ActorId $.User.Id) (common_hasPriv $ "action" "editComment") -}}
       <li value='{{$i}}'>
-        {{action_printAction $action}}
-        {{if $action.History}}
+        {{action_printAction $ $action}}
+        {{if $action.Historys}}
         <button type='button' class='btn btn-mini switch-btn btn-icon btn-expand' title='{{$.Lang.switchDisplay}}'><i class='change-show icon icon-plus icon-sm'></i></button>
         <div class='history-changes' id='changeBox{{$i}}'>
           {{action_printChanges $action.ObjectType $action.History}}

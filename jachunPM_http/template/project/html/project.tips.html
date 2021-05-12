@@ -1,0 +1,9 @@
+<div style='margin: 0 auto; max-width: 400px'>
+  <p><strong>{{.Lang.project.afterInfo}}</strong></p>
+  <div>
+    {{html_a (helper_createLink "project" "team"  "projectID=" .Data.projectID)  .Lang.project.setTeam "" "class='btn'"}}
+    {{if ne .Data.project.Type "ops"}}{{html_a (helper_createLink "project" "linkstory"  "projectID=" .Data.projectID)  .Lang.project.linkStory "" "class='btn'"}}{{end}}
+    {{html_a (helper_createLink "task" "create"  "project=" .Data.projectID)  .Lang.project.createTask "" "class='btn'"}}
+    {{html_a (helper_createLink "project" "task"  "projectID=" .Data.projectID)  .Lang.project.goback "" "class='btn'"}}
+  </div>
+</div>

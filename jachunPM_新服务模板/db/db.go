@@ -19,6 +19,9 @@ func Init() *mysql.MysqlDB {
 	if config.Config.MysqlMaxConn > 0 {
 		db.MaxOpenConns = config.Config.MysqlMaxConn
 	}
+	if err = db.Ping(); err != nil {
+		log.Fatalf("数据库启动失败 %v", err)
+	}
 	errs := db.StoreEngine("TokuDB").Sync2(
 		new(Log_msg),
 	)

@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"jachunPM_http/config"
 	"jachunPM_http/js"
 	"libraries"
 	"protocol"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -15,25 +17,22 @@ func init() {
 
 	httpHandlerMap["GET"]["/story/create"] = get_story_create
 	httpHandlerMap["POST"]["/story/create"] = post_story_create
+	httpHandlerMap["GET"]["/story/view"] = get_story_view
 }
-func get_story_create(data *TemplateData) {
-
-	/*extra = str_replace(array(",", " "), array("&", ""), extra)
-	  parse_str(extra, output)
-	  foreach(output as paramKey => paramValue)
-	  {
-	      if(isset(this->config->story->fromObjects[paramKey]))
-	      {
-	          fromObjectIDKey  = paramKey
-	          fromObjectID     = paramValue
-	          fromObjectName   = this->config->story->fromObjects[fromObjectIDKey]["name"]
-	          fromObjectAction = this->config->story->fromObjects[fromObjectIDKey]["action"]
-	          break
-	      }
-	  }
-
-
-	  if(isset(fromObjectID))
+func get_story_create(data *TemplateData) (err error) {
+	/*var fromObjectIDKey,fromObjectID,fromObjectName,fromObjectAction string
+	for key,value := range data.ws.GetAllQuery{
+		if v1,ok:=data.Config["story"]["fromObjects"];ok{
+			if v2,ok:=v1[key].(map[string]string);ok{
+				fromObjectIDKey=key
+				fromObjectID=value
+				fromObjectName=v2["name"]
+				fromObjectAction=v2["action"]
+				break
+			}
+		}
+	}
+	 if(isset(fromObjectID))
 	  {
 	      fromObject = this->loadModel(fromObjectName)->getById(fromObjectID)
 	      if(!fromObject) die(js::error(this->lang->notFound) . js::locate("back", "parent"))
@@ -41,6 +40,7 @@ func get_story_create(data *TemplateData) {
 	      data.Data["fromObjectIDKey"] = fromObjectID
 	      data.Data["fromObjectName"]  = fromObject
 	  }*/
+
 	projectID, _ := strconv.Atoi(data.ws.Query("projectID"))
 	productID, _ := strconv.Atoi(data.ws.Query("productID"))
 	moduleID, _ := strconv.Atoi(data.ws.Query("moduleID"))
@@ -49,14 +49,12 @@ func get_story_create(data *TemplateData) {
 	branch, _ := strconv.Atoi(data.ws.Query("storyID"))
 	var product *protocol.MSG_PROJECT_product_cache
 	var products []protocol.HtmlKeyValueStr
-	var err error
 	if projectID > 0 {
 		//$products = $this->product->getProductsByProject($projectID);
 		//$product  = $this->product->getById(($productID and array_key_exists($productID, $products)) ? $productID : key($products));
 	} else {
 		products, err = product_getPairs(data, "noclosed")
 		if err != nil {
-			data.OutErr(err)
 			return
 		}
 		if productID == 0 && len(products) > 0 {
@@ -73,17 +71,14 @@ func get_story_create(data *TemplateData) {
 	}
 	msg, err := data.GetMsg()
 	if err != nil {
-		data.OutErr(err)
 		return
 	}
-	users, err := user_getPairs("pdfirst|noclosed|nodeleted")
+	users, err := user_getPairs(data, "pdfirst|noclosed|nodeleted")
 	if err != nil {
-		data.OutErr(err)
 		return
 	}
 	moduleOptionMenu, err := tree_getOptionMenu(data, int32(productID), "story", 0, int32(branch))
 	if err != nil {
-		data.OutErr(err)
 		return
 	}
 	if len(moduleOptionMenu) == 0 {
@@ -92,7 +87,6 @@ func get_story_create(data *TemplateData) {
 	}
 
 	if err = product_setMenu(data, int32(productID), int32(branch), ""); err != nil {
-		data.OutErr(err)
 		return
 	}
 	var (
@@ -192,7 +186,6 @@ func get_story_create(data *TemplateData) {
 	productplan_getPairsForStory.Branch = int32(branch)
 	var plans *protocol.MSG_PROJECT_productplan_getPairsForStory_result
 	if err = msg.SendMsgWaitResult(0, productplan_getPairsForStory, &plans); err != nil {
-		data.OutErr(err)
 		return
 	}
 	productplan_processFuture(data, plans.List)
@@ -224,8 +217,9 @@ func get_story_create(data *TemplateData) {
 	templateOut("story.create.html", data)
 	productplan_getPairsForStory.Put()
 	plans.Put()
+	return
 }
-func post_story_create(data *TemplateData) {
+func post_story_create(data *TemplateData) (e error) {
 	if !data.ajaxCheckPost() {
 		return
 	}
@@ -240,6 +234,13 @@ func post_story_create(data *TemplateData) {
 	}()
 	if err != nil {
 		return
+	}
+	if projectID > 0 {
+		project := HostConn.GetProjectById(int32(projectID))
+		if project == nil {
+			err = errors.New(data.Lang["project"]["error"].(map[string]string)["NotFount"])
+			return
+		}
 	}
 
 	out := protocol.GET_MSG_PROJECT_stroy_create()
@@ -266,24 +267,11 @@ func post_story_create(data *TemplateData) {
 		data.ajaxResult(false, map[string]string{"title": fmt.Sprintf(data.Lang["common"]["duplicate"].(string), data.Lang["story"]["common"])})
 		return
 	}
-	/*
-		action := "Opened"
-		extra := ""
-		if bugID > 0 {
-			action = "Frombug"
-			extra = strconv.Itoa(bugID)
-		}
-		if(isset(fromObjectID)){
-		      action = fromObjectAction;
-		      extra  = fromObjectID;
-		  }
-		  actionID = this->action->create("story", storyID, action, "", extra);
 
-		  if(todoID > 0){//代办
-		      this->dao->update(TABLE_TODO)->set("status")->eq("done")->where("id")->eq(todoID)->exec();
-		      this->action->create("todo", todoID, "finished", "", "STORY:storyID");
-		  }
-	*/
+	/*if(todoID > 0){//代办
+	    this->dao->update(TABLE_TODO)->set("status")->eq("done")->where("id")->eq(todoID)->exec();
+	    this->action->create("todo", todoID, "finished", "", "STORY:storyID");
+	}*/
 
 	if data.ws.Post("newStory") != "" {
 
@@ -297,6 +285,7 @@ func post_story_create(data *TemplateData) {
 		locate = createLink("project", "story", "projectID="+strconv.Itoa(int(projectID))+"&branch=&browseType=byModule&moduleID="+strconv.Itoa(int(out.Module)))
 	}
 	data.ajaxResult(true, data.Lang["common"]["saveSuccess"].(string), locate)
+	return
 }
 func storyFuncs() {
 	global_Funcs["story_printCell"] = func(data *TemplateData, col *config.ConfigDatatable, story *protocol.MSG_PROJECT_story, users []protocol.HtmlKeyValueStr, branches []protocol.HtmlKeyValueStr, storyStages map[int32][]protocol.HtmlKeyValueStr, modulePairs []protocol.HtmlKeyValueStr, storyTasks, storyBugs, storyCases map[int32]int, mode string) template.HTML { //mode = 'datatable'
@@ -597,4 +586,129 @@ func storyFuncs() {
 		bufpool.Put(buf)
 		return template.HTML(res)
 	}
+	global_Funcs["MSG_PROJECT_story_isClickable"] = func(data *TemplateData, obj interface{}, action string) bool {
+		if story, ok := obj.(*protocol.MSG_PROJECT_story); ok {
+			if action == "change" {
+				return story.Status != "closed"
+			}
+			if action == "review" {
+				return story.Status == "draft" || story.Status == "changed"
+			}
+			if action == "close" {
+				return story.Status != "closed"
+			}
+			if action == "activate" {
+				return story.Status == "closed"
+			}
+
+		} else {
+			libraries.DebugLog("MSG_PROJECT_story_isClickable传入的值类型%v不对", reflect.TypeOf(obj).Elem().Name())
+		}
+
+		return true
+
+	}
+}
+func get_story_view(data *TemplateData) (err error) {
+	storyID, _ := strconv.Atoi(data.ws.Query("storyID"))
+	version, _ := strconv.Atoi(data.ws.Query("version"))
+	param, _ := strconv.Atoi(data.ws.Query("param"))
+	from := data.ws.Query("storyID")
+	if from == "" {
+		from = "product"
+	}
+	msg, err := data.GetMsg()
+	if err != nil {
+		return
+	}
+	story_getById := protocol.GET_MSG_PROJECT_story_getById()
+	story_getById.Id = int32(storyID)
+	story_getById.Version = int16(version)
+	var result *protocol.MSG_PROJECT_story_getById_result
+	if err = msg.SendMsgWaitResult(0, story_getById, &result); err != nil {
+		return
+	} else if result.Story == nil {
+		data.ws.WriteString(js.Alert(data.Lang["common"]["notFound"].(string)) + js.Location("back", "self"))
+		return
+	}
+	if files, err := file_getByObject(data, "story", int32(storyID)); err != nil {
+		return err
+	} else {
+		data.Data["Files"] = files
+	}
+	if err = product_setMenu(data, result.Story.Product, result.Story.Branch, ""); err != nil {
+		return
+	}
+	product := HostConn.GetProductById(result.Story.Product)
+	if data.Data["projects"], err = project_getPairs(data, "nocode"); err != nil {
+		return
+	}
+	if result.Story.Plan > 0 {
+		getplan := protocol.GET_MSG_PROJECT_productplan_getList()
+		getplan.Ids = []int32{result.Story.Plan}
+		getplan.Total = 1
+		getplan.Page = 1
+		getplan.PerPage = 1
+		var getplanResult *protocol.MSG_PROJECT_productplan_getList_result
+		if err = msg.SendMsgWaitResult(0, getplan, &getplanResult); err != nil {
+			return
+		}
+		if len(getplanResult.List) > 0 {
+			data.Data["plan"] = getplanResult.List[0]
+		}
+
+	}
+
+	//bugs         = this->dao->select("id,title")->from(TABLE_BUG)->where("story")->eq(storyID)->andWhere("deleted")->eq(0)->fetchAll();
+	//fromBug      = this->dao->select("id,title")->from(TABLE_BUG)->where("toStory")->eq(storyID)->fetch();
+	//cases        = this->dao->select("id,title")->from(TABLE_CASE)->where("story")->eq(storyID)->andWhere("deleted")->eq(0)->fetchAll();
+	//this->view->bugs       = bugs;
+	//this->view->fromBug    = fromBug;
+	//this->view->cases      = cases;
+	if result.Story.Module > 0 {
+		getParents := protocol.GET_MSG_PROJECT_tree_getParents()
+		getParents.ModuleID = result.Story.Module
+		var getParentsResult *protocol.MSG_PROJECT_tree_getParents_result
+		if err = msg.SendMsgWaitResult(0, getParents, &getParentsResult); err != nil {
+			return
+
+		}
+		data.Data["modulePath"] = getParentsResult.List
+		if data.Data["treeOption"], err = tree_getOptionMenu(data, result.Story.Product, "story", result.Story.Module, result.Story.Branch); err != nil {
+			return
+		}
+	}
+
+	if data.Data["users"], err = user_getPairs(data, "noletter"); err != nil {
+		return
+	}
+	/* Set the menu. */
+
+	if from == "project" && param > 0 {
+		if project := HostConn.GetProjectById(int32(param)); project != nil && project.Status == "done" {
+			from = ""
+		}
+	}
+
+	data.Data["title"] = fmt.Sprintf("STORY #%d %s - %s", result.Story.Id, result.Story.Title, product.Name)
+	data.Data["product"] = product
+	if product.Type != "normal" {
+		data.Data["branches"] = branch_getPairs(data, product.Id, product)
+	}
+	data.Data["story"] = result.Story
+
+	if data.Data["actions"], err = action_getList(data, "story", int32(storyID)); err != nil {
+		return
+	}
+	if version == 0 {
+		data.Data["version"] = result.Story.Version
+	} else {
+		data.Data["version"] = version
+	}
+	//this->view->preAndNext = this->loadModel("common")->getPreAndNextObject("story", storyID);
+	data.Data["from"] = from
+	data.Data["param"] = param
+	data.Data["actionFormLink"] = createLink("action", "comment", []interface{}{"objectType=story&objectID=", result.Story.Id})
+	templateOut("story.view.html", data)
+	return
 }

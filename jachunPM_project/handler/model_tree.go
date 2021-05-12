@@ -229,3 +229,27 @@ func tree_delete(data *protocol.MSG_PROJECT_tree_delete, in *protocol.Msg) {
 	}
 
 }
+func tree_getParents(moduleID int32) (list []*protocol.MSG_PROJECT_tree_cache, err error) {
+	if moduleID == 0 {
+		return
+	}
+	module := HostConn.GetTreeById(moduleID)
+	if len(module.Path) == 0 {
+		return
+	}
+	err = HostConn.DB.Table(db.TABLE_MODULE).Where(map[string]interface{}{"Id": module.Path, "Deleted": false}).Order("Grade").Select(&list)
+	return
+}
+func tree_getPairsByIds(data *protocol.MSG_PROJECT_tree_getPairsByIds, in *protocol.Msg) {
+	var trees []*db.Module
+	if err := in.DB.Table(db.TABLE_MODULE).Field("Id,Name").Where(map[string]interface{}{"Id": data.Ids}).Limit(0).Select(&trees); err != nil {
+		in.WriteErr(err)
+		return
+	}
+	out := protocol.GET_MSG_PROJECT_tree_getPairsByIds_result()
+	for _, t := range trees {
+		out.List = append(out.List, protocol.HtmlKeyValueStr{strconv.Itoa(int(t.Id)), t.Name})
+	}
+	in.SendResult(out)
+	out.Put()
+}

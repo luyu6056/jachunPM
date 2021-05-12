@@ -25,6 +25,10 @@ type moduleMenu struct {
 	alias     []string
 	subModule []string
 }
+type commonPreAndNext struct {
+	pre  interface{}
+	next interface{}
+}
 
 var commoncache = cache.Hget("common", "global")
 
@@ -47,7 +51,9 @@ func commonModelFuncs() {
 	global_Funcs["string"] = func(i interface{}) string {
 		return libraries.I2S(i)
 	}
-	global_Funcs["common_hasPriv"] = func(data *TemplateData, module, method string) bool { return hasPriv(data, module, method) }
+	global_Funcs["common_hasPriv"] = func(data *TemplateData, module, method string, obj ...interface{}) bool {
+		return hasPriv(data, module, method, obj...)
+	}
 	//global_Funcs["common_printBreadMenu"] = func(server, name string) bool { return true }
 	global_Funcs["loadConfig"] = func(data *TemplateData, server string) int { return 0 }
 	global_Funcs["multiply"] = func(a, b interface{}) int64 {
@@ -148,10 +154,15 @@ func commonModelFuncs() {
 	global_Funcs["getValue"] = func(i, key interface{}) interface{} {
 		switch r := i.(type) {
 		case []protocol.HtmlKeyValueStr:
-			k, ok := key.(string)
-			if !ok {
-				k = fmt.Sprint(key)
+			k := libraries.I2S(key)
+			for _, v := range r {
+				if v.Key == k {
+					return v.Value
+				}
 			}
+			return nil
+		case []protocol.HtmlKeyValueInterface:
+			k := libraries.I2S(key)
 			for _, v := range r {
 				if v.Key == k {
 					return v.Value
@@ -331,22 +342,51 @@ func commonModelFuncs() {
 		}
 		return res
 	}
-	//格式化输出时间戳，允许不输入timestamp，则为当前时间
-	global_Funcs["date"] = func(layout string, timestamp ...int64) (res string) {
+	//格式化输出时间戳，允许不输入timestamp，则为当前时间.timestamp可以是time.Time和int int64 int32,string
+	global_Funcs["date"] = func(layout string, timestamp ...interface{}) (res string) {
 		if len(timestamp) == 1 {
-			res = time.Unix(timestamp[0], 0).Format(layout)
+			switch v := timestamp[0].(type) {
+			case int:
+				res = time.Unix(int64(v), 0).Format(layout)
+			case int32:
+				res = time.Unix(int64(v), 0).Format(layout)
+			case int64:
+				res = time.Unix(v, 0).Format(layout)
+			case time.Time:
+				res = v.Format(layout)
+			case string:
+				if v == "" {
+					res = time.Now().Format(layout)
+				} else {
+					i, _ := strconv.Atoi(v)
+					res = time.Unix(int64(i), 0).Format(layout)
+				}
+			}
+
 		} else {
 			res = time.Now().Format(layout)
 		}
 		return
 	}
-	global_Funcs["genlist"] = func(star, num interface{}) []string {
+	//num正值+负值-,如(5 -2)或(5,2,-1)，均可输出[5,4]
+	global_Funcs["genlist"] = func(star, num interface{}, setpExt ...int) []string {
 		n, _ := strconv.Atoi(fmt.Sprint(num))
 		s, _ := strconv.Atoi(fmt.Sprint(star))
-		ret := make([]string, n)
-		for i := 0; i < n; i++ {
-			ret[i] = strconv.Itoa(i + s)
+		setp := 1
+		if len(setpExt) > 0 && setpExt[0] > 1 {
+			setp = setpExt[0]
 		}
+		ret := make([]string, n)
+		if n > 0 {
+			for i := 0; i < n; i++ {
+				ret[i] = strconv.Itoa(s + i*setp)
+			}
+		} else {
+			for i := 0; i < n*-1; i++ {
+				ret[i] = strconv.Itoa(s - i*setp)
+			}
+		}
+
 		return ret
 	}
 	global_Funcs["jsonMarshal"] = func(i interface{}) string {
@@ -374,21 +414,7 @@ func commonModelFuncs() {
 		return i % k
 	}
 	global_Funcs["fetch"] = func(oldData *TemplateData, module, method, varstr string) template.HTML {
-		path := "/" + module + "/" + method
-		data := getFetchInterface(oldData.ws, path)
-		if f, ok := httpHandlerMap["GET"][path]; ok {
-			for _, vars := range strings.Split(varstr, "&") {
-				s := strings.Split(vars, "=")
-				if len(s) == 2 {
-					data.ws.AddQuery(s[0], s[1])
-				}
-			}
-			f(data)
-			res := template.HTML(string(data.ws.(*CommonFetch).OutBuffer()))
-			putFetchInterface(data.ws.(*CommonFetch))
-			return res
-		}
-		return template.HTML("没有找到GET " + path + "方法")
+		return template.HTML(common_fetch(oldData, module, method, varstr))
 	}
 	global_Funcs["generateUid"] = func() string {
 		id := commoncache.INCRBY("generateUid", 1)
@@ -449,6 +475,46 @@ func commonModelFuncs() {
 	}
 	global_Funcs["session"] = func(data *TemplateData, key string) string {
 		return data.ws.Session().Load_str(key)
+	}
+	global_Funcs["printPreAndNext"] = func(data *TemplateData, ext ...interface{}) template.HTML { //preAndNext , linkTemplate
+		return template.HTML("") //暂不做
+		/*if data.onlybody() {
+			return template.HTML("")
+		}
+		var preAndNext *commonPreAndNext
+		var linkTemplate string
+		if len(ext) > 0 {
+			preAndNext, _ = ext[0].(*commonPreAndNext)
+		}
+		if len(ext) > 1 {
+			linkTemplate, _ = ext[1].(string)
+		}
+		buf := bufpool.Get().(*libraries.MsgBuffer)
+		buf.WriteString("<nav class='container'>")
+		if(isset($preAndNext->pre) and $preAndNext->pre)
+		  {
+		      $id = (isset($_SESSION['testcaseOnlyCondition']) and !$_SESSION['testcaseOnlyCondition'] and $app->getModuleName() == 'testcase' and isset($preAndNext->pre->case)) ? 'case' : 'id';
+		      $title = isset($preAndNext->pre->title) ? $preAndNext->pre->title : $preAndNext->pre->name;
+		      $title = '#' . $preAndNext->pre->$id . ' ' . $title . ' ' . $lang->preShortcutKey;
+		      $link  = $linkTemplate ? sprintf($linkTemplate, $preAndNext->pre->$id) : inLink('view', "ID={$preAndNext->pre->$id}");
+		      echo html::a($link, '<i class="icon-pre icon-chevron-left"></i>', '', "id='prevPage' class='btn' title='{$title}'");
+		  }
+		  if(isset($preAndNext->next) and $preAndNext->next)
+		  {
+		      $id = (isset($_SESSION['testcaseOnlyCondition']) and !$_SESSION['testcaseOnlyCondition'] and $app->getModuleName() == 'testcase' and isset($preAndNext->next->case)) ? 'case' : 'id';
+		      $title = isset($preAndNext->next->title) ? $preAndNext->next->title : $preAndNext->next->name;
+		      $title = '#' . $preAndNext->next->$id . ' ' . $title . ' ' . $lang->nextShortcutKey;
+		      $link  = $linkTemplate ? sprintf($linkTemplate, $preAndNext->next->$id) : inLink('view', "ID={$preAndNext->next->$id}");
+		      echo html::a($link, '<i class="icon-pre icon-chevron-right"></i>', '', "id='nextPage' class='btn' title='$title'");
+		  }
+		  echo '</nav>';
+		res := buf.String()
+		buf.Reset()
+		bufpool.Put(buf)
+		return template.HTML(res)*/
+	}
+	global_Funcs["helper_workDays"] = func(begin, end interface{}) template.HTML {
+		return template.HTML("待处理")
 	}
 }
 
@@ -582,6 +648,8 @@ func common_printIcon(data *TemplateData, module, method, vars string, object in
 			if f, ok := f_interface.(func(*TemplateData, interface{}, string) bool); ok {
 				clickable = f(data, object, method)
 			}
+		} else {
+			libraries.DebugLog("%s页面common_printIcon找不到 %s 的方法", data.ws.Path(), key+"_isClickable")
 		}
 	}
 	link := createLink(module, method, []interface{}{vars, onlyBody})
@@ -655,4 +723,24 @@ func common_printIcon(data *TemplateData, module, method, vars string, object in
 	}
 
 	return ""
+}
+func common_fetch(oldData *TemplateData, module, method, varstr string) string {
+	path := "/" + module + "/" + method
+	data := getFetchInterface(oldData.ws, path)
+	if f, ok := httpHandlerMap["GET"][path]; ok {
+		for _, vars := range strings.Split(varstr, "&") {
+			s := strings.Split(vars, "=")
+			if len(s) == 2 {
+				data.ws.AddQuery(s[0], s[1])
+			}
+		}
+		f(data)
+		res := string(data.ws.(*CommonFetch).OutBuffer())
+		putFetchInterface(data.ws.(*CommonFetch))
+		return res
+	} else {
+		putFetchInterface(data.ws.(*CommonFetch))
+	}
+	return "没有找到GET " + path + "方法"
+
 }

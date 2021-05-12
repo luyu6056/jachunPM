@@ -173,8 +173,12 @@ func HostServerHandlerMsgIn() {
 				}
 			}
 			db.WriteMsgLog(in)
-
 			b[4] = in.Ttl
+			//检查事务
+			transactionNo := int(b[9]) | int(b[10])<<8 | int(b[11])<<16 | int(b[12])<<24
+			if _, has := cache.Has(strconv.Itoa(transactionNo), TransactionCacheKey); !has {
+				b[9], b[10], b[11], b[12] = 0, 0, 0, 0
+			}
 			if in.Remote == 0 {
 				libraries.DebugLog("cmd%s ,No%d", protocol.CmdToName[in.Cmd], cmdSvrNo)
 				rpcServerOutChan[cmdSvrNo] <- buf
@@ -276,6 +280,13 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 			out.Msgno = msgno
 			ttl := int32(0)
 			msgnoTtl.Store(msgno, &ttl)
+			//储存uid信息
+			value := make([]byte, 4)
+			value[0] = byte(data.Uid)
+			value[1] = byte(data.Uid >> 8)
+			value[2] = byte(data.Uid >> 16)
+			value[3] = byte(data.Uid >> 24)
+			cache.Hset("Uid", map[string]interface{}{"value": value}, "Msg:"+strconv.Itoa(int(msgno)), protocol.MsgTimeOut)
 			time.AfterFunc(protocol.MsgTimeOut*time.Second, func() { msgnoTtl.Delete(msgno) })
 			out.QueryResultID = data.QueryID
 			in.SendResult(out)
@@ -370,6 +381,7 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 		b, err := ioutil.ReadFile(filepath + file.Pathname)
 		if err != nil {
 			err = errors.New(protocol.Err_FileNotFount.String() + " err:" + err.Error())
+			in.WriteErr(err)
 			return
 		}
 		out := protocol.GET_MSG_FILE_getByID_result()
@@ -377,6 +389,32 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 		out.Ext = file.Extension
 		out.Name = file.Title
 		out.Type = file.Type
+		out.FileID = file.Id
+		in.SendResult(out)
+		out.Put()
+	case *protocol.MSG_FILE_getByObject:
+		var files []*db.File
+		err := db.DB.Table(db.TABLE_FILE).Prepare().Where("ObjectType=? and ObjectID=?", data.ObjectType, data.ObjectID).Limit(0).Select(&files)
+		if err != nil {
+			in.WriteErr(err)
+			return
+		}
+		out := protocol.GET_MSG_FILE_getByObject_result()
+		for _, file := range files {
+			b, err := ioutil.ReadFile(filepath + file.Pathname)
+			if err != nil {
+				err = errors.New(protocol.Err_FileNotFount.String() + " err:" + err.Error())
+				in.WriteErr(err)
+				return
+			}
+			tmp := protocol.GET_MSG_FILE_getByID_result()
+			tmp.Data = b
+			tmp.Ext = file.Extension
+			tmp.Name = file.Title
+			tmp.Type = file.Type
+			tmp.FileID = file.Id
+			out.List = append(out.List, tmp)
+		}
 		in.SendResult(out)
 		out.Put()
 	case *protocol.MSG_FILE_updateMapByWhere:
@@ -406,6 +444,7 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 				if err != nil {
 					return err
 				}
+				cache.Hdel(strconv.Itoa(int(transactionno)), TransactionCacheKey) //删掉以避免后续func带上事务
 				out := protocol.GET_MSG_COMMON_Transaction_Commit()
 				out.No = transactionno
 				for _, svr := range svrList {
@@ -418,6 +457,7 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 				if err != nil {
 					return err
 				}
+				cache.Hdel(strconv.Itoa(int(transactionno)), TransactionCacheKey) //删掉以避免后续func带上事务
 				out := protocol.GET_MSG_COMMON_Transaction_RollBack()
 				out.No = transactionno
 				for _, svr := range svrList {

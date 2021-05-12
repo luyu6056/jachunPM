@@ -24,8 +24,9 @@ func init() {
 	httpHandlerMap["GET"]["/product/edit"] = get_product_edit
 	httpHandlerMap["POST"]["/product/edit"] = post_product_edit
 	httpHandlerMap["GET"]["/product/ajaxGetPlans"] = get_product_ajaxGetPlans
+	httpHandlerMap["GET"]["/product/project"] = get_product_project
 }
-func get_product_index(data *TemplateData) {
+func get_product_index(data *TemplateData) (err error) {
 
 	if data.ws.Query("locate") == "yes" {
 		data.ws.Redirect(createLink("product", "browse", nil))
@@ -35,44 +36,33 @@ func get_product_index(data *TemplateData) {
 	id, _ := strconv.Atoi(data.ws.Query("productID"))
 	productID, branch, err := product_saveState(data, int32(id))
 	if err != nil {
-		data.OutErr(err)
 		return
 	}
-	err = product_setMenu(data, productID, branch, "")
-	if err != nil {
-		data.OutErr(err)
+	if err = product_setMenu(data, productID, branch, ""); err != nil {
 		return
 	}
 	templateOut("product.index.html", data)
 	return
 }
-func get_product_create(data *TemplateData) {
+func get_product_create(data *TemplateData) (err error) {
 
 	productID, branch, err := product_saveState(data, 0)
 	if err != nil {
-		data.OutErr(err)
 		return
 	}
 	err = product_setMenu(data, productID, branch, "")
 	data.Data["groups"], _ = user_getGroupOptionMenu()
 	msg, err := data.GetMsg()
 	if err != nil {
-		data.OutErr(err)
 		return
 	}
-	data.Data["poUsers"], err = user_getPairs("nodeleted|pofirst|noclosed")
-	if err != nil {
-		data.OutErr(err)
+	if data.Data["poUsers"], err = user_getPairs(data, "nodeleted|pofirst|noclosed"); err != nil {
 		return
 	}
-	data.Data["qdUsers"], err = user_getPairs("nodeleted|qdfirst|noclosed")
-	if err != nil {
-		data.OutErr(err)
+	if data.Data["qdUsers"], err = user_getPairs(data, "nodeleted|qdfirst|noclosed"); err != nil {
 		return
 	}
-	data.Data["rdUsers"], err = user_getPairs("nodeleted|devfirst|noclosed")
-	if err != nil {
-		data.OutErr(err)
+	if data.Data["rdUsers"], err = user_getPairs(data, "nodeleted|devfirst|noclosed"); err != nil {
 		return
 	}
 
@@ -86,7 +76,6 @@ func get_product_create(data *TemplateData) {
 	getLinePairs := protocol.GET_MSG_PROJECT_tree_getLinePairs()
 	var res3 *protocol.MSG_PROJECT_tree_getLinePairs_result
 	if err = msg.SendMsgWaitResult(0, getLinePairs, &res3); err != nil {
-		data.OutErr(err)
 		return
 	}
 	res3.List = append([]protocol.HtmlKeyValueStr{{"", ""}}, res3.List...)
@@ -96,7 +85,7 @@ func get_product_create(data *TemplateData) {
 	res3.Put()
 	return
 }
-func post_product_create(data *TemplateData) {
+func post_product_create(data *TemplateData) (e error) {
 	if !data.ajaxCheckPost() {
 		return
 	}
@@ -153,7 +142,7 @@ func post_product_create(data *TemplateData) {
 	insert.Desc = desc
 	defer func() {
 		if err != nil { //以下使用err来判断图片删除
-			file_deleteFromIds(newimgids)
+			file_deleteFromIds(data, newimgids)
 		}
 	}()
 	out.Data = insert
@@ -166,12 +155,13 @@ func post_product_create(data *TemplateData) {
 	}
 	locate := createLink("product", "browse", []string{"productID=", strconv.Itoa(int(res.ID))})
 	data.ajaxResult(true, data.Lang["common"]["saveSuccess"], locate)
-	file_updateObject(newimgids, "product", res.ID)
+	file_updateObject(data, newimgids, "product", res.ID)
 	out.Put()
 	res.Put()
+
 	return
 }
-func get_product_browse(data *TemplateData) {
+func get_product_browse(data *TemplateData) (err error) {
 	productID, _ := strconv.Atoi(data.ws.Query("productID"))
 	branch, _ := strconv.Atoi(data.ws.Query("branch"))
 	moduleID, _ := strconv.Atoi(data.ws.Query("param"))
@@ -185,20 +175,16 @@ func get_product_browse(data *TemplateData) {
 	}
 	msg, err := data.GetMsg()
 	if err != nil {
-		data.OutErr(err)
 		return
 	}
 	if err = product_setMenu(data, int32(productID), int32(branch), ""); err != nil {
-		data.OutErr(err)
 		return
 	}
 	if data.Data["modules"], err = tree_getOptionMenu(data, int32(productID), "story", 0, int32(branch)); err != nil {
-		data.OutErr(err)
 		return
 	}
 	if plans, err := productplan_getPairs(data, int32(productID), int32(branch), data.ws.Query("expired")); err != nil {
-		data.OutErr(err)
-		return
+		return err
 	} else {
 		if len(plans) > 0 && plans[0].Key == "" && plans[0].Value == "" {
 			plans = append([]protocol.HtmlKeyValueStr{{"0", data.Lang["common"]["null"].(string)}}, plans[1:]...)
@@ -232,18 +218,17 @@ func get_product_browse(data *TemplateData) {
 		getStories.BrowseType = browseType
 		data.ws.Session().Set("storyBrowseType", browseType)
 	}
+	getStories.Uid = data.User.Id
 	getStories.ModuleID = int32(moduleID)
 	getStories.Sort = orderBy
 	getStories.Page = data.Page.Page
 	getStories.PerPage = data.Page.PerPage
 	getStories.Total = data.Page.Total
-	if data.Data["users"], err = user_getPairs("noletter|pofirst|nodeleted"); err != nil {
-		data.OutErr(err)
+	if data.Data["users"], err = user_getPairs(data, "noletter|pofirst|nodeleted"); err != nil {
 		return
 	}
 	var stories *protocol.MSG_PROJECT_product_getStories_result
 	if err = msg.SendMsgWaitResult(0, getStories, &stories); err != nil {
-		data.OutErr(err)
 		return
 	}
 	if moduleID > 0 {
@@ -262,7 +247,6 @@ func get_product_browse(data *TemplateData) {
 	}
 	var storyStages *protocol.MSG_PROJECT_story_batchGetStoryStage_result
 	if err = msg.SendMsgWaitResult(0, story_batchGetStoryStage, &storyStages); err != nil {
-		data.OutErr(err)
 		return
 	}
 
@@ -328,6 +312,7 @@ func product_getPairs(data *TemplateData, mode ...string) (res []protocol.HtmlKe
 }
 func product_setMenu(data *TemplateData, productID, branch int32, extra string) error {
 	products, err := product_getPairs(data)
+	data.Data["products"] = products
 	if err != nil {
 		return err
 	}
@@ -512,7 +497,7 @@ func product_saveState(data *TemplateData, id int32) (productID int32, preBranch
 	}
 	return data.ws.Session().Load_int32("product"), int32(preBranchID), nil
 }
-func get_product_ajaxGetDropMenu(data *TemplateData) {
+func get_product_ajaxGetDropMenu(data *TemplateData) (err error) {
 	method := data.ws.Query("method")
 	module := data.ws.Query("module")
 	productID, _ := strconv.Atoi(data.ws.Query("objectID"))
@@ -523,12 +508,10 @@ func get_product_ajaxGetDropMenu(data *TemplateData) {
 	data.Data["extra"] = data.ws.Query("extra")
 	products, err := product_getAll(data)
 	if err != nil {
-		data.OutErr(err)
 		return
 	}
 	lines, err := tree_getLinePairs(data)
 	if err != nil {
-		data.OutErr(err)
 		return
 	}
 
@@ -664,14 +647,12 @@ func product_getProductLink(module, method, extra string, branch bool) string {
 
 	return ""
 }
-func get_product_all(data *TemplateData) {
+func get_product_all(data *TemplateData) (err error) {
 
 	//this->session->set("productList", this->app->getURI(true))
 	id, _ := strconv.Atoi(data.ws.Query("productID"))
 	productID, branch, err := product_saveState(data, int32(id))
-	err = product_setMenu(data, productID, branch, "")
-	if err != nil {
-		data.OutErr(err)
+	if err = product_setMenu(data, productID, branch, ""); err != nil {
 		return
 	}
 	line, _ := strconv.Atoi(data.ws.Query("line"))
@@ -687,14 +668,11 @@ func get_product_all(data *TemplateData) {
 	data.Data["title"] = data.Lang["product"]["allProduct"]
 
 	data.Data["productStats"], err = product_getStats(data, orderBy, status, int32(line))
-	data.Data["lineTree"], err = tree_getTreeMenu(data, 0, "line", 0, tree_createLineLink, map[string]interface{}{"productID": int32(productID), "status": status}, 0)
-	if err != nil {
-		data.OutErr(err)
+	if data.Data["lineTree"], err = tree_getTreeMenu(data, 0, "line", 0, tree_createLineLink, map[string]interface{}{"productID": int32(productID), "status": status}, 0); err != nil {
 		return
 	}
 	lines, err := tree_getLinePairs(data)
 	if err != nil {
-		data.OutErr(err)
 		return
 	}
 	data.Data["lines"] = append([]protocol.HtmlKeyValueStr{{"", ""}}, lines...)
@@ -783,7 +761,7 @@ func product_getStats(data *TemplateData, orderBy string, status string, line in
 	}
 	getstories.Group = "product, status"
 	var getstories_result *protocol.MSG_PROJECT_product_getStoriesMapBySql_result
-	HostConn.SendMsgWaitResultToDefault(getstories, &getstories_result)
+	data.SendMsgWaitResultToDefault(getstories, &getstories_result)
 	stories := map[int32]map[string]string{}
 	for _, v := range getstories_result.List {
 		id, _ := strconv.Atoi(v["product"])
@@ -933,32 +911,25 @@ func product_getList(data *TemplateData, order func(a, b *protocol.MSG_PROJECT_p
 
 	return
 }
-func get_product_view(data *TemplateData) {
+func get_product_view(data *TemplateData) (err error) {
 	id, _ := strconv.Atoi(data.ws.Query("product"))
 	productID, branch, err := product_saveState(data, int32(id))
-	err = product_setMenu(data, productID, branch, "")
-	if err != nil {
-		data.OutErr(err)
+	if err = product_setMenu(data, productID, branch, ""); err != nil {
 		return
 	}
 	list, err := product_getStats(data, "", "all", 0, productID)
 	if err != nil {
-		data.OutErr(err)
 		return
 	} else if len(list) == 0 {
-		data.OutErr(errors.New(data.Lang["product"]["error"].(map[string]string)["NotFound"]))
-		return
+		return errors.New(data.Lang["product"]["error"].(map[string]string)["NotFound"])
 	}
 
 	data.Data["product"] = list[0]
-	data.Data["users"], err = user_getPairs("noletter")
-	if err != nil {
-		data.OutErr(err)
+	if data.Data["users"], err = user_getPairs(data, "noletter"); err != nil {
 		return
 	}
 	lines, err := tree_getLinePairs(data)
 	if err != nil {
-		data.OutErr(err)
 		return
 	}
 	data.Data["lines"] = append([]protocol.HtmlKeyValueStr{{"", ""}}, lines...)
@@ -966,29 +937,24 @@ func get_product_view(data *TemplateData) {
 	templateOut("product.view.html", data)
 	return
 }
-func get_product_edit(data *TemplateData) {
+func get_product_edit(data *TemplateData) (err error) {
 	id, _ := strconv.Atoi(data.ws.Query("product"))
 	productID, branch, err := product_saveState(data, int32(id))
-	err = product_setMenu(data, productID, branch, "")
-	if err != nil {
-		data.OutErr(err)
+	if err = product_setMenu(data, productID, branch, ""); err != nil {
 		return
 	}
 	product := HostConn.GetProductById(productID)
 	if product == nil {
-		data.OutErr(errors.New(data.Lang["product"]["error"].(map[string]string)["NotFound"]))
-		return
+		return errors.New(data.Lang["product"]["error"].(map[string]string)["NotFound"])
 	}
 
 	data.Data["product"] = product
 	lines, err := tree_getLinePairs(data)
 	if err != nil {
-		data.OutErr(err)
 		return
 	}
-	user, err := user_getPairs("nodeleted")
+	user, err := user_getPairs(data, "nodeleted")
 	if err != nil {
-		data.OutErr(err)
 		return
 	}
 	data.Data["poUsers"] = user
@@ -999,7 +965,7 @@ func get_product_edit(data *TemplateData) {
 	templateOut("product.edit.html", data)
 	return
 }
-func post_product_edit(data *TemplateData) {
+func post_product_edit(data *TemplateData) (err error) {
 	if !data.ajaxCheckPost() {
 		return
 	}
@@ -1012,7 +978,7 @@ func post_product_edit(data *TemplateData) {
 	msg, err := data.GetMsg()
 	if err != nil {
 		data.ajaxResult(false, err.Error())
-		return
+		return nil
 	}
 	out := protocol.GET_MSG_PROJECT_product_update()
 	product.Id = product.Id
@@ -1099,14 +1065,15 @@ func post_product_edit(data *TemplateData) {
 	out.Data = product
 	if err = msg.SendMsgWaitResult(0, out, nil); err != nil {
 		data.ajaxResult(false, err.Error())
-		return
+		return nil
 	}
 	locate := createLink("product", "view", []string{"productID=", strconv.Itoa(int(product.Id))})
 	data.ajaxResult(true, data.Lang["common"]["saveSuccess"], locate)
 	out.Put()
+
 	return
 }
-func get_product_ajaxGetPlans(data *TemplateData) {
+func get_product_ajaxGetPlans(data *TemplateData) (err error) {
 	productID, _ := strconv.Atoi(data.ws.Query("productID"))
 	branch, _ := strconv.Atoi(data.ws.Query("branch"))
 	planID, _ := strconv.Atoi(data.ws.Query("planID"))
@@ -1115,7 +1082,7 @@ func get_product_ajaxGetPlans(data *TemplateData) {
 	plans, err := productplan_getPairs(data, int32(productID), int32(branch), data.ws.Query("expired"))
 	if err != nil {
 		data.ws.WriteString(js.Alert(err.Error()))
-		return
+		return nil
 	}
 	field := "plan"
 	if fieldID > 0 {
@@ -1134,4 +1101,32 @@ func get_product_ajaxGetPlans(data *TemplateData) {
 	data.ws.WriteString(buf.String())
 	buf.Reset()
 	bufpool.Put(buf)
+	return
+}
+func get_product_project(data *TemplateData) (err error) {
+	status := data.ws.Query("status")
+	if status == "" {
+		status = "all"
+	}
+	id, _ := strconv.Atoi(data.ws.Query("productID"))
+	productID, branch, err := product_saveState(data, int32(id))
+	if err != nil {
+		return
+	}
+	if err = product_setMenu(data, productID, branch, ""); err != nil {
+		return
+	}
+	if data.Data["projectStats"], err = project_getProjectStats(data, status, productID, branch, 0, ""); err != nil {
+		return
+	}
+	name := ""
+	for _, kv := range data.Data["products"].([]protocol.HtmlKeyValueStr) {
+		if kv.Key == strconv.Itoa(int(productID)) {
+			name = kv.Value
+			break
+		}
+	}
+	data.Data["title"] = name + data.Lang["common"]["colon"].(string) + data.Lang["product"]["project"].(string)
+	templateOut("product.project.html", data)
+	return
 }

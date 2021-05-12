@@ -45,7 +45,7 @@ func productplan_getList(data *protocol.MSG_PROJECT_productplan_getList, in *pro
 	}
 	var productPlans []map[string]string
 	var err error
-	if data.Id == 0 {
+	if len(data.Ids) == 0 {
 		where := map[string]interface{}{
 			"Product": data.ProductID,
 			"Deleted": false,
@@ -68,7 +68,7 @@ func productplan_getList(data *protocol.MSG_PROJECT_productplan_getList, in *pro
 			}
 		}
 	} else {
-		productPlans, err = in.DB.Table(db.TABLE_PRODUCTPLAN).Prepare().Where("Id=?", data.Id).SelectMap()
+		productPlans, err = in.DB.Table(db.TABLE_PRODUCTPLAN).Where(map[string]interface{}{"Id": data.Ids}).SelectMap()
 	}
 	if err != nil {
 		in.WriteErr(err)
@@ -76,7 +76,7 @@ func productplan_getList(data *protocol.MSG_PROJECT_productplan_getList, in *pro
 	}
 
 	for _, productPlan := range productPlans {
-		stories, err := in.DB.Table(db.TABLE_STORY).Field("Estimate").Where("json_contains(`Plan`,'" + productPlan["Id"] + "') and `Deleted` = 0").SelectMap()
+		stories, err := in.DB.Table(db.TABLE_STORY).Prepare().Field("Estimate").Where("json_contains(`Plan`,'" + productPlan["Id"] + "') and `Deleted` = 0").SelectMap()
 		if err != nil {
 			in.WriteErr(err)
 			return
@@ -137,6 +137,9 @@ func productplan_getPairs(data *protocol.MSG_PROJECT_productplan_getPairs, in *p
 	if data.Expired == "unexpired" {
 		where["end"] = []interface{}{"ge", time.Now().Format("2006-01-02")}
 	}
+	if len(data.Ids) > 0 {
+		where["Id"] = data.Ids
+	}
 	var list []*db.Productplan
 	err := in.DB.Table(db.TABLE_PRODUCTPLAN).Field(`Id,CONCAT(title, " [", begin, " ~ ", end, "]") as Title`).Where(where).Order("begin desc").Limit(0).Select(&list)
 	if err != nil {
@@ -167,8 +170,16 @@ func productplan_getPairs(data *protocol.MSG_PROJECT_productplan_getPairs, in *p
 }
 func productplan_insertUpdate(data *protocol.MSG_PROJECT_productplan_insertUpdate, in *protocol.Msg) {
 	out := protocol.GET_MSG_PROJECT_productplan_insertUpdate_result()
+	session, err := in.BeginTransaction()
+	if err != nil {
+		in.WriteErr(err)
+		return
+	}
+	defer func() {
+		session.EndTransaction()
+	}()
 	if data.Parent > 0 {
-		c, err := in.DB.Table(db.TABLE_PRODUCTPLAN).Prepare().Where("Id=?", data.Parent).Count()
+		c, err := session.Table(db.TABLE_PRODUCTPLAN).Prepare().Where("Id=?", data.Parent).Count()
 		if err != nil {
 			in.WriteErr(err)
 			return
@@ -178,28 +189,62 @@ func productplan_insertUpdate(data *protocol.MSG_PROJECT_productplan_insertUpdat
 			return
 		}
 	}
+
 	if data.Id == 0 {
-		if id, err := in.DB.Table(db.TABLE_PRODUCTPLAN).Insert(data); err != nil {
+		if id, err := session.Table(db.TABLE_PRODUCTPLAN).Insert(data); err != nil {
 			in.WriteErr(err)
+			session.Rollback()
 		} else {
 			out.Result = protocol.Success
 			out.Id = int32(id)
+			session.CommitCallback(func() {
+				product_setCache(data.Product)
+				in.ActionCreate("productplan", int32(id), "opened", "", "", []int32{data.Product}, nil)
+			})
+			session.Commit()
 			in.SendResult(out)
 		}
 	} else {
-		err := in.DB.Table(db.TABLE_PRODUCTPLAN).Replace(data)
+		err := session.Table(db.TABLE_PRODUCTPLAN).Replace(data)
 		if err != nil {
 			in.WriteErr(err)
+			session.Rollback()
 		} else {
 			out.Result = protocol.Success
 			out.Id = data.Id
+			session.CommitCallback(func() {
+				product_setCache(data.Product)
+				in.ActionCreate("productplan", data.Id, "edited", "", "", []int32{data.Product}, nil)
+			})
+			session.Commit()
 			in.SendResult(out)
-		}
 
+		}
 	}
 	out.Put()
 }
 func productplan_delete(data *protocol.MSG_PROJECT_productplan_delete, in *protocol.Msg) {
-	_, err := in.DB.Table(db.TABLE_PRODUCTPLAN).Prepare().Where("Id=? and Product=? and Branch=?", data.Id, data.Product, data.Branch).Update("Deleted = 1")
+	session, err := in.BeginTransaction()
+	if err != nil {
+		in.WriteErr(err)
+		return
+	}
+	defer func() {
+		session.EndTransaction()
+	}()
+	_, err = session.Table(db.TABLE_PRODUCTPLAN).Prepare().Where("Id=? and Product=? and Branch=?", data.Id, data.Product, data.Branch).Update("Deleted = 1")
 	in.WriteErr(err)
+	if err == nil {
+		session.CommitCallback(func() { product_setCache(data.Product) })
+		session.Commit()
+	}
+}
+func productplan_getById(data *protocol.MSG_PROJECT_productplan_getById, in *protocol.Msg) {
+	out := protocol.GET_MSG_PROJECT_productplan_getById_result()
+	if err := in.DB.Table(db.TABLE_PRODUCTPLAN).Prepare().Where("Id=?", data.Id).Find(&out.Info); err != nil {
+		in.WriteErr(err)
+		return
+	}
+	in.SendResult(out)
+	out.Put()
 }

@@ -78,6 +78,7 @@ const (
 	PATH_USER_GROUP_CACHE      = "group_cache"
 	PATH_PROJECT_PRODUCT_CACHE = "product_cache"
 	PATH_PROJECT_TREE_CACHE    = "tree_cache"
+	PATH_PROJECT_PROJECT_CACHE = "project_cache"
 )
 
 //格式化时间定义

@@ -28,7 +28,7 @@ func init() {
 	httpHandlerMap["GET"]["/user/restore"] = get_user_restore
 	httpHandlerMap["GET"]["/user/ajaxGetContactUsers"] = get_user_ajaxGetContactUsers
 }
-func get_user_login(data *TemplateData) {
+func get_user_login(data *TemplateData) (err error) {
 	//检查是否登录
 	ws := data.ws
 	if data.User != nil {
@@ -38,15 +38,16 @@ func get_user_login(data *TemplateData) {
 	ws.Session()
 	data.Data["keepLogin"] = ""
 	data.Data["referer"] = ws.Header("Referer")
-	data.Data["title"] = data.Lang["user"]["common"].(string) + data.Lang["common"]["colon"].(string) + data.Lang["user"]["todo"].(string)
+	data.Data["title"] = data.Lang["user"]["login"].(string)
 	templateOut("user.login.html", data)
+	return
 }
-func get_user_logout(data *TemplateData) {
+func get_user_logout(data *TemplateData) (err error) {
 	data.ws.DelSession()
 	data.ws.Redirect(createLink("user", "login", nil))
 	return
 }
-func get_user_getsalt(data *TemplateData) {
+func get_user_getsalt(data *TemplateData) (e error) {
 	ws := data.ws
 	name := strings.Trim(ws.Post("account"), " ")
 	if name == "" {
@@ -56,7 +57,7 @@ func get_user_getsalt(data *TemplateData) {
 	out := protocol.GET_MSG_USER_GET_LoginSalt()
 	out.Name = name
 	var resdata *protocol.MSG_USER_GET_LoginSalt_result
-	err := HostConn.SendMsgWaitResultToDefault(out, &resdata)
+	err := data.SendMsgWaitResultToDefault(out, &resdata)
 	out.Put()
 	if err == nil {
 		session := ws.Session()
@@ -70,7 +71,7 @@ func get_user_getsalt(data *TemplateData) {
 	resdata.Put()
 	return
 }
-func post_user_login(data *TemplateData) {
+func post_user_login(data *TemplateData) (e error) {
 	ws := data.ws
 
 	name := strings.Trim(ws.Post("account"), " ")
@@ -85,7 +86,7 @@ func post_user_login(data *TemplateData) {
 	out.Rand = session.Load_int64("login_rand")
 	session.Delete("login_rand")
 	var resdata *protocol.MSG_USER_CheckPasswd_result
-	err := HostConn.SendMsgWaitResultToDefault(out, &resdata)
+	err := data.SendMsgWaitResultToDefault(out, &resdata)
 	out.Put()
 	if err == nil {
 		if resdata.Result == protocol.Success {
@@ -112,11 +113,10 @@ func post_user_login(data *TemplateData) {
 	return
 }
 
-func get_user_create(data *TemplateData) {
+func get_user_create(data *TemplateData) (err error) {
 	deptList, err := dept_getOptionMenu(0)
 	if err != nil {
-		data.OutErr(errors.New(data.Lang["dept"]["err"].(map[string]string)[protocol.Err_DeptNotFound.String()]))
-		return
+		return errors.New(data.Lang["dept"]["err"].(map[string]string)[protocol.Err_DeptNotFound.String()])
 	}
 
 	roleGroup := make(map[string]string)
@@ -130,7 +130,7 @@ func get_user_create(data *TemplateData) {
 	out := protocol.GET_MSG_USER_GET_LoginSalt()
 	out.Name = data.User.Account
 	var resdata *protocol.MSG_USER_GET_LoginSalt_result
-	err = HostConn.SendMsgWaitResultToDefault(out, &resdata)
+	err = data.SendMsgWaitResultToDefault(out, &resdata)
 	out.Put()
 	if err == nil {
 		session := data.ws.Session()
@@ -139,24 +139,21 @@ func get_user_create(data *TemplateData) {
 		data.Data["salt"] = resdata.Salt
 		data.Data["rand"] = strconv.Itoa(int(r))
 	} else {
-		data.OutErr(err)
 		return
 	}
 	resdata.Put()
 	templateOut("user.create.html", data)
 	return
 }
-func get_user_edit(data *TemplateData) {
+func get_user_edit(data *TemplateData) (err error) {
 	userID, _ := strconv.Atoi(data.ws.Query("userID"))
 	userInfo := HostConn.GetUserCacheById(int32(userID))
 	if userInfo == nil {
-		data.OutErr(errors.New(data.Lang["user"]["error"].(map[string]string)[protocol.Err_UserInfoNotFound.String()]))
-		return
+		return errors.New(data.Lang["user"]["error"].(map[string]string)[protocol.Err_UserInfoNotFound.String()])
 	}
 	deptList, err := dept_getOptionMenu(0)
 	if err != nil {
-		data.OutErr(errors.New(data.Lang["dept"]["err"].(map[string]string)[protocol.Err_DeptNotFound.String()]))
-		return
+		return errors.New(data.Lang["dept"]["err"].(map[string]string)[protocol.Err_DeptNotFound.String()])
 	}
 	data.Data["groups"], _ = user_getGroupOptionMenu()
 	data.Data["userGroups"] = userInfo.Group
@@ -165,7 +162,7 @@ func get_user_edit(data *TemplateData) {
 	out := protocol.GET_MSG_USER_GET_LoginSalt()
 	out.Name = data.User.Account
 	var resdata *protocol.MSG_USER_GET_LoginSalt_result
-	err = HostConn.SendMsgWaitResultToDefault(out, &resdata)
+	err = data.SendMsgWaitResultToDefault(out, &resdata)
 	out.Put()
 	if err == nil {
 		session := data.ws.Session()
@@ -174,7 +171,6 @@ func get_user_edit(data *TemplateData) {
 		data.Data["salt"] = resdata.Salt
 		data.Data["rand"] = strconv.Itoa(int(r))
 	} else {
-		data.OutErr(err)
 		return
 	}
 	resdata.Put()
@@ -218,7 +214,7 @@ func user_getGroupListByIds(ids []int32) (res []*protocol.MSG_USER_Group_cache, 
 	}
 	return
 }
-func post_user_edit(data *TemplateData) {
+func post_user_edit(data *TemplateData) (e error) {
 	userID, _ := strconv.Atoi(data.ws.Post("userID"))
 	if userID < 0 {
 		data.ajaxResult(false, map[string]string{"account": data.Lang["user"]["error"].(map[string]string)["NotFoundUserInfo"]}, createLink("company", "browse", nil))
@@ -337,11 +333,11 @@ func user_checkNewpasswd(newpwd string, data *TemplateData) bool {
 	}
 	return true
 }
-func get_user_delete(data *TemplateData) {
+func get_user_delete(data *TemplateData) (err error) {
 	out := protocol.GET_MSG_USER_GET_LoginSalt()
 	out.Name = data.User.Account
 	var resdata *protocol.MSG_USER_GET_LoginSalt_result
-	err := HostConn.SendMsgWaitResultToDefault(out, &resdata)
+	err = data.SendMsgWaitResultToDefault(out, &resdata)
 	out.Put()
 	if err == nil {
 		session := data.ws.Session()
@@ -351,13 +347,12 @@ func get_user_delete(data *TemplateData) {
 		data.Data["rand"] = strconv.Itoa(int(r))
 		resdata.Put()
 	} else {
-		data.OutErr(err)
 		return
 	}
 	templateOut("user.delete.html", data)
 	return
 }
-func post_user_delete(data *TemplateData) {
+func post_user_delete(data *TemplateData) (e error) {
 	msg, err := data.GetMsg()
 	if err != nil {
 		data.ajaxResult(false, map[string]string{"verifyPassword": fmt.Sprintf(data.Lang["common"]["error"].(map[string]string)["ErrGetMsg"], err)}, "")
@@ -396,34 +391,35 @@ func post_user_delete(data *TemplateData) {
 
 	return
 }
-func get_user_restore(data *TemplateData) {
+func get_user_restore(data *TemplateData) (err error) {
 	userID, _ := strconv.Atoi(data.ws.Query("userID"))
 	outupdate := protocol.GET_MSG_USER_INFO_updateByID()
 	outupdate.UserID = int32(userID)
 	outupdate.Update = map[string]string{
 		"Deleted": "0",
 	}
-	err := HostConn.SendMsgWaitResultToDefault(outupdate, nil)
-	if err != nil {
-		data.OutErr(err)
+	if err = data.SendMsgWaitResultToDefault(outupdate, nil); err != nil {
 		return
 	}
 	outupdate.Put()
 	data.ws.WriteString(js.Location("back", "_self"))
 	return
 }
-func user_getPairs(params string) ([]protocol.HtmlKeyValueStr, error) {
+func user_getPairs(data *TemplateData, params string, usersToAppended ...int32) ([]protocol.HtmlKeyValueStr, error) {
 	out := protocol.GET_MSG_USER_getPairs()
 	out.Params = params
+	if len(usersToAppended) == 1 {
+		out.UsersToAppended = usersToAppended[0]
+	}
 	var result *protocol.MSG_USER_getPairs_result
-	if err := HostConn.SendMsgWaitResultToDefault(out, &result); err != nil {
+	if err := data.SendMsgWaitResultToDefault(out, &result); err != nil {
 		return nil, err
 	}
 	out.Put()
 	return result.List, nil
 }
-func get_user_ajaxGetContactUsers(data *TemplateData) {
-	users, err := user_getPairs("devfirst|nodeleted")
+func get_user_ajaxGetContactUsers(data *TemplateData) (e error) {
+	users, err := user_getPairs(data, "devfirst|nodeleted")
 	if err != nil {
 		data.ws.WriteString(js.Alert(data.Lang["user"]["error"].(map[string]string)["NotFoundUserInfo"]))
 		return
@@ -436,10 +432,31 @@ func get_user_ajaxGetContactUsers(data *TemplateData) {
 	out := protocol.GET_MSG_USER_getContactListById()
 	out.Id = int32(listID)
 	var result *protocol.MSG_USER_getContactListById_result
-	if err = HostConn.SendMsgWaitResultToDefault(out, &result); err != nil {
+	if err = data.SendMsgWaitResultToDefault(out, &result); err != nil {
 		data.ws.WriteString(js.Alert(err.Error()))
 		return
 	}
 	data.ws.WriteString(html_select("mailto", users, result.Result.UserList, "class='form-control' multiple data-placeholder='"+data.Lang["common"]["chooseUsersToMail"].(string)+"'"))
+	return
+}
+func user_getGroupGetPairs() (list []protocol.HtmlKeyValueStr, err error) {
+	res, err := HostConn.CacheGetPath(protocol.UserServerNo, protocol.PATH_USER_GROUP_CACHE)
+	if err != nil {
+		return nil, err
+	}
 
+	var groups []*protocol.MSG_USER_Group_cache
+	buf := bufpool.Get().(*libraries.MsgBuffer)
+	for _, b := range res {
+		buf.Reset()
+		buf.Write(b)
+		if v, ok := protocol.READ_MSG_DATA(buf).(*protocol.MSG_USER_Group_cache); ok {
+			groups = append(groups, v)
+		}
+	}
+	protocol.Order_group(groups, nil)
+	for _, v := range groups {
+		list = append(list, protocol.HtmlKeyValueStr{strconv.Itoa(int(v.Id)), v.Name})
+	}
+	return
 }

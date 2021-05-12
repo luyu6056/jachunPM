@@ -4,7 +4,7 @@ $.initSidebar();
 {{getTemplateJs .App.TemplateName}}
 </script>
 <iframe frameborder='0' name='hiddenwin' id='hiddenwin' scrolling='no' class='debugwin hidden'></iframe>
-{{if eq .App.onlybody ""}}
+{{if not .App.onlybody}}
 </main>
 <footer id='footer'>
     <!--新增的全局悬浮-->

@@ -1,0 +1,212 @@
+{{template "header.html" .}}
+  <div id='mainContent' class="main-row">
+    <div class="col-8 main-col">
+      <div class="row">
+        <div class="col-sm-6">
+          <div class="panel block-dynamic" style="height: 280px">
+            <div class="panel-heading">
+              <div class="panel-title">{{.Lang.project.latestDynamic}}</div>
+              <nav class="panel-actions nav nav-default">
+                <li>{{common_printLink . "project" "dynamic"  (strAdd "projectID=" $.Data.project.Id "&type=all")  "<i class='icon icon-more icon-sm'></i>" "" (strAdd "title=" .Lang.common.more)}}</li>
+              </nav>
+            </div>
+            <div class="panel-body scrollbar-hover">
+              <ul class="timeline timeline-tag-left no-margin">
+                {{range $action := .Data.dynamics}}
+                <li{{if $action.Major}} class='active'{{end}}>
+                  <div class='text-ellipsis'>
+                    <span class="timeline-tag">{{date "2006-01-02 15:04" $action.Date}}</span>
+                    <span class="timeline-text">{{getValue $.Data.users $action.ActorId}} {{$action.ActionLabel}}{{$action.ObjectLabel}} {{html_a $action.ObjectLink  $action.ObjectName ""  (strAdd "title='" $action.ObjectName "'")}}</span>
+                  </div>
+                </li>
+                {{end}}
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6">
+          <div class="panel block-team" style="height: 240px">
+            <div class="panel-heading">
+              <div class="panel-title">{{.Lang.project.relatedMember}}</div>
+              <nav class="panel-actions nav nav-default">
+                <li>{{common_printLink . "project" "team" (strAdd "projectID=" $.Data.project.Id)  "<i class='icon icon-more icon-sm'></i>" "" (strAdd "title=" .Lang.common.more)}}</li>
+              </nav>
+            </div>
+            <div class="panel-body">
+              <div class="row row-grid">
+                {{if .Data.PM}}
+                <div class="col-xs-6"><i class="icon icon-person icon-sm text-muted"></i> {{.Data.PM}} <span class="text-muted">（{{.Lang.project.PM}}）</span></div>
+                {{end}}
+                {{if .Data.PO}}
+                <div class="col-xs-6"><i class="icon icon-person icon-sm text-muted"></i> {{.Data.PO}} <span class="text-muted">（{{.Lang.project.PO}}）</span></div>
+                {{end}}
+                {{if .Data.QD}}
+                <div class="col-xs-6"><i class="icon icon-person icon-sm text-muted"></i> {{.Data.QD}} <span class="text-muted">（{{.Lang.project.QD}}）</span></div>
+                {{end}}
+                {{if .Data.RD}}
+                <div class="col-xs-6"><i class="icon icon-person icon-sm text-muted"></i> {{.Data.RD}} <span class="text-muted">（{{.Lang.project.RD}}）</span></div>
+                {{end}}
+             
+
+                {{if common_hasPriv . "project" "team"}}
+                {{range $teamMember := .Data.teamMembers}}
+                <div class="col-xs-6"><i class="icon icon-person icon-sm text-muted"></i> {{getValue $.Data.users $teamMember.Uid}}</div>
+                {{end}}
+                <div class="col-xs-6">
+                  {{common_printLink . "project" "manageMembers" (strAdd "projectID=" $.Data.project.Id) (strAdd "<i class='icon icon-plus hl-primary text-primary'></i> &nbsp;" .Lang.project.manageMembers) "" "class='text-muted'"}}
+                </div>
+                {{end}}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-12">
+          {{template "action.html"}}
+        </div>
+      </div>
+      <div class='main-actions'>
+        <div class="btn-toolbar">
+          
+          {{common_printBack . .Data.browseLink}}
+          {{if not $.Data.project.Deleted}}{{$param1 := strAdd "projectID=" $.Data.project.Id}}{{$param2 := strAdd "project=" $.Data.project.Id}}
+              <div class='divider'></div>
+              {{common_printIcon . "project" "start"     $param1  $.Data.project "button" "" "" "iframe" "true"}}
+              {{common_printIcon . "project" "activate"  $param1  $.Data.project "button" "" "" "iframe" "true"}}
+              {{common_printIcon . "project" "putoff"    $param1  $.Data.project "button" "" "" "iframe" "true"}}
+              {{common_printIcon . "project" "suspend"   $param1  $.Data.project "button" "" "" "iframe" "true"}}
+              {{common_printIcon . "project" "close"     $param1  $.Data.project "button" "" "" "iframe" "true"}}
+
+              <div class='divider'></div>
+              {{common_printIcon . "project" "edit"  $param2  $.Data.project "" ""}}
+              {{common_printIcon . "project" "delete"  $param2  $.Data.project "button" "" "hiddenwin"}}
+          {{end}}
+        </div>
+      </div>
+    </div>
+    <div class="col-4 side-col">
+      <div class="row">
+        <div class="col-sm-12">
+          <div class="cell">
+            <div class="detail">
+              <h2 class="detail-title"><span class="label-id">{{$.Data.project.Id}}</span> <span class="label label-light label-outline">{{$.Data.project.Code}}</span> {{$.Data.project.Name}}</h2>
+              <div class="detail-content article-content">
+                <p><span class="text-limit" data-limit-size="40">{{bbcode2html $.Data.project.Desc false}}</span><a class="text-primary text-limit-toggle small" data-text-expand="{{.Lang.common.expand}}"  data-text-collapse="{{.Lang.common.collapse}}"></a></p>
+                <p>
+                  {{if $.Data.project.Deleted}}
+                  <span class='label label-danger label-outline'>{{.Lang.project.deleted}}</span>
+                  {{end}}
+                  <span class="label label-primary label-outline">{{getValue .Lang.project.typeList $.Data.project.Type}}</span>
+                  {{if $.Data.project.Delay}}
+                  <span class="label label-danger label-outline">{{.Lang.project.delayed}}</span>
+                  {{else}}
+                  <span class="label label-success label-outline">{{getValue .Lang.project.statusList $.Data.project.Status}}</span>
+                  {{end}}
+                </p>
+              </div>
+            </div>
+            <div class="detail">
+              <div class="detail-title">
+                <strong>{{.Lang.project.manageProducts}}</strong>
+                {{common_printLink . "project" "manageproducts"  (strAdd "projectID=" $.Data.project.Id)  "<i class='icon icon-more icon-sm'></i>" "" "class='btn btn-link pull-right muted'"}}
+              </div>
+              <div class="detail-content">
+                <div class="row row-grid">
+                  {{range $product := .Data.products}}{{range $branch := $product.Branchs}}
+                  <div class="col-xs-6">
+                    {{html_a (helper_createLink "product" "browse"  "productID=" $product.Id "&branch=" $branch.Id)  (strAdd "<i class='icon icon-cube text-muted'></i> " $product.Name  $branch.Name)}}
+                  </div>
+                  {{end}}{{end}}
+                </div>
+              </div>
+            </div>
+            <div class="detail">
+              <div class="detail-title"><strong>{{.Lang.project.linkPlan}}</strong></div>
+              <div class="detail-content">
+                <div class="row row-grid">
+                  {{range $product := .Data.products}}{{range $planID := $product.Plan}}{{$kvs := index $.Data.planGroups $product.Id}}
+                  {{if $kvs}}{{range $kv := $kvs}}{{if eq $kv.Key (string $planID)}}
+                  <div class="col-xs-12">{{html_a (helper_createLink "productplan" "view"  "planID=" $planID) (strAdd $product.Name "/" $kv.Value)}}</div>
+                  {{end}}{{end}}{{end}}{{end}}{{end}}
+                </div>
+              </div>
+            </div>
+            <div class='detail'>
+              <div class='detail-title'><strong>{{.Lang.project.lblStats}}</strong></div>
+              <div class="detail-content">
+                <table class='table table-data data-stats'>
+                  <tbody>
+                    <tr> 
+                      <td colspan="2">
+                        {{.Lang.projectCommon}}{{.Lang.project.progress}} <em>{{.Data.progress}}{{.Lang.common.percent}}</em> &nbsp;
+                        <div class="progress inline-block">
+                          <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="{{.Data.progress}}" aria-valuemin="0" aria-valuemax="100" style="width: {{.Data.progress}}{{.Lang.common.percent}}"></div>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>{{.Lang.project.begin}}</th>
+                      <td>{{date "2006-01-02" $.Data.project.Begin}}</td>
+                      <th>{{.Lang.project.totalEstimate}}</th>
+                      <td><em>{{index $.Data.project.Hours "totalEstimate"}}{{.Lang.project.workHour}}</em></td>
+                    </tr>
+                    <tr>
+                      <th>{{.Lang.project.end}}</th>
+                      <td>{{date "2006-01-02" $.Data.project.End}}</td>
+                      <th>{{.Lang.project.totalConsumed}}</th>
+                      <td><em>{{index $.Data.project.Hours "totalConsumed"}}{{.Lang.project.workHour}}</em></td>
+                    </tr>
+                    <tr>
+                      <th>{{.Lang.project.totalDays}}</th>
+                      <td>{{$.Data.project.Days}}</td>
+                      <th>{{.Lang.project.totalLeft}}</th>
+                      <td><em>{{index $.Data.project.Hours "totalLeft"}}{{.Lang.project.workHour}}</em></td>
+                    </tr>
+                    <tr>
+                      <th>{{.Lang.project.totalHours}}</th>
+                      <td><em>{{index $.Data.project.Hours "totalHours"}}{{.Lang.project.workHour}}</em></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="detail">
+              <div class="detail-title"><strong>{{.Lang.project.basicInfo}}</strong></div>
+              <div class="detail-content">
+                <table class="table table-data data-basic">
+                  <tbody>
+                    <tr>
+                      <th>{{.Lang.story.common}}</th>
+                      <td><em>{{.Data.statData.StoryCount}}</em></td>
+                      <th>{{.Lang.task.common}}</th>
+                      <td><em>{{.Data.statData.TaskCount}}</em></td>
+                      <th>{{.Lang.bug.common}}</th>
+                      <td><em>{{.Data.statData.BugCount}}</em></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="detail">
+              <div class="detail-title"><strong>{{.Lang.project.acl}}</strong></div>
+              <div class="detail-content">
+                <p>{{getValue .Lang.project.aclList $.Data.project.Acl}}</p>
+                {{if eq $.Data.project.Acl "custom"}}
+                <p>
+                  {{- range $id := $.Data.project.Whitelist}}{{range $kv := $.Data.groups}}{{if eq $kv.Key (string $id)}}
+                  {{$kv.Value}}&nbsp;
+                  {{- end}}{{end}}{{end}}
+                </p>
+                {{end}}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="mainActions" class='main-actions'>
+  <nav class="container"></nav>
+{{template "footer.html" .}}

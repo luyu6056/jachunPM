@@ -3,6 +3,7 @@ package protocol
 import (
 	"sync"
 	"libraries"
+	"time"
 )
 
 const (
@@ -43,6 +44,12 @@ const (
 	CMD_MSG_USER_insertUpdateContactList_result = -1137193468
 	CMD_MSG_USER_getGlobalContacts = -1348354556
 	CMD_MSG_USER_getGlobalContacts_result = -1400001276
+	CMD_MSG_USER_team_getByTypeRoot = -1425965820
+	CMD_MSG_USER_team_getByTypeRoot_result = -446270460
+	CMD_MSG_USER_team_info = 362981380
+	CMD_MSG_USER_team_addByList = 870918148
+	CMD_MSG_USER_Group_getPairs = 1806051844
+	CMD_MSG_USER_Group_getPairs_result = -820050940
 )
 
 type MSG_USER_GET_LoginSalt struct {
@@ -166,6 +173,7 @@ type MSG_USER_INFO_cache struct {
 	Address string
 	AclProducts map[int32]bool
 	AclProjects map[int32]bool
+	IsAdmin bool `db:"-"`
 }
 
 var pool_MSG_USER_INFO_cache = sync.Pool{New: func() interface{} { return &MSG_USER_INFO_cache{} }}
@@ -203,6 +211,7 @@ func (data *MSG_USER_INFO_cache) Put() {
 	data.Address = ``
 	data.AclProducts = nil
 	data.AclProjects = nil
+	data.IsAdmin = false
 	pool_MSG_USER_INFO_cache.Put(data)
 }
 func (data *MSG_USER_INFO_cache) write(buf *libraries.MsgBuffer) {
@@ -238,6 +247,7 @@ func WRITE_MSG_USER_INFO_cache(data *MSG_USER_INFO_cache, buf *libraries.MsgBuff
 	WRITE_string(data.Address, buf)
 	WRITE_map(data.AclProducts,buf)
 	WRITE_map(data.AclProjects,buf)
+	WRITE_bool(data.IsAdmin, buf)
 }
 
 func READ_MSG_USER_INFO_cache(buf *libraries.MsgBuffer) *MSG_USER_INFO_cache {
@@ -279,6 +289,7 @@ func (data *MSG_USER_INFO_cache) read(buf *libraries.MsgBuffer) {
 	data.Address = READ_string(buf)
 	READ_map(&data.AclProducts,buf)
 	READ_map(&data.AclProjects,buf)
+	data.IsAdmin = READ_bool(buf)
 
 }
 
@@ -1614,8 +1625,8 @@ func (data *MSG_USER_getPairs_result) setQueryResultID(id uint32) {
 
 type MSG_USER_updateUserView struct {
 	QueryID uint32
-	ProjectId int32
-	ProductId int32
+	ProjectIds []int32
+	ProductIds []int32
 	UserIds []int32
 	GroupIds []int32
 }
@@ -1632,8 +1643,8 @@ func (data *MSG_USER_updateUserView) cmd() int32 {
 
 func (data *MSG_USER_updateUserView) Put() {
 	data.QueryID = 0
-	data.ProjectId = 0
-	data.ProductId = 0
+	data.ProjectIds = data.ProjectIds[:0]
+	data.ProductIds = data.ProductIds[:0]
 	data.UserIds = data.UserIds[:0]
 	data.GroupIds = data.GroupIds[:0]
 	pool_MSG_USER_updateUserView.Put(data)
@@ -1645,8 +1656,14 @@ func (data *MSG_USER_updateUserView) write(buf *libraries.MsgBuffer) {
 
 func WRITE_MSG_USER_updateUserView(data *MSG_USER_updateUserView, buf *libraries.MsgBuffer) {
 	WRITE_uint32(data.QueryID, buf)
-	WRITE_int32(data.ProjectId, buf)
-	WRITE_int32(data.ProductId, buf)
+	WRITE_int32(int32(len(data.ProjectIds)), buf)
+	for _, v := range data.ProjectIds{
+		WRITE_int32(v, buf)
+	}
+	WRITE_int32(int32(len(data.ProductIds)), buf)
+	for _, v := range data.ProductIds{
+		WRITE_int32(v, buf)
+	}
 	WRITE_int32(int32(len(data.UserIds)), buf)
 	for _, v := range data.UserIds{
 		WRITE_int32(v, buf)
@@ -1665,8 +1682,24 @@ func READ_MSG_USER_updateUserView(buf *libraries.MsgBuffer) *MSG_USER_updateUser
 
 func (data *MSG_USER_updateUserView) read(buf *libraries.MsgBuffer) {
 	data.QueryID = READ_uint32(buf)
-	data.ProjectId = READ_int32(buf)
-	data.ProductId = READ_int32(buf)
+	ProjectIds_len := int(READ_int32(buf))
+	if ProjectIds_len>cap(data.ProjectIds){
+		data.ProjectIds= make([]int32, ProjectIds_len)
+	}else{
+		data.ProjectIds = data.ProjectIds[:ProjectIds_len]
+	}
+	for i := 0; i < ProjectIds_len; i++ {
+		data.ProjectIds[i] = READ_int32(buf)
+	}
+	ProductIds_len := int(READ_int32(buf))
+	if ProductIds_len>cap(data.ProductIds){
+		data.ProductIds= make([]int32, ProductIds_len)
+	}else{
+		data.ProductIds = data.ProductIds[:ProductIds_len]
+	}
+	for i := 0; i < ProductIds_len; i++ {
+		data.ProductIds[i] = READ_int32(buf)
+	}
 	UserIds_len := int(READ_int32(buf))
 	if UserIds_len>cap(data.UserIds){
 		data.UserIds= make([]int32, UserIds_len)
@@ -2298,6 +2331,379 @@ func (data *MSG_USER_getGlobalContacts_result) getQueryResultID() uint32 {
 	return data.QueryResultID
 }
 func (data *MSG_USER_getGlobalContacts_result) setQueryResultID(id uint32) {
+	data.QueryResultID = id
+}
+
+type MSG_USER_team_getByTypeRoot struct {
+	QueryID uint32
+	Type string
+	Root int32
+}
+
+var pool_MSG_USER_team_getByTypeRoot = sync.Pool{New: func() interface{} { return &MSG_USER_team_getByTypeRoot{} }}
+
+func GET_MSG_USER_team_getByTypeRoot() *MSG_USER_team_getByTypeRoot {
+	return pool_MSG_USER_team_getByTypeRoot.Get().(*MSG_USER_team_getByTypeRoot)
+}
+
+func (data *MSG_USER_team_getByTypeRoot) cmd() int32 {
+	return CMD_MSG_USER_team_getByTypeRoot
+}
+
+func (data *MSG_USER_team_getByTypeRoot) Put() {
+	data.QueryID = 0
+	data.Type = ``
+	data.Root = 0
+	pool_MSG_USER_team_getByTypeRoot.Put(data)
+}
+func (data *MSG_USER_team_getByTypeRoot) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_team_getByTypeRoot,buf)
+	WRITE_MSG_USER_team_getByTypeRoot(data, buf)
+}
+
+func WRITE_MSG_USER_team_getByTypeRoot(data *MSG_USER_team_getByTypeRoot, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_string(data.Type, buf)
+	WRITE_int32(data.Root, buf)
+}
+
+func READ_MSG_USER_team_getByTypeRoot(buf *libraries.MsgBuffer) *MSG_USER_team_getByTypeRoot {
+	data := pool_MSG_USER_team_getByTypeRoot.Get().(*MSG_USER_team_getByTypeRoot)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_team_getByTypeRoot) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	data.Type = READ_string(buf)
+	data.Root = READ_int32(buf)
+
+}
+func (data *MSG_USER_team_getByTypeRoot) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_USER_team_getByTypeRoot) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_USER_team_getByTypeRoot_result struct {
+	QueryResultID uint32
+	List []*MSG_USER_team_info
+}
+
+var pool_MSG_USER_team_getByTypeRoot_result = sync.Pool{New: func() interface{} { return &MSG_USER_team_getByTypeRoot_result{} }}
+
+func GET_MSG_USER_team_getByTypeRoot_result() *MSG_USER_team_getByTypeRoot_result {
+	return pool_MSG_USER_team_getByTypeRoot_result.Get().(*MSG_USER_team_getByTypeRoot_result)
+}
+
+func (data *MSG_USER_team_getByTypeRoot_result) cmd() int32 {
+	return CMD_MSG_USER_team_getByTypeRoot_result
+}
+
+func (data *MSG_USER_team_getByTypeRoot_result) Put() {
+	data.QueryResultID = 0
+	for _,v := range data.List {
+		v.Put()
+	}
+	data.List = data.List[:0]
+	pool_MSG_USER_team_getByTypeRoot_result.Put(data)
+}
+func (data *MSG_USER_team_getByTypeRoot_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_team_getByTypeRoot_result,buf)
+	WRITE_MSG_USER_team_getByTypeRoot_result(data, buf)
+}
+
+func WRITE_MSG_USER_team_getByTypeRoot_result(data *MSG_USER_team_getByTypeRoot_result, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryResultID, buf)
+	WRITE_int32(int32(len(data.List)), buf)
+	for _, v := range data.List{
+		WRITE_MSG_USER_team_info(v, buf)
+	}
+}
+
+func READ_MSG_USER_team_getByTypeRoot_result(buf *libraries.MsgBuffer) *MSG_USER_team_getByTypeRoot_result {
+	data := pool_MSG_USER_team_getByTypeRoot_result.Get().(*MSG_USER_team_getByTypeRoot_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_team_getByTypeRoot_result) read(buf *libraries.MsgBuffer) {
+	data.QueryResultID = READ_uint32(buf)
+	List_len := int(READ_int32(buf))
+	if List_len>cap(data.List){
+		data.List= make([]*MSG_USER_team_info, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
+	for i := 0; i < List_len; i++ {
+		data.List[i] = READ_MSG_USER_team_info(buf)
+	}
+
+}
+func (data *MSG_USER_team_getByTypeRoot_result) getQueryResultID() uint32 {
+	return data.QueryResultID
+}
+func (data *MSG_USER_team_getByTypeRoot_result) setQueryResultID(id uint32) {
+	data.QueryResultID = id
+}
+
+type MSG_USER_team_info struct {
+	Id int32
+	Root int32
+	Type string
+	Uid int32
+	Account string
+	Role string
+	Limited string
+	Join time.Time
+	Days int16
+	Hours float64
+	Estimate float64
+	Consumed float64
+	Left float64
+	Order int8
+	Realname string `db:"-"`
+}
+
+var pool_MSG_USER_team_info = sync.Pool{New: func() interface{} { return &MSG_USER_team_info{} }}
+
+func GET_MSG_USER_team_info() *MSG_USER_team_info {
+	return pool_MSG_USER_team_info.Get().(*MSG_USER_team_info)
+}
+
+func (data *MSG_USER_team_info) cmd() int32 {
+	return CMD_MSG_USER_team_info
+}
+
+func (data *MSG_USER_team_info) Put() {
+	data.Id = 0
+	data.Root = 0
+	data.Type = ``
+	data.Uid = 0
+	data.Account = ``
+	data.Role = ``
+	data.Limited = ``
+	data.Join = time.Unix(0,0)
+	data.Days = 0
+	data.Hours = 0
+	data.Estimate = 0
+	data.Consumed = 0
+	data.Left = 0
+	data.Order = 0
+	data.Realname = ``
+	pool_MSG_USER_team_info.Put(data)
+}
+func (data *MSG_USER_team_info) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_team_info,buf)
+	WRITE_MSG_USER_team_info(data, buf)
+}
+
+func WRITE_MSG_USER_team_info(data *MSG_USER_team_info, buf *libraries.MsgBuffer) {
+	WRITE_int32(data.Id, buf)
+	WRITE_int32(data.Root, buf)
+	WRITE_string(data.Type, buf)
+	WRITE_int32(data.Uid, buf)
+	WRITE_string(data.Account, buf)
+	WRITE_string(data.Role, buf)
+	WRITE_string(data.Limited, buf)
+	WRITE_int64(data.Join.UnixNano(), buf)
+	WRITE_int16(data.Days, buf)
+	WRITE_float64(data.Hours, buf)
+	WRITE_float64(data.Estimate, buf)
+	WRITE_float64(data.Consumed, buf)
+	WRITE_float64(data.Left, buf)
+	WRITE_int8(data.Order, buf)
+	WRITE_string(data.Realname, buf)
+}
+
+func READ_MSG_USER_team_info(buf *libraries.MsgBuffer) *MSG_USER_team_info {
+	data := pool_MSG_USER_team_info.Get().(*MSG_USER_team_info)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_team_info) read(buf *libraries.MsgBuffer) {
+	data.Id = READ_int32(buf)
+	data.Root = READ_int32(buf)
+	data.Type = READ_string(buf)
+	data.Uid = READ_int32(buf)
+	data.Account = READ_string(buf)
+	data.Role = READ_string(buf)
+	data.Limited = READ_string(buf)
+	data.Join = time.Unix(0, READ_int64(buf))
+	data.Days = READ_int16(buf)
+	data.Hours = READ_float64(buf)
+	data.Estimate = READ_float64(buf)
+	data.Consumed = READ_float64(buf)
+	data.Left = READ_float64(buf)
+	data.Order = READ_int8(buf)
+	data.Realname = READ_string(buf)
+
+}
+
+type MSG_USER_team_addByList struct {
+	QueryID uint32
+	List []*MSG_USER_team_info
+}
+
+var pool_MSG_USER_team_addByList = sync.Pool{New: func() interface{} { return &MSG_USER_team_addByList{} }}
+
+func GET_MSG_USER_team_addByList() *MSG_USER_team_addByList {
+	return pool_MSG_USER_team_addByList.Get().(*MSG_USER_team_addByList)
+}
+
+func (data *MSG_USER_team_addByList) cmd() int32 {
+	return CMD_MSG_USER_team_addByList
+}
+
+func (data *MSG_USER_team_addByList) Put() {
+	data.QueryID = 0
+	for _,v := range data.List {
+		v.Put()
+	}
+	data.List = data.List[:0]
+	pool_MSG_USER_team_addByList.Put(data)
+}
+func (data *MSG_USER_team_addByList) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_team_addByList,buf)
+	WRITE_MSG_USER_team_addByList(data, buf)
+}
+
+func WRITE_MSG_USER_team_addByList(data *MSG_USER_team_addByList, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_int32(int32(len(data.List)), buf)
+	for _, v := range data.List{
+		WRITE_MSG_USER_team_info(v, buf)
+	}
+}
+
+func READ_MSG_USER_team_addByList(buf *libraries.MsgBuffer) *MSG_USER_team_addByList {
+	data := pool_MSG_USER_team_addByList.Get().(*MSG_USER_team_addByList)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_team_addByList) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	List_len := int(READ_int32(buf))
+	if List_len>cap(data.List){
+		data.List= make([]*MSG_USER_team_info, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
+	for i := 0; i < List_len; i++ {
+		data.List[i] = READ_MSG_USER_team_info(buf)
+	}
+
+}
+func (data *MSG_USER_team_addByList) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_USER_team_addByList) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_USER_Group_getPairs struct {
+	QueryID uint32
+}
+
+var pool_MSG_USER_Group_getPairs = sync.Pool{New: func() interface{} { return &MSG_USER_Group_getPairs{} }}
+
+func GET_MSG_USER_Group_getPairs() *MSG_USER_Group_getPairs {
+	return pool_MSG_USER_Group_getPairs.Get().(*MSG_USER_Group_getPairs)
+}
+
+func (data *MSG_USER_Group_getPairs) cmd() int32 {
+	return CMD_MSG_USER_Group_getPairs
+}
+
+func (data *MSG_USER_Group_getPairs) Put() {
+	data.QueryID = 0
+	pool_MSG_USER_Group_getPairs.Put(data)
+}
+func (data *MSG_USER_Group_getPairs) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_Group_getPairs,buf)
+	WRITE_MSG_USER_Group_getPairs(data, buf)
+}
+
+func WRITE_MSG_USER_Group_getPairs(data *MSG_USER_Group_getPairs, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+}
+
+func READ_MSG_USER_Group_getPairs(buf *libraries.MsgBuffer) *MSG_USER_Group_getPairs {
+	data := pool_MSG_USER_Group_getPairs.Get().(*MSG_USER_Group_getPairs)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_Group_getPairs) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+
+}
+func (data *MSG_USER_Group_getPairs) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_USER_Group_getPairs) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_USER_Group_getPairs_result struct {
+	QueryResultID uint32
+	List []HtmlKeyValueStr
+}
+
+var pool_MSG_USER_Group_getPairs_result = sync.Pool{New: func() interface{} { return &MSG_USER_Group_getPairs_result{} }}
+
+func GET_MSG_USER_Group_getPairs_result() *MSG_USER_Group_getPairs_result {
+	return pool_MSG_USER_Group_getPairs_result.Get().(*MSG_USER_Group_getPairs_result)
+}
+
+func (data *MSG_USER_Group_getPairs_result) cmd() int32 {
+	return CMD_MSG_USER_Group_getPairs_result
+}
+
+func (data *MSG_USER_Group_getPairs_result) Put() {
+	data.QueryResultID = 0
+	data.List = data.List[:0]
+	pool_MSG_USER_Group_getPairs_result.Put(data)
+}
+func (data *MSG_USER_Group_getPairs_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_Group_getPairs_result,buf)
+	WRITE_MSG_USER_Group_getPairs_result(data, buf)
+}
+
+func WRITE_MSG_USER_Group_getPairs_result(data *MSG_USER_Group_getPairs_result, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryResultID, buf)
+	WRITE_int32(int32(len(data.List)), buf)
+	for _, v := range data.List{
+		WRITE_HtmlKeyValueStr(v, buf)
+	}
+}
+
+func READ_MSG_USER_Group_getPairs_result(buf *libraries.MsgBuffer) *MSG_USER_Group_getPairs_result {
+	data := pool_MSG_USER_Group_getPairs_result.Get().(*MSG_USER_Group_getPairs_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_Group_getPairs_result) read(buf *libraries.MsgBuffer) {
+	data.QueryResultID = READ_uint32(buf)
+	List_len := int(READ_int32(buf))
+	if List_len>cap(data.List){
+		data.List= make([]HtmlKeyValueStr, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
+	for i := 0; i < List_len; i++ {
+		data.List[i] = READ_HtmlKeyValueStr(buf)
+	}
+
+}
+func (data *MSG_USER_Group_getPairs_result) getQueryResultID() uint32 {
+	return data.QueryResultID
+}
+func (data *MSG_USER_Group_getPairs_result) setQueryResultID(id uint32) {
 	data.QueryResultID = id
 }
 

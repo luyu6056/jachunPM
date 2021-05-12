@@ -13,6 +13,7 @@ const (
 	TABLE_DEPT        = "dept"
 	TABLE_GROUP       = "group"
 	TABLE_USERCONTACT = "usercontact"
+	TABLE_TEAM        = "team"
 )
 
 func Init() *mysql.MysqlDB {
@@ -21,7 +22,10 @@ func Init() *mysql.MysqlDB {
 		log.Fatalf("数据库连接失败 %v", err)
 	}
 	if config.Config.MysqlMaxConn > 0 {
-		db.MaxOpenConns = config.Config.MysqlMaxConn
+		db.SetMaxOpenConns(config.Config.MysqlMaxConn)
+	}
+	if err = db.Ping(); err != nil {
+		log.Fatalf("数据库启动失败 %v", err)
 	}
 	errs := db.StoreEngine("Innodb").Sync2(
 		new(User),
@@ -29,6 +33,7 @@ func Init() *mysql.MysqlDB {
 		new(Dept),
 		new(Group),
 		new(Usercontact),
+		new(Team),
 	)
 	if errs != nil {
 		log.Fatalf("数据库启动失败%v", errs)
@@ -148,4 +153,25 @@ type Usercontact struct {
 
 func (*Usercontact) TableName() string {
 	return TABLE_USERCONTACT
+}
+
+type Team struct {
+	Id       int32     `db:"auto_increment;pk"`
+	Root     int32     `db:"index"`
+	Type     string    `db:"index"`
+	Uid      int32     `db:"index"`
+	Account  string    `db:"type:varchar(30)"`
+	Role     string    `db:"type:varchar(30)"`
+	Limited  string    `db:"default('no');type:varchar(8)"`
+	Join     time.Time `db:"type:date"`
+	Days     int16
+	Hours    float64
+	Estimate float64
+	Consumed float64
+	Left     float64
+	Order    int8 `db:"not null;default(0)"`
+}
+
+func (*Team) TableName() string {
+	return TABLE_TEAM
 }

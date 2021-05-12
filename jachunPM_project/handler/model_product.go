@@ -62,7 +62,7 @@ func product_insert(data *protocol.MSG_PROJECT_product_insert, in *protocol.Msg)
 			return
 		}
 		out := protocol.GET_MSG_USER_updateUserView()
-		out.ProductId = data.Data.Id
+		out.ProductIds = []int32{data.Data.Id}
 		if data.Data.PO > 0 {
 			out.UserIds = append(out.UserIds, data.Data.PO)
 		}
@@ -80,6 +80,7 @@ func product_insert(data *protocol.MSG_PROJECT_product_insert, in *protocol.Msg)
 		}
 		session.CommitCallback(func() {
 			product_setCache(int32(id))
+			in.ActionCreate("product", int32(id), "opened", "", "", []int32{int32(id)}, nil)
 		})
 		session.Commit()
 
@@ -97,14 +98,44 @@ func product_setCache(id int32) {
 	product := protocol.GET_MSG_PROJECT_product_cache()
 	HostConn.DB.Table(db.TABLE_PRODUCT).Prepare().Where("Id=?", id).Find(&product)
 	if product.Id != 0 {
-		HostConn.DB.Table(db.TABLE_BRANCH).Prepare().Where("Product=?", id).Order("`Order` asc").Limit(0).Select(&product.Branchs)
-		var ids = make([]int32, len(product.Branchs))
+		//检查branch分支
+		HostConn.DB.Table(db.TABLE_BRANCH).Prepare().Where("Product=?", id).Order("`Order` asc,Id asc").Limit(0).Select(&product.Branchs)
+		var branchIds = make([]int32, len(product.Branchs))
+		matchBranch := true
 		for k, b := range product.Branchs {
-			ids[k] = b.Id
+			if matchBranch {
+				if k >= len(product.Branch) {
+					matchBranch = false
+				} else {
+					if b.Id != product.Branch[k] {
+						matchBranch = false
+					}
+				}
+			}
+			branchIds[k] = b.Id
 		}
-		HostConn.DB.Table(db.TABLE_PRODUCT).Prepare().Where("Id=?", id).Update(map[string]interface{}{"Branch": ids})
-		HostConn.CacheSet(protocol.PATH_PROJECT_PRODUCT_CACHE, strconv.Itoa(int(product.Id)), product, 0)
 
+		//检查plan计划
+		res, _ := HostConn.DB.Table(db.TABLE_PRODUCTPLAN).Prepare().Field("Id").Where("Product=?", id).Limit(0).Order("`Order` asc,Id asc").SelectMap()
+		var planIds = make([]int32, len(res))
+		matchPlan := true
+		for k, v := range res {
+			id, _ := strconv.Atoi(v["Id"])
+			if matchPlan {
+				if k >= len(product.Plan) {
+					matchPlan = false
+				} else {
+					if int32(id) != product.Plan[k] {
+						matchPlan = false
+					}
+				}
+			}
+			planIds[k] = int32(id)
+		}
+		if !matchPlan || !matchBranch {
+			HostConn.DB.Table(db.TABLE_PRODUCT).Prepare().Where("Id=?", id).Update(map[string]interface{}{"Branch": branchIds, "Plan": planIds})
+		}
+		HostConn.CacheSet(protocol.PATH_PROJECT_PRODUCT_CACHE, strconv.Itoa(int(product.Id)), product, 0)
 	}
 	product.Put()
 }
@@ -142,6 +173,24 @@ func product_getStories(data *protocol.MSG_PROJECT_product_getStories, in *proto
 		list, err = story_getProductStories(data.ProductID, data.Branch, modules, []string{"all"}, data.Sort, data.Page, data.PerPage, &data.Total)
 	case "bysearch":
 		list, err = story_getBySearch(data.ProductID, data.Branch, 0, data.Where, data.Sort, data.Page, data.PerPage, &data.Total)
+	case "assignedtome":
+		list, err = story_getByAssignedTo(data.ProductID, data.Branch, modules, data.Uid, data.Sort, data.Page, data.PerPage, &data.Total)
+	case "openedbyme":
+		list, err = story_getByOpenedBy(data.ProductID, data.Branch, modules, data.Uid, data.Sort, data.Page, data.PerPage, &data.Total)
+	case "reviewedbyme":
+		list, err = story_getByReviewedBy(data.ProductID, data.Branch, modules, data.Uid, data.Sort, data.Page, data.PerPage, &data.Total)
+	case "closedbyme":
+		list, err = story_getByClosedBy(data.ProductID, data.Branch, modules, data.Uid, data.Sort, data.Page, data.PerPage, &data.Total)
+	case "draftstory":
+		list, err = story_getByStatus(data.ProductID, data.Branch, modules, "draft", data.Sort, data.Page, data.PerPage, &data.Total)
+	case "activestory":
+		list, err = story_getByStatus(data.ProductID, data.Branch, modules, "active", data.Sort, data.Page, data.PerPage, &data.Total)
+	case "changedstory":
+		list, err = story_getByStatus(data.ProductID, data.Branch, modules, "changed", data.Sort, data.Page, data.PerPage, &data.Total)
+	case "closedstory":
+		list, err = story_getByStatus(data.ProductID, data.Branch, modules, "closed", data.Sort, data.Page, data.PerPage, &data.Total)
+	case "willclose":
+		list, err = story_get2BeClosed(data.ProductID, data.Branch, modules, data.Sort, data.Page, data.PerPage, &data.Total)
 	}
 	if err != nil {
 		return
@@ -168,18 +217,7 @@ func product_getStories(data *protocol.MSG_PROJECT_product_getStories, in *proto
 	out.List = list
 	in.SendResult(out)
 	out.Put()
-	/*
 
-	  if($browseType == 'bysearch')     $stories = $this->story->getBySearch($productID, $queryID, $sort, $pager, '', $branch);
-	  if($browseType == 'assignedtome') $stories = $this->story->getByAssignedTo($productID, $branch, $modules, $this->app->user->account, $sort, $pager);
-	  if($browseType == 'openedbyme')   $stories = $this->story->getByOpenedBy($productID, $branch, $modules, $this->app->user->account, $sort, $pager);
-	  if($browseType == 'reviewedbyme') $stories = $this->story->getByReviewedBy($productID, $branch, $modules, $this->app->user->account, $sort, $pager);
-	  if($browseType == 'closedbyme')   $stories = $this->story->getByClosedBy($productID, $branch, $modules, $this->app->user->account, $sort, $pager);
-	  if($browseType == 'draftstory')   $stories = $this->story->getByStatus($productID, $branch, $modules, 'draft', $sort, $pager);
-	  if($browseType == 'activestory')  $stories = $this->story->getByStatus($productID, $branch, $modules, 'active', $sort, $pager);
-	  if($browseType == 'changedstory') $stories = $this->story->getByStatus($productID, $branch, $modules, 'changed', $sort, $pager);
-	  if($browseType == 'willclose')    $stories = $this->story->get2BeClosed($productID, $branch, $modules, $sort, $pager);
-	  if($browseType == 'closedstory')  $stories = $this->story->getByStatus($productID, $branch, $modules, 'closed', $sort, $pager);*/
 }
 func product_update(data *protocol.MSG_PROJECT_product_update, in *protocol.Msg) {
 	var oldProduct *db.Product
@@ -242,6 +280,7 @@ func product_update(data *protocol.MSG_PROJECT_product_update, in *protocol.Msg)
 	   }*/
 	session.CommitCallback(func() {
 		product_setCache(oldProduct.Id)
+		in.ActionCreate("product", oldProduct.Id, "edited", "", "", []int32{oldProduct.Id}, nil)
 	})
 	session.Commit()
 	in.WriteErr(nil)
@@ -329,4 +368,17 @@ func product_deleteBranch(data *protocol.MSG_PROJECT_product_deleteBranch, in *p
 		product_setCache(data.ProductID)
 	}
 	return
+}
+func product_getPairsByIds(data *protocol.MSG_PROJECT_product_getPairsByIds, in *protocol.Msg) {
+	var products []*db.Product
+	if err := in.DB.Table(db.TABLE_PRODUCT).Field("Id,Name").Where(map[string]interface{}{"Id": data.Ids}).Limit(0).Select(&products); err != nil {
+		in.WriteErr(err)
+		return
+	}
+	out := protocol.GET_MSG_PROJECT_product_getPairsByIds_result()
+	for _, p := range products {
+		out.List = append(out.List, protocol.HtmlKeyValueStr{strconv.Itoa(int(p.Id)), p.Name})
+	}
+	in.SendResult(out)
+	out.Put()
 }

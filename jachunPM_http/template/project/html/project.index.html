@@ -1,0 +1,9 @@
+{{template "header.html" .}}
+{{if not .Data.projects}}
+<div class="table-empty-tip">
+  <p><span class="text-muted">{{.Lang.project.noProject}}</span> {{common_printLink . "project" "create" ""  (strAdd "<i class='icon icon-plus'></i> "  .Lang.project.create) "" "class='btn btn-info'"}}</p>
+</div>
+{{else}}
+{{fetch . "block" "dashboard" "module=project"}}
+{{end}}
+{{template "footer.html" .}}

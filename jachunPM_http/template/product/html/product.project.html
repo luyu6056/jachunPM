@@ -1,0 +1,67 @@
+{{template "header.html" .}}
+<div id="mainMenu" class="clearfix">
+  <div class="btn-toolbar pull-left">
+    <span class='btn btn-link btn-active-text'><span class='text'>{{.Lang.product.project}}</span></span>
+  </div>
+</div>
+<div id="mainContent">
+  {{if not .Data.projects}}
+  <div class="table-empty-tip">
+    <p>
+      <span class="text-muted">{{.Lang.project.noProject}}</span>
+      {{if common_hasPriv . "project" "create"}}
+      <span class="text-muted">{{.Lang.common.youCould}}</span>
+      {{html_a (helper_createLink "project" "create")  (strAdd "<i class='icon icon-plus'></i> " .Lang.project.create)  "" "class='btn btn-info'"}}
+      {{end}}
+    </p>
+  </div>
+  {{else}}
+  <form class='main-table table-project'>
+    <table class="table table-fixed">
+      <thead>
+        <tr>
+          <th>{{.Lang.project.name}}</th>
+          <th class='w-100px'>{{.Lang.project.code}}</th>
+          <th class='w-120px'>{{.Lang.project.end}}</th>
+          <th class='w-80px'>{{.Lang.project.status}}</th>
+          <th class='w-50px'>{{.Lang.project.totalEstimate}}</th>
+          <th class='w-50px'>{{.Lang.project.totalConsumed}}</th>
+          <th class='w-50px'>{{.Lang.project.totalLeft}}</th>
+          <th class='w-150px'>{{.Lang.project.progress}}</th>
+
+        </tr>
+      </thead>
+      <tbody>
+        {{range $key,$project := .Data.projects}}
+        <tr>
+          <td class='text-left'>{{html_a (helper_createLink "project" "task"  "project="  $project.Id)  $project.Name "_parent"}}</td>
+          <td>{{$project.Code}}</td>
+          <td>{{$project.End}}</td>
+          {{if $project.Delay}}
+          <td class='c-status' title='{{$.Lang.project.delayed}}'>
+            <span class="status-project status-delayed">{{$.Lang.project.delayed}}</span>
+          </td>
+          {{else}}
+          <td class='c-status' title='{{getValue $.Lang.project.statusList $project.Status}}'>
+            <span class="status-project status-{{$project.Status}}">{{getValue $.Lang.project.statusList $project.Status}}</span>
+          </td>
+          {{end}}
+          <td>{{$project.Hours.totalEstimate}}</td>
+          <td>{{$project.Hours.totalConsumed}}</td>
+          <td>{{$project.Hours.totalLeft}}</td>
+          <td class="c-progress">
+            <div class="progress progress-text-left">
+              <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="{{$project.Hours.progress}}" aria-valuemin="0" aria-valuemax="100" style="width: {{$project.Hours.progress}}%">
+              <span class="progress-text">{{$project.Hours.progress}}%</span>
+              </div>
+            </div>
+          </td>
+        
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </form>
+  {{end}}
+</div>
+{{template "footer.html" .}}

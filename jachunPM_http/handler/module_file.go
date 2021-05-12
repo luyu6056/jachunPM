@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"html/template"
 	common_image "image"
 	"io"
 	"jachunPM/image"
@@ -27,7 +28,7 @@ func init() {
 	httpHandlerMap["GET"]["/file/buildform"] = get_file_buildform
 }
 
-func post_file_ajaxPasteImage(data *TemplateData) {
+func post_file_ajaxPasteImage(data *TemplateData) (err error) {
 	editor := data.ws.Post("editor")
 	result, err := libraries.Preg_match_result(`^<img src="data:image/([^;]+);base64,([^"]+)"`, editor, 1)
 	if len(result) != 1 && err == nil {
@@ -66,7 +67,7 @@ func post_file_ajaxPasteImage(data *TemplateData) {
 	data.ws.WriteString(`<img src="/file/tmpimg?fileID=` + strID + `&t=` + ext + `" alt="" />`)
 	return
 }
-func get_file_tmpimg(data *TemplateData) {
+func get_file_tmpimg(data *TemplateData) (err error) {
 	b, ok := file_getTempFile(data.ws.Query("fileID"))
 	if !ok {
 		data.ws.SetCode(404)
@@ -76,12 +77,11 @@ func get_file_tmpimg(data *TemplateData) {
 	ext := data.ws.Query("t")
 	if ext == "webp" && !strings.Contains(data.ws.Header("Accept"), "image/webp") {
 		ext = "jpg"
-		var err error
 		b, err = image.ConvertImgB(b, ext, 1, 1, 80)
 		if err != nil {
 			data.ws.SetCode(404)
 			data.ws.WriteString(err.Error())
-			return
+			return nil
 		}
 	}
 	buf := bufpool.Get().(*libraries.MsgBuffer)
@@ -129,15 +129,14 @@ func file_getTempFile(fileID string) (b []byte, ok bool) {
 	ok = img.Get("img", &b)
 	return
 }
-func get_file_read(data *TemplateData) {
+func get_file_read(data *TemplateData) (err error) {
 	out := protocol.GET_MSG_FILE_getByID()
 	out.FileID, _ = strconv.ParseInt(data.ws.Query("fileID"), 10, 64)
 	var result *protocol.MSG_FILE_getByID_result
-	err := HostConn.SendMsgWaitResultToDefault(out, &result)
-	if err != nil {
+	if err = data.SendMsgWaitResultToDefault(out, &result); err != nil {
 		data.ws.SetCode(404)
 		data.ws.WriteString(err.Error())
-		return
+		return nil
 	}
 	if result.Ext == "webp" && !strings.Contains(data.ws.Header("Accept"), "image/webp") {
 		result.Ext = "jpg"
@@ -146,7 +145,7 @@ func get_file_read(data *TemplateData) {
 		if err != nil {
 			data.ws.SetCode(404)
 			data.ws.WriteString(err.Error())
-			return
+			return nil
 		}
 	}
 	buf := bufpool.Get().(*libraries.MsgBuffer)
@@ -159,7 +158,7 @@ func get_file_read(data *TemplateData) {
 	data.ws.Write(buf)
 	return
 }
-func get_file_buildform(data *TemplateData) {
+func get_file_buildform(data *TemplateData) (err error) {
 	if HostConn.Status&protocol.RpcClientStatuShutdown == protocol.RpcClientStatuShutdown {
 		data.ws.WriteString("文件服务器关闭,无法上传附件")
 		return
@@ -193,7 +192,7 @@ func file_descProcessImgURLAnd2Bbcode(data *TemplateData, desc string) (res stri
 		check.FileID, _ = strconv.ParseInt(match[1], 10, 64)
 		check.NoData = true
 		var result *protocol.MSG_FILE_getByID_result
-		if uploaderr = HostConn.SendMsgWaitResultToDefault(check, &result); uploaderr != nil {
+		if uploaderr = data.SendMsgWaitResultToDefault(check, &result); uploaderr != nil {
 			if strings.Index(uploaderr.Error(), protocol.Err_FileNotFount.String()) == 0 {
 				//删掉失效文件
 				desc = strings.Replace(desc, match[0], "", 1)
@@ -242,15 +241,15 @@ func file_descProcessImgURLAnd2Bbcode(data *TemplateData, desc string) (res stri
 	res = libraries.Html2bbcode(desc)
 	return
 }
-func file_deleteFromIds(newimgids []int64) {
+func file_deleteFromIds(data *TemplateData, newimgids []int64) {
 	deleteimg := protocol.GET_MSG_FILE_DeleteByID()
 	for _, id := range newimgids {
 		deleteimg.FileID = id
-		HostConn.SendMsgToDefault(deleteimg)
+		data.SendMsgToDefault(deleteimg)
 	}
 	deleteimg.Put()
 }
-func file_updateObject(fileIds []int64, typ string, id int32) {
+func file_updateObject(data *TemplateData, fileIds []int64, typ string, id int32) {
 	out := protocol.GET_MSG_FILE_updateMapByWhere()
 	for _, id := range fileIds {
 		out.Where = map[string]interface{}{"Id": id}
@@ -258,7 +257,33 @@ func file_updateObject(fileIds []int64, typ string, id int32) {
 			"ObjectType": typ,
 			"ObjectID":   id,
 		}
-		HostConn.SendMsgToDefault(out)
+		data.SendMsgToDefault(out)
 	}
 	out.Put()
+}
+func file_getByObject(data *TemplateData, object string, ID int32) (file []*protocol.MSG_FILE_getByID_result, err error) {
+	out := protocol.GET_MSG_FILE_getByObject()
+	out.ObjectType = object
+	out.ObjectID = ID
+	var result *protocol.MSG_FILE_getByObject_result
+	err = data.SendMsgWaitResultToDefault(out, &result)
+	out.Put()
+	return result.List, err
+}
+func fileFuncs() {
+	global_Funcs["file_printFiles"] = func(oldData *TemplateData, files []*protocol.MSG_FILE_getByID_result, fieldset bool, Type string) template.HTML {
+		path := "/file/file_printFiles"
+		data := getFetchInterface(oldData.ws, path)
+		if Type != "" {
+			data.Data["type"] = Type
+		} else {
+			data.Data["type"] = "file"
+		}
+		data.Data["files"] = files
+		data.Data["fieldset"] = fieldset
+		templateOut("story.view.html", data)
+		putFetchInterface(data.ws.(*CommonFetch))
+		return template.HTML("")
+	}
+
 }

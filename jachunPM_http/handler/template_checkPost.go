@@ -61,6 +61,15 @@ var checkinfo = map[string]map[string]interface{}{ //目前接受checkType和[]p
 		"assignedTo": checkTypeUserId | checkTypePositive,
 		"mailto":     checkTypeUserId,
 	},
+	"/project/create": map[string]interface{}{
+		"name":  checkTypeRequire,
+		"code":  checkTypeRequire,
+		"begin": checkTypeRequire | checkTypeDate,
+		"end":   checkTypeRequire | checkTypeDate,
+		"days":  checkTypePositive | checkTypeZero,
+		"type":  config.Lang[protocol.DefaultLang]["project"]["typeList"].([]protocol.HtmlKeyValueStr),
+		"acl":   config.Lang[protocol.DefaultLang]["project"]["aclList"].([]protocol.HtmlKeyValueStr),
+	},
 }
 
 //post请求检查
@@ -92,7 +101,6 @@ func (data *TemplateData) ajaxCheckPost() bool {
 					case checkType:
 						if require {
 							if v == "" {
-								fmt.Println("这里2")
 								return key, data.Lang["error"]["checkTypeRequire"].(string)
 							}
 						} else if v == "" {

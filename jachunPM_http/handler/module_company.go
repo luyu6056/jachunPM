@@ -11,7 +11,7 @@ func init() {
 	httpHandlerMap["GET"]["/company/browse"] = get_company_browse
 	httpHandlerMap["POST"]["/company/browse"] = get_company_browse
 }
-func get_company_browse(data *TemplateData) {
+func get_company_browse(data *TemplateData) (err error) {
 	ws := data.ws
 	param := ws.Query("param")
 	TYPE := ws.Query("type")
@@ -29,8 +29,7 @@ func get_company_browse(data *TemplateData) {
 	if deptID > 0 {
 		deptinfo, err := dept_getCacheById(int32(deptID))
 		if err != nil {
-			data.OutErr(err)
-			return
+			return err
 		}
 		data.Data["dept"] = deptinfo
 		param = strconv.Itoa(deptID)
@@ -40,16 +39,13 @@ func get_company_browse(data *TemplateData) {
 		data.OutErr(err)
 		return gnet.None
 	}*/
-	var err error
 	data.Data["deptID"] = strconv.Itoa(deptID)
 	data.Data["orderBy"] = ws.Query("orderBy")
 	if data.Data["orderBy"].(string) == "" {
 		data.Data["orderBy"] = "id"
 	}
 
-	data.Data["deptTree"], err = dept_getTreeMenu(data, 0, dept_createMemberLink)
-	if err != nil {
-		data.OutErr(err)
+	if data.Data["deptTree"], err = dept_getTreeMenu(data, 0, dept_createMemberLink); err != nil {
 		return
 	}
 	getCompanyUser := protocol.GET_MSG_USER_getCompanyUsers()
@@ -59,17 +55,14 @@ func get_company_browse(data *TemplateData) {
 	getCompanyUser.DeptID = int32(deptID)
 	getCompanyUser.Total = data.Page.Total
 	if TYPE == "bysearch" {
-		getCompanyUser.Where, err = post_search_buildQuery(data)
-		if err != nil {
-			data.OutErr(err)
+		if getCompanyUser.Where, err = post_search_buildQuery(data); err != nil {
 			return
 		}
 	}
 
 	getCompanyUser.Page = data.Page.Page
 	var res *protocol.MSG_USER_getCompanyUsers_result
-	if err = HostConn.SendMsgWaitResultToDefault(getCompanyUser, &res); err != nil {
-		data.OutErr(err)
+	if err = data.SendMsgWaitResultToDefault(getCompanyUser, &res); err != nil {
 		return
 	}
 	data.Data["users"] = res.List
@@ -83,6 +76,7 @@ func get_company_browse(data *TemplateData) {
 
 	data.Data["vars"] = "param=" + param + "&type=" + TYPE + "&orderBy=%s" + "&recTotal=" + strconv.Itoa(data.Page.Total) + "&recPerPage=" + strconv.Itoa(data.Page.PerPage)
 	templateOut("company.browse.html", data)
+	return
 }
 func getCompanyInfo() protocol.MSG_USER_Company_cache {
 	var c protocol.MSG_USER_Company_cache

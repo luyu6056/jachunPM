@@ -4937,13 +4937,13 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["file"]["feedbackFile"] = []protocol.HtmlKeyValueStr{
 		{"feedbackFile", "反馈文件"},
 	}
-	Lang[protocol.ZH_CN]["file"]["specFile"] = map[string]string{
-		"modelFile":     "模型规范文件",
-		"animationFile": "动画规范文件",
-		"specialFile":   "特效规范文件",
-		"bindingFile":   "绑定规范文件",
-		"twodFile":      "2D规范文件",
-		"otherFile":     "其他规范文件",
+	Lang[protocol.ZH_CN]["file"]["specFile"] = []protocol.HtmlKeyValueStr{
+		{"modelFile", "模型规范文件"},
+		{"animationFile", "动画规范文件"},
+		{"specialFile", "特效规范文件"},
+		{"bindingFile", "绑定规范文件"},
+		{"twodFile", "2D规范文件"},
+		{"otherFile", "其他规范文件"},
 	}
 	Lang[protocol.ZH_CN]["file"]["typeTOName"] = map[string]string{
 		"processFile": "过程文件",
@@ -5204,10 +5204,10 @@ func LangZH_CNInit() {
 			"overdue":   "已过期",
 		},
 	}
-	Lang[protocol.ZH_CN]["project"]["typeList"] = map[string]string{
-		"sprint":    "短期" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string),
-		"waterfall": "长期" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string),
-		"ops":       "运维" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string),
+	Lang[protocol.ZH_CN]["project"]["typeList"] = []protocol.HtmlKeyValueStr{
+		{"sprint", "短期" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string)},
+		{"waterfall", "长期" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string)},
+		{"ops", "运维" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string)},
 	}
 	Lang[protocol.ZH_CN]["project"]["endList"] = []protocol.HtmlKeyValueStr{
 		{"7", "一星期"},
@@ -5226,19 +5226,20 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["team"]["join"] = "加盟日"
 	Lang[protocol.ZH_CN]["team"]["role"] = "角色"
 	Lang[protocol.ZH_CN]["team"]["account"] = "用户"
-	Lang[protocol.ZH_CN]["team"]["limitedList"] = map[string]string{
-		"no":  "否",
-		"yes": "是",
+	Lang[protocol.ZH_CN]["team"]["limitedList"] = []protocol.HtmlKeyValueStr{
+		{"no", "否"},
+		{"yes", "是"},
 	}
-	Lang[protocol.ZH_CN]["project"]["statusList"] = map[string]string{
-		"wait":      "未开始",
-		"doing":     "进行中",
-		"suspended": "已挂起",
-		"closed":    "已关闭",
+	Lang[protocol.ZH_CN]["project"]["statusList"] = []protocol.HtmlKeyValueStr{
+
+		{"wait", "未开始"},
+		{"doing", "进行中"},
+		{"suspended", "已挂起"},
+		{"closed", "已关闭"},
 	}
-	Lang[protocol.ZH_CN]["project"]["aclList"] = map[string]string{
-		"private": "私有" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "(只有" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "团队成员才能访问)",
-		"custom":  "自定义白名单(团队成员和白名单的成员可以访问)",
+	Lang[protocol.ZH_CN]["project"]["aclList"] = []protocol.HtmlKeyValueStr{
+		{"private", "私有" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "(只有" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "团队成员才能访问)"},
+		{"custom", "自定义白名单(团队成员和白名单的成员可以访问)"},
 	}
 	Lang[protocol.ZH_CN]["project"]["statusSelects"] = map[string]string{
 		"wait":         "未开始",
@@ -5828,39 +5829,39 @@ func LangZH_CNInit() {
 
 	Lang[protocol.ZH_CN]["task"]["proofreadingPass"] = []string{"是", "否"}
 
-	Lang[protocol.ZH_CN]["task"]["statusList"] = map[string]string{
-		"":              "",
-		"wait":          "未开始",
-		"doing":         "进行中",
-		"done":          "已完成",
-		"pause":         "已暂停",
-		"cancel":        "已取消",
-		"closed":        "已关闭",
-		"internalaudit": "内审中",
+	Lang[protocol.ZH_CN]["task"]["statusList"] = []protocol.HtmlKeyValueStr{
+		{"", ""},
+		{"wait", "未开始"},
+		{"doing", "进行中"},
+		{"done", "已完成"},
+		{"pause", "已暂停"},
+		{"cancel", "已取消"},
+		{"closed", "已关闭"},
+		{"internalaudit", "内审中"},
 	}
 
-	Lang[protocol.ZH_CN]["task"]["typeList"] = map[string]string{
-		"":                 "",
-		"character2d":      "2D_人物",
-		"scene2d":          "2D_场景",
-		"ui2d":             "2D_UI",
-		"animation2d":      "2D_动画",
-		"cutChart2d":       "2D_切图",
-		"specialEffects2d": "2D_特效",
-		"model3d":          "3D_模型",
-		"binding3d":        "3D_绑定",
-		"animation3d":      "3D_动画",
-		"specialEffects3d": "3D_特效",
-		"rendering3d":      "3D_渲染",
-		"misc":             "其他",
+	Lang[protocol.ZH_CN]["task"]["typeList"] = []protocol.HtmlKeyValueStr{
+		{"", ""},
+		{"character2d", "2D_人物"},
+		{"scene2d", "2D_场景"},
+		{"ui2d", "2D_UI"},
+		{"animation2d", "2D_动画"},
+		{"cutChart2d", "2D_切图"},
+		{"specialEffects2d", "2D_特效"},
+		{"model3d", "3D_模型"},
+		{"binding3d", "3D_绑定"},
+		{"animation3d", "3D_动画"},
+		{"specialEffects3d", "3D_特效"},
+		{"rendering3d", "3D_渲染"},
+		{"misc", "其他"},
 	}
 
 	Lang[protocol.ZH_CN]["task"]["priList"] = []string{"1", `2`, `3`, `4`}
 
-	Lang[protocol.ZH_CN]["task"]["reasonList"] = map[string]string{
-		"":       "",
-		"done":   "已完成",
-		"cancel": "已取消",
+	Lang[protocol.ZH_CN]["task"]["reasonList"] = []protocol.HtmlKeyValueStr{
+		{"", ""},
+		{"done", "已完成"},
+		{"cancel", "已取消"},
 	}
 
 	Lang[protocol.ZH_CN]["task"]["afterChoices"] = map[string]string{
@@ -6385,6 +6386,15 @@ func LangZH_CNInit() {
 		"errorNoTitle":                         "标题不能为空",
 		"NotFoundProductPlanInfo":              "没有找到产品计划信息",
 		"Err_ProjectProductPlanParentNotFound": "没有找到上一级产品计划信息",
+	}
+	Lang[protocol.ZH_CN]["project"]["error"] = map[string]string{
+		"NotFount":              "没有找到对应的" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "信息",
+		"beginTime":             "开始日期格式不正确",
+		"endTime":               "结束日期格式不正",
+		"beginGeEnd":            "开始时间不能大于结束时间",
+		"CreateNotFountProduct": "找不到关联产品，请刷新重试",
+		"CreateNotFountPlan":    "找不到关联计划，请刷新重试",
+		"ProjectNameIsExist":    "项目名称或者代号已存在相同的，请修改重试",
 	}
 
 }

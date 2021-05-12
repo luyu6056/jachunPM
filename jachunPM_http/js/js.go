@@ -12,7 +12,7 @@ func Alert(format string, value ...interface{}) string {
 		message = fmt.Sprintf(format, value...)
 	}
 	message = strings.ReplaceAll(message, `"`, `\"`)
-	return fmt.Sprintf(`<script>alert("%s")</script>`, message)
+	return fmt.Sprintf(`<script>alert("%s");if(window.parent) window.parent.$.enableForm();</script>`, message)
 }
 func Reload(value ...string) string {
 	buf := protocol.BufPoolGet()
@@ -66,10 +66,13 @@ func Confirm(message, okURL, cancleURL string, okcancleTarget ...string) string 
 	return res
 }
 func Location(str string, window string) string {
-	if str == "back" {
-		return "<script>history.back()</script>"
+	if window == "" {
+		window = "self"
 	}
-	return "<script>" + window + ".location.href=\"" + strings.ReplaceAll(str, `"`, `\"`) + "\"</script>"
+	if str == "back" {
+		return `<script>setTimeout("history.back()",1000)</script>`
+	}
+	return `<script>setTimeout('` + window + ".location.href=\"" + strings.ReplaceAll(strings.ReplaceAll(str, `"`, `\"`), "'", `\'`) + `',1000)"</script>`
 }
 func CloseModal(window, location, callback string) string {
 	if window == "" {
@@ -99,4 +102,22 @@ func CloseModal(window, location, callback string) string {
 	protocol.BufPoolPut(buf)
 	return res
 
+}
+func Error(message string, full ...bool) string {
+	isfull := true
+	if len(full) == 1 {
+		isfull = full[0]
+	}
+	buf := protocol.BufPoolGet()
+	if isfull {
+		buf.WriteString("<html><meta charset='utf-8'/><style>body{background:white}</style><script>")
+	} else {
+		buf.WriteString("<script>")
+	}
+	buf.WriteString("alert('")
+	buf.WriteString(strings.ReplaceAll(message, "'", `\'`))
+	buf.WriteString("');if(window.parent) window.parent.$.enableForm();</script>")
+	res := buf.String()
+	protocol.BufPoolPut(buf)
+	return res
 }

@@ -19,6 +19,8 @@ type MSG_PROJECT_product_cache struct {
 	Type        string
 	Status      string
 	Desc        string
+	Branch      []int32
+	Plan        []int32
 	PO          int32
 	QD          int32
 	RD          int32
@@ -29,7 +31,7 @@ type MSG_PROJECT_product_cache struct {
 	Order       int32
 	Deleted     bool
 	TimeStamp   int64
-	Branchs     []*MSG_PROJECT_branch_info
+	Branchs     []*MSG_PROJECT_branch_info `db:"-"`
 }
 type MSG_PROJECT_product_insert struct {
 	QueryID uint32
@@ -51,9 +53,10 @@ type MSG_PROJECT_product_getStories struct {
 	BrowseType string
 	ModuleID   int32
 	Sort       string
+	Uid        int32
+	Where      map[string]interface{}
 	Page       int
 	PerPage    int
-	Where      map[string]interface{}
 	Total      int
 }
 type MSG_PROJECT_product_getStories_result struct {
@@ -73,7 +76,7 @@ type MSG_PROJECT_story struct {
 	Title          string
 	Keywords       string
 	Pri            int8
-	Estimate       float32
+	Estimate       float64
 	Status         string
 	Stage          string
 	Mailto         []int32
@@ -89,13 +92,19 @@ type MSG_PROJECT_story struct {
 	ClosedDate     time.Time
 	ClosedReason   string
 	ToBug          int32
-	ChildStories   string
-	LinkStories    string
+	ChildStories   []int32
+	LinkStories    []int32
 	DuplicateStory int32
 	Deleted        bool
 	Version        int16
 	Color          string
-	PlanTitle      string `db:-`
+	PlanTitle      string                    `db:-`
+	Spec           string                    `db:-`
+	Verify         string                    `db:-`
+	Stages         []*MSG_PROJECT_StoryStage `db:-`
+	ExtraStories   []*MSG_PROJECT_story      `db:-`
+	Projects       []int32                   `db:-` //具体信息从缓存读取
+	Tasks          []*MSG_PROJECT_TASK       `db:-`
 }
 type MSG_PROJECT_tree_cache struct {
 	Id        int32
@@ -175,7 +184,7 @@ type MSG_PROJECT_productplan_getPairsForStory_result struct {
 }
 type MSG_PROJECT_productplan_getList struct {
 	QueryID    uint32
-	Id         int32
+	Ids        []int32
 	ProductID  int32
 	Branch     int32
 	BrowseType string
@@ -217,6 +226,7 @@ type MSG_PROJECT_productplan_getPairs struct {
 	ProductID int32
 	BranchID  int32
 	Expired   string
+	Ids       []int32
 }
 type MSG_PROJECT_productplan_getPairs_result struct {
 	QueryResultID uint32
@@ -260,7 +270,7 @@ type MSG_PROJECT_stroy_create struct {
 	Title         string
 	Color         string
 	Pri           int8
-	Estimate      float32
+	Estimate      float64
 	Spec          string
 	Verify        string
 	Mailto        []int32
@@ -281,4 +291,297 @@ type MSG_PROJECT_story_batchGetStoryStage struct {
 type MSG_PROJECT_story_batchGetStoryStage_result struct {
 	QueryResultID uint32
 	List          map[int32][]HtmlKeyValueStr
+}
+type MSG_PROJECT_story_getById struct {
+	QueryID uint32
+	Id      int32
+	Version int16
+}
+type MSG_PROJECT_story_getById_result struct {
+	QueryResultID uint32
+	Story         *MSG_PROJECT_story
+}
+type MSG_PROJECT_project_getById struct {
+	QueryID uint32
+	Id      int32
+}
+type MSG_PROJECT_project_getById_result struct {
+	QueryResultID uint32
+	Project       *MSG_PROJECT_project_cache
+}
+type MSG_PROJECT_project_cache struct {
+	Id            int32
+	IsCat         bool
+	CatID         int32
+	Type          string
+	Parent        int32
+	Name          string
+	Code          string
+	Begin         time.Time
+	End           time.Time
+	Days          int16
+	Status        string
+	Statge        int8
+	Pri           int8
+	Desc          string
+	OpenedBy      int32
+	OpenedDate    time.Time
+	OpenedVersion string
+	ClosedBy      int32
+	ClosedDate    time.Time
+	CanceledBy    int32
+	CanceledDate  time.Time
+	PO            int32
+	PM            int32
+	QD            int32
+	RD            int32
+	Team          string
+	Acl           string
+	Whitelist     []int32
+	Order         int32
+	Deleted       bool
+	FtpPath       string
+	Products      []int32
+	Branchs       []int32
+	Storys        []int32
+	Plans         []int32
+	Delay         int64                 `db:"-"` //延期几天
+	Hours         map[string]float64    `db:"-"` //时间统计
+	Teams         []*MSG_USER_team_info `db:"-"`
+}
+type MSG_PROJECT_StoryStage struct {
+	Story  int32
+	Branch int32
+	Stage  string
+}
+type MSG_PROJECT_TASK struct {
+	Id             int32
+	Ancestor       int32
+	Parent         int32
+	Project        int32
+	Module         int32
+	Story          int32
+	StoryVersion   int16
+	FromBug        int32
+	Name           string
+	Type           string
+	Pri            int8
+	Estimate       float64
+	Consumed       float64
+	Left           float64
+	Deadline       time.Time
+	Status         string
+	Color          string
+	Mailto         []int32
+	Desc           string
+	OpenedBy       int32
+	OpenedDate     time.Time
+	AssignedTo     int32
+	AssignedDate   time.Time
+	EstStarted     time.Time
+	RealStarted    time.Time
+	FinishedBy     int32
+	FinishedDate   time.Time
+	FinishedList   string
+	CanceledBy     int32
+	CanceledDate   time.Time
+	ClosedBy       int32
+	ClosedDate     time.Time
+	ClosedReason   string
+	LastEditedBy   int32
+	LastEditedDate time.Time
+	Examine        int8
+	ExamineDate    time.Time
+	ExamineBy      int32
+	Deleted        bool
+	Finalfile      string
+	Proofreading   bool
+}
+type MSG_PROJECT_productplan_getById struct {
+	QueryID uint32
+	Id      int32
+}
+type MSG_PROJECT_productplan_getById_result struct {
+	QueryResultID uint32
+	Info          *MSG_PROJECT_productplan
+}
+type MSG_PROJECT_productplan struct {
+	Id       int32
+	Product  int32
+	Branch   int32
+	Parent   int32
+	Projects []int32
+	Title    string
+	Desc     string
+	Begin    time.Time
+	End      time.Time
+	Order    string
+	Deleted  bool
+}
+type MSG_PROJECT_build struct {
+	Id       int32
+	Product  int32
+	Branch   int32
+	Project  int32
+	Name     string
+	ScmPath  string
+	FilePath string
+	Date     time.Time
+	Stories  []int32
+	Bugs     []int32
+	Builder  string
+	Desc     string
+	Deleted  bool
+}
+type MSG_PROJECT_build_getById struct {
+	QueryID uint32
+	Id      int32
+}
+type MSG_PROJECT_build_getById_result struct {
+	QueryResultID uint32
+	Info          *MSG_PROJECT_build
+}
+type MSG_PROJECT_release struct {
+	Id       int32
+	Product  int32
+	Branch   int32
+	Build    int32
+	Name     string
+	Marker   bool
+	Date     time.Time
+	Stories  []int32
+	Bugs     []int32
+	LeftBugs string
+	Desc     string
+	Status   string
+	Deleted  bool
+}
+type MSG_PROJECT_release_getById struct {
+	QueryID uint32
+	Id      int32
+}
+type MSG_PROJECT_release_getById_result struct {
+	QueryResultID uint32
+	Info          *MSG_PROJECT_release
+}
+type MSG_PROJECT_task_getPairs struct {
+	QueryID uint32
+	Where   map[string]interface{}
+}
+type MSG_PROJECT_task_getPairs_result struct {
+	QueryResultID uint32
+	List          []HtmlKeyValueStr
+}
+type MSG_PROJECT_task_getListByWhereMap struct {
+	QueryID uint32
+	Where   map[string]interface{}
+	Order   string
+	Page    int
+	PerPage int
+	Total   int
+}
+type MSG_PROJECT_task_getListByWhereMap_result struct {
+	QueryResultID uint32
+	List          []*MSG_PROJECT_TASK
+	Total         int
+}
+type MSG_PROJECT_project_getBurn struct {
+	QueryID    uint32
+	ProjectIds []int32
+}
+type MSG_PROJECT_project_getBurn_result struct {
+	QueryResultID uint32
+	List          []*MSG_PROJECT_project_Burn_info
+}
+type MSG_PROJECT_project_Burn_info struct {
+	Project  int32
+	Date     time.Time
+	Estimate float64
+	Left     float64
+	Consumed float64
+}
+type MSG_PROJECT_story_getPlanStories struct {
+	QueryID uint32
+	PlanID  int32
+	Status  string
+	OrderBy string
+}
+type MSG_PROJECT_story_getPlanStories_result struct {
+	QueryResultID uint32
+	List          []*MSG_PROJECT_story
+}
+type MSG_PROJECT_project_linkStory struct {
+	QueryID   uint32
+	ProjectID int32
+	Stories   []int32
+	Products  map[int32]int32
+}
+
+type MSG_PROJECT_branch_getByProducts struct {
+	QueryID      uint32
+	Products     []int32
+	AppendBranch []int32
+}
+type MSG_PROJECT_branch_getByProducts_result struct {
+	QueryResultID uint32
+	List          map[int32][]HtmlKeyValueStr
+}
+type MSG_PROJECT_project_create struct {
+	QueryID       uint32
+	CopyProjectID int32
+	Info          *MSG_PROJECT_project_cache
+}
+type MSG_PROJECT_project_create_result struct {
+	QueryResultID uint32
+	Id            int32
+}
+type MSG_PROJECT_project_statRelatedData struct {
+	QueryID   uint32
+	ProjectID int32
+}
+type MSG_PROJECT_project_statRelatedData_result struct {
+	QueryResultID uint32
+	StoryCount    int
+	TaskCount     int
+	BugCount      int
+}
+type MSG_PROJECT_story_getPairsByIds struct {
+	QueryID uint32
+	Ids     []int32
+}
+type MSG_PROJECT_story_getPairsByIds_result struct {
+	QueryResultID uint32
+	List          []HtmlKeyValueStr
+}
+type MSG_PROJECT_product_getPairsByIds struct {
+	QueryID uint32
+	Ids     []int32
+}
+type MSG_PROJECT_product_getPairsByIds_result struct {
+	QueryResultID uint32
+	List          []HtmlKeyValueStr
+}
+type MSG_PROJECT_project_getPairsByIds struct {
+	QueryID uint32
+	Ids     []int32
+}
+type MSG_PROJECT_project_getPairsByIds_result struct {
+	QueryResultID uint32
+	List          []HtmlKeyValueStr
+}
+type MSG_PROJECT_branch_getPairsByIds struct {
+	QueryID uint32
+	Ids     []int32
+}
+type MSG_PROJECT_branch_getPairsByIds_result struct {
+	QueryResultID uint32
+	List          []HtmlKeyValueStr
+}
+type MSG_PROJECT_tree_getPairsByIds struct {
+	QueryID uint32
+	Ids     []int32
+}
+type MSG_PROJECT_tree_getPairsByIds_result struct {
+	QueryResultID uint32
+	List          []HtmlKeyValueStr
 }

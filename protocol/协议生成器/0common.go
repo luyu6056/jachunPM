@@ -62,6 +62,7 @@ type MSG_COMMON_CACHE_DelPath struct {
 
 type MSG_COMMON_GET_Msgno struct {
 	QueryID uint32 //请求id
+	Uid     int32
 }
 type MSG_COMMON_GET_Msgno_result struct {
 	QueryResultID uint32 //返回请求id
@@ -99,6 +100,7 @@ type MSG_FILE_getByID struct {
 }
 type MSG_FILE_getByID_result struct {
 	QueryResultID uint32 //返回请求id
+	FileID        int64
 	Name          string
 	Ext           string
 	Data          []byte
@@ -133,4 +135,20 @@ type MSG_COMMON_Transaction_RollBack struct {
 type MSG_COMMON_Transaction_Check struct {
 	QueryID uint32
 	No      uint32
+}
+type MSG_FILE_getByObject struct {
+	QueryID    uint32
+	ObjectType string
+	ObjectID   int32
+}
+type MSG_FILE_getByObject_result struct {
+	QueryResultID uint32
+	List          []*MSG_FILE_getByID_result
+}
+type MSG_COMMON_GET_MsgUserId struct {
+	QueryID uint32
+}
+type MSG_COMMON_GET_MsgUserId_result struct {
+	QueryResultID uint32
+	Uid           int32
 }

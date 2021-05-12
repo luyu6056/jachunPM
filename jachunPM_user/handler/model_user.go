@@ -92,7 +92,7 @@ func user_getPairs(params string, usersToAppended int32, in *protocol.Msg) ([]pr
 		conditions["Deleted"] = false
 	}
 	if usersToAppended > 0 {
-		conditions["account"] = usersToAppended
+		conditions["Id"] = usersToAppended
 	}
 
 	err = HostConn.DB.Table(db.TABLE_USER).Field(fields).WhereOr(conditions).Order(orderBy).Select(&userList)
@@ -210,6 +210,7 @@ func user_setCache(user *db.User) {
 	cache.Address = user.Address
 	cache.AclProducts = make(map[int32]bool, len(user.AclProducts))
 	cache.AclProjects = make(map[int32]bool, len(user.AclProducts))
+	cache.IsAdmin = user.Id == 1
 	for k, v := range user.AclProducts {
 		cache.AclProducts[k] = v
 	}
@@ -232,17 +233,22 @@ func user_getUserInfo(where map[string]interface{}) (users []*db.User, err error
 	return
 }
 func updateUserView(data *protocol.MSG_USER_updateUserView, in *protocol.Msg) {
-	var err error
+	session, err := in.BeginTransaction()
+	if err != nil {
+		in.WriteErr(err)
+		return
+	}
 	defer func() {
+		session.EndTransaction()
 		in.WriteErr(err)
 	}()
-	if (data.ProductId == 0 && data.ProjectId == 0) || (len(data.UserIds) == 0 && len(data.GroupIds) == 0) {
+	if (len(data.ProductIds) == 0 && len(data.ProjectIds) == 0) || (len(data.UserIds) == 0 && len(data.GroupIds) == 0) {
 		return
 	}
 
 	var users []*db.User
 	var matchIds []int32
-	err = in.DB.Table(db.TABLE_USER).Limit(0).Select(&users)
+	err = session.Table(db.TABLE_USER).Limit(0).Select(&users)
 	if err != nil {
 		return
 	}
@@ -272,60 +278,72 @@ func updateUserView(data *protocol.MSG_USER_updateUserView, in *protocol.Msg) {
 	//把需要删除权限的找出来
 	for i := len(users) - 1; i >= 0; i-- {
 		user := users[i]
-		if data.ProductId > 0 {
-			if _, ok := user.AclProducts[data.ProductId]; ok {
+		for _, productid := range data.ProductIds {
+			if _, ok := user.AclProducts[productid]; ok {
 				productIds = append(productIds, user.Id)
-				delete(user.AclProducts, data.ProductId)
+				delete(user.AclProducts, productid)
 				break
 			}
 
 		}
-		if data.ProjectId > 0 {
-			if _, ok := user.AclProjects[data.ProjectId]; ok {
+		for _, projectid := range data.ProjectIds {
+			if _, ok := user.AclProjects[projectid]; ok {
 				projectIds = append(projectIds, user.Id)
-				delete(user.AclProjects, data.ProjectId)
+				delete(user.AclProjects, projectid)
 				break
 			}
 		}
 
 	}
 	//先把权限删除
-	if len(productIds) > 0 && data.ProductId > 0 {
-		_, err = in.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": productIds}).Update(map[string]interface{}{"AclProducts": []string{"exp", "json_remove(AclProducts, '$." + strconv.Itoa(int(data.ProductId)) + "' )"}})
-		if err != nil {
-			return
+	if len(productIds) > 0 {
+		for _, productid := range data.ProductIds {
+			_, err = session.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": productIds}).Update(map[string]interface{}{"AclProducts": []string{"exp", "json_remove(AclProducts, '$." + strconv.Itoa(int(productid)) + "' )"}})
+			if err != nil {
+				return
+			}
 		}
 
 	}
-	if len(projectIds) > 0 && data.ProjectId > 0 {
-		_, err = in.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": projectIds}).Update(map[string]interface{}{"AclProjects": []string{"exp", "json_remove(AclProjects, '$." + strconv.Itoa(int(data.ProjectId)) + "' )"}})
-		if err != nil {
-			return
+	if len(projectIds) > 0 {
+		for _, projectid := range data.ProjectIds {
+			_, err = session.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": projectIds}).Update(map[string]interface{}{"AclProjects": []string{"exp", "json_remove(AclProjects, '$." + strconv.Itoa(int(projectid)) + "' )"}})
+			if err != nil {
+				return
+			}
 		}
 	}
 	//增加权限
 	if len(matchIds) > 0 {
-		if data.ProductId > 0 {
-			_, err = in.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds, "AclProducts": nil}).Update(map[string]interface{}{"AclProducts": `{}`})
+		for _, productid := range data.ProductIds {
+			_, err = session.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds, "AclProducts": nil}).Update(map[string]interface{}{"AclProducts": `{}`})
 			if err != nil {
 				return
 			}
-			_, err = in.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds}).Update(map[string]interface{}{"AclProducts": []string{"exp", "json_set(AclProducts, '$." + strconv.Itoa(int(data.ProductId)) + "','true' )"}})
+			_, err = session.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds}).Update(map[string]interface{}{"AclProducts": []string{"exp", "json_set(AclProducts, '$." + strconv.Itoa(int(productid)) + "','true' )"}})
 			if err != nil {
 				return
 			}
 		}
-		if data.ProjectId > 0 {
-			_, err = in.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds, "AclProjects": nil}).Update(map[string]interface{}{"AclProjects": `{}`})
+		for _, projectid := range data.ProjectIds {
+			_, err = session.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds, "AclProjects": nil}).Update(map[string]interface{}{"AclProjects": `{}`})
 			if err != nil {
 				return
 			}
-			_, err = in.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds}).Update(map[string]interface{}{"AclProjects": []string{"exp", "json_set(AclProjects, '$." + strconv.Itoa(int(data.ProjectId)) + "','true' )"}})
+			_, err = session.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds}).Update(map[string]interface{}{"AclProjects": []string{"exp", "json_set(AclProjects, '$." + strconv.Itoa(int(projectid)) + "','true' )"}})
 			if err != nil {
 				return
 			}
 		}
 	}
+	session.CommitCallback(func() {
+		var users []*db.User
+		in.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds}).Limit(0).Select(&users)
+		for _, user := range users {
+			user_setCache(user)
+		}
+	})
+	session.Commit()
 }
 func user_getGlobalContacts() (globalContacts []*db.Usercontact, err error) {
 	err = HostConn.DB.Table(db.TABLE_USERCONTACT).Prepare().Where(map[string]interface{}{"Share": true}).Limit(0).Select(&globalContacts)

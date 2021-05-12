@@ -20,7 +20,7 @@ func init() {
 	httpHandlerMap["GET"]["/tree/delete"] = get_tree_delete
 	httpHandlerMap["GET"]["/tree/ajaxGetOptionMenu"] = get_tree_ajaxGetOptionMenu
 }
-func get_tree_browse(data *TemplateData) {
+func get_tree_browse(data *TemplateData) (err error) {
 	rootID, _ := strconv.Atoi(data.ws.Query("rootID"))
 	if rootID == 0 {
 		rootID, _ = strconv.Atoi(data.ws.Query("productID"))
@@ -36,11 +36,6 @@ func get_tree_browse(data *TemplateData) {
 		viewType = data.ws.Query("viewType")
 	}
 	msg, err := data.GetMsg()
-	defer func() {
-		if err != nil {
-			data.OutErr(err)
-		}
-	}()
 	if err != nil {
 		return
 	}
@@ -181,7 +176,6 @@ func get_tree_browse(data *TemplateData) {
 		product_setMenu(data, int32(rootID), int32(branch), "line")
 		products, e := product_getPairs(data)
 		if e != nil {
-			data.OutErr(e)
 			return
 		}
 		for i := len(products) - 1; i >= 0; i-- {
@@ -517,7 +511,7 @@ func tree_getLinePairs(data *TemplateData) (res []protocol.HtmlKeyValueStr, err 
 	}
 	return
 }
-func post_tree_manageChild(data *TemplateData) {
+func post_tree_manageChild(data *TemplateData) (e error) {
 	if !data.ajaxCheckPost() {
 		return
 	}
@@ -550,7 +544,7 @@ func post_tree_manageChild(data *TemplateData) {
 	}
 
 	var result *protocol.MSG_PROJECT_tree_manageChild_result
-	err := HostConn.SendMsgWaitResultToDefault(out, &result)
+	err := data.SendMsgWaitResultToDefault(out, &result)
 	if err != nil {
 		data.ajaxResult(false, err.Error())
 		return
@@ -807,7 +801,7 @@ func tree_createLineLink(data *TemplateData, viewType string, module *protocol.M
 	status, _ := extra["status"].(string)
 	return html_a(createLink("product", "all", []interface{}{"productID=", productID, "&line=", module.Id, "&status=", status}), module.Name, "_self", "id='module"+strconv.Itoa(int(module.Id))+"'"), nil
 }
-func post_tree_updateOrder(data *TemplateData) {
+func post_tree_updateOrder(data *TemplateData) (e error) {
 	out := protocol.GET_MSG_PROJECT_tree_updateList()
 	list, err := tree_getAllcache(data)
 	if err != nil {
@@ -824,7 +818,7 @@ func post_tree_updateOrder(data *TemplateData) {
 			}
 		}
 	}
-	err = HostConn.SendMsgWaitResultToDefault(out, nil)
+	err = data.SendMsgWaitResultToDefault(out, nil)
 	if err != nil {
 		data.ws.WriteString(js.Alert(err.Error()))
 		return
@@ -832,7 +826,7 @@ func post_tree_updateOrder(data *TemplateData) {
 	data.ws.WriteString(js.Location("reload", "_self"))
 	return
 }
-func get_tree_edit(data *TemplateData) {
+func get_tree_edit(data *TemplateData) (e error) {
 	moduleID, _ := strconv.Atoi(data.ws.Query("moduleID"))
 	branch, _ := strconv.Atoi(data.ws.Query("branch"))
 	viewType := data.ws.Query("type")
@@ -860,7 +854,7 @@ func get_tree_edit(data *TemplateData) {
 	data.Data["type"] = viewType
 	// data.Data["libs"]   = $this->loadModel('doc')->getLibs($type = 'all', $extra = 'withObject');
 	data.Data["branch"] = branch
-	data.Data["users"], err = user_getPairs("noclosed|nodeleted")
+	data.Data["users"], err = user_getPairs(data, "noclosed|nodeleted")
 	if err != nil {
 		data.ws.WriteString(js.Alert(err.Error()) + js.Reload("parent"))
 		return
@@ -990,7 +984,7 @@ func tree_getAllChildId(data *TemplateData, moduleID int32) (res []int32) {
 	}
 	return
 }
-func post_tree_edit(data *TemplateData) {
+func post_tree_edit(data *TemplateData) (e error) {
 	moduleID, _ := strconv.Atoi(data.ws.Query("module"))
 	module := HostConn.GetTreeById(int32(moduleID))
 	if module == nil {
@@ -1010,7 +1004,7 @@ func post_tree_edit(data *TemplateData) {
 	module.Short = data.ws.Post("short")
 	out.Modules = append(out.Modules, module)
 	var result *protocol.MSG_PROJECT_tree_manageChild_result
-	if err = HostConn.SendMsgWaitResultToDefault(out, &result); err != nil {
+	if err = data.SendMsgWaitResultToDefault(out, &result); err != nil {
 		data.ws.WriteString(js.Alert(err.Error()) + js.Reload("parent"))
 		return
 	}
@@ -1021,7 +1015,7 @@ func post_tree_edit(data *TemplateData) {
 	}
 	return
 }
-func get_tree_delete(data *TemplateData) {
+func get_tree_delete(data *TemplateData) (e error) {
 	confirm := data.ws.Query("confirm")
 	if confirm != "yes" {
 		moduleID, _ := strconv.Atoi(data.ws.Query("moduleID"))
@@ -1039,7 +1033,7 @@ func get_tree_delete(data *TemplateData) {
 		out := protocol.GET_MSG_PROJECT_tree_delete()
 		moduleID, _ := strconv.Atoi(data.ws.Query("moduleID"))
 		out.Ids = append(out.Ids, int32(moduleID))
-		if err := HostConn.SendMsgWaitResultToDefault(out, nil); err != nil {
+		if err := data.SendMsgWaitResultToDefault(out, nil); err != nil {
 			data.ws.WriteString(js.Alert(err.Error()) + js.Reload("parent"))
 		} else {
 			data.ws.WriteString(js.Reload("parent"))
@@ -1047,7 +1041,7 @@ func get_tree_delete(data *TemplateData) {
 	}
 	return
 }
-func get_tree_ajaxGetOptionMenu(data *TemplateData) {
+func get_tree_ajaxGetOptionMenu(data *TemplateData) (err error) {
 	viewType := data.ws.Query("viewtype")
 	rootID, _ := strconv.Atoi(data.ws.Query("rootID"))
 	branch, _ := strconv.Atoi(data.ws.Query("branch"))
@@ -1056,14 +1050,12 @@ func get_tree_ajaxGetOptionMenu(data *TemplateData) {
 	fieldID := data.ws.Query("fieldID")
 	needManage := data.ws.Query("needManage") == "true"
 	var optionMenu []protocol.HtmlKeyValueStr
-	var err error
 	if viewType == "task" {
 		optionMenu, err = tree_getTaskOptionMenu(int32(rootID), 0, 0)
 	} else {
 		optionMenu, err = tree_getOptionMenu(data, int32(rootID), viewType, int32(rootModuleID), int32(branch))
 	}
 	if err != nil {
-		data.OutErr(err)
 		return
 	}
 	if returnType == "html" {
@@ -1071,8 +1063,7 @@ func get_tree_ajaxGetOptionMenu(data *TemplateData) {
 		if viewType == "line" {
 			list, err := tree_getAllcache(data)
 			if err != nil {
-				data.OutErr(err)
-				return
+				return err
 			}
 			var id int32
 			for _, module := range list {
@@ -1121,4 +1112,5 @@ func get_tree_ajaxGetOptionMenu(data *TemplateData) {
 	if returnType == "json" {
 		data.ws.WriteString(libraries.JsonMarshalToString(optionMenu))
 	}
+	return
 }

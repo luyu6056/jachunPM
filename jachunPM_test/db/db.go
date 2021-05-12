@@ -8,7 +8,9 @@ import (
 )
 
 const (
-	TABLE_BUG = "bug"
+	TABLE_BUG       = "bug"
+	TABLE_TESTTASK  = "testtask"
+	TABLE_TESTSUITE = "testsuite"
 )
 
 func Init() *mysql.MysqlDB {
@@ -17,10 +19,15 @@ func Init() *mysql.MysqlDB {
 		log.Fatalf("数据库连接失败 %v", err)
 	}
 	if config.Config.MysqlMaxConn > 0 {
-		db.MaxOpenConns = config.Config.MysqlMaxConn
+		db.SetMaxOpenConns(config.Config.MysqlMaxConn)
 	}
-	errs := db.StoreEngine("TokuDB").Sync2(
+	if err = db.Ping(); err != nil {
+		log.Fatalf("数据库启动失败 %v", err)
+	}
+	errs := db.StoreEngine("Innodb").Sync2(
 		new(Bug),
+		new(Testtask),
+		new(Testsuite),
 	)
 	if errs != nil {
 		log.Fatalf("数据库启动失败%v", errs)
@@ -30,11 +37,11 @@ func Init() *mysql.MysqlDB {
 
 type Bug struct {
 	Id             int32     `db:"not null;auto_increment;pk"`
-	Product        int32     `db:"default(0)"`
+	Product        int32     `db:"index"`
 	Branch         int32     `db:"default(0)"`
 	Module         int32     `db:"default(0)"`
-	Project        int32     `db:"default(0)"`
-	Plan           int32     `db:"default(0)"`
+	Project        int32     `db:"index"`
+	Plan           int32     `db:"index"`
 	Story          int32     `db:"default(0)"`
 	StoryVersion   int16     `db:"not null;default(1)"`
 	Task           int32     `db:"default(0)"`
@@ -81,4 +88,45 @@ type Bug struct {
 
 func (Bug) TableName() string {
 	return TABLE_BUG
+}
+
+type Testtask struct {
+	Id      int32  `db:"auto_increment;pk"`
+	Name    string `db:"type:varchar(90)"`
+	Product int32  `db:"index"`
+	Project int32  `db:"index"`
+	Build   string `db:"type:varchar(30)"`
+	OwnerId int32
+	Owner   string `db:"type:varchar(30)"`
+	Pri     int8   `db:"default(0)"`
+	Begin   time.Time
+	End     time.Time
+	Mailto  []int32 `db:"type:json"`
+	Desc    string  `db:"type:text"`
+	Report  string  `db:"type:text"`
+	Status  string  // 0=blocked,1=doing,2=wait,3=done,
+	Deleted bool
+}
+
+func (Testtask) TableName() string {
+	return TABLE_TESTTASK
+}
+
+type Testsuite struct {
+	Id                  int32  `db:"auto_increment;pk"`
+	Product             int32  `db:"index"`
+	Name                string `db:"type:varchar(255)"`
+	Desc                string `db:"type:text"`
+	Type                string `db:"type:varchar(20)"`
+	AddedBy             int32
+	AddedByAccount      string `db:"type:varchar(30)"`
+	AddedDate           time.Time
+	LastEditedBy        int32
+	LastEditedByAccount string `db:"type:varchar(30)"`
+	LastEditedDate      time.Time
+	Deleted             bool
+}
+
+func (Testsuite) TableName() string {
+	return TABLE_TESTSUITE
 }

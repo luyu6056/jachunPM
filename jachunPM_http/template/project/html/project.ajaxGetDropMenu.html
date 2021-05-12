@@ -1,0 +1,26 @@
+<script type="text/javascript">
+    var projectID={{.Data.projectID}},module={{.Data.module}},method={{.Data.method}},extra={{.Data.extra}}
+</script> 
+<div class="table-row">
+  <div class="table-col col-left">
+    <div class='list-group'>
+    {{- if .Data.myProjectsHtml}}
+        <div class='heading'>{{.Lang.project.mine}}</div>
+        {{.Data.myProjectsHtml}}
+        <div class='heading'>{{.Lang.project.other}}</div>
+    {{end -}}
+    {{.Data.normalProjectsHtml}}
+    </div>
+    <div class="col-footer">
+      {{html_a (helper_createLink "project" "all") (strAdd "<i class='icon icon-cards-view muted'></i> " .Lang.project.all)}}
+      {{if .Data.closedProjectsHtml}}
+      <a class='pull-right toggle-right-col'>{{.Lang.project.doneProjects}}<i class='icon icon-angle-right'></i></a>
+      {{end}}
+    </div>
+  </div>
+  <div class="table-col col-right">
+   <div class='list-group'>
+    {{.Data.closedProjectsHtml}}
+    </div>
+  </div>
+</div>

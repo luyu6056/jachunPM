@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"runtime/debug"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -260,7 +261,9 @@ func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint8, transactio
 	}
 	query.setQueryID(id)
 	resultchan := make(chan RpcQueryResult, 1)
+	rpcClientQueryLock.Lock()
 	rpcClientQueryMap[id] = resultchan
+	rpcClientQueryLock.Unlock()
 	buf := BufPoolGet()
 	b := buf.Make(MsgHeadLen)
 	b[0] = byte(msgno)
@@ -299,6 +302,9 @@ func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint8, transactio
 		}
 		r2 := reflect.ValueOf(resultmsg)
 		r1 = r1.Elem()
+		if r1.Kind() != reflect.Ptr {
+			return RpcClientQueryResultErrType
+		}
 		if r1.Type().Elem().Name() != r2.Elem().Type().Name() {
 			return errors.New(fmt.Sprintf("实际返回的结果为%s,与请求的%s不相符", r2.Elem().Type().Name(), r1.Type().Elem().Name()))
 		}
@@ -344,11 +350,11 @@ func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint8, transactio
 }
 func SetMsgQuery(i interface{}) bool {
 	if rpcResult, ok := i.(RpcQueryResult); ok {
-		rpcClientQueryLock.RLock()
+		rpcClientQueryLock.Lock()
 		if v, ok := rpcClientQueryMap[rpcResult.getQueryResultID()]; ok {
 			v <- rpcResult
 		}
-		rpcClientQueryLock.RUnlock()
+		rpcClientQueryLock.Unlock()
 		return true
 	}
 	return false
@@ -448,10 +454,16 @@ func (db *MsgDB) Table(tablename string) *mysql.Mysql_Build {
 	}
 	return db.transaction.Table(tablename)
 }
+func (db *MsgDB) Raw(sql string, arg ...interface{}) *mysql.Mysql_RawBuild {
+	return db.DB.Raw(sql, arg...)
+}
 
 //封装一下事务
 func (t *MsgDBTransaction) Table(tablename string) *mysql.Mysql_Build {
 	return t.t.Table(tablename)
+}
+func (t *MsgDBTransaction) Raw(sql string, arg ...interface{}) *mysql.Mysql_RawBuild {
+	return t.msg.DB.Raw(sql, arg...)
 }
 func (t *MsgDBTransaction) Commit() error {
 	//拦截住no不为0的commit
@@ -519,4 +531,135 @@ func msgTransactionRollBack(data *MSG_COMMON_Transaction_RollBack, in *Msg) {
 	if v, ok := transactionMap.LoadAndDelete(data.No); ok {
 		v.(*mysql.Transaction).Rollback()
 	}
+}
+func (m *Msg) ActionCreate(objectType string, objectID int32, actionType, comment, extra string, products, projects []int32) (actionID int64, err error) {
+	out := GET_MSG_LOG_Action_Create()
+	out.ObjectType = objectType
+	out.ObjectID = objectID
+	out.ActionType = actionType //操作类型
+	out.Comment = comment       //信息
+	out.Extra = extra           //额外信息
+	out.ActorId = m.GetUserID()
+	out.Products = products
+	out.Projects = projects
+	var result *MSG_LOG_Action_Create_result
+	if err = m.SendMsgWaitResult(0, out, &result); err != nil {
+		return
+	}
+	out.Put()
+	return result.ActionId, nil
+
+}
+func (m *Msg) GetUserID() int32 {
+	b, err := m.cache.Get("Uid", "Msg:"+strconv.Itoa(int(m.Msgno)))
+	if err == nil {
+		return int32(b[0]) | int32(b[1])<<8 | int32(b[2])<<16 | int32(b[3])<<24
+	}
+	return 0
+}
+func (m *Msg) HasPriv(moduleName, methodName string, ext ...interface{}) bool {
+	return true
+}
+
+type diff struct {
+	key   string
+	value string
+}
+
+func (m *Msg) ActionLogHistory(actionID int64, oldObj, newObj interface{}) {
+	r_o := reflect.ValueOf(oldObj)
+	r_n := reflect.ValueOf(newObj)
+	for r_o.Kind() == reflect.Ptr {
+		r_o = r_o.Elem()
+	}
+	for r_n.Kind() == reflect.Ptr {
+		r_n = r_n.Elem()
+	}
+	if r_o.Kind() != reflect.Struct && r_o.Kind() != reflect.Map && r_o.Kind() != r_n.Kind() {
+		libraries.DebugLog("ActionLogHistory传入不接受的格式 old %v,new %v", r_o.Kind(), r_n.Kind())
+		return
+	}
+	var change []*MSG_LOG_History
+	switch r_o.Kind() {
+	case reflect.Struct:
+		if r_o.Type().String() != r_n.Type().String() {
+			libraries.DebugLog("ActionLogHistory传入不一样的结构体 old %v,new %v", r_o.Type().String(), r_n.Type().String())
+			return
+		}
+		for i := 0; i < r_o.NumField(); i++ {
+			field := r_n.Field(i)
+			t := r_n.Type().Field(i)
+			if field.Kind() == reflect.Ptr || (field.Kind() == reflect.Struct && t.Type.String() != "time.Time") || field.Kind() == reflect.Map {
+				continue
+			}
+			lowerKey := strings.ToLower(t.Name)
+			value := libraries.I2S(field.Interface())
+			oldValue := libraries.I2S(r_o.Field(i).Interface())
+			if t.Type.String() == "time.Time" {
+				if time, _ := field.Interface().(time.Time); time.Unix() > 946656000 { //随便定个时间，暂时定做2000年1月1日的时间戳
+					value = time.Format("2006-01-02 16:04:05")
+				} else {
+					value = ""
+				}
+			}
+			if lowerKey == "lastediteddate" || lowerKey == "lasteditedby" || lowerKey == "assigneddate" || lowerKey == "editedby" || lowerKey == "editeddate" || lowerKey == "uid" || (lowerKey == "finisheddate" && value == "") || (lowerKey == "canceleddate" && value == "") || (lowerKey == "closeddate" && value == "") {
+				continue
+			}
+			var diffString []string
+			if strings.Contains(value, "\n") || strings.Contains(oldValue, "\n") || strings.Contains("name,title,desc,spec,steps,content,digest,verify,report", lowerKey) {
+
+				//text1 = str_replace('&nbsp;', '', trim(text1));
+				//text2 = str_replace('&nbsp;', '', trim(text2));
+				w := strings.Split(oldValue, "\n")
+				o := strings.Split(value, "\n")
+				w1 := string_array_diff_assoc(w, o)
+				o1 := string_array_diff_assoc(o, w)
+				var w2 []diff
+
+				for idx, val := range w1 {
+					w2 = append(w2, diff{
+						key:   fmt.Sprintf("%03d<", idx),
+						value: fmt.Sprintf("%03d- ", idx+1) + "<del>" + val + "</del>",
+					})
+				}
+				for idx, val := range o1 {
+					w2 = append(w2, diff{
+						key:   fmt.Sprintf("%03d>", idx),
+						value: fmt.Sprintf("%03d+ ", idx+1) + "<ins>" + val + "</ins>",
+					})
+				}
+				order_diff(w2)
+				for _, v := range w2 {
+					diffString = append(diffString, v.value)
+				}
+			}
+			if len(diffString) > 0 {
+				change = append(change, &MSG_LOG_History{
+					Field: lowerKey,
+					Old:   oldValue,
+					New:   value,
+					Diff:  strings.Join(diffString, "\n"),
+				})
+			}
+
+		}
+	}
+	if len(change) > 0 {
+		out := GET_MSG_LOG_Action_AddHistory()
+		out.History = change
+		out.Id = actionID
+		m.SendMsg(0, out)
+	}
+}
+func string_array_diff_assoc(a, b []string) []string {
+	for i := len(a) - 1; i >= 0; i-- {
+		v1 := a[i]
+		for _, v2 := range b {
+			if v1 == v2 {
+				a = append(a[:i], a[i+1:]...)
+				break
+			}
+		}
+	}
+	return a
 }

@@ -1,0 +1,286 @@
+{{template "header.html" .}}
+{{template "kindeditor.html" .}}
+<div id="mainMenu" class="clearfix">
+  <div class="btn-toolbar pull-left">
+    {{if not $.App.onlybody}}
+    {{html_a "javascript:history.go(-1)"  (strAdd "<i class='icon icon-back icon-sm'></i>"  .Lang.common.goback) ""  "class='btn btn-secondary'"}}
+    <div class="divider"></div>
+    {{end}}
+    <div class="page-title">
+      <span class="label label-id">{{$.Data.story.Id}}</span>
+      <span class="text" title='{{$.Data.story.Title}}' style='color: {{$.Data.story.Color}}'>{{$.Data.story.Title}}</span>
+      {{if gt $.Data.story.Version 1}}
+      <small class='dropdown'>
+        <a href='#' data-toggle='dropdown' class='text-muted'>#{{.Data.version}} <span class='caret'></span></a>
+        <ul class='dropdown-menu'>
+        {{- range $i:=genlist $.Data.story.Version $.Data.story.Version -1}}
+      	  <li{{if eq $i $.Data.version}} class='active'{{end}}>{{html_a (helper_createLink "story" "view"  "storyID=" $.Data.story.Id "&version=" $i) (strAdd "#" $i)}}</li>
+        {{- end}}
+        </ul>
+      </small>
+      {{end}}
+      {{if $.Data.story.Deleted}}
+      <span class='label label-danger'>{{.Lang.story.deleted}}</span>
+      {{end}}
+    </div>
+  </div>
+  {{if not $.App.onlybody}}
+  <div class="btn-toolbar pull-right">
+    {{common_printLink . "story" "create"  (strAdd "productID=" $.Data.story.Product "&branch=" $.Data.story.Branch "&moduleID=" $.Data.story.Module)  (strAdd "<i class='icon icon-plus'></i>"  .Lang.story.create) "" "class='btn btn-primary'" }}
+  </div>
+  {{end}}
+</div>
+<div id="mainContent" class="main-row">
+  <div class="main-col col-8">
+    <div class="cell">
+      <div class="detail">
+        <div class="detail-title">{{.Lang.story.legendSpec}}</div>
+        <div class="detail-content article-content">{{$.Data.story.Spec}}</div>
+      </div>
+      <div class="detail">
+        <div class="detail-title">{{.Lang.story.legendVerify}}</div>
+        <div class="detail-content article-content">{{$.Data.story.Verify}}</div>
+      </div>
+      {{file_printFiles . $.Data.files true ""}}
+      {{template "action.html" .}}
+    </div>
+    <div class='main-actions'>
+      <div class="btn-toolbar">
+        {{common_printBack . "javascript:history.go(-1)"}}
+        {{if not $.App.onlybody}}<div class='divider'></div>{{end}}
+        {{if not $.Data.story.Deleted}}
+        {{common_printIcon . "story" "change"  (strAdd "storyID=" $.Data.story.Id)  $.Data.story "button" "" "" "showinonlybody"}}
+        {{common_printIcon . "story" "review"  (strAdd "storyID=" $.Data.story.Id)  $.Data.story "button" "" "" "showinonlybody"}}
+        {{if and (ne .Data.story.Status "closed") (not .App.onlybody)}}
+            {{if common_hasPriv . "story"  "batchCreate"}}{{html_a (helper_createLink "story" "batchCreate" "productID=" $.Data.story.Product "&branch=" $.Data.story.Branch "&moduleID=" $.Data.story.Module "&storyID=" $.Data.story.Id  true)  (strAdd "<i class='icon icon-sitemap'></i> " .Lang.story.subdivide) ""  "class='btn' data-toggle='modal' data-type='iframe' data-width='95%'"}}{{end}}
+        {{end}}
+        {{common_printIcon . "story" "close" (strAdd "storyID=" $.Data.story.Id) .Data.story  "button" "" "" "iframe showinonlybody" "true"}}
+        {{common_printIcon . "story" "activate" (strAdd "storyID=" $.Data.story.Id) .Data.story "button" "" "" "iframe showinonlybody" "true"}}
+        {{if or (and (not .App.isonlybody) (common_hasPriv . "testcase" "create")) (common_hasPriv . "testcase" "batchCreate")}}
+            <div class='btn-group dropup'>
+            <button type='button' class='btn dropdown-toggle' data-toggle='dropdown'><i class='icon icon-sitemap'></i>{{.Lang.testcase.common}}<span class='caret'></span></button>
+            <ul class='dropdown-menu' id='createCaseActionMenu'>
+            {{if common_hasPriv . "testcase" "create"  .Data.story}}<li>{{html_a (helper_createLink "testcase" "create" "productID=" $.Data.story.Product "&branch=" $.Data.story.Branch "&moduleID=0&from=&param=0&storyID=" $.Data.story.Id true)  .Lang.testcase.create "" "data-toggle='modal' data-type='iframe' data-width='95%'"}}</li>{{end}}
+            {{if common_hasPriv . "testcase" "batchCreate"}}<li>{{html_a (helper_createLink "testcase" "batchCreate" "productID=" $.Data.story.Product "&branch=" $.Data.story.Branch "&moduleID=0&storyID=" $.Data.story.Id true)  .Lang.testcase.batchCreate "" "data-toggle='modal' data-type='iframe' data-width='95%'"}}</li>{{end}}
+            </ul>
+            </div>
+        {{end}}
+        {{if eq .Data.from "project"}}{{common_printIcon . "task" "create"  (strAdd "project=" .Data.param "&storyID=" $.Data.story.Id "&moduleID=" $.Data.story.Module) .Data.story "button" "plus" "" "showinonlybody"}}{{end}}
+        <div class='divider'></div>
+        {{common_printIcon . "story" "edit"  (strAdd "storyID=" $.Data.story.Id) .Data.story "" ""}}
+        {{common_printIcon . "story" "create"  (strAdd "productID=" $.Data.story.Product "&branch=" $.Data.story.Branch "&moduleID=" $.Data.story.Module "&storyID=" $.Data.story.Id)  .Data.story "button" "copy" "" "iframe showinonlybody" "true" "data-width='1050'"}}
+        {{common_printIcon . "story" "delete" (strAdd "storyID=" $.Data.story.Id)  .Data.story "button" "" "hiddenwin"}}
+        {{end}}
+      </div>
+    </div>
+  </div>
+  <div class="side-col col-4">
+    <div class="cell">
+      <div class='tabs'>
+        <ul class='nav nav-tabs'>
+          <li class='active'><a href='#legendBasicInfo' data-toggle='tab'>{{.Lang.story.legendBasicInfo}}</a></li>
+          <li><a href='#legendLifeTime' data-toggle='tab'>{{.Lang.story.legendLifeTime}}</a></li>
+        </ul>
+        <div class='tab-content'>
+          <div class='tab-pane active' id='legendBasicInfo'>
+            <table class="table table-data">
+              <tbody>
+                <tr>
+                  <th>{{.Lang.story.product}}</th>
+                  <td>{{html_a (helper_createLink "product" "view"  "productID=" $.Data.story.Product)  .Data.product.Name}}</td>
+                </tr>
+                {{if ne .Data.product.Type "normal"}}
+                <tr>
+                  <th>{{printf .Lang.product.branch (getValue .Lang.product.branchName .Data.product.Type)}}</th>
+                  <td>{{common_printLink . "product" "browse"  (strAdd "productID=" $.Data.story.Product "&branch=" $.Data.story.Branch)  (getValue .Data.branches $.Data.story.Branch)}}</td>
+                </tr>
+                {{end}}
+                <tr>
+                  <th>{{.Lang.story.module}}</th>
+                  <td title='{{getValue .Data.treeOption $.Data.story.Module}}'>{{range $key,$module :=  .Data.modulePath}}
+                          {{if common_hasPriv $ "product" "browse"}}{{html_a (helper_createLink "product" "browse" "productID=" $.Data.story.Product "&branch=" $.Data.story.Branch "&browseType=byModule&param=" $module.Id) $module.Name}}{{else}}{{$module.Name}}{{end}}
+                          {{if ne (intsum $key 1) (len $.Data.modulePath)}}{{.Lang.common.arrow}}{{end}}{{end}}</td>
+                </tr>
+                <tr>
+                  <th>{{.Lang.story.plan}}</th>
+                  <td>
+                    {{if .Data.story.Plan}}{{if common_hasPriv . "productplan" "view"}}{{html_a (helper_createLink "productplan" "view" "planID=" .Data.story.Plan) .Data.story.PlanTitle}}{{else}}{{.Data.story.PlanTitle}}{{end}}{{end}}
+                  </td>
+                </tr>
+                <tr>
+                  <th>{{.Lang.story.source}}</th>
+                  <td id='source'>{{getValue .Lang.story.sourceList $.Data.story.Source}}</td>
+                </tr>
+                <tr>
+                  <th>{{.Lang.story.sourceNote}}</th>
+                  <td>{{$.Data.story.SourceNote}}</td>
+                </tr>
+                <tr>
+                  <th>{{.Lang.story.status}}</th>
+                  <td><span class='status-story status-{{$.Data.story.Status}}'><span class="label label-dot"></span> {{getValue .Lang.story.statusList $.Data.story.Status}}</span></td>
+                </tr>
+                <tr>
+                  <th>{{.Lang.story.stage}}</th>
+                  <td>
+                  {{- if and $.Data.story.Stages .Data.branches}}
+                      {{range $stage:=$.Data.story.Stages}}{{if and $stage.Branch (getValue $.Data.branches $stage.Branch)}}{{getValue $.Data.branches $stage.Branch}}{{else}}{{getValue $.Lang.story.stageList $stage.Stage}}{{end}}<br />{{end}}
+                  {{- else}}
+                    {{getValue .Lang.story.stageList $.Data.story.Stage}}
+                  {{- end}}
+                  </td>
+                </tr>
+                <tr>
+                  <th>{{.Lang.story.pri}}</th>
+                  <td><span class='label-pri label-pri-{{$.Data.story.Pri}}' title='{{getValue .Lang.story.priList $.Data.story.Pri}}'>{{getValue .Lang.story.priList $.Data.story.Pri}}</span></td>
+                </tr>
+                <tr>
+                  <th>{{.Lang.story.estimate}}</th>
+                  <td>{{$.Data.story.Estimate}}</td>
+                </tr>
+                <tr>
+                  <th>{{.Lang.story.keywords}}</th>
+                  <td>{{$.Data.story.Keywords}}</td>
+                </tr>
+                <tr>
+                  <th>{{.Lang.story.legendMailto}}</th>
+                  <td>{{range $uid:=.Data.mailto}}{{if $uid}}<span>{{getValue $.Data.users $uid}}</span> &nbsp;{{end}}{{end}}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class='tab-pane' id='legendLifeTime'>
+            <table class="table table-data">
+              <tbody>
+                <tr>
+                  <th class='w-70px'>{{.Lang.story.openedBy}}</th>
+                  <td>{{getValue .Data.users $.Data.story.OpenedBy}}{{.Lang.common.at}}{{$.Data.story.OpenedDate}}</td>
+                </tr>
+                <tr>
+                  <th>{{.Lang.story.assignedTo}}</th>
+                  <td>{{if $.Data.story.AssignedTo}}{{getValue .Data.users $.Data.story.AssignedTo}}{{.Lang.common.at}}{{$.Data.story.AssignedDate}}{{end}}</td>
+                </tr>
+                <tr>
+                  <th>{{.Lang.story.reviewedBy}}</th>
+                  <td>{{getValue .Data.users $.Data.story.ReviewedBy}}</td>
+                </tr>
+                <tr>
+                  <th>{{.Lang.story.reviewedDate}}</th>
+                  <td>{{if $.Data.story.ReviewedBy}}{{$.Data.story.ReviewedDate}}{{end}}</td>
+                </tr>
+                <tr>
+                  <th>{{.Lang.story.closedBy}}</th>
+                  <td>{{if $.Data.story.ClosedBy}}{{getValue .Data.users $.Data.story.ClosedBy}}{{.Lang.common.at}}{{$.Data.story.ClosedDate}}{{end}}</td>
+                </tr>
+                <tr>
+                  <th>{{.Lang.story.closedReason}}</th>
+                  <td>
+                    {{- if $.Data.story.ClosedReason}}{{getValue .Lang.story.reasonList $.Data.story.ClosedReason}}{{end}}
+                    {{- range $.Data.story.ExtraStories}}{{if eq .Id $.Data.story.DuplicateStory}}
+                        {{html_a (helper_createLink "story" "view"  "storyID=" $.Data.story.DuplicateStory)  (strAdd "#" $.Data.story.DuplicateStory " "  .Title)}}
+                    {{- end}}{{end}}
+                  </td>
+                </tr>
+                <tr>
+                  <th>{{.Lang.story.lastEditedBy}}</th>
+                  <td>{{if $.Data.story.LastEditedBy}}{{getValue .Data.users $.Data.story.LastEditedBy}}{{.Lang.common.at}}{{$.Data.story.LastEditedDate}}{{end}}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cell">
+      <div class='tabs'>
+        <ul class='nav nav-tabs'>
+          <li class='active'><a href='#legendProjectAndTask' data-toggle='tab'>{{.Lang.story.legendProjectAndTask}}</a></li>
+          <li><a href='#legendRelated' data-toggle='tab'>{{.Lang.story.legendRelated}}</a></li>
+        </ul>
+        <div class='tab-content'>
+          <div class='tab-pane active' id='legendProjectAndTask'>
+            <ul class="list-unstyled">
+              {{- range $task:= $.Data.story.Tasks}}{{$projectName:=getValue $.projects $task.Project}}{{if $projectName}}
+                      <li title='$task->name'>{{html_a (helper_createLink "task" "view"  "taskID=" $task.Id true) (strAdd "#" $task.Id " " $task.Name) "" "class='iframe' data-width='80%'"}}{{html_a (helper_createLink "project" "browse"  "projectID=" $task.Project)  $projectName "" "class='text-muted'"}}</li>
+              {{- end}}{{end}}
+              {{- if not (len $.Data.story.Tasks)}}
+                  {{- range $project :=$.Data.story.Projects}}
+                      <li title='$project->name'>{{html_a (helper_createLink "project" "browse"  "projectID=" $project.Id)  $project.Name "" "class='text-muted'"}}</li>
+              {{- end}}{{end}}
+            </ul>
+          </div>
+          <div class="tab-pane" id='legendRelated'>
+            <table class="table table-data">
+              <tbody>
+                {{if .Data.fromBug}}
+                <tr class='text-top'>
+                  <th class='w-70px'>{{.Lang.story.legendFromBug}}</th>
+                  <td class='pd-0'>
+                    <ul class='list-unstyled'>
+                    <li title='#{{.Data.fromBug.Id}} {{.Data.fromBug.Title}}'>{{html_a (helper_createLink "bug" "view"  "bugID=" .Data.fromBug.Id true) (strAdd "#" .Data.fromBug.Id " " .Data.fromBug.Title) "" "class='iframe' data-width='80%'"}}</li>
+                    </ul>
+                  </td>
+                </tr>
+                {{end}}
+                <tr class='text-top'>
+                  <th class='w-70px'>{{.Lang.story.legendBugs}}</th>
+                  <td class='pd-0'>
+                    <ul class='list-unstyled'>
+                    {{- range $bug:= .Data.bugs}}
+                      <li title='#{{$bug.Id}} {{$bug.Title}}'>{{html_a (helper_createLink "bug" "view"  "bugID=" $bug.Id true) (strAdd "#" $bug.Id " " $bug.Title) "" "class='iframe' data-width='80%'"}}</li>
+                    {{- end}}
+                    </ul>
+                  </td>
+                </tr>
+                <tr class='text-top'>
+                  <th>{{.Lang.story.legendCases}}</th>
+                  <td class='pd-0'>
+                    <ul class='list-unstyled'>
+                    {{- range $case:= .Data.cases}}
+                      <li title='#{{$case.Id}} {{$case.Title}}'>{{html_a (helper_createLink "testcase" "view"  "caseID=" $case.Id true) (strAdd "#" $case.Id " " $case.Title) "" "class='iframe' data-width='80%'"}}</li>
+                    {{- end}}
+                    </ul>
+                  </td>
+                </tr>
+                <tr class='text-top'>
+                  <th class='w-80px'>{{.Lang.story.legendLinkStories}}</th>
+                  <td class='pd-0'>
+                    <ul class='list-unstyled'>
+                      {{- range $id := $.Data.story.LinkStories}}
+                      {{- range $.Data.story.ExtraStories}}{{if eq .Id $id}}
+                        <li>{{html_a (helper_createLink "story" "view"  "storyID=" .Id true)  (strAdd "#" .Id " "  .Title) "" "class='iframe' data-width='80%'"}}</li>
+                      {{- end}}{{end}}{{end}}
+                    </ul>
+                  </td>
+                </tr>
+                <tr class='text-top'>
+                  <th>{{.Lang.story.legendChildStories}}</th>
+                  <td class='pd-0'>
+                    <ul class='list-unstyled'>
+                      {{- range $id := $.Data.story.ChildStories}}
+                      {{- range $.Data.story.ExtraStories}}{{if eq .Id $id}}
+                        <li>{{html_a (helper_createLink "story" "view"  "storyID=" .Id true)  (strAdd "#" .Id " "  .Title) "" "class='iframe' data-width='80%'"}}</li>
+                      {{- end}}{{end}}{{end}}
+                    </ul>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="mainActions" class='main-actions'>
+  {{/*common_printPreAndNext . .Data.preAndNext*/}}
+</div>
+<script type="text/javascript">
+var canCreate={{common_hasPriv . "story" "story"}},
+  createStory={{.Lang.story.create}},
+  productID={{$.Data.story.Product}},
+  branch={{$.Data.story.Branch}},
+  moduleID={{$.Data.story.Module}},
+</script>
+{{template "syntaxhighlighter.html" .}}
+{{template "footer.html" .}}

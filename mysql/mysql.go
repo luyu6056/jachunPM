@@ -147,7 +147,7 @@ func queryMap(sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transaction
 Retry:
 	retryNum++
 	//暂时先设定一个最大重试次数
-	if retryNum > db.MaxOpenConns {
+	if retryNum > db.maxOpenConns {
 		return nil, errors.New("错误重试次数过多，最后一次错误是：" + lastErr)
 	}
 	if ts != nil {
@@ -299,7 +299,7 @@ func query(sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transaction, r
 Retry:
 	retryNum++
 	//暂时先设定一个最大重试次数
-	if retryNum > db.MaxOpenConns {
+	if retryNum > db.maxOpenConns {
 		return errors.New("错误重试次数过多，最后一次错误是：" + lastErr)
 	}
 	if ts != nil {
@@ -456,7 +456,11 @@ Retry:
 				case reflect.Struct:
 					switch field_struct.Field_t.String() {
 					case "time.Time":
-						*((*time.Time)(unsafe.Pointer(uint_ptr + field_struct.Offset))), _ = time.ParseInLocation("2006-01-02 15:04:05", string(row.buffer), time.Local)
+						var e error
+						*((*time.Time)(unsafe.Pointer(uint_ptr + field_struct.Offset))), e = time.ParseInLocation("2006-01-02 15:04:05", string(row.buffer), row.conn.loc)
+						if e != nil {
+							*((*time.Time)(unsafe.Pointer(uint_ptr + field_struct.Offset))), _ = time.ParseInLocation("2006-01-02", string(row.buffer), row.conn.loc)
+						}
 					default:
 						field := reflect.NewAt(field_struct.Field_t, unsafe.Pointer(uint_ptr+field_struct.Offset))
 						jsoniter.Unmarshal(row.buffer, field.Interface())
@@ -706,7 +710,11 @@ Retry:
 					}
 					switch {
 					case field_struct.Kind == reflect.Struct && field_struct.Field_t.String() == "time.Time":
-						*((*time.Time)(unsafe.Pointer(uint_ptr + field_struct.Offset))), _ = time.ParseInLocation("2006-01-02 15:04:05", str, row.conn.loc)
+						var e error
+						*((*time.Time)(unsafe.Pointer(uint_ptr + field_struct.Offset))), e = time.ParseInLocation("2006-01-02 15:04:05", str, row.conn.loc)
+						if e != nil {
+							*((*time.Time)(unsafe.Pointer(uint_ptr + field_struct.Offset))), e = time.ParseInLocation("2006-01-02", str, row.conn.loc)
+						}
 					case field_struct.Kind == reflect.Ptr:
 						if *(*string)(unsafe.Pointer(&row.buffer)) != "NULL" {
 							if len(row.buffer) == 0 || (len(row.buffer) == 1 && row.buffer[0] == 0xC0) {
@@ -763,7 +771,7 @@ func insert(insert_sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transa
 	Retry:
 		retryNum++
 		//暂时先设定一个最大重试次数
-		if retryNum > db.MaxOpenConns {
+		if retryNum > db.maxOpenConns {
 			return 0, 0, errors.New("错误重试次数过多，最后一次错误是：" + lastErr)
 		}
 		LastInsertId, rowsAffected, err = db.exec(insert_sql, prepare_arg)
@@ -807,7 +815,7 @@ func exec(query_sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transacti
 	Retry:
 		retryNum++
 		//暂时先设定一个最大重试次数
-		if retryNum > db.MaxOpenConns {
+		if retryNum > db.maxOpenConns {
 			return errors.New("错误重试次数过多，最后一次错误是：" + lastErr)
 		}
 		_, _, err = db.exec(query_sql, prepare_arg)
@@ -849,7 +857,7 @@ func query_getaffected(query_sql []byte, prepare_arg []interface{}, db *MysqlDB,
 	Retry:
 		retryNum++
 		//暂时先设定一个最大重试次数
-		if retryNum > db.MaxOpenConns {
+		if retryNum > db.maxOpenConns {
 			return 0, errors.New("错误重试次数过多，最后一次错误是：" + lastErr)
 		}
 		_, rowsAffected, err = db.exec(query_sql, prepare_arg)
@@ -917,12 +925,6 @@ func Open(dsn string) (*MysqlDB, error) {
 		}
 	}
 	db = mysql_open(str[0][1], str[0][2], str[0][5], str[0][6], charset, mysqlLoc, nil)
-
-	err := db.Ping()
-	if err != nil {
-		return nil, errors.New("数据库连接失败" + err.Error())
-
-	}
 	return db, nil
 
 }
@@ -983,7 +985,6 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 			db.storeEngine.name = "MyISAM"
 		}
 	}
-
 	var wg sync.WaitGroup
 	wg.Add(len(i))
 	for _, v := range i {
@@ -1162,12 +1163,12 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 								default_str = " DEFAULT current_timestamp()"
 							}
 						default:
-							is_text = true
 							buf.WriteString("json")
+							default_str = " DEFAULT '[]'"
 						}
 					default:
-						is_text = true
 						buf.WriteString("json")
+						default_str = " DEFAULT '[]'"
 					}
 					if is_pk {
 						buf.WriteString(" NOT NULL")
@@ -1356,6 +1357,9 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 							case strings.Contains(tag, "type:text"):
 								varchar_str = "text"
 								notnull = false
+							case strings.Contains(tag, "type:json"):
+								varchar_str = "json"
+								notnull = false
 							default:
 								if sc, _ := Preg_match_result(`type:(varchar\(\d+\))`, tag, 1); len(sc) > 0 {
 									varchar_str = sc[0][1]
@@ -1448,6 +1452,7 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 
 							}
 						case reflect.Int32:
+
 							if sql_str[1] != "int(11)" {
 								is_change = 12
 								sql_str[1] = "int(11)"
@@ -1528,29 +1533,35 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 								}
 
 							default:
-								is_text = true
-								if !strings.Contains(sql_str[1], "json") && !strings.Contains(sql_str[1], "longtext") {
-									is_change = 20
-									sql_str[1] = "json"
+
+								if varchar_str != "" {
+									if sql_str[1] != varchar_str && (sql_str[1] == "longtext" && varchar_str != "json") {
+										is_change = 20
+										sql_str[1] = varchar_str
+									}
+								} else {
+									if !strings.Contains(sql_str[1], "json") && !strings.Contains(sql_str[1], "longtext") {
+										is_change = 21
+										sql_str[1] = "json"
+									}
 								}
+
 								default_str = "NULL"
+
 							}
 						default:
-
 							if varchar_str != "" {
-								if sql_str[1] != varchar_str {
-									is_change = 21
+								if sql_str[1] != varchar_str && (sql_str[1] == "longtext" && varchar_str != "json") {
+									is_change = 22
 									sql_str[1] = varchar_str
 								}
-								default_str = "NULL"
 							} else {
-								is_text = true
 								if !strings.Contains(sql_str[1], "json") && !strings.Contains(sql_str[1], "longtext") {
-									is_change = 22
-									sql_str[1] = "json"
+									is_change = 23
 								}
-								default_str = "NULL"
+								sql_str[1] = "json"
 							}
+							default_str = "NULL"
 
 						}
 						if is_pk {
@@ -1570,13 +1581,15 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 							}
 
 						}
-						if sql_str[3] != default_str {
-							is_change = 23
-
+						if sql_str[1] == "json" || varchar_str == "json" {
+							default_str = "[]"
+						}
+						if strings.Trim(sql_str[3], "'") != default_str {
+							is_change = 24
 							sql_str[3] = default_str
 						}
 						if sql_str[4] != extra_str {
-							is_change = 24
+							is_change = 25
 							sql_str[4] = extra_str
 						}
 						if sql_str[3] != "" {
@@ -1595,11 +1608,11 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 						}
 
 						if is_change > 0 {
+							//DEBUG(is_change)
 							if is_text {
 								sql_str[3] = ""
 							}
 							sql_str[0] = "modify column `" + field_str + "`"
-							DEBUG(is_change, sql_str)
 							sql = append(sql, strings.Join(sql_str, " "))
 						}
 					} else {
@@ -1671,12 +1684,14 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 
 								sql_str[3] = "Default current_timestamp()"
 							default:
-								is_text = true
+								is_text = false
 								sql_str[1] = "json"
+								sql_str[3] = "Default '[]'"
 							}
 						default:
-							is_text = true
+							is_text = false
 							sql_str[1] = "json"
+							sql_str[3] = "Default '[]'"
 						}
 						if strings.Contains(tag, "auto_increment") {
 							if !strings.Contains(value["Extra"], "auto_increment") {
@@ -1701,8 +1716,8 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 								sql_str[1] = "tinytext"
 							case strings.Contains(tag, "type:text"):
 								sql_str[1] = "text"
-
 								sql_str[3] = strings.Replace(sql_str[3], " Default NULL", "", 1)
+
 							default:
 								if sc, _ := Preg_match_result(`type:(varchar\(\d+\))`, tag, 1); len(sc) > 0 {
 									sql_str[1] = sc[0][1]
@@ -1768,8 +1783,7 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 					}
 				}
 				if len(sql) > 0 {
-					s := "ALTER TABLE `" + table_name + "` " + strings.Join(sql, ",")
-					DEBUG(s)
+					s := strings.TrimRight("ALTER TABLE `"+table_name+"` "+strings.Join(sql, ","), " ")
 					err := exec(Str2bytes(s), nil, db, &Transaction{})
 					if err != nil {
 						errs = append(errs, errors.New(table_name+":"+err.Error()))
@@ -1782,8 +1796,7 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 					errs = append(errs, errors.New(table_name+":"+err.Error()))
 					return
 				}
-				if res[0]["ENGINE"] != db.storeEngine.name {
-
+				if strings.ToLower(res[0]["ENGINE"]) != strings.ToLower(db.storeEngine.name) {
 					res[0]["CREATE_OPTIONS"] = ""
 					err = exec([]byte("ALTER TABLE `"+table_name+"` ENGINE = "+db.storeEngine.name+" transactional=default,row_format=default,checksum=0"), nil, db, &Transaction{})
 					if err != nil {
@@ -1792,6 +1805,7 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 					}
 				}
 				sql = nil
+
 				switch db.storeEngine.name {
 				case "Aria":
 					if strings.Contains(res[0]["CREATE_OPTIONS"], "page_checksum=1") {
@@ -1820,7 +1834,6 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 				}
 				if sql != nil {
 					sql_str := "ALTER TABLE `" + table_name + "` " + strings.Join(sql, ",")
-					DEBUG(sql_str)
 					err := exec([]byte(sql_str), nil, db, &Transaction{})
 					if err != nil {
 						errs = append(errs, errors.New(table_name+":"+err.Error()))

@@ -23,7 +23,7 @@ var searchParamsFunc = map[string]func(*TemplateData) map[string]interface{}{}
 
 var searchFormId = uint32(rand.NewSource(time.Now().Unix()).Int63())
 
-func get_search_buildForm(data *TemplateData) {
+func get_search_buildForm(data *TemplateData) (err error) {
 	//$module = '', $fields = '', $params = '', $actionURL = '', $queryID = 0)
 	var param map[string]interface{}
 	module := data.ws.Query("module")
@@ -65,6 +65,7 @@ func get_search_buildForm(data *TemplateData) {
 	data.Data["formId"] = "searchForm-" + strconv.Itoa(int(atomic.AddUint32(&searchFormId, 1)))
 	search_initSession(data, module, param["fields"].([]protocol.HtmlKeyValueStr), param["params"].(map[string]config.ConfigSearchParams))
 	templateOut("search.buildForm.html", data)
+	return
 }
 func search_initSession(data *TemplateData, module string, fields []protocol.HtmlKeyValueStr, fieldParams map[string]config.ConfigSearchParams) {
 	formSessionName := module + "Form"

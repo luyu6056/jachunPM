@@ -30,6 +30,9 @@ const (
 	Err_ProjectProductPlanParentNotFound      ErrCode = -22
 	Err_FileNotFount                          ErrCode = -23
 	Err_ProjectStoryTitleExists               ErrCode = -24
+	Err_ProjectNotFound                       ErrCode = -25
+	Err_ProjectNameIsExist                    ErrCode = -26
+	Err_ProjectStoryNotFount                  ErrCode = -27
 )
 
 func (err ErrCode) String() string {
@@ -53,5 +56,8 @@ func (err ErrCode) String() string {
 		Err_ProjectProductPlanNotFound:            "NotFoundProductPlanInfo",
 		Err_ProjectProductPlanParentNotFound:      "NotFoundProductPlanParent",
 		Err_FileNotFount:                          "FileNotFount",
+		Err_ProjectNotFound:                       "NotFountProject",
+		Err_ProjectNameIsExist:                    "ProjectNameIsExist",
+		Err_ProjectStoryNotFount:                  "StoryNotFount",
 	}[err]
 }

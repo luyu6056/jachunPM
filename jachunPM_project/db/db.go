@@ -19,6 +19,8 @@ const (
 	TABLE_STORYSTAGE  = "storystage"
 	TABLE_TASK        = "task"
 	TABLE_RELEASE     = "release"
+	TABLE_BUILD       = "build"
+	TABLE_BURN        = "burn"
 )
 
 func Init() *mysql.MysqlDB {
@@ -28,7 +30,10 @@ func Init() *mysql.MysqlDB {
 		log.Fatalf("数据库连接失败 %v", err)
 	}
 	if config.Config.MysqlMaxConn > 0 {
-		db.MaxOpenConns = config.Config.MysqlMaxConn
+		db.SetMaxOpenConns(config.Config.MysqlMaxConn)
+	}
+	if err = db.Ping(); err != nil {
+		log.Fatalf("数据库启动失败 %v", err)
 	}
 	errs := db.StoreEngine("Innodb").Sync2(
 		new(Module),
@@ -42,6 +47,8 @@ func Init() *mysql.MysqlDB {
 		new(StoryStage),
 		new(Task),
 		new(Release),
+		new(Build),
+		new(Burn),
 	)
 	if errs != nil {
 		log.Fatalf("数据库启动失败%v", errs)
@@ -72,14 +79,15 @@ func (*Module) TableName() string {
 }
 
 type Product struct {
-	Id          int32  `db:"auto_increment;pk"`
-	Name        string `db:"type:varchar(90)"`
-	Code        string `db:"type:varchar(45)"`
-	Line        int32  `db:"not null"`
-	Type        string `db:"default('normal');type:varchar(30)"`
-	Status      string `db:"type:varchar(30)"`
-	Desc        string `db:"type:text"`
-	Branch      int32
+	Id          int32   `db:"auto_increment;pk"`
+	Name        string  `db:"type:varchar(90)"`
+	Code        string  `db:"type:varchar(45)"`
+	Line        int32   `db:"not null"`
+	Type        string  `db:"default('normal');type:varchar(30)"`
+	Status      string  `db:"type:varchar(30)"`
+	Desc        string  `db:"type:text"`
+	Branch      []int32 //product包含的branch
+	Plan        []int32 //product包含的plan
 	PO          int32
 	QD          int32
 	RD          int32
@@ -118,6 +126,7 @@ func (*Doclib) TableName() string {
 type Story struct {
 	Id             int32   `db:"auto_increment;pk"`
 	Product        int32   `db:"default(0)"`
+	Project        int32   `db:"index"`
 	Branch         int32   `db:"default(0)"`        //平台
 	Module         int32   `db:"default(0)"`        //模块
 	Plan           int32   `db:"type:text"`         //计划
@@ -127,7 +136,7 @@ type Story struct {
 	Title          string  `db:"type:varchar(255)"`
 	Keywords       string  `db:"type:varchar(255)"`
 	Pri            int8    `db:"default(3)"` //优先级
-	Estimate       float32 `db:""`
+	Estimate       float64 `db:""`
 	Status         string  `db:"type:enum('','changed','active','draft','closed')"`                                                                                //
 	Stage          string  `db:"type:enum('','wait','planned','projected','developing','developed','testing','tested','verified','released','closed');default(1)"` //
 	Mailto         []int32 `db:"type:json"`                                                                                                                        //抄送
@@ -143,8 +152,8 @@ type Story struct {
 	ClosedDate     time.Time
 	ClosedReason   string `db:"type:varchar(30)"`
 	ToBug          int32
-	ChildStories   string `db:"type:varchar(255)"`
-	LinkStories    string `db:"type:varchar(255)"`
+	ChildStories   []int32 `db:"type:json"`
+	LinkStories    []int32 `db:"type:json"`
 	DuplicateStory int32
 	Deleted        bool
 	Version        int16  `db:"not null;default(1)"`
@@ -189,39 +198,40 @@ func (*Productplan) TableName() string {
 
 type Project struct {
 	Id            int32 `db:"auto_increment;pk"`
-	IsCat         int8  `db:"default(1)"` // 0=1,1=0,
+	IsCat         bool
 	CatID         int32
 	Type          string    `db:"default('sprint');type:varchar(20)"`
 	Parent        int32     `db:"default(0)"`
 	Name          string    `db:"type:varchar(90)"`
 	Code          string    `db:"type:varchar(45)"`
-	Begin         time.Time `db:"not null"`
-	End           time.Time `db:"not null"`
+	Begin         time.Time `db:"not null;type:date"`
+	End           time.Time `db:"not null;type:date"`
 	Days          int16
 	Status        string `db:"type:varchar(10)"`
 	Statge        int8   `db:"default(0)"` // 0=1,1=2,2=3,3=4,4=5,
 	Pri           int8   `db:"default(0)"` // 0=1,1=2,2=3,3=4,
 	Desc          string `db:"type:text"`
-	OpenedBy      string `db:"type:varchar(30)"`
+	OpenedBy      int32  `db:"default(0)"`
 	OpenedDate    time.Time
 	OpenedVersion string `db:"type:varchar(20)"`
-	ClosedBy      string `db:"type:varchar(30)"`
+	ClosedBy      int32
 	ClosedDate    time.Time
-	CanceledBy    string `db:"type:varchar(30)"`
+	CanceledBy    int32
 	CanceledDate  time.Time
-	PO            string `db:"type:varchar(30)"`
-	PM            string `db:"type:varchar(30)"`
-	QD            string `db:"type:varchar(30)"`
-	RD            string `db:"type:varchar(30)"`
-	Team          string `db:"type:varchar(90)"`
-	Acl           int8   `db:"default(0)"` // 0=open,1=private,2=custom,
-	Whitelist     string `db:"type:text"`
+	PO            int32
+	PM            int32
+	QD            int32
+	RD            int32
+	Team          string
+	Acl           string  `db:"default(0)"` // 0=open,1=private,2=custom,
+	Whitelist     []int32 `db:"type:json"`
 	Order         int32
 	Deleted       bool
-	FtpPath       string `db:"type:varchar(255)"`
-	Product       int32  `db:"index"`
-	Branch        int32  `db:"index"`
-	Story         int32  `db:"index"`
+	FtpPath       string  `db:"type:varchar(255)"`
+	Products      []int32 `db:"index"`
+	Branchs       []int32 `db:"index"`
+	Storys        []int32 `db:"index"`
+	Plans         []int32 `db:"index"`
 }
 
 func (*Project) TableName() string {
@@ -229,8 +239,8 @@ func (*Project) TableName() string {
 }
 
 type StorySpec struct {
-	Story   int32  `db:"index"`
-	Version int16  `db:"index"`
+	Story   int32  `db:"pk;index"`
+	Version int16  `db:"pk;index"`
 	Title   string `db:"type:varchar(255)"`
 	Spec    string `db:"type:text"`
 	Verify  string `db:"type:text"`
@@ -241,8 +251,8 @@ func (*StorySpec) TableName() string {
 }
 
 type StoryStage struct {
-	Story  int32  `db:""`
-	Branch int32  `db:""`
+	Story  int32  `db:"pk"`
+	Branch int32  `db:"pk"`
 	Stage  string `db:"type:varchar(50)"`
 }
 
@@ -262,9 +272,9 @@ type Task struct {
 	Name           string    `db:"type:varchar(255)"`
 	Type           string    `db:"type:varchar(20)"`
 	Pri            int8      `db:"default(0)"`
-	Estimate       float32   `db:""`
-	Consumed       float32   `db:""`
-	Left           float32   `db:""`
+	Estimate       float64   `db:""`
+	Consumed       float64   `db:""`
+	Left           float64   `db:""`
 	Deadline       time.Time `db:"not null"`
 	Status         string    `db:"type:varchar(32)"`
 	Color          string    `db:"type:varchar(7)"`
@@ -284,11 +294,11 @@ type Task struct {
 	ClosedBy       int32     `db:"type:varchar(30)"`
 	ClosedDate     time.Time `db:"not null"`
 	ClosedReason   string    `db:"type:varchar(30)"`
-	LastEditedBy   string    `db:"type:varchar(30)"`
+	LastEditedBy   int32     `db:"type:varchar(30)"`
 	LastEditedDate time.Time `db:"not null"`
 	Examine        int8      `db:"not null;default(0)"`
 	ExamineDate    time.Time `db:"not null"`
-	ExamineBy      string    `db:"type:varchar(30)"`
+	ExamineBy      int32     `db:"type:varchar(30)"`
 	Deleted        bool
 	Finalfile      string `db:"default('0');type:varchar(3)"`
 	Proofreading   bool
@@ -306,8 +316,8 @@ type Release struct {
 	Name     string `db:"type:varchar(30)"`
 	Marker   bool
 	Date     time.Time `db:"not null"`
-	Stories  []int32   `db:"type:text"`
-	Bugs     string    `db:"type:text"`
+	Stories  []int32   `db:"type:json"`
+	Bugs     []int32   `db:"type:json"`
 	LeftBugs string    `db:"type:text"`
 	Desc     string    `db:"type:text"`
 	Status   string    `db:"default('normal');type:varchar(20)"`
@@ -316,4 +326,36 @@ type Release struct {
 
 func (*Release) TableName() string {
 	return TABLE_RELEASE
+}
+
+type Build struct {
+	Id       int32  `db:"auto_increment;pk"`
+	Product  int32  `db:"default(0)"`
+	Branch   int32  `db:"default(0)"`
+	Project  int32  `db:"index"`
+	Name     string `db:"type:varchar(150)"`
+	ScmPath  string `db:"type:varchar(255)"`
+	FilePath string `db:"type:varchar(255)"`
+	Date     time.Time
+	Stories  []int32 `db:"type:json"`
+	Bugs     []int32 `db:"type:json"`
+	Builder  string  `db:"type:varchar(30)"`
+	Desc     string  `db:"type:text"`
+	Deleted  bool
+}
+
+func (*Build) TableName() string {
+	return TABLE_BUILD
+}
+
+type Burn struct {
+	Project  int32     `db:"pk"`
+	Date     time.Time `db:"pk;type:date"`
+	Estimate float64
+	Left     float64
+	Consumed float64
+}
+
+func (*Burn) TableName() string {
+	return TABLE_BURN
 }

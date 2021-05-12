@@ -47,6 +47,59 @@ func Handler(in *protocol.Msg) {
 		story_create(data, in)
 	case *protocol.MSG_PROJECT_story_batchGetStoryStage:
 		story_batchGetStoryStage(data, in)
+	case *protocol.MSG_PROJECT_story_getById:
+		story, err := story_getById(data.Id, data.Version)
+		if err != nil {
+			in.WriteErr(err)
+		} else {
+			out := protocol.GET_MSG_PROJECT_story_getById_result()
+			out.Story = story
+			in.SendResult(out)
+			out.Put()
+		}
+
+	case *protocol.MSG_PROJECT_tree_getParents:
+		list, err := tree_getParents(data.ModuleID)
+		if err != nil {
+			in.WriteErr(err)
+		} else {
+			out := protocol.GET_MSG_PROJECT_tree_getParents_result()
+			out.List = list
+			in.SendResult(out)
+			out.Put()
+		}
+	case *protocol.MSG_PROJECT_productplan_getById:
+		productplan_getById(data, in)
+	case *protocol.MSG_PROJECT_build_getById:
+		build_getById(data, in)
+	case *protocol.MSG_PROJECT_release_getById:
+		release_getById(data, in)
+	case *protocol.MSG_PROJECT_task_getPairs:
+		task_getPairs(data, in)
+	case *protocol.MSG_PROJECT_task_getListByWhereMap:
+		task_getListByWhereMap(data, in)
+	case *protocol.MSG_PROJECT_project_getBurn:
+		project_getBurn(data, in)
+	case *protocol.MSG_PROJECT_story_getPlanStories:
+		story_getPlanStories(data, in)
+	case *protocol.MSG_PROJECT_project_linkStory:
+		project_linkStory(data, in)
+	case *protocol.MSG_PROJECT_branch_getByProducts:
+		branch_getByProducts(data, in)
+	case *protocol.MSG_PROJECT_project_create:
+		project_create(data, in)
+	case *protocol.MSG_PROJECT_story_getPairsByIds:
+		story_getPairsByIds(data, in)
+	case *protocol.MSG_PROJECT_product_getPairsByIds:
+		product_getPairsByIds(data, in)
+	case *protocol.MSG_PROJECT_project_getPairsByIds:
+		project_getPairsByIds(data, in)
+	case *protocol.MSG_PROJECT_branch_getPairsByIds:
+		branch_getPairsByIds(data, in)
+	case *protocol.MSG_PROJECT_tree_getPairsByIds:
+		tree_getPairsByIds(data, in)
+	case *protocol.MSG_PROJECT_project_statRelatedData:
+		project_statRelatedData(data, in)
 	default:
 		libraries.ReleaseLog("未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 	}

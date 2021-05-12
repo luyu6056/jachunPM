@@ -106,6 +106,12 @@ func Handler(in *protocol.Msg) {
 		}
 		in.SendResult(out)
 		out.Put()
+	case *protocol.MSG_USER_team_getByTypeRoot:
+		team_getByTypeRoot(data, in)
+	case *protocol.MSG_USER_team_addByList:
+		team_addByList(data, in)
+	case *protocol.MSG_USER_Group_getPairs:
+		gruop_getPairs(data, in)
 	default:
 		libraries.ReleaseLog("未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 	}

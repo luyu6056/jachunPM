@@ -4645,6 +4645,13 @@ function(a) {
 						if (q() === !1) {
 							return
 						}
+						var u = n.locate || z.locate;
+						if (u) {
+							var G = "reload" == u ? d.location.href : u;
+							setTimeout(function() {
+								d.location.href = G
+							}, 2000)
+						}
 					}
 				}
 			},

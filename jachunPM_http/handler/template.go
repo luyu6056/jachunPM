@@ -31,13 +31,14 @@ type TemplateData struct {
 	ws        HttpRequest
 	Msg       *protocol.Msg
 	Time      time.Time
-	Page      struct {
-		Total      int
-		Page       int
-		PerPage    int
-		CookieName string
-		Param      string
-	}
+	Page      TempLatePage
+}
+type TempLatePage struct {
+	Total      int
+	Page       int
+	PerPage    int
+	CookieName string
+	Param      string
 }
 
 var templateLock sync.RWMutex
@@ -60,8 +61,11 @@ func loadFuncs() {
 	hookFuncs()
 	datatableFuncs()
 	storyFuncs()
+	productplanFuncs()
+	fileFuncs()
 	isClickableFuncs()
 	actionModelFuncs()
+	projectFuncs()
 	global_t.Funcs(global_Funcs)
 }
 func loadAlltemplate() {
@@ -180,11 +184,11 @@ func templateDataInit(ws HttpRequest) *TemplateData {
 	d.App["ClientLangString"] = protocol.CountryNo(d.App["ClientLang"].(string)).String()
 	d.App["company"] = getCompanyInfo()
 	d.Config["common"]["common"]["langTheme"] = d.Config["common"]["common"]["themeRoot"].(string) + "lang/" + d.App["ClientLang"].(string) + ".css"
-	d.App["onlybody"] = ws.Query("onlybody")
+	d.App["onlybody"] = strings.ToLower(ws.Query("onlybody")) == "yes"
 	return d
 }
 func (data *TemplateData) onlybody() bool {
-	if data.App != nil && data.App["onlybody"] == "yes" {
+	if data.App != nil && data.App["onlybody"].(bool) {
 		return true
 	}
 	return false
@@ -204,7 +208,7 @@ func templateOut(name string, data *TemplateData) {
 	}
 	err := T.ExecuteTemplate(buf, name, data)
 	if err != nil {
-		data.OutErr(err)
+		data.outErr(err)
 	} else {
 		data.ws.Write(buf)
 	}
@@ -235,7 +239,14 @@ func (data *TemplateData) ajaxResult(result bool, message interface{}, locateAnd
 	buf.Reset()
 	bufpool.Put(buf)
 }
-func (data *TemplateData) OutErr(err error) {
+
+var dataErrRedirect = errors.New("HttpServerIsRedirect")
+var dataErrAlreadyOut = errors.New("AlreadyOutErrInfo")
+
+func (data *TemplateData) outErr(err error) {
+	if err == dataErrRedirect || err == dataErrAlreadyOut {
+		return
+	}
 	data.Data["err"] = err.Error()
 	templateLock.RLock()
 	buf := bufpool.Get().(*libraries.MsgBuffer)
@@ -259,12 +270,16 @@ func (data *TemplateData) GetMsg() (*protocol.Msg, error) {
 		out := protocol.GET_MSG_COMMON_GET_Msgno()
 		defer out.Put()
 		var resdata *protocol.MSG_COMMON_GET_Msgno_result
-		err := HostConn.SendMsgWaitResultToDefault(out, &resdata)
+		if data.User != nil {
+			out.Uid = data.User.Id
+		}
+		send := &protocol.RpclientSend{HostConn}
+		err := send.SendMsgWaitResultToDefault(out, &resdata)
 		if err != nil {
 			return nil, err
 		}
 		msg := &protocol.Msg{Msgno: resdata.Msgno, DB: &protocol.MsgDB{DB: HostConn.DB}}
-		msg.SetServer(HostConn)
+		msg.SetServer(send)
 		data.Msg = msg
 	}
 
@@ -351,5 +366,24 @@ func setValueUnsafe(ptr uintptr, t reflect.Type, value []string) error {
 	default:
 		return errors.New(fmt.Sprintf("未处理的Kind %v", t.Kind()))
 	}
+	return nil
+}
+
+//重新封装便捷消息发送，所有的消息都基于msg发出
+func (data *TemplateData) SendMsgWaitResultToDefault(out protocol.MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
+	if data.Msg == nil {
+		if _, err = data.GetMsg(); err != nil {
+			return
+		}
+	}
+	return data.Msg.SendMsgWaitResult(0, out, result, timeout...)
+}
+func (data *TemplateData) SendMsgToDefault(out protocol.MSG_DATA) (err error) {
+	if data.Msg == nil {
+		if _, err = data.GetMsg(); err != nil {
+			return
+		}
+	}
+	data.Msg.SendMsg(0, out)
 	return nil
 }

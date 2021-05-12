@@ -1,6 +1,6 @@
 {{template "header.lite.html" .}}
 {{importHeaderHook .}} 
-{{- if eq .App.onlybody "" -}}
+{{- if not .App.onlybody}}
 <header id='header'>
   <div id='mainHeader'>
     <div class='container'>

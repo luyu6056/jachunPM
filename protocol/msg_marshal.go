@@ -1,9 +1,11 @@
 package protocol
 
 import (
+	"fmt"
 	"libraries"
 	"math"
 	"reflect"
+	"runtime/debug"
 	"unsafe"
 
 	"github.com/luyu6056/reflect2"
@@ -32,11 +34,15 @@ const (
 	interfaceTypeSliceUint32
 	interfaceTypeSliceUint64
 	interfaceTypeSliceString
+	interfaceTypeSliceInterface
+	interfaceTypeSliceKVs
 	interfaceTypeBool
 	interfaceTypeFloat32
 	interfaceTypeFloat64
 	interfaceTypeMss //map[string]string
 	interfaceTypeMsi //map[string]interface{}
+	interfaceTypeKVs //HtmlKeyValueStr
+	interfaceTypeKVi //HtmlKeyValueInterface
 )
 
 func WRITE_int8(data int8, buf *libraries.MsgBuffer) {
@@ -119,19 +125,20 @@ func WRITE_map(i interface{}, buf *libraries.MsgBuffer) {
 		panic("WRITE_map传入" + r.Kind().String())
 	}
 	if r.IsNil() || r.Len() == 0 {
-		WRITE_uint32(0, buf)
+		WRITE_uint16(0, buf)
 		return
 	} else if r.Len() < 65535 {
-		WRITE_uint32(uint32(r.Len()), buf)
+		WRITE_uint16(uint16(r.Len()), buf)
 	} else {
 		//这么大的map就不要传来传去或者分批传
 		panic("WRITE_map写入len大于65535")
 	}
-	for _, key := range r.MapKeys() {
-		v := r.MapIndex(key)
-		write_reflect(key, buf)
-		write_reflect(v, buf)
+	_r := r.MapRange()
+	for _r.Next() {
+		WRITE_any(_r.Key().Interface(), buf)
+		WRITE_any(_r.Value().Interface(), buf)
 	}
+
 }
 func WRITE_any(i interface{}, buf *libraries.MsgBuffer) {
 	switch v := i.(type) {
@@ -236,6 +243,12 @@ func WRITE_any(i interface{}, buf *libraries.MsgBuffer) {
 			WRITE_int32(int32(len(b)), buf)
 			buf.Write(b)
 		}
+	case []interface{}:
+		WRITE_int8(interfaceTypeSliceInterface, buf)
+		WRITE_int32(int32(len(v)), buf)
+		for _, s := range v {
+			WRITE_any(s, buf)
+		}
 	case bool:
 		WRITE_int8(interfaceTypeBool, buf)
 		WRITE_bool(v, buf)
@@ -251,59 +264,22 @@ func WRITE_any(i interface{}, buf *libraries.MsgBuffer) {
 	case map[string]interface{}:
 		WRITE_int8(interfaceTypeMsi, buf)
 		WRITE_map(v, buf)
-	}
-
-}
-func write_reflect(v reflect.Value, buf *libraries.MsgBuffer) {
-	switch v.Kind() {
-	case reflect.Int, reflect.Uint, reflect.Uint64, reflect.Int64:
-		WRITE_int64(v.Int(), buf)
-	case reflect.Int8:
-		WRITE_int8(v.Interface().(int8), buf)
-	case reflect.Int16:
-		WRITE_int16(v.Interface().(int16), buf)
-	case reflect.Int32:
-		WRITE_int32(v.Interface().(int32), buf)
-	case reflect.Uint8:
-		WRITE_int8(int8(v.Interface().(uint8)), buf)
-	case reflect.Uint16:
-		WRITE_int16(int16(v.Interface().(uint16)), buf)
-	case reflect.Uint32:
-		WRITE_int32(int32(v.Interface().(uint32)), buf)
-	case reflect.String:
-		WRITE_string(v.String(), buf)
-	case reflect.Bool:
-		WRITE_bool(v.Bool(), buf)
-	case reflect.Map:
-		WRITE_map(v.Interface(), buf)
-	case reflect.Float32:
-		WRITE_float32(v.Interface().(float32), buf)
-	case reflect.Float64:
-		WRITE_float64(v.Float(), buf)
-	case reflect.Slice:
-		if vv, ok := v.Interface().([]byte); ok {
-			WRITE_int32(int32(len(vv)), buf)
-			buf.Write(vv)
-		} else {
-			WRITE_int32(int32(v.Len()), buf)
-			for i := 0; i < v.Len(); i++ {
-				write_reflect(v.Index(i), buf)
-			}
-		}
-	case reflect.Interface:
-		WRITE_any(v.Interface(), buf)
-	case reflect.Struct:
-		switch i := v.Interface().(type) {
-		case HtmlKeyValueStr:
-			WRITE_HtmlKeyValueStr(i, buf)
-		default:
-			panic("无法处理的map写入Struct类型" + v.Type().Name())
+	case HtmlKeyValueStr:
+		WRITE_int8(interfaceTypeKVs, buf)
+		WRITE_HtmlKeyValueStr(v, buf)
+	case HtmlKeyValueInterface:
+		WRITE_int8(interfaceTypeKVi, buf)
+		WRITE_HtmlKeyValueInterface(v, buf)
+	case []HtmlKeyValueStr:
+		WRITE_int8(interfaceTypeSliceKVs, buf)
+		WRITE_int32(int32(len(v)), buf)
+		for _, s := range v {
+			WRITE_HtmlKeyValueStr(s, buf)
 		}
 	default:
-
-		panic("无法处理的map写入类型" + v.Kind().String())
-
+		panic("WRITE_any未设置类型" + fmt.Sprintf("%T", v))
 	}
+
 }
 
 func READ_int8(buf *libraries.MsgBuffer) int8 {
@@ -369,7 +345,13 @@ func READ_float64(buf *libraries.MsgBuffer) float64 {
 	return math.Float64frombits(READ_uint64(buf))
 }
 
-func READ_MSG_DATA(buf *libraries.MsgBuffer) MSG_DATA {
+func READ_MSG_DATA(buf *libraries.MsgBuffer) (out MSG_DATA) {
+	defer func() {
+		if err := recover(); err != nil {
+			out = &MSG_COMMON_QueryErr{Err: fmt.Sprintf("%v\r\n", err) + string(debug.Stack())}
+			return
+		}
+	}()
 	cmd := READ_int32(buf)
 	if f, ok := cmdMapFunc[cmd]; ok {
 		return f(buf)
@@ -378,7 +360,7 @@ func READ_MSG_DATA(buf *libraries.MsgBuffer) MSG_DATA {
 }
 
 func READ_map(i interface{}, buf *libraries.MsgBuffer) {
-	l := READ_uint32(buf)
+	l := READ_uint16(buf)
 	if l == 0 {
 		return
 	}
@@ -389,7 +371,7 @@ func READ_map(i interface{}, buf *libraries.MsgBuffer) {
 	r = r.Elem()
 	r.Set(reflect.MakeMap(r.Type()))
 	for i := 0; i < int(l); i++ {
-		r.SetMapIndex(read_reflect(r.Type().Key(), buf), read_reflect(r.Type().Elem(), buf))
+		r.SetMapIndex(reflect.ValueOf(read_any_result(buf)), reflect.ValueOf(read_any_result(buf)))
 	}
 }
 func READ_any(i interface{}, buf *libraries.MsgBuffer) {
@@ -512,6 +494,12 @@ func READ_any(i interface{}, buf *libraries.MsgBuffer) {
 		var m map[string]interface{}
 		READ_map(&m, buf)
 		*((*map[string]interface{})(unsafe.Pointer(uint_ptr))) = m
+	case interfaceTypeKVi:
+		*((*HtmlKeyValueInterface)(unsafe.Pointer(uint_ptr))) = READ_HtmlKeyValueInterface(buf)
+	case interfaceTypeKVs:
+		*((*HtmlKeyValueStr)(unsafe.Pointer(uint_ptr))) = READ_HtmlKeyValueStr(buf)
+	default:
+		panic(fmt.Sprintf("READ_any未处理类型%v", t))
 	}
 
 }
@@ -633,6 +621,26 @@ func read_any_result(buf *libraries.MsgBuffer) interface{} {
 		var m map[string]interface{}
 		READ_map(&m, buf)
 		return m
+	case interfaceTypeKVs:
+		return READ_HtmlKeyValueStr(buf)
+	case interfaceTypeKVi:
+		return READ_HtmlKeyValueInterface(buf)
+	case interfaceTypeSliceInterface:
+		l := READ_int32(buf)
+		s := make([]interface{}, l)
+		for k := range s {
+			s[k] = read_any_result(buf)
+		}
+		return s
+	case interfaceTypeSliceKVs:
+		l := READ_int32(buf)
+		s := make([]HtmlKeyValueStr, l)
+		for k := range s {
+			s[k] = READ_HtmlKeyValueStr(buf)
+		}
+		return s
+	default:
+		panic(fmt.Sprintf("read_any_result未处理类型%v", t))
 	}
 	return nil
 }
@@ -690,6 +698,8 @@ func read_reflect(v reflect.Type, buf *libraries.MsgBuffer) reflect.Value {
 		switch v.Name() {
 		case "HtmlKeyValueStr":
 			return reflect.ValueOf(READ_HtmlKeyValueStr(buf))
+		case "HtmlKeyValueInterface":
+			return reflect.ValueOf(READ_HtmlKeyValueInterface)
 		default:
 			panic("无法处理的map读取Struct类型" + v.Name())
 		}
@@ -707,5 +717,15 @@ func READ_HtmlKeyValueStr(buf *libraries.MsgBuffer) HtmlKeyValueStr {
 	return HtmlKeyValueStr{
 		Key:   READ_string(buf),
 		Value: READ_string(buf),
+	}
+}
+func WRITE_HtmlKeyValueInterface(kv HtmlKeyValueInterface, buf *libraries.MsgBuffer) {
+	WRITE_string(kv.Key, buf)
+	WRITE_any(kv.Value, buf)
+}
+func READ_HtmlKeyValueInterface(buf *libraries.MsgBuffer) HtmlKeyValueInterface {
+	return HtmlKeyValueInterface{
+		Key:   READ_string(buf),
+		Value: read_any_result(buf),
 	}
 }
