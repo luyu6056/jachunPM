@@ -98,7 +98,6 @@ func actionModelFuncs() {
 		historiesWithoutDiff := make([]*protocol.MSG_LOG_History, 0, len(histories))
 
 		for _, history := range histories {
-
 			history.FieldLabel = history.Field
 			if data.Lang[objectType] != nil {
 				if str, ok := data.Lang[objectType][history.Field].(string); ok {
@@ -131,7 +130,7 @@ func actionModelFuncs() {
 				if canChangeTag {
 					noTagDiff, _ = libraries.Preg_replace(`/&lt;\/?([a-z][a-z0-9]*)[^\/]*\/?&gt;/Ui`, "", history.Diff)
 				}
-				return template.HTML(fmt.Sprintf(data.Lang["action"]["desc"].(map[string]string)["diff2"], history.FieldLabel, noTagDiff))
+				return template.HTML(fmt.Sprintf(data.Lang["action"]["desc"].(map[string]string)["diff2"], history.FieldLabel, noTagDiff, history.Diff))
 			} else {
 				return template.HTML(fmt.Sprintf(data.Lang["action"]["desc"].(map[string]string)["diff1"], history.FieldLabel, history.Old, history.New))
 			}
@@ -149,7 +148,7 @@ func action_getList(data *TemplateData, objectType string, objectID int32) (acti
 	if objectType == "project" {
 		out.Where = map[string]interface{}{
 			"ObjectType": []string{"project", "testtask", "build"},
-			"Project":    objectID,
+			"Projects":   []interface{}{mysql.WhereOperatorJSONCONTAINS, objectID},
 		}
 	} else {
 		out.Where = map[string]interface{}{

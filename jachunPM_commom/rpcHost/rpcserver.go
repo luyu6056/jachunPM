@@ -5,6 +5,7 @@ import (
 	"io"
 	"jachunPM_commom/db"
 	"libraries"
+	"os"
 	"protocol"
 	"sync"
 	"sync/atomic"
@@ -157,7 +158,16 @@ func (svr *RpcServer) Close() {
 	}
 
 }
-
+func (svr *RpcServer) tick(now time.Time) {
+	files, _ := libraries.ListDir(fileTmpPath, "")
+	for _, f := range files {
+		if s, _ := os.Stat(f); s != nil {
+			if now.Unix()-s.ModTime().Unix() > 86400 { //清除一天前文件
+				os.Remove(f)
+			}
+		}
+	}
+}
 func (svr *RpcServer) setCenter() {
 	rpcServerCenterId[svr.ServerNo] = uint8(svr.Id)
 	data := protocol.GET_MSG_COMMON_StartTicker()
@@ -277,7 +287,9 @@ func (svr *RpcServer) handlerMsgOut(outChan chan *libraries.MsgBuffer) {
 		data := protocol.GET_MSG_COMMON_PING()
 		svr.SendMsg(svr.local, 0, 0, 0, data)
 		data.Put()
+		svr.tick(now)
 	}
+	pingTick := time.NewTicker(rpcPingTime)
 	for {
 
 		switch svr.status {
@@ -289,7 +301,7 @@ func (svr *RpcServer) handlerMsgOut(outChan chan *libraries.MsgBuffer) {
 				write(o, outChan)
 			case <-svr.closeChan:
 				return
-			case now := <-time.After(rpcPingTime):
+			case now := <-pingTick.C:
 				ping(now)
 			}
 		case rpcStatusHalfOpen:
@@ -303,7 +315,7 @@ func (svr *RpcServer) handlerMsgOut(outChan chan *libraries.MsgBuffer) {
 				svr.status = rpcStatusOpen
 			case <-svr.closeChan:
 				return
-			case now := <-time.After(rpcPingTime):
+			case now := <-pingTick.C:
 				ping(now)
 			}
 		case rpcStatusClose:

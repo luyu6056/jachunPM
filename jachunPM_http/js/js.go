@@ -16,13 +16,13 @@ func Alert(format string, value ...interface{}) string {
 }
 func Reload(value ...string) string {
 	buf := protocol.BufPoolGet()
-	buf.WriteString("<script>")
+	buf.WriteString(`<script>setTimeout("`)
 	if len(value) == 1 {
 		buf.WriteString(value[0])
 	} else {
 		buf.WriteString("self")
 	}
-	buf.WriteString(".location.reload(true);</script>")
+	buf.WriteString(`.location.reload(true);",1000)</script>`)
 	res := buf.String()
 	protocol.BufPoolPut(buf)
 	return res
@@ -72,7 +72,7 @@ func Location(str string, window string) string {
 	if str == "back" {
 		return `<script>setTimeout("history.back()",1000)</script>`
 	}
-	return `<script>setTimeout('` + window + ".location.href=\"" + strings.ReplaceAll(strings.ReplaceAll(str, `"`, `\"`), "'", `\'`) + `',1000)"</script>`
+	return `<script>setTimeout('` + window + ".location.href=\"" + strings.ReplaceAll(strings.ReplaceAll(str, `"`, `\"`), "'", `\'`) + `"',1000)</script>`
 }
 func CloseModal(window, location, callback string) string {
 	if window == "" {

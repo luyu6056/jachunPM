@@ -50,6 +50,8 @@ const (
 	CMD_MSG_USER_team_addByList = 870918148
 	CMD_MSG_USER_Group_getPairs = 1806051844
 	CMD_MSG_USER_Group_getPairs_result = -820050940
+	CMD_MSG_USER_team_getByTypeUid = 468566788
+	CMD_MSG_USER_team_getByTypeUid_result = 769103364
 )
 
 type MSG_USER_GET_LoginSalt struct {
@@ -2704,6 +2706,120 @@ func (data *MSG_USER_Group_getPairs_result) getQueryResultID() uint32 {
 	return data.QueryResultID
 }
 func (data *MSG_USER_Group_getPairs_result) setQueryResultID(id uint32) {
+	data.QueryResultID = id
+}
+
+type MSG_USER_team_getByTypeUid struct {
+	QueryID uint32
+	Type string
+	Uid int32
+}
+
+var pool_MSG_USER_team_getByTypeUid = sync.Pool{New: func() interface{} { return &MSG_USER_team_getByTypeUid{} }}
+
+func GET_MSG_USER_team_getByTypeUid() *MSG_USER_team_getByTypeUid {
+	return pool_MSG_USER_team_getByTypeUid.Get().(*MSG_USER_team_getByTypeUid)
+}
+
+func (data *MSG_USER_team_getByTypeUid) cmd() int32 {
+	return CMD_MSG_USER_team_getByTypeUid
+}
+
+func (data *MSG_USER_team_getByTypeUid) Put() {
+	data.QueryID = 0
+	data.Type = ``
+	data.Uid = 0
+	pool_MSG_USER_team_getByTypeUid.Put(data)
+}
+func (data *MSG_USER_team_getByTypeUid) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_team_getByTypeUid,buf)
+	WRITE_MSG_USER_team_getByTypeUid(data, buf)
+}
+
+func WRITE_MSG_USER_team_getByTypeUid(data *MSG_USER_team_getByTypeUid, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_string(data.Type, buf)
+	WRITE_int32(data.Uid, buf)
+}
+
+func READ_MSG_USER_team_getByTypeUid(buf *libraries.MsgBuffer) *MSG_USER_team_getByTypeUid {
+	data := pool_MSG_USER_team_getByTypeUid.Get().(*MSG_USER_team_getByTypeUid)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_team_getByTypeUid) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	data.Type = READ_string(buf)
+	data.Uid = READ_int32(buf)
+
+}
+func (data *MSG_USER_team_getByTypeUid) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_USER_team_getByTypeUid) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_USER_team_getByTypeUid_result struct {
+	QueryResultID uint32
+	List []*MSG_USER_team_info
+}
+
+var pool_MSG_USER_team_getByTypeUid_result = sync.Pool{New: func() interface{} { return &MSG_USER_team_getByTypeUid_result{} }}
+
+func GET_MSG_USER_team_getByTypeUid_result() *MSG_USER_team_getByTypeUid_result {
+	return pool_MSG_USER_team_getByTypeUid_result.Get().(*MSG_USER_team_getByTypeUid_result)
+}
+
+func (data *MSG_USER_team_getByTypeUid_result) cmd() int32 {
+	return CMD_MSG_USER_team_getByTypeUid_result
+}
+
+func (data *MSG_USER_team_getByTypeUid_result) Put() {
+	data.QueryResultID = 0
+	for _,v := range data.List {
+		v.Put()
+	}
+	data.List = data.List[:0]
+	pool_MSG_USER_team_getByTypeUid_result.Put(data)
+}
+func (data *MSG_USER_team_getByTypeUid_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_team_getByTypeUid_result,buf)
+	WRITE_MSG_USER_team_getByTypeUid_result(data, buf)
+}
+
+func WRITE_MSG_USER_team_getByTypeUid_result(data *MSG_USER_team_getByTypeUid_result, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryResultID, buf)
+	WRITE_int32(int32(len(data.List)), buf)
+	for _, v := range data.List{
+		WRITE_MSG_USER_team_info(v, buf)
+	}
+}
+
+func READ_MSG_USER_team_getByTypeUid_result(buf *libraries.MsgBuffer) *MSG_USER_team_getByTypeUid_result {
+	data := pool_MSG_USER_team_getByTypeUid_result.Get().(*MSG_USER_team_getByTypeUid_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_team_getByTypeUid_result) read(buf *libraries.MsgBuffer) {
+	data.QueryResultID = READ_uint32(buf)
+	List_len := int(READ_int32(buf))
+	if List_len>cap(data.List){
+		data.List= make([]*MSG_USER_team_info, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
+	for i := 0; i < List_len; i++ {
+		data.List[i] = READ_MSG_USER_team_info(buf)
+	}
+
+}
+func (data *MSG_USER_team_getByTypeUid_result) getQueryResultID() uint32 {
+	return data.QueryResultID
+}
+func (data *MSG_USER_team_getByTypeUid_result) setQueryResultID(id uint32) {
 	data.QueryResultID = id
 }
 

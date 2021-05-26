@@ -4512,26 +4512,21 @@ function(a) {
 			k = n.finish;
 		delete n.finish, delete n.success, delete n.onError, delete n.beforeSubmit, n = b.extend({
 			beforeSubmit: function(q, C, A) {
+				C.toggleClass("loading",true);
 				if (e.enableForm(!1), (m && m(q, C, A)) !== !1) {
-					var h = {},
-						z = C.find('[type="file"]');
-					h.fileapi = z.length && z[0].files !== a, h.formdata = d.FormData !== a;
-					var y = h.fileapi && C.find('input[type="file"]:enabled').filter(function() {
-						return "" !== b(this).val()
-					}),
-						B = y.length,
-						l = "multipart/form-data",
-						x = C.attr("enctype") == l || C.attr("encoding") == l,
-						w = h.fileapi && h.formdata,
-						v = (B || x) && !w;
-					v && ("" == f && (f = A.url), A.url != f && (A.url = f), A.url = A.url.indexOf("&") >= 0 ? A.url + "&HTTP_X_REQUESTED_WITH=XMLHttpRequest" : A.url + "?HTTP_X_REQUESTED_WITH=XMLHttpRequest")
-				}
-				$('.form-ajax').addClass('percent_0');
+					//修改单独上传临时文件
+					var allSize=0,uploadSize=0;//总容量大小与已上传大小
+					C.find('input[type="file"]:enabled').each(function(index, el) {
+						if(this.files.length==1){
+							allSize+=this.files[0].size;
+						}
+					});
+					if(allSize>0) fileUpload(C,0,uploadSize,allSize);
+					
+				}				
 			},
 			success: function(z, s, r) {
-				for(var i=0;i<20;i++){
-					$('.form-ajax').removeClass('percent_'+(i*5));
-				}
+				e.toggleClass("loading",false);
 				if ((o && o(z, s, r, e)) !== !1) {
 					try {
 						"string" == typeof z && (z = JSON.parse(z))
@@ -4656,14 +4651,10 @@ function(a) {
 				}
 			},
 			uploadProgress: function(event,position,total,percentComplete){
-				if(percentComplete%5==0){
-					for(var i=0;i<20;i++){
-						$('.form-ajax').removeClass('percent_'+(i*5));
-					}
-					$('.form-ajax').addClass('percent_'+percentComplete);
-				}
+				
 			},
 			error: function(l, h, r) {
+				e.toggleClass("loading",false);
 				if ((p && p(l, h, r, e)) !== !1) {
 					e.enableForm();
 					var q = "timeout" == h || "error" == h ? d.lang ? d.lang.timeout : h : l.responseText + h + r;

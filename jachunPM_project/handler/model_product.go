@@ -13,7 +13,7 @@ import (
 func product_insert(data *protocol.MSG_PROJECT_product_insert, in *protocol.Msg) {
 
 	session, err := in.BeginTransaction()
-	defer session.EndTransaction()
+	defer session.Rollback()
 	if err != nil {
 		in.WriteErr(err)
 		return
@@ -34,7 +34,7 @@ func product_insert(data *protocol.MSG_PROJECT_product_insert, in *protocol.Msg)
 		CreatedDate: data.Data.CreatedDate,
 		Order:       data.Data.Order,
 		Deleted:     data.Data.Deleted,
-		TimeStamp:   time.Now().Unix(),
+		TimeStamp:   time.Now(),
 	}
 	id, err := session.Table(db.TABLE_PRODUCT).Insert(insert)
 	if err != nil {
@@ -250,13 +250,13 @@ func product_update(data *protocol.MSG_PROJECT_product_update, in *protocol.Msg)
 		return
 	}
 	session, err := in.BeginTransaction()
-	defer session.EndTransaction()
+	defer session.Rollback()
 	if err != nil {
 		in.WriteErr(err)
 		return
 	}
 
-	update["TimeStamp"] = time.Now().Unix()
+	update["TimeStamp"] = time.Now()
 	_, err = session.Table(db.TABLE_PRODUCT).Where("Id=?", data.Data.Id).Update(update)
 	if err != nil {
 		in.WriteErr(err)
@@ -292,12 +292,12 @@ func product_editBranch(data *protocol.MSG_PROJECT_product_editBranch, in *proto
 		if err != nil {
 			in.WriteErr(err)
 		} else {
-			defer session.EndTransaction()
+			defer session.Rollback()
 			var insert []*protocol.MSG_PROJECT_branch_info
 			for _, branch := range data.Branchs {
 				if branch.Id > 0 {
 
-					_, err = session.Table(db.TABLE_BRANCH).Prepare().Where("Id=?", branch.Id).Update("Name=?,TimeStamp=?,`Order`=?", branch.Name, time.Now().Unix(), branch.Order)
+					_, err = session.Table(db.TABLE_BRANCH).Prepare().Where("Id=?", branch.Id).Update("Name=?,TimeStamp=?,`Order`=?", branch.Name, time.Now(), branch.Order)
 					if err != nil {
 						in.WriteErr(err)
 						return
@@ -364,7 +364,7 @@ func product_deleteBranch(data *protocol.MSG_PROJECT_product_deleteBranch, in *p
 	check.Put()
 	result.Put()
 	if out.Result == protocol.Success {
-		_, err = in.DB.Table(db.TABLE_BRANCH).Where("Id = " + strconv.Itoa(int(data.BranchID))).Update(map[string]interface{}{"Deleted": true, "TimeStamp": time.Now().Unix()})
+		_, err = in.DB.Table(db.TABLE_BRANCH).Where("Id = " + strconv.Itoa(int(data.BranchID))).Update(map[string]interface{}{"Deleted": true, "TimeStamp": time.Now()})
 		product_setCache(data.ProductID)
 	}
 	return

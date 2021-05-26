@@ -30,7 +30,7 @@ type MSG_PROJECT_product_cache struct {
 	CreatedDate int64
 	Order       int32
 	Deleted     bool
-	TimeStamp   int64
+	TimeStamp   time.Time
 	Branchs     []*MSG_PROJECT_branch_info `db:"-"`
 }
 type MSG_PROJECT_product_insert struct {
@@ -121,7 +121,7 @@ type MSG_PROJECT_tree_cache struct {
 	Collector string
 	Short     string
 	Deleted   bool
-	TimeStamp int64
+	TimeStamp time.Time
 }
 type MSG_PROJECT_tree_getParents struct {
 	QueryID  uint32
@@ -390,12 +390,26 @@ type MSG_PROJECT_TASK struct {
 	ClosedReason   string
 	LastEditedBy   int32
 	LastEditedDate time.Time
-	Examine        int8
+	Examine        bool
 	ExamineDate    time.Time
 	ExamineBy      int32
 	Deleted        bool
-	Finalfile      string
+	Finalfile      bool
 	Proofreading   bool
+	Team           int32
+	PlaceOrder     bool
+	//从stroy拿数据
+	StoryID            int32
+	StoryTitle         string
+	StoryStatus        string
+	LatestStoryVersion int16
+	Product            int32
+	Branch             int32
+	//processTask计算出来
+	Progress      int                 `db:"-"`
+	Delay         int64               `db:"-"` //延期几天
+	Children      []*MSG_PROJECT_TASK `db:"-"`
+	Grandchildren []*MSG_PROJECT_TASK `db:"-"`
 }
 type MSG_PROJECT_productplan_getById struct {
 	QueryID uint32
@@ -584,4 +598,66 @@ type MSG_PROJECT_tree_getPairsByIds struct {
 type MSG_PROJECT_tree_getPairsByIds_result struct {
 	QueryResultID uint32
 	List          []HtmlKeyValueStr
+}
+type MSG_PROJECT_project_start struct {
+	QueryID uint32
+	Id      int32
+	Comment string //备注
+}
+type MSG_PROJECT_project_putoff struct {
+	QueryID uint32
+	Id      int32
+	Begin   time.Time
+	End     time.Time
+	Days    int16
+	Comment string
+}
+type MSG_PROJECT_project_suspend struct {
+	QueryID uint32
+	Id      int32
+	Comment string
+}
+type MSG_PROJECT_project_activate struct {
+	QueryID      uint32
+	Id           int32
+	Begin        time.Time
+	End          time.Time
+	Comment      string
+	ReadjustTask bool
+}
+type MSG_PROJECT_project_close struct {
+	QueryID uint32
+	Id      int32
+	Comment string
+}
+type MSG_PROJECT_project_delete struct {
+	QueryID uint32
+	Id      int32
+}
+type MSG_PROJECT_project_getProjectTasks struct {
+	QueryID   uint32
+	ProjectID int32
+	ProductID int32
+	Type      []string
+	ModuleID  int32
+	OrderBy   string
+	Role      string
+	Page      int
+	PerPage   int
+	Total     int
+}
+type MSG_PROJECT_project_getProjectTasks_result struct {
+	QueryResultID uint32
+	List          []*MSG_PROJECT_TASK
+	Total         int
+}
+type MSG_PROJECT_tree_getTaskTreeModules struct {
+	QueryID   uint32
+	ProjectID int32
+	Parent    bool
+	//LinkStory bool 默认true
+}
+type MSG_PROJECT_tree_getTaskTreeModules_result struct {
+	QueryResultID  uint32
+	ProjectModules map[int32]int32
 }

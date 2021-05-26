@@ -85,7 +85,7 @@ type User struct {
 	//ScoreLevel   int32     `db:"not null;default(0)"`
 	//ClientStatus int8      `db:"default(3)"` // 0=online,1=away,2=busy,3=offline,
 	//Status       int8      `db:"default(3)"` // 0=online,1=away,2=busy,3=offline,
-	TimeStamp int64 //更新时间戳
+	TimeStamp time.Time `db:"default(current_timestamp());extra('on update current_timestamp()')"` //更新时间戳
 }
 
 func (*User) TableName() string {
@@ -103,7 +103,7 @@ type Company struct {
 	Backyard  string   `db:"type:varchar(120)"`
 	Admins    []string `db:"type:varchar(255)"`
 	Deleted   bool
-	TimeStamp int64 //更新时间戳
+	TimeStamp time.Time `db:"default(current_timestamp());extra('on update current_timestamp()')"` //更新时间戳
 }
 
 func (*Company) TableName() string {
@@ -111,14 +111,14 @@ func (*Company) TableName() string {
 }
 
 type Dept struct {
-	Id        int32   `db:"auto_increment;pk"`
-	Name      string  `db:"type:varchar(60)"`
-	Parent    int32   `db:"default(0)"`
-	Path      []int32 `db:"type:varchar(255)"`
-	Grade     int8    `db:"default(0)"`
-	Order     int8    `db:"default(0)"`
-	Manager   int32   //负责人
-	TimeStamp int64   //更新时间戳
+	Id        int32     `db:"auto_increment;pk"`
+	Name      string    `db:"type:varchar(60)"`
+	Parent    int32     `db:"default(0)"`
+	Path      []int32   `db:"type:varchar(255)"`
+	Grade     int8      `db:"default(0)"`
+	Order     int8      `db:"default(0)"`
+	Manager   int32     //负责人
+	TimeStamp time.Time `db:"default(current_timestamp());extra('on update current_timestamp()')"` //更新时间戳
 }
 
 func (*Dept) TableName() string {
@@ -135,7 +135,7 @@ type Group struct {
 	AclProjects []int32                    //允许访问的项目
 	Developer   int8                       `db:"default(1)"` // 0=0,1=1,
 	Priv        map[string]map[string]bool //访问权限map[Module][Method]
-	TimeStamp   int64                      //更新时间戳
+	TimeStamp   time.Time                  `db:"default(current_timestamp());extra('on update current_timestamp()')"` //更新时间戳
 
 }
 

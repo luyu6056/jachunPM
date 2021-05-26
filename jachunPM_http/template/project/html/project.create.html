@@ -114,10 +114,10 @@
           <th>{{.Lang.project.desc}}</th>
           <td colspan='3'>{{html_textarea "desc" ""  "rows='6' class='form-control kindeditor' hidefocus='true'"}}</td>
         </tr>
-        <tr>
-          <th>{{.Lang.files}}</th>
+        <!--<tr>
+          <th>{{.Lang.common.files}}</th>
           <td colspan='3'>{{fetch . "file" "buildform" "fileCount=1&percent=0.9&filesName=files&labelsName=labels&action=project"}}</td>
-        </tr>
+        </tr>-->
         <tr>
           <th>{{.Lang.project.acl}}</th>
           <td colspan='3'>{{html_radio "acl" .Lang.project.aclList  .Data.acl  "onclick='setWhite(this.value)'" "block"}}</td>

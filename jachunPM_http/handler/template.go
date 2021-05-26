@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"io/ioutil"
 	"jachunPM_http/config"
+	"jachunPM_http/js"
 	"libraries"
 	"mysql"
 	"os"
@@ -66,6 +67,7 @@ func loadFuncs() {
 	isClickableFuncs()
 	actionModelFuncs()
 	projectFuncs()
+	customModelFuncs()
 	global_t.Funcs(global_Funcs)
 }
 func loadAlltemplate() {
@@ -247,23 +249,29 @@ func (data *TemplateData) outErr(err error) {
 	if err == dataErrRedirect || err == dataErrAlreadyOut {
 		return
 	}
-	data.Data["err"] = err.Error()
-	templateLock.RLock()
-	buf := bufpool.Get().(*libraries.MsgBuffer)
-	defer func() {
-		buf.Reset()
-		bufpool.Put(buf)
-		templateLock.RUnlock()
-	}()
-	name := "error.html"
-	data.App["TemplateName"] = name
-	data.Data["title"] = "无法访问"
-	e := T.ExecuteTemplate(buf, name, data)
-	if e != nil {
-		libraries.ReleaseLog("%+v", e)
+	if data.onlybody() {
+		data.ws.WriteString(js.Error(err.Error()))
 	} else {
-		data.ws.Write(buf)
+
+		data.Data["err"] = err.Error()
+		templateLock.RLock()
+		buf := bufpool.Get().(*libraries.MsgBuffer)
+		defer func() {
+			buf.Reset()
+			bufpool.Put(buf)
+			templateLock.RUnlock()
+		}()
+		name := "error.html"
+		data.App["TemplateName"] = name
+		data.Data["title"] = "无法访问"
+		e := T.ExecuteTemplate(buf, name, data)
+		if e != nil {
+			libraries.ReleaseLog("%+v", e)
+		} else {
+			data.ws.Write(buf)
+		}
 	}
+
 }
 func (data *TemplateData) GetMsg() (*protocol.Msg, error) {
 	if data.Msg == nil {
@@ -386,4 +394,12 @@ func (data *TemplateData) SendMsgToDefault(out protocol.MSG_DATA) (err error) {
 	}
 	data.Msg.SendMsg(0, out)
 	return nil
+}
+func (data *TemplateData) getCacheProjectById(id int32) *protocol.MSG_PROJECT_project_cache {
+	if v, ok := data.Data["project_cache_"+strconv.Itoa(int(id))].(*protocol.MSG_PROJECT_project_cache); ok {
+		return v
+	}
+	project := HostConn.GetProjectById(id)
+	data.Data["project_cache_"+strconv.Itoa(int(id))] = project
+	return project
 }

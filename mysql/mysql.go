@@ -58,12 +58,6 @@ type Transaction struct {
 	endTransactionOnce                                       sync.Once
 }
 
-func (t *Transaction) GetTransaction() *Mysql_Conn {
-	t.queryLock.Lock()
-	defer t.queryLock.Unlock()
-	return t.conn
-}
-
 func (t *Transaction) EndTransaction() {
 	t.queryLock.Lock()
 	t.transactionLock.Lock()
@@ -139,7 +133,9 @@ func queryMap(sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transaction
 	var columns []MysqlColumn
 	var ts *Mysql_Conn
 	if t != nil {
-		ts = t.GetTransaction()
+		t.queryLock.Lock()
+		defer t.queryLock.Unlock()
+		ts = t.conn
 	}
 
 	var lastErr string
@@ -292,7 +288,9 @@ func query(sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transaction, r
 	var columns []MysqlColumn
 	var ts *Mysql_Conn
 	if t != nil {
-		ts = t.GetTransaction()
+		t.queryLock.Lock()
+		defer t.queryLock.Unlock()
+		ts = t.conn
 	}
 	var lastErr string
 	retryNum := int32(0)
@@ -749,9 +747,12 @@ func insert(insert_sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transa
 
 	var ts *Mysql_Conn
 	if t != nil {
-		ts = t.GetTransaction()
+		t.queryLock.Lock()
+		defer t.queryLock.Unlock()
+		ts = t.conn
 	}
 	if ts != nil {
+
 		if prepare_arg != nil {
 
 			stmt, err := ts.Prepare(insert_sql)
@@ -796,7 +797,9 @@ func insert(insert_sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transa
 func exec(query_sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transaction) (err error) {
 	var ts *Mysql_Conn
 	if t != nil {
-		ts = t.GetTransaction()
+		t.queryLock.Lock()
+		defer t.queryLock.Unlock()
+		ts = t.conn
 	}
 	if ts != nil {
 		if prepare_arg != nil {
@@ -837,7 +840,9 @@ func exec(query_sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transacti
 func query_getaffected(query_sql []byte, prepare_arg []interface{}, db *MysqlDB, t *Transaction) (rowsAffected int64, err error) {
 	var ts *Mysql_Conn
 	if t != nil {
-		ts = t.GetTransaction()
+		t.queryLock.Lock()
+		defer t.queryLock.Unlock()
+		ts = t.conn
 	}
 	if ts != nil {
 		if prepare_arg != nil {
@@ -1880,11 +1885,11 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 	return errs
 }
 
-//处理sql语句防注入不带'
+//暂不处理，将来用来替换Mysql 关键字及保留字 相关信息https://www.cnblogs.com/wuyifu/p/5949764.html
 func Getkey(str_i interface{}) string {
 	switch str_i.(type) {
 	case string:
-		return "`" + key_srp.Replace(str_i.(string)) + "`"
+		return str_i.(string)
 	default:
 		r := reflect.TypeOf(str_i)
 		for r.Kind() == reflect.Ptr {
@@ -1929,7 +1934,12 @@ func Getvalue(str_i interface{}) string {
 			return "0"
 		}
 	case time.Time:
-		return v.In(mysqlLoc).Format("2006-01-02 15:04:05")
+		if v.IsZero() {
+			return "'0000-00-00'"
+		} else {
+			return "'" + v.In(mysqlLoc).Format("2006-01-02 15:04:05") + "'"
+		}
+
 	case string:
 		return "'" + value_srp.Replace(v) + "'"
 	case []string: //判断是否exp表达式

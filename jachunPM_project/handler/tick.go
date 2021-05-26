@@ -139,19 +139,19 @@ func HandleTick(t time.Time) {
 		lastflush = now
 	} else {
 		//检查是否需要更新缓存
-		err := HostConn.DB.Table(db.TABLE_PRODUCT).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&products)
+		err := HostConn.DB.Table(db.TABLE_PRODUCT).Prepare().Where("UNIX_TIMESTAMP(TimeStamp)>?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&products)
 		if err != nil {
 			libraries.ReleaseLog("检查product刷新缓存失败%v", err)
 		}
-		err = HostConn.DB.Table(db.TABLE_MODULE).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Find(&modules)
+		err = HostConn.DB.Table(db.TABLE_MODULE).Prepare().Where("UNIX_TIMESTAMP(TimeStamp)>?", t.Unix()-protocol.RpcTickDefaultTime*2).Find(&modules)
 		if err != nil {
 			libraries.ReleaseLog("检查module刷新缓存失败%v", err)
 		}
-		err = HostConn.DB.Table(db.TABLE_BRANCH).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&branchs)
+		err = HostConn.DB.Table(db.TABLE_BRANCH).Prepare().Where("UNIX_TIMESTAMP(TimeStamp)>?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&branchs)
 		if err != nil {
 			libraries.ReleaseLog("检查branch刷新缓存失败%v", err)
 		}
-		err = HostConn.DB.Table(db.TABLE_PROJECT).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&projects)
+		err = HostConn.DB.Table(db.TABLE_PROJECT).Prepare().Where("UNIX_TIMESTAMP(TimeStamp)>?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&projects)
 		if err != nil {
 			libraries.ReleaseLog("检查projects刷新缓存失败%v", err)
 		}

@@ -124,7 +124,7 @@ func story_create(data *protocol.MSG_PROJECT_stroy_create, in *protocol.Msg) {
 			return
 		}
 		in.SendResult(out)
-		session.EndTransaction()
+		session.Rollback()
 	}()
 	if err != nil {
 		return
@@ -229,7 +229,7 @@ func story_setStage(storyId int32, in *protocol.Msg) (err error) {
 	if e != nil {
 		return e
 	}
-	defer session.EndTransaction()
+	defer session.Rollback()
 	_, err = session.Table(db.TABLE_STORYSTAGE).Where("story = ?", storyId).Delete()
 	if err != nil {
 		return

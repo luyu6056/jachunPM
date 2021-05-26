@@ -32,6 +32,7 @@ const (
 
 var (
 	filepath                       string
+	fileTmpPath                    string //清除过期文件代码在rpcserver.tick()
 	errTransactionNo               = errors.New("TransactionNotFoundNo")
 	errTransactionNotAllowCommit   = errors.New("TransactionNotAllowCommit")
 	errTransactionNotFoundSvr      = errors.New("TransactionNotFoundServer")
@@ -47,7 +48,14 @@ func init() {
 	if err != nil {
 		panic("获取运行根目录失败" + err.Error())
 	}
+	fileTmpPath = filepath + "/tmp/"
 	filepath += "/upload/"
+	if ok, _ := libraries.PathExists(filepath); !ok {
+		os.Mkdir(filepath, 0777)
+	}
+	if ok, _ := libraries.PathExists(fileTmpPath); !ok {
+		os.Mkdir(fileTmpPath, 0777)
+	}
 }
 func SendMsgToRemote(ctx *server.Context, c gnet.Conn) error {
 	defer func() {
@@ -237,7 +245,7 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 
 	case *protocol.MSG_COMMON_PONG:
 		if svr != nil {
-			//libraries.DebugLog("服务%d,ID%d,收到pong", svr.ServerNo, svr.Id)
+			//libraries.DebugLog("服务%d,ID%d,收到pong,%d", svr.ServerNo, svr.Id, data.Rand)
 			svr.pongTime = time.Now().Unix()
 			if svr.window > 0 {
 				//尝试把pong响应超时导致半开的服务恢复正常
@@ -546,7 +554,28 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 		waitChan <- TransactionOptionRollback
 		err := <-errChan
 		in.WriteErr(err)
-
+	case *protocol.MSG_FILE_uploadTmp:
+		if data.Index == 0 {
+			os.Remove(fileTmpPath + data.Name)
+		}
+		f, err := os.OpenFile(fileTmpPath+data.Name, os.O_CREATE|os.O_RDWR, 0777)
+		if err == nil {
+			offset := int64(data.Index * data.BlockSize)
+			if stat, err := f.Stat(); err != nil {
+				in.WriteErr(err)
+				f.Close()
+				return
+			} else if stat.Size() < offset {
+				in.WriteErr(errors.New("Error File Create"))
+				f.Close()
+				return
+			}
+			f.Seek(offset, 0)
+			f.Write(data.Data)
+			f.Sync()
+			f.Close()
+		}
+		in.WriteErr(err)
 	default:
 		if protocol.SetMsgQuery(i) {
 			return //return掉，避免i.Put被回收

@@ -65,19 +65,19 @@ func HandleTick(t time.Time) {
 		}
 	} else {
 		//检查是否需要更新缓存
-		err := HostConn.DB.Table(db.TABLE_USER).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&users)
+		err := HostConn.DB.Table(db.TABLE_USER).Prepare().Where("UNIX_TIMESTAMP(TimeStamp)>?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&users)
 		if err != nil {
 			libraries.ReleaseLog("检查user刷新缓存失败%v", err)
 		}
-		err = HostConn.DB.Table(db.TABLE_COMPANY).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Find(&company)
+		err = HostConn.DB.Table(db.TABLE_COMPANY).Prepare().Where("UNIX_TIMESTAMP(TimeStamp)>?", t.Unix()-protocol.RpcTickDefaultTime*2).Find(&company)
 		if err != nil {
 			libraries.ReleaseLog("检查company刷新缓存失败%v", err)
 		}
-		err = HostConn.DB.Table(db.TABLE_DEPT).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&deptlist)
+		err = HostConn.DB.Table(db.TABLE_DEPT).Prepare().Where("UNIX_TIMESTAMP(TimeStamp)>?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&deptlist)
 		if err != nil {
 			libraries.ReleaseLog("检查dept刷新缓存失败%v", err)
 		}
-		err = HostConn.DB.Table(db.TABLE_GROUP).Prepare().Where("TimeStamp >?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&groups)
+		err = HostConn.DB.Table(db.TABLE_GROUP).Prepare().Where("UNIX_TIMESTAMP(TimeStamp)>?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&groups)
 		if err != nil {
 			libraries.ReleaseLog("检查dept刷新缓存失败%v", err)
 		}

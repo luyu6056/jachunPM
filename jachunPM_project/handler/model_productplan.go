@@ -175,9 +175,7 @@ func productplan_insertUpdate(data *protocol.MSG_PROJECT_productplan_insertUpdat
 		in.WriteErr(err)
 		return
 	}
-	defer func() {
-		session.EndTransaction()
-	}()
+	defer session.Rollback()
 	if data.Parent > 0 {
 		c, err := session.Table(db.TABLE_PRODUCTPLAN).Prepare().Where("Id=?", data.Parent).Count()
 		if err != nil {
@@ -193,7 +191,7 @@ func productplan_insertUpdate(data *protocol.MSG_PROJECT_productplan_insertUpdat
 	if data.Id == 0 {
 		if id, err := session.Table(db.TABLE_PRODUCTPLAN).Insert(data); err != nil {
 			in.WriteErr(err)
-			session.Rollback()
+
 		} else {
 			out.Result = protocol.Success
 			out.Id = int32(id)
@@ -208,7 +206,7 @@ func productplan_insertUpdate(data *protocol.MSG_PROJECT_productplan_insertUpdat
 		err := session.Table(db.TABLE_PRODUCTPLAN).Replace(data)
 		if err != nil {
 			in.WriteErr(err)
-			session.Rollback()
+
 		} else {
 			out.Result = protocol.Success
 			out.Id = data.Id
@@ -229,14 +227,13 @@ func productplan_delete(data *protocol.MSG_PROJECT_productplan_delete, in *proto
 		in.WriteErr(err)
 		return
 	}
-	defer func() {
-		session.EndTransaction()
-	}()
 	_, err = session.Table(db.TABLE_PRODUCTPLAN).Prepare().Where("Id=? and Product=? and Branch=?", data.Id, data.Product, data.Branch).Update("Deleted = 1")
 	in.WriteErr(err)
 	if err == nil {
 		session.CommitCallback(func() { product_setCache(data.Product) })
 		session.Commit()
+	} else {
+		session.Rollback()
 	}
 }
 func productplan_getById(data *protocol.MSG_PROJECT_productplan_getById, in *protocol.Msg) {

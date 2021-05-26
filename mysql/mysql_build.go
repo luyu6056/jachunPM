@@ -90,7 +90,6 @@ func (this *Mysql_Build) Reset(db *MysqlDB) {
 	this.sql.on.Reset()
 	this.sql.order.Reset()
 	this.sql.table.Reset()
-	this.sql.table.WriteByte('`')
 	this.sql.table.Write(Tablepre)
 	this.sql.field.WriteByte(42)
 	this.sql.totle_count = -1
@@ -111,14 +110,12 @@ func (t *Transaction) Table(tablename string) *Mysql_Build {
 	build.Reset(t.conn.db)
 	build.Transaction = t
 	build.sql.table.WriteString(tablename)
-	build.sql.table.WriteByte('`')
 	return build
 }
 func (db *MysqlDB) Table(tablename string) *Mysql_Build {
 	build := buildPool.Get().(*Mysql_Build)
 	build.Reset(db)
 	build.sql.table.WriteString(tablename)
-	build.sql.table.WriteByte('`')
 	return build
 }
 func (this *Mysql_Build) SetErr(err error) {
@@ -137,6 +134,7 @@ func (this *Mysql_Build) Prepare() *Mysql_Build {
 func (this *Mysql_Build) LeftJoin(t string) *Mysql_Build {
 	if this.err == nil {
 		this.sql.join.Write([]byte{32, 108, 101, 102, 116, 32, 106, 111, 105, 110, 32})
+		this.sql.join.Write(Tablepre)
 		this.sql.join.WriteString(t)
 	}
 

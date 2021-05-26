@@ -18,9 +18,11 @@ type MSG_COMMON_StartTicker struct {
 }
 
 type MSG_COMMON_PING struct {
+	Rand int
 }
 
 type MSG_COMMON_PONG struct {
+	Rand int
 }
 
 //增加窗口
@@ -151,4 +153,13 @@ type MSG_COMMON_GET_MsgUserId struct {
 type MSG_COMMON_GET_MsgUserId_result struct {
 	QueryResultID uint32
 	Uid           int32
+}
+
+//上传大临时文件
+type MSG_FILE_uploadTmp struct {
+	QueryID   uint32 //请求id
+	Name      string
+	Data      []byte
+	Index     int //序号
+	BlockSize int //单块大小
 }

@@ -3,8 +3,10 @@ package handler
 import (
 	"errors"
 	"jachunPM_project/db"
+	"mysql"
 	"protocol"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -16,15 +18,19 @@ func project_setCache(id int32) {
 	project := protocol.GET_MSG_PROJECT_project_cache()
 	HostConn.DB.Table(db.TABLE_PROJECT).Prepare().Where("Id=?", id).Find(&project)
 	if project.Id != 0 {
-		out := protocol.GET_MSG_USER_team_getByTypeRoot()
-		out.Type = "project"
-		out.Root = project.Id
-		var result *protocol.MSG_USER_team_getByTypeRoot_result
-		if err := (&protocol.RpclientSend{HostConn}).SendMsgWaitResultToDefault(out, &result); err == nil {
-			project.Teams = result.List
+		if project.Deleted {
+			HostConn.CacheDel(protocol.PATH_PROJECT_PROJECT_CACHE, strconv.Itoa(int(project.Id)))
+		} else {
+			out := protocol.GET_MSG_USER_team_getByTypeRoot()
+			out.Type = "project"
+			out.Root = project.Id
+			var result *protocol.MSG_USER_team_getByTypeRoot_result
+			if err := (&protocol.RpclientSend{HostConn}).SendMsgWaitResultToDefault(out, &result); err == nil {
+				project.Teams = result.List
+			}
+			out.Put()
+			HostConn.CacheSet(protocol.PATH_PROJECT_PROJECT_CACHE, strconv.Itoa(int(project.Id)), project, 0)
 		}
-		out.Put()
-		HostConn.CacheSet(protocol.PATH_PROJECT_PROJECT_CACHE, strconv.Itoa(int(project.Id)), project, 0)
 	}
 	project.Put()
 }
@@ -48,7 +54,7 @@ func project_linkStory(data *protocol.MSG_PROJECT_project_linkStory, in *protoco
 		return
 	}
 	session, err := in.BeginTransaction()
-	defer session.EndTransaction()
+	defer session.Rollback()
 	if err != nil {
 		in.WriteErr(err)
 		return
@@ -138,7 +144,7 @@ func project_create(data *protocol.MSG_PROJECT_project_create, in *protocol.Msg)
 		in.WriteErr(err)
 		return
 	}
-	defer session.EndTransaction()
+	defer session.Rollback()
 	var id int64
 	var oldproject *protocol.MSG_PROJECT_project_cache
 	if data.Info.Id > 0 {
@@ -149,7 +155,6 @@ func project_create(data *protocol.MSG_PROJECT_project_create, in *protocol.Msg)
 		}
 		if err = session.Table(db.TABLE_PROJECT).Replace(data.Info); err != nil {
 			in.WriteErr(err)
-			session.Rollback()
 			return
 		}
 
@@ -157,7 +162,6 @@ func project_create(data *protocol.MSG_PROJECT_project_create, in *protocol.Msg)
 	} else {
 		if id, err = session.Table(db.TABLE_PROJECT).Insert(data.Info); err != nil {
 			in.WriteErr(err)
-			session.Rollback()
 			return
 		}
 	}
@@ -230,7 +234,6 @@ func project_create(data *protocol.MSG_PROJECT_project_create, in *protocol.Msg)
 
 	}
 	if err = in.SendMsgWaitResult(0, addteam, nil); err != nil {
-		session.Rollback()
 		in.WriteErr(err)
 		return
 	}
@@ -251,7 +254,6 @@ func project_create(data *protocol.MSG_PROJECT_project_create, in *protocol.Msg)
 		updateUserView.GroupIds = append(updateUserView.GroupIds, gid)
 	}
 	if err = in.SendMsgWaitResult(0, updateUserView, nil); err != nil {
-		session.Rollback()
 		in.WriteErr(err)
 		return
 	}
@@ -307,4 +309,298 @@ func project_statRelatedData(data *protocol.MSG_PROJECT_project_statRelatedData,
 	}
 	out.BugCount = result.Count
 
+}
+func project_start(data *protocol.MSG_PROJECT_project_start, in *protocol.Msg) {
+	project := HostConn.GetProjectById(data.Id)
+	if project == nil {
+		in.WriteErr(protocol.Err_ProjectNotFound.Err())
+		return
+	}
+	session, err := in.BeginTransaction()
+	defer func() {
+		in.WriteErr(err)
+		session.Rollback()
+	}()
+	if err != nil {
+		return
+	}
+	if _, err = session.Table(db.TABLE_PROJECT).Prepare().Where("Id=?", data.Id).Update("Status=?", "doing"); err != nil {
+		return
+	}
+	comment := data.Comment
+	session.CommitCallback(func() {
+		var newProject *protocol.MSG_PROJECT_project_cache
+		in.DB.Table(db.TABLE_PROJECT).Prepare().Where("Id=?", project.Id).Find(&newProject)
+		actionID, err := in.ActionCreate("project", project.Id, "Started", comment, "", project.Products, []int32{project.Id})
+		if err == nil {
+			in.ActionLogHistory(actionID, project, newProject)
+		}
+		project_setCache(project.Id)
+	})
+	session.Commit()
+}
+func project_putoff(data *protocol.MSG_PROJECT_project_putoff, in *protocol.Msg) {
+	session, err := in.BeginTransaction()
+	defer func() {
+		session.Rollback()
+		in.WriteErr(err)
+	}()
+	if err != nil {
+		return
+	}
+	oldproject := HostConn.GetProjectById(data.Id)
+	if oldproject == nil {
+		err = protocol.Err_ProjectNotFound.Err()
+		return
+	}
+	if _, err = session.Table(db.TABLE_PROJECT).Where("Id=?", data.Id).Update(map[string]interface{}{"Begin": data.Begin, "End": data.End, "Days": data.Days}); err != nil {
+		return
+	}
+	id := data.Id
+	comment := data.Comment
+	session.CommitCallback(func() {
+		var project *protocol.MSG_PROJECT_project_cache
+		in.DB.Table(db.TABLE_PROJECT).Prepare().Where("Id=?", id).Find(&project)
+		actionID, err := in.ActionCreate("project", project.Id, "Delayed", comment, "", project.Products, []int32{project.Id})
+		if err == nil {
+			in.ActionLogHistory(actionID, oldproject, project)
+		}
+		project_setCache(project.Id)
+	})
+	session.Commit()
+}
+func project_suspend(data *protocol.MSG_PROJECT_project_suspend, in *protocol.Msg) {
+	session, err := in.BeginTransaction()
+	defer func() {
+		session.Rollback()
+		in.WriteErr(err)
+	}()
+	if err != nil {
+		return
+	}
+	oldproject := HostConn.GetProjectById(data.Id)
+	if oldproject == nil {
+		err = protocol.Err_ProjectNotFound.Err()
+		return
+	}
+	if _, err = session.Table(db.TABLE_PROJECT).Where("Id=?", data.Id).Update(map[string]interface{}{"Status": "suspended"}); err != nil {
+		return
+	}
+	id := data.Id
+	comment := data.Comment
+	session.CommitCallback(func() {
+		var project *protocol.MSG_PROJECT_project_cache
+		in.DB.Table(db.TABLE_PROJECT).Prepare().Where("Id=?", id).Find(&project)
+		actionID, err := in.ActionCreate("project", project.Id, "Suspended", comment, "", project.Products, []int32{project.Id})
+		if err == nil {
+			in.ActionLogHistory(actionID, oldproject, project)
+		}
+		project_setCache(project.Id)
+	})
+	session.Commit()
+}
+func project_activate(data *protocol.MSG_PROJECT_project_activate, in *protocol.Msg) {
+	session, err := in.BeginTransaction()
+	defer func() {
+		session.Rollback()
+		in.WriteErr(err)
+	}()
+	if err != nil {
+		return
+	}
+	oldproject := HostConn.GetProjectById(data.Id)
+	if oldproject == nil {
+		err = protocol.Err_ProjectNotFound.Err()
+		return
+	}
+	if _, err = session.Table(db.TABLE_PROJECT).Where("Id=?", data.Id).Update(map[string]interface{}{"Status": "doing", "Begin": data.Begin, "End": data.End}); err != nil {
+		return
+	}
+	id := data.Id
+	comment := data.Comment
+	session.CommitCallback(func() {
+		var project *protocol.MSG_PROJECT_project_cache
+		in.DB.Table(db.TABLE_PROJECT).Prepare().Where("Id=?", id).Find(&project)
+		actionID, err := in.ActionCreate("project", project.Id, "Activated", comment, "", project.Products, []int32{project.Id})
+		if err == nil {
+			in.ActionLogHistory(actionID, oldproject, project)
+		}
+		project_setCache(project.Id)
+
+	})
+	if data.ReadjustTask {
+		beginTimeStamp := data.Begin
+		var tasks []*db.Task
+		if err = session.Table(db.TABLE_TASK).Where(map[string]interface{}{"Deadline": []interface{}{mysql.WhereOperatorNE, "2000-01-01"}, "Status": []string{"wait", "doing"}, "Project": oldproject.Id}).Limit(0).Select(&tasks); err != nil {
+			return
+		}
+		for _, task := range tasks {
+
+			if task.Status == "wait" && task.EstStarted.After(protocol.ZEROTIME) {
+				taskDays := task.Deadline.Sub(task.EstStarted)
+				taskOffset := task.EstStarted.Sub(oldproject.Begin)
+
+				estStartedTimeStamp := beginTimeStamp.Add(taskOffset)
+				estStarted := estStartedTimeStamp
+				deadline := estStartedTimeStamp.Add(taskDays)
+
+				if estStarted.After(data.End) {
+					estStarted = data.End
+				}
+				if deadline.After(data.End) {
+					deadline = data.End
+				}
+				if _, err = session.Table(db.TABLE_TASK).Prepare().Where("Id=?", task.Id).Update("estStarted=? and deadline=?", estStarted.Format(protocol.TIMEFORMAT_MYSQLDATE), deadline.Format(protocol.TIMEFORMAT_MYSQLDATE)); err != nil {
+					return
+				}
+
+			} else {
+				taskOffset := task.Deadline.Sub(oldproject.Begin)
+				deadline := beginTimeStamp.Add(taskOffset)
+				if deadline.After(data.End) {
+					deadline = data.End
+				}
+				if _, err = session.Table(db.TABLE_TASK).Prepare().Where("Id=?", task.Id).Update(" deadline=?", deadline.Format(protocol.TIMEFORMAT_MYSQLDATE)); err != nil {
+					return
+				}
+			}
+		}
+	}
+	session.Commit()
+}
+func project_close(data *protocol.MSG_PROJECT_project_close, in *protocol.Msg) {
+	session, err := in.BeginTransaction()
+	defer func() {
+		session.Rollback()
+		in.WriteErr(err)
+	}()
+	if err != nil {
+		return
+	}
+	oldproject := HostConn.GetProjectById(data.Id)
+	if oldproject == nil {
+		err = protocol.Err_ProjectNotFound.Err()
+		return
+	}
+	if _, err = session.Table(db.TABLE_PROJECT).Where("Id=?", data.Id).Update(map[string]interface{}{"Status": "closed", "ClosedBy": in.GetUserID(), "ClosedDate": time.Now()}); err != nil {
+		return
+	}
+
+	id := data.Id
+	comment := data.Comment
+	session.CommitCallback(func() {
+		var project *protocol.MSG_PROJECT_project_cache
+		in.DB.Table(db.TABLE_PROJECT).Prepare().Where("Id=?", id).Find(&project)
+		actionID, err := in.ActionCreate("project", project.Id, "Closed", comment, "", project.Products, []int32{project.Id})
+		if err == nil {
+			in.ActionLogHistory(actionID, oldproject, project)
+		}
+		project_setCache(project.Id)
+	})
+	session.Commit()
+}
+func project_delete(data *protocol.MSG_PROJECT_project_delete, in *protocol.Msg) {
+	session, err := in.BeginTransaction()
+	defer func() {
+		session.Rollback()
+		in.WriteErr(err)
+	}()
+	if err != nil {
+		return
+	}
+	oldproject := HostConn.GetProjectById(data.Id)
+	if oldproject == nil {
+		err = protocol.Err_ProjectNotFound.Err()
+		return
+	}
+	if _, err = session.Table(db.TABLE_PROJECT).Where("Id=?", data.Id).Update(map[string]interface{}{"Deleted": true}); err != nil {
+		return
+	}
+
+	id := data.Id
+	session.CommitCallback(func() {
+		project_setCache(id)
+	})
+	session.Commit()
+}
+func project_getProjectTasks(data *protocol.MSG_PROJECT_project_getProjectTasks, in *protocol.Msg) {
+	where := map[string]interface{}{
+		"t1.Project": data.ProjectID,
+	}
+	if data.ProductID != 0 {
+		var trees []*db.Module
+		if err := in.DB.Table(db.TABLE_MODULE).Field("Id").Where(map[string]interface{}{"Root": data.ProductID, "Type": "story"}).Limit(0).Select(&trees); err != nil {
+			in.WriteErr(err)
+			return
+		}
+		var treeIds []string
+		for _, t := range trees {
+			treeIds = append(treeIds, strconv.Itoa(int(t.Id)))
+		}
+		var storys []*db.Story
+		if err := in.DB.Table(db.TABLE_MODULE).Field("Id").Where(map[string]interface{}{"Product": data.ProductID}).Limit(0).Select(&storys); err != nil {
+			in.WriteErr(err)
+			return
+		}
+		var storyIds []string
+		for _, s := range storys {
+			storyIds = append(storyIds, strconv.Itoa(int(s.Id)))
+		}
+		where["productRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t1.Module` in (" + strings.Join(treeIds, ",") + ") or `t1.Story` in (" + strings.Join(storyIds, ",") + ")"}
+	}
+	if data.ModuleID != 0 {
+		where["t1.Module"] = tree_getAllChildId(data.ModuleID)
+	}
+	switch {
+	case data.Type[0] == "all" || len(data.Type) > 0:
+		where["t1.Parent"] = []interface{}{mysql.WhereOperatorLT, 1}
+	case data.Type[0] == "myinvolved":
+		out := protocol.GET_MSG_USER_team_getByTypeUid()
+		out.Type = "task"
+		out.Uid = in.GetUserID()
+		var result *protocol.MSG_USER_team_getByTypeUid_result
+		if err := in.SendMsgWaitResult(0, out, &result); err != nil {
+			in.WriteErr(err)
+			return
+		}
+		var ids []string
+		for _, t := range result.List {
+			ids = append(ids, strconv.Itoa(int(t.Root)))
+		}
+		where["myinvolvedRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t1.Id` in (" + strings.Join(ids, ",") + ") or `t1.AssignedTo` = " + strconv.Itoa(int(in.GetUserID())) + " or `t1.Finishedby` = " + strconv.Itoa(int(in.GetUserID()))}
+		out.Put()
+		result.Put()
+	case data.Type[0] == "undone":
+		where["undoneRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t1.Status` = 'wait' or `t1.Status` = 'doing'"}
+	case data.Type[0] == "needconfirm":
+		where["needconfirmRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t2.version > t1.storyVersion and t2.Status = 'active'"}
+	case data.Type[0] == "assignedtome":
+		where["t1.AssignedTo"] = in.GetUserID()
+	case data.Type[0] == "finishedbyme":
+		where["t1.Finishedby"] = in.GetUserID()
+		//->andWhere('t1.finishedby', 1)->eq($this->app->user->account)->orWhere('t1.finishedList')->like("%,{$this->app->user->account},%")
+	case data.Type[0] == "delayed":
+		where["t1.Deadline"] = []interface{}{mysql.WhereOperatorBETWEEN, "1970-01-01", time.Now().Format(protocol.TIMEFORMAT_MYSQLDATE)}
+		where["t1.Status"] = []interface{}{"wait", "doing"}
+	default:
+
+		where["t1.Status"] = data.Type
+	}
+	if len(data.Type) > 0 {
+		where["t1.Status"] = data.Type
+	}
+	if data.Role == "member" {
+		where["RoleRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t1.AssignedTo` = " + strconv.Itoa(int(in.GetUserID())) + " or t1.AssignedTo = ''"}
+	}
+	out := protocol.GET_MSG_PROJECT_project_getProjectTasks_result()
+	err := in.DB.Table(db.TABLE_TASK+" as t1").Field("DISTINCT t1.*, t2.Id AS StoryID, t2.Title AS StoryTitle, t2.Product as Product, t2.Branch as Branch, t2.version AS LatestStoryVersion, t2.Status AS StoryStatus").LeftJoin(db.TABLE_STORY+" as t2").On("t1.Story = t2.Id").Where(where).Order(data.OrderBy).Limit((data.Page-1)*data.PerPage, data.PerPage).Select(&out.List)
+	if err != nil {
+		in.WriteErr(err)
+		return
+	}
+	if data.Total == 0 {
+		data.Total, err = in.DB.Table(db.TABLE_TASK).Where(where).Count()
+	}
+	in.SendResult(out)
+	out.Put()
 }

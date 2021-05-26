@@ -1,0 +1,31 @@
+{{template "header.html" .}}
+{{template "kindeditor.html" .}}
+<div id='mainContent' class='main-content'>
+  <div class='main-header'>
+    <h2>
+      <span class='prefix label-id'><strong>{{$.Data.project.Id}}</strong></span>
+      {{if $.App.onlybody}}<span title='{{$.Data.project.Name}}'>{{$.Data.project.Name}}</span>{{else}}{{html_a (helper_createLink "project" "view"  "project=" $.Data.project.Id)  $.Data.project.Name "_blank"}}{{end}}
+      {{if not $.App.onlybody}}
+      <small>{{.Lang.common.arrow}}{{.Lang.project.start}}</small>
+      {{end}}
+    </h2>
+  </div>
+  <form class='load-indicator main-form' method='post' target='hiddenwin'>
+    <table class='table table-form'>
+      <tbody>
+        <tr>
+          <th class='w-40px'>{{.Lang.common.comment}}</th>
+          <td>{{html_textarea "comment" ""  "rows='6' class='form-control kindeditor' hidefocus='true'"}}</td>
+        </tr>
+        <tr>
+          <td colspan='2' class='text-center form-actions'>{{html_submitButton . .Lang.project.start}} {{html_linkButton . .Lang.common.goback  (session . "taskList") "self" "" "btn btn-wide" }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </form>
+  <hr class='small' />
+  <div class='main'>
+    {{template "action.html" .}}
+  </div>
+</div>
+{{template "footer.html" .}}

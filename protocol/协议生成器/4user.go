@@ -258,3 +258,12 @@ type MSG_USER_Group_getPairs_result struct {
 	QueryResultID uint32
 	List          []HtmlKeyValueStr
 }
+type MSG_USER_team_getByTypeUid struct {
+	QueryID uint32
+	Type    string
+	Uid     int32
+}
+type MSG_USER_team_getByTypeUid_result struct {
+	QueryResultID uint32
+	List          []*MSG_USER_team_info
+}

@@ -100,6 +100,22 @@ func Handler(in *protocol.Msg) {
 		tree_getPairsByIds(data, in)
 	case *protocol.MSG_PROJECT_project_statRelatedData:
 		project_statRelatedData(data, in)
+	case *protocol.MSG_PROJECT_project_start:
+		project_start(data, in)
+	case *protocol.MSG_PROJECT_project_putoff:
+		project_putoff(data, in)
+	case *protocol.MSG_PROJECT_project_suspend:
+		project_suspend(data, in)
+	case *protocol.MSG_PROJECT_project_activate:
+		project_activate(data, in)
+	case *protocol.MSG_PROJECT_project_close:
+		project_close(data, in)
+	case *protocol.MSG_PROJECT_project_delete:
+		project_delete(data, in)
+	case *protocol.MSG_PROJECT_project_getProjectTasks:
+		project_getProjectTasks(data, in)
+	case *protocol.MSG_PROJECT_tree_getTaskTreeModules:
+		tree_getTaskTreeModules(data, in)
 	default:
 		libraries.ReleaseLog("未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 	}

@@ -26,7 +26,6 @@ func action_crate(data *protocol.MSG_LOG_Action_Create, in *protocol.Msg) {
 		Projects:   data.Projects,
 		Comment:    libraries.Html2bbcode(data.Comment),
 	}
-	libraries.DebugLog("%+v", data)
 	if user := HostConn.GetUserCacheById(data.ActorId); user != nil {
 		insert.Actor = user.Account
 	}
@@ -219,5 +218,17 @@ func action_transformActions(where map[string]interface{}, order string, in *pro
 	return
 }
 func action_AddHistory(data *protocol.MSG_LOG_Action_AddHistory, in *protocol.Msg) {
-	in.DB.Table(db.TABLE_ACTION).Prepare().Where("Id=?", data.Id).Update("History = JSON_ARRAY_APPEND(History, '$', ?)", data.History)
+	var action *protocol.MSG_LOG_Action
+	err := in.DB.Table(db.TABLE_ACTION).Prepare().Where("Id=?", data.Id).Find(&action)
+	if err != nil {
+		libraries.DebugLog("增加history失败%+v", err)
+	}
+	if action != nil {
+		action.Historys = append(action.Historys, data.History...)
+	}
+	_, err = in.DB.Table(db.TABLE_ACTION).Where("Id=?", data.Id).Update("Historys = ?", action.Historys)
+	if err != nil {
+		libraries.DebugLog("增加history失败%+v", err)
+	}
+
 }

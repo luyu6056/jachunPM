@@ -54,7 +54,7 @@ func dept_updateFromCache(cacheList []*protocol.MSG_USER_Dept_cache) error {
 			Order:     v.Order,
 			Parent:    v.Parent,
 			Path:      v.Path,
-			TimeStamp: time.Now().Unix(),
+			TimeStamp: time.Now(),
 		}
 	}
 	return dept_updateFromList(deptList)

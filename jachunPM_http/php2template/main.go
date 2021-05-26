@@ -111,7 +111,7 @@ func main() {
 		str, _ = Preg_replace(`\$([^ ]+) == '([^']+)'`, `(eq $1 "$2")`, str)
 		str, _ = Preg_replace(`\$([^ ]+) != '([^']+)'`, `(ne $1 "$2")`, str)
 		str, _ = Preg_replace(`{{js_import \$jsRoot \. '([^']+)'}}`, `{{js_import (strAdd .Config.common.common.jsRoot "$1")}}`, str)
-		str, _ = Preg_replace(`{{if !empty\((\S+?)\)}}`, `{{if not ($1)}}`, str)
+		str, _ = Preg_replace(`{{if !empty\((\S+?)\)}}`, `{{if ($1)}}`, str)
 		str = strings.ReplaceAll(str, `{{if !isonlybody()}}`, `{{if not $.App.onlybody}}`)
 		str = strings.ReplaceAll(str, `{{if isonlybody()}}`, `{{if $.App.onlybody}}`)
 		str = strings.ReplaceAll(str, `{{endif; }}`, `{{end}}`)

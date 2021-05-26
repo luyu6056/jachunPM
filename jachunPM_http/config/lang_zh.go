@@ -2196,7 +2196,7 @@ func LangZH_CNInit() {
 		"deletedfile":       `$date, 由 <strong>$actor</strong> 删除了附件：<strong><i>$extra</i></strong>。` + "\n",
 		"deleteestimate":    `$date, 由 <strong>$actor</strong> 删除工时。`,
 		"diff1":             `修改了 <strong><i>%s</i></strong>，旧值为 "%s"，新值为 "%s"。<br />` + "\n",
-		"diff2":             `修改了 <strong><i>%s</i></strong>，区别为：` + "\n" + "<blockquote class=`textdiff`>%s</blockquote>" + "\n<blockquote class=`original`>%s</blockquote>",
+		"diff2":             `修改了 <strong><i>%s</i></strong>，区别为：` + "\n" + "<blockquote class='textdiff'>%s</blockquote>" + "\n<blockquote class='original'>%s</blockquote>",
 		"diff3":             `将文件名 %s 改为 %s 。` + "\n",
 		"edited":            `$date, 由 <strong>$actor</strong> 编辑。` + "\n",
 		"editestimate":      `$date, 由 <strong>$actor</strong> 编辑工时。`,
@@ -6395,6 +6395,7 @@ func LangZH_CNInit() {
 		"CreateNotFountProduct": "找不到关联产品，请刷新重试",
 		"CreateNotFountPlan":    "找不到关联计划，请刷新重试",
 		"ProjectNameIsExist":    "项目名称或者代号已存在相同的，请修改重试",
+		"daysErr":               "项目可用工作日输入错误，输入范围0-32767",
 	}
 
 }

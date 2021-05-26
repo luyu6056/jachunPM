@@ -52,7 +52,7 @@
         {{if $action.Historys}}
         <button type='button' class='btn btn-mini switch-btn btn-icon btn-expand' title='{{$.Lang.switchDisplay}}'><i class='change-show icon icon-plus icon-sm'></i></button>
         <div class='history-changes' id='changeBox{{$i}}'>
-          {{action_printChanges $action.ObjectType $action.History}}
+          {{action_printChanges $ $action.ObjectType $action.Historys}}
         </div>
         {{end}}
         {{if ne (strlen $action.Comment)  0}}

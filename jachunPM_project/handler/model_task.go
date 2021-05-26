@@ -21,7 +21,7 @@ func task_getPairs(data *protocol.MSG_PROJECT_task_getPairs, in *protocol.Msg) {
 }
 func task_getListByWhereMap(data *protocol.MSG_PROJECT_task_getListByWhereMap, in *protocol.Msg) {
 	out := protocol.GET_MSG_PROJECT_task_getListByWhereMap_result()
-	sql := HostConn.DB.Table(db.TABLE_TASK).Where(data.Where).Order(data.Order)
+	sql := in.DB.Table(db.TABLE_TASK).Where(data.Where).Order(data.Order)
 	if data.PerPage > 0 {
 		sql.Limit((data.Page-1)*data.PerPage, data.PerPage)
 	}

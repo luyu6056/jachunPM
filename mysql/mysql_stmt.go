@@ -355,6 +355,9 @@ func (stmt *Database_mysql_stmt) Execute(args []interface{}) error {
 
 			default:
 				r := reflect.TypeOf(arg)
+				for r.Kind() == reflect.Ptr {
+					r = r.Elem()
+				}
 				if r.Kind() == reflect.Struct || r.Kind() == reflect.Slice || r.Kind() == reflect.Map {
 					paramTypes[i+i] = byte(fieldTypeString)
 					paramTypes[i+i+1] = 0x00

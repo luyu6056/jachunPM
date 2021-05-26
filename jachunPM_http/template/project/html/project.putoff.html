@@ -1,0 +1,60 @@
+{{template "header.html" .}}
+{{template "kindeditor.html" .}}
+{{js_import (strAdd .Config.common.common.jsRoot "misc/date.js")}}
+<div id='mainContent' class='main-content'>
+  <div class='main-header'>
+    <h2>
+      <span class='prefix label-id'><strong>{{$.Data.project.Id}}</strong></span>
+      {{if .App.onlybody}}<span title='{{$.Data.project.Name}}'>{{$.Data.project.Name}}</span>{{else}}{{html_a (helper_createLink "project" "view"  "project="  $.Data.project.Id)  $.Data.project.Name "_blank"}}{{end}}
+      {{if not $.App.onlybody}}
+      <small>{{.Lang.common.arrow}}{{.Lang.project.putoff}}</small>
+      {{end}}
+    </h2>
+  </div>
+  <form class='load-indicator main-form' method='post' target='hiddenwin'>
+    <table class='table table-form'>
+      <tbody>
+        <tr>
+          <th class='w-80px'>{{.Lang.project.dateRange}}</th>
+          <td colspan='2'>
+            <div class='input-group'>
+              {{html_input "begin"  (date "2006-01-02" $.Data.project.Begin)  (strAdd "class='form-control form-date' onchange='computeWorkDays()' placeholder='"  .Lang.project.begin  "'")}}
+              <span class='input-group-addon'>{{.Lang.project.to}}</span>
+              {{html_input "end"   (date "2006-01-02" $.Data.project.End)  (strAdd "class='form-control form-date' onchange='computeWorkDays()' placeholder='"  .Lang.project.end  "'")}}
+              <div class='input-group-btn'>
+                <button type='button' class='btn dropdown-toggle' data-toggle='dropdown'>{{.Lang.project.byPeriod}} <span class='caret'></span></button>
+                <ul class='dropdown-menu'>
+                  {{range $key,$name :=.Lang.project.endList}}
+                  <li><a href='javascript:computeEndDate("{{$key}}")'>{{$name}}</a></li>
+                  {{end}}
+                </ul>
+              </div>
+            </div>
+          </td>
+          <td class='w-100px'></td>
+        </tr>
+        <tr>
+          <th>{{.Lang.project.days}}</th>
+          <td colspan='2'>
+            <div class='input-group'>
+            {{html_input "days"  $.Data.project.Days  "class='form-control' autocomplete='off'"}}
+              <span class='input-group-addon'>{{.Lang.project.day}}</span>
+            </div>
+          </td> 
+          <td></td>
+        </tr> 
+        <tr>
+          <th>{{.Lang.comment}}</th>
+          <td colspan='3'>{{html_textarea "comment" ""  "rows='6' class='form-control kindeditor' hidefocus='true'"}}</td>
+        </tr>
+        <tr>
+          <td colspan='4' class='text-center form-actions'>{{html_submitButton .}}{{html_linkButton . .Lang.common.goback  (session . "taskList") "self" "" "btn btn-wide"}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </form>
+  <hr class='small' />
+  <div class='main'>{{template "action.html" .}}</div>
+</div>
+<script type="text/javascript">var weekend={{.Config.project.weekend}}</script>
+{{template "footer.html" .}}

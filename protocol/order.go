@@ -524,7 +524,7 @@ func Order_branch(list []*MSG_PROJECT_branch_info, f func(a, b *MSG_PROJECT_bran
 }
 func order_diff(list []diff) {
 	f := func(a, b diff) bool {
-		return a.key > b.key
+		return a.key < b.key
 	}
 	max_len := len(list)
 	tmp := make([]diff, max_len)

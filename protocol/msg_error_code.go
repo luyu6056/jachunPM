@@ -1,5 +1,7 @@
 package protocol
 
+import "errors"
+
 type ErrCode int16
 
 const (
@@ -35,29 +37,34 @@ const (
 	Err_ProjectStoryNotFount                  ErrCode = -27
 )
 
+var errCodeMap = map[ErrCode]string{
+	Err_Password:                              "ErrPassword",
+	Err_DeptDeleteHasSons:                     "hasSons",
+	Err_DeptDeletehasUsers:                    "hasUsers",
+	Err_DeptNotFound:                          "ErrDeptInfo",
+	Err_DeptNotFoundID:                        "ErrDeptInfoDeptID",
+	Err_UserInfoNotFound:                      "NotFoundUserInfo",
+	Err_UserAccountIsexist:                    "UserAccountIsexist",
+	Err_TreeRepeatName:                        "ModuleNameRepeat",
+	Err_ProjectBranchCanNotDelete_PROJECT:     "BranchCanNotDeletePROJECTHasData",
+	Err_ProjectBranchCanNotDelete_STORY:       "BranchCanNotDeleteSTORYHasData",
+	Err_ProjectBranchCanNotDelete_MODULE:      "BranchCanNotDeleteMODULEHasData",
+	Err_ProjectBranchCanNotDelete_PRODUCTPLAN: "BranchCanNotDeletePRODUCTPLANHasData",
+	Err_ProjectBranchCanNotDelete_BUG:         "BranchCanNotDeleteBUGHasData",
+	Err_ProjectBranchCanNotDelete_CASE:        "BranchCanNotDeleteCASEHasData",
+	Err_ProjectBranchCanNotDelete_RELEASE:     "BranchCanNotDeleteRELEASEHasData",
+	Err_ProjectBranchCanNotDelete_BUILD:       "BranchCanNotDeleteBUILDHasData",
+	Err_ProjectProductPlanNotFound:            "NotFoundProductPlanInfo",
+	Err_ProjectProductPlanParentNotFound:      "NotFoundProductPlanParent",
+	Err_FileNotFount:                          "FileNotFount",
+	Err_ProjectNotFound:                       "NotFountProject",
+	Err_ProjectNameIsExist:                    "ProjectNameIsExist",
+	Err_ProjectStoryNotFount:                  "StoryNotFount",
+}
+
 func (err ErrCode) String() string {
-	return map[ErrCode]string{
-		Err_Password:                              "ErrPassword",
-		Err_DeptDeleteHasSons:                     "hasSons",
-		Err_DeptDeletehasUsers:                    "hasUsers",
-		Err_DeptNotFound:                          "ErrDeptInfo",
-		Err_DeptNotFoundID:                        "ErrDeptInfoDeptID",
-		Err_UserInfoNotFound:                      "NotFoundUserInfo",
-		Err_UserAccountIsexist:                    "UserAccountIsexist",
-		Err_TreeRepeatName:                        "ModuleNameRepeat",
-		Err_ProjectBranchCanNotDelete_PROJECT:     "BranchCanNotDeletePROJECTHasData",
-		Err_ProjectBranchCanNotDelete_STORY:       "BranchCanNotDeleteSTORYHasData",
-		Err_ProjectBranchCanNotDelete_MODULE:      "BranchCanNotDeleteMODULEHasData",
-		Err_ProjectBranchCanNotDelete_PRODUCTPLAN: "BranchCanNotDeletePRODUCTPLANHasData",
-		Err_ProjectBranchCanNotDelete_BUG:         "BranchCanNotDeleteBUGHasData",
-		Err_ProjectBranchCanNotDelete_CASE:        "BranchCanNotDeleteCASEHasData",
-		Err_ProjectBranchCanNotDelete_RELEASE:     "BranchCanNotDeleteRELEASEHasData",
-		Err_ProjectBranchCanNotDelete_BUILD:       "BranchCanNotDeleteBUILDHasData",
-		Err_ProjectProductPlanNotFound:            "NotFoundProductPlanInfo",
-		Err_ProjectProductPlanParentNotFound:      "NotFoundProductPlanParent",
-		Err_FileNotFount:                          "FileNotFount",
-		Err_ProjectNotFound:                       "NotFountProject",
-		Err_ProjectNameIsExist:                    "ProjectNameIsExist",
-		Err_ProjectStoryNotFount:                  "StoryNotFount",
-	}[err]
+	return errCodeMap[err]
+}
+func (err ErrCode) Err() error {
+	return errors.New(err.String())
 }

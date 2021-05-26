@@ -46,7 +46,39 @@ func htmlFuncs() {
 		bufpool.Put(buf)
 		return template.HTML(res)
 	}
-	global_Funcs["html_linkButton"] = func(data *TemplateData, server string) string { return "待处理html_linkButton" }
+	global_Funcs["html_linkButton"] = func(data *TemplateData, label, link string, ext ...string) template.HTML { //class='btn', $misc = '', $target = 'self'
+		if data.App["onlybody"].(bool) && data.Lang["common"]["goback"].(string) == label {
+			return template.HTML("")
+		}
+		link = processOnlyBodyParam(data, link, false)
+		buf := bufpool.Get().(*libraries.MsgBuffer)
+		buf.WriteString("<button type='button' class='")
+		if len(ext) > 0 {
+			buf.WriteString(ext[0])
+		} else {
+			buf.WriteString("btn")
+		}
+		buf.WriteString("' ")
+		if len(ext) > 1 {
+			buf.WriteString(ext[1])
+			buf.WriteString(" ")
+		}
+		buf.WriteString("onclick='")
+		if len(ext) > 2 {
+			buf.WriteString(ext[2])
+		} else {
+			buf.WriteString("self")
+		}
+		buf.WriteString(".location.href=\"")
+		buf.WriteString(link)
+		buf.WriteString("\"'>")
+		buf.WriteString(label)
+		buf.WriteString("</button>")
+		res := buf.String()
+		buf.Reset()
+		bufpool.Put(buf)
+		return template.HTML(res)
+	}
 	global_Funcs["html_hidden"] = func(name string, value ...interface{}) template.HTML {
 		buf := bufpool.Get().(*libraries.MsgBuffer)
 		buf.WriteString("<input type='hidden' name='")
@@ -613,4 +645,17 @@ func html_checkbox(name string, options []protocol.HtmlKeyValueStr, value ...int
 	buf.Reset()
 	bufpool.Put(buf)
 	return res
+}
+func processOnlyBodyParam(data *TemplateData, link string, onlyBody bool) string {
+	if !onlyBody && !data.App["onlybody"].(bool) {
+		return link
+	}
+	if !strings.Contains(link, "onlybody=yes") {
+		if strings.Contains(link, "?") {
+			link += "&onlybody=yes"
+		} else {
+			link += "?onlybody=yes"
+		}
+	}
+	return link
 }

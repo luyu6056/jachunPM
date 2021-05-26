@@ -68,10 +68,10 @@ type Module struct {
 	Type      string  `db:"type:varchar(30)"`
 	Owner     string  `db:"type:varchar(30)"`
 	OwnerID   int32
-	Collector string `db:"type:text"`
-	Short     string `db:"type:varchar(30)"`
-	Deleted   bool   `db:"default(0)"` // 0=0,1=1,
-	TimeStamp int64
+	Collector string    `db:"type:text"`
+	Short     string    `db:"type:varchar(30)"`
+	Deleted   bool      `db:"default(0)"` // 0=0,1=1,
+	TimeStamp time.Time `db:"default(current_timestamp());extra('on update current_timestamp()')"`
 }
 
 func (*Module) TableName() string {
@@ -97,7 +97,7 @@ type Product struct {
 	CreatedDate int64
 	Order       int32
 	Deleted     bool
-	TimeStamp   int64
+	TimeStamp   time.Time `db:"default(current_timestamp());extra('on update current_timestamp()')"`
 }
 
 func (*Product) TableName() string {
@@ -171,7 +171,7 @@ type Branch struct {
 	Name      string `db:"type:varchar(255)"`
 	Order     int16  `db:""`
 	Deleted   bool
-	TimeStamp int64
+	TimeStamp time.Time `db:"default(current_timestamp());extra('on update current_timestamp()')"`
 }
 
 func (*Branch) TableName() string {
@@ -227,11 +227,12 @@ type Project struct {
 	Whitelist     []int32 `db:"type:json"`
 	Order         int32
 	Deleted       bool
-	FtpPath       string  `db:"type:varchar(255)"`
-	Products      []int32 `db:"index"`
-	Branchs       []int32 `db:"index"`
-	Storys        []int32 `db:"index"`
-	Plans         []int32 `db:"index"`
+	FtpPath       string    `db:"type:varchar(255)"`
+	Products      []int32   `db:"index"`
+	Branchs       []int32   `db:"index"`
+	Storys        []int32   `db:"index"`
+	Plans         []int32   `db:"index"`
+	TimeStamp     time.Time `db:"default(current_timestamp());extra('on update current_timestamp()')"`
 }
 
 func (*Project) TableName() string {
@@ -261,34 +262,34 @@ func (*StoryStage) TableName() string {
 }
 
 type Task struct {
-	Id             int32     `db:"auto_increment;pk"`
-	Ancestor       int32     `db:"null"`
-	Parent         int32     `db:"not null;default(0)"`
-	Project        int32     `db:"default(0)"`
-	Module         int32     `db:"default(0)"`
-	Story          int32     `db:"default(0)"`
-	StoryVersion   int16     `db:"not null;default(1)"`
-	FromBug        int32     `db:"default(0)"`
-	Name           string    `db:"type:varchar(255)"`
-	Type           string    `db:"type:varchar(20)"`
-	Pri            int8      `db:"default(0)"`
-	Estimate       float64   `db:""`
-	Consumed       float64   `db:""`
-	Left           float64   `db:""`
-	Deadline       time.Time `db:"not null"`
-	Status         string    `db:"type:varchar(32)"`
-	Color          string    `db:"type:varchar(7)"`
-	Mailto         []int32   `db:"type:json"`
-	Desc           string    `db:"type:text"`
-	OpenedBy       int32     `db:"type:varchar(30)"`
-	OpenedDate     time.Time `db:"not null"`
-	AssignedTo     int32     `db:"type:varchar(30)"`
-	AssignedDate   time.Time `db:"not null"`
-	EstStarted     time.Time `db:"not null"`
-	RealStarted    time.Time `db:"not null"`
-	FinishedBy     int32     `db:"type:varchar(30)"`
-	FinishedDate   time.Time `db:"not null"`
-	FinishedList   string    `db:"type:text"`
+	Id           int32     `db:"auto_increment;pk"`
+	Ancestor     int32     `db:"null"`
+	Parent       int32     `db:"not null;default(0)"`
+	Project      int32     `db:"default(0)"`
+	Module       int32     `db:"default(0)"`
+	Story        int32     `db:"default(0)"`
+	StoryVersion int16     `db:"not null;default(1)"`
+	FromBug      int32     `db:"default(0)"`
+	Name         string    `db:"type:varchar(255)"`
+	Type         string    `db:"type:varchar(20)"`
+	Pri          int8      `db:"default(0)"`
+	Estimate     float64   `db:""`
+	Consumed     float64   `db:""`
+	Left         float64   `db:""`
+	Deadline     time.Time `db:"not null"`
+	Status       string    `db:"type:varchar(32)"`
+	Color        string    `db:"type:varchar(7)"`
+	Mailto       []int32   `db:"type:json"`
+	Desc         string    `db:"type:text"`
+	OpenedBy     int32     `db:"type:varchar(30)"`
+	OpenedDate   time.Time `db:"not null"`
+	AssignedTo   int32     `db:"type:varchar(30)"`
+	AssignedDate time.Time `db:"not null"`
+	EstStarted   time.Time `db:"not null"`
+	RealStarted  time.Time `db:"not null"`
+	FinishedBy   int32     `db:"type:varchar(30)"`
+	FinishedDate time.Time `db:"not null"`
+	//FinishedList   string    `db:"type:text"` 暂时屏蔽，未发现有任务使用此字段
 	CanceledBy     int32     `db:"type:varchar(30)"`
 	CanceledDate   time.Time `db:"not null"`
 	ClosedBy       int32     `db:"type:varchar(30)"`
@@ -296,12 +297,14 @@ type Task struct {
 	ClosedReason   string    `db:"type:varchar(30)"`
 	LastEditedBy   int32     `db:"type:varchar(30)"`
 	LastEditedDate time.Time `db:"not null"`
-	Examine        int8      `db:"not null;default(0)"`
+	Examine        bool      `db:"not null;default(0)"`
 	ExamineDate    time.Time `db:"not null"`
 	ExamineBy      int32     `db:"type:varchar(30)"`
 	Deleted        bool
-	Finalfile      string `db:"default('0');type:varchar(3)"`
+	Finalfile      bool `db:"default('0');type:varchar(3)"`
 	Proofreading   bool
+	Team           int32
+	PlaceOrder     bool
 }
 
 func (*Task) TableName() string {

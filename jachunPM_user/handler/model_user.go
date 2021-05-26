@@ -239,7 +239,7 @@ func updateUserView(data *protocol.MSG_USER_updateUserView, in *protocol.Msg) {
 		return
 	}
 	defer func() {
-		session.EndTransaction()
+		session.Rollback()
 		in.WriteErr(err)
 	}()
 	if (len(data.ProductIds) == 0 && len(data.ProjectIds) == 0) || (len(data.UserIds) == 0 && len(data.GroupIds) == 0) {

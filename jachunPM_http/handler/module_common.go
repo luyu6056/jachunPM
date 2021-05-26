@@ -152,48 +152,7 @@ func commonModelFuncs() {
 		return template.HTML(res)
 	}
 	global_Funcs["getValue"] = func(i, key interface{}) interface{} {
-		switch r := i.(type) {
-		case []protocol.HtmlKeyValueStr:
-			k := libraries.I2S(key)
-			for _, v := range r {
-				if v.Key == k {
-					return v.Value
-				}
-			}
-			return nil
-		case []protocol.HtmlKeyValueInterface:
-			k := libraries.I2S(key)
-			for _, v := range r {
-				if v.Key == k {
-					return v.Value
-				}
-			}
-			return nil
-		}
-		r := reflect.ValueOf(i)
-		for r.Kind() == reflect.Ptr {
-			r = r.Elem()
-		}
-		k := reflect.ValueOf(key)
-		if r.Type().Kind() == reflect.Map {
-			value := r.MapIndex(k)
-			if value.Kind() == reflect.Invalid {
-				return nil
-			}
-			return value.Interface()
-		} else if r.Type().Kind() == reflect.Slice {
-			value := r.Index(int(k.Int()))
-			if value.Kind() == reflect.Invalid {
-				return nil
-			}
-			return value.Interface()
-		} else if r.Type().Kind() == reflect.Struct {
-			value := r.FieldByName(libraries.I2S(key))
-			if value.Kind() != reflect.Invalid {
-				return value.Interface()
-			}
-		}
-		return nil
+		return common_getValue(i, key)
 	}
 	global_Funcs["substr"] = func(str string, start, end int) string {
 		return str[start:end]
@@ -743,4 +702,48 @@ func common_fetch(oldData *TemplateData, module, method, varstr string) string {
 	}
 	return "没有找到GET " + path + "方法"
 
+}
+func common_getValue(i, key interface{}) interface{} {
+	switch r := i.(type) {
+	case []protocol.HtmlKeyValueStr:
+		k := libraries.I2S(key)
+		for _, v := range r {
+			if v.Key == k {
+				return v.Value
+			}
+		}
+		return nil
+	case []protocol.HtmlKeyValueInterface:
+		k := libraries.I2S(key)
+		for _, v := range r {
+			if v.Key == k {
+				return v.Value
+			}
+		}
+		return nil
+	}
+	r := reflect.ValueOf(i)
+	for r.Kind() == reflect.Ptr {
+		r = r.Elem()
+	}
+	k := reflect.ValueOf(key)
+	if r.Type().Kind() == reflect.Map {
+		value := r.MapIndex(k)
+		if value.Kind() == reflect.Invalid {
+			return nil
+		}
+		return value.Interface()
+	} else if r.Type().Kind() == reflect.Slice {
+		value := r.Index(int(k.Int()))
+		if value.Kind() == reflect.Invalid {
+			return nil
+		}
+		return value.Interface()
+	} else if r.Type().Kind() == reflect.Struct {
+		value := r.FieldByName(libraries.I2S(key))
+		if value.Kind() != reflect.Invalid {
+			return value.Interface()
+		}
+	}
+	return nil
 }

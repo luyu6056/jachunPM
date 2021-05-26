@@ -1,6 +1,7 @@
 {{template "header.html" .}}
 {{template "kindeditor.html" .}}
 {{js_import (strAdd .Config.common.common.jsRoot "misc/date.js")}}
+{{js_import (strAdd .Config.common.common.jsRoot "upload.js")}}
 <div id='mainContent' class='main-content'>
   <div class='center-block'>
     <div class='main-header'>
@@ -98,13 +99,13 @@
                 <div class="input-group{{if $hasBranch}} has-branch{{end}}">
                   {{html_select (strAdd "products[" $i "]") $.Data.allProducts  $product.Id (strAdd "class='form-control chosen' onchange='loadBranches(this)' data-last='"  $product.Id "'")}}
                   <span class='input-group-addon fix-border'></span>
-                  {{if $hasBranch}}{{html_select (strAdd "branch[" $i "]") (index $.Data.branchGroups $product.Id) $product.Branch (strAdd "class='form-control chosen' onchange=\"loadPlans('#products{" $i "}', this.value)\"")}}{{end}} 
+                  {{if $hasBranch}}{{html_select (strAdd "branch[" $i "]") (index $.Data.branchGroups $product.Id) (index $.Data.project.Branchs $i) (strAdd "class='form-control chosen' onchange=\"loadPlans('#products" $i "', this.value)\"")}}{{end}} 
                 </div>
               </div>
               {{end}}
               <div class='col-sm-4'>
                 <div class='input-group'>
-                  {{html_select (strAdd "products[" (intsum (len $.Data.linkedProducts) 1) "]")  .Data.allProducts ""  "class='form-control chosen' onchange='loadBranches(this)'"}}
+                  {{html_select (strAdd "products[" (len $.Data.linkedProducts) "]")  .Data.allProducts ""  "class='form-control chosen' onchange='loadBranches(this)'"}}
                   <span class='input-group-addon fix-border'></span>
                 </div>
               </div>
@@ -117,7 +118,7 @@
             <div class='row'>
               {{range $i,$product := $.Data.linkedProducts}}
               {{$plans := or (getValue $.Data.productPlans $product.Id) (appendKeyValueStr "0" "")}}
-              <div class="col-sm-4" id="plan{{$i}}">{{html_select (strAdd "plans[" $product.Id "]") $plans $product.Plan "class='form-control chosen'"}}</div>
+              <div class="col-sm-4" id="plan{{$i}}">{{html_select (strAdd "plans[" $product.Id "]") $plans (index $.Data.project.Plans $i) "class='form-control chosen'"}}</div>
               {{end}}
             </div>
           </td>
@@ -126,10 +127,10 @@
           <th>{{.Lang.project.desc}}</th>
           <td colspan='2'>{{html_textarea "desc" (bbcode2html $.Data.project.Desc true false)  "rows='6' class='form-control kindeditor' hidefocus='true'"}}</td>
         </tr>
-         <tr>
+        <!--<tr>
           <th>{{.Lang.common.files}}</th>
           <td colspan='3'>{{fetch . "file" "buildform" "fileCount=1&percent=0.9&filesName=files&labelsName=labels&action=project"}}</td>
-        </tr>
+        </tr>-->
         <tr>
           <th>{{.Lang.project.acl}}</th>
           <td colspan='2'>{{html_radio "acl"  .Lang.project.aclList  $.Data.project.Acl  "onclick='setWhite(this.value);'" "block"}}</td>

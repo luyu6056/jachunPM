@@ -111,11 +111,11 @@
               </div>
               <div class="detail-content">
                 <div class="row row-grid">
-                  {{range $product := .Data.products}}{{range $branch := $product.Branchs}}
+                  {{range $i,$product := .Data.products}}{{$id:=index $.Data.project.Branchs $i}}{{range $branch := $product.Branchs}}{{if eq $branch.Id $id}}
                   <div class="col-xs-6">
-                    {{html_a (helper_createLink "product" "browse"  "productID=" $product.Id "&branch=" $branch.Id)  (strAdd "<i class='icon icon-cube text-muted'></i> " $product.Name  $branch.Name)}}
+                    {{html_a (helper_createLink "product" "browse"  "productID=" $product.Id "&branch=" $branch.Id)  (strAdd "<i class='icon icon-cube text-muted'></i> " $product.Name  "/" $branch.Name)}}
                   </div>
-                  {{end}}{{end}}
+                  {{end}}{{end}}{{end}}
                 </div>
               </div>
             </div>
@@ -123,10 +123,10 @@
               <div class="detail-title"><strong>{{.Lang.project.linkPlan}}</strong></div>
               <div class="detail-content">
                 <div class="row row-grid">
-                  {{range $product := .Data.products}}{{range $planID := $product.Plan}}{{$kvs := index $.Data.planGroups $product.Id}}
+                  {{range $i,$product := .Data.products}}{{$planID := index $.Data.project.Plans $i}}{{$kvs := index $.Data.planGroups $product.Id}}
                   {{if $kvs}}{{range $kv := $kvs}}{{if eq $kv.Key (string $planID)}}
                   <div class="col-xs-12">{{html_a (helper_createLink "productplan" "view"  "planID=" $planID) (strAdd $product.Name "/" $kv.Value)}}</div>
-                  {{end}}{{end}}{{end}}{{end}}{{end}}
+                  {{end}}{{end}}{{end}}{{end}}
                 </div>
               </div>
             </div>

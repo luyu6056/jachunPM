@@ -406,8 +406,14 @@ func (msg *Msg) BeginTransaction() (*MsgDBTransaction, error) {
 			transactionMap.Store(no, transaction)
 			msg.DB.transaction = &MsgDBTransaction{t: transaction, msg: msg, newTransactionNo: no}
 			time.AfterFunc(MsgTimeOut*10*time.Second, func() {
-				transactionMap.Delete(no)
-				msg.DB.transaction.t.EndTransaction()
+				if _, ok := transactionMap.LoadAndDelete(no); ok {
+					out := GET_MSG_COMMON_Transaction_RollBack()
+					out.No = no
+					msg.SendMsgWaitResult(0, out, nil)
+					out.Put()
+					transaction.Rollback()
+					transaction.EndTransaction()
+				}
 
 			})
 		}
@@ -470,43 +476,33 @@ func (t *MsgDBTransaction) Commit() error {
 	if t.msg.DB.transactionNo > 0 {
 		return nil
 	}
-
-	out := GET_MSG_COMMON_Transaction_Commit()
-	out.No = t.newTransactionNo
-	err := t.msg.SendMsgWaitResult(0, out, nil)
-	out.Put()
-	if err == nil {
-		//马上执行commit避免提前EndTransaction
-		if v, ok := transactionMap.LoadAndDelete(t.newTransactionNo); ok {
+	if v, ok := transactionMap.LoadAndDelete(t.newTransactionNo); ok {
+		out := GET_MSG_COMMON_Transaction_Commit()
+		out.No = t.newTransactionNo
+		err := t.msg.SendMsgWaitResult(0, out, nil)
+		out.Put()
+		if err == nil {
 			v.(*mysql.Transaction).Commit()
+			v.(*mysql.Transaction).EndTransaction()
 		}
+		return err
 	}
-
-	return err
+	return nil
 }
 func (t *MsgDBTransaction) Rollback() error {
-	//允许任意节点发出rollback
-	out := GET_MSG_COMMON_Transaction_RollBack()
-	out.No = t.newTransactionNo
-	err := t.msg.SendMsgWaitResult(0, out, nil)
-	out.Put()
-	return err
-}
-func (t *MsgDBTransaction) EndTransaction() {
-	//拦截住no不为0的end
-	if t.msg.DB.transactionNo > 0 {
-		return
-	}
-	t.t.EndTransaction()
-	//并尝试告诉网关 关闭其他可能还存在的事务
-	if _, ok := transactionMap.Load(t.newTransactionNo); ok {
+	if v, ok := transactionMap.LoadAndDelete(t.newTransactionNo); ok {
+		//允许任意节点发出rollback
 		out := GET_MSG_COMMON_Transaction_RollBack()
 		out.No = t.newTransactionNo
-		t.msg.SendMsgWaitResult(0, out, nil)
+		err := t.msg.SendMsgWaitResult(0, out, nil)
 		out.Put()
+		v.(*mysql.Transaction).Rollback()
+		v.(*mysql.Transaction).EndTransaction()
+		return err
 	}
-
+	return nil
 }
+
 func (t *MsgDBTransaction) CommitCallback(f func()) {
 	t.t.CommitCallback(f)
 }
@@ -524,12 +520,14 @@ func msgTransactionCheck(data *MSG_COMMON_Transaction_Check, in *Msg) {
 func msgTransactionCommit(data *MSG_COMMON_Transaction_Commit, in *Msg) {
 	if v, ok := transactionMap.LoadAndDelete(data.No); ok {
 		v.(*mysql.Transaction).Commit()
+		v.(*mysql.Transaction).EndTransaction()
 	}
 }
 
 func msgTransactionRollBack(data *MSG_COMMON_Transaction_RollBack, in *Msg) {
 	if v, ok := transactionMap.LoadAndDelete(data.No); ok {
 		v.(*mysql.Transaction).Rollback()
+		v.(*mysql.Transaction).EndTransaction()
 	}
 }
 func (m *Msg) ActionCreate(objectType string, objectID int32, actionType, comment, extra string, products, projects []int32) (actionID int64, err error) {
@@ -607,7 +605,6 @@ func (m *Msg) ActionLogHistory(actionID int64, oldObj, newObj interface{}) {
 			}
 			var diffString []string
 			if strings.Contains(value, "\n") || strings.Contains(oldValue, "\n") || strings.Contains("name,title,desc,spec,steps,content,digest,verify,report", lowerKey) {
-
 				//text1 = str_replace('&nbsp;', '', trim(text1));
 				//text2 = str_replace('&nbsp;', '', trim(text2));
 				w := strings.Split(oldValue, "\n")

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"jachunPM_project/db"
+	"mysql"
 	"protocol"
 	"strconv"
 	"time"
@@ -97,7 +98,7 @@ func tree_manageChild(data *protocol.MSG_PROJECT_tree_manageChild, in *protocol.
 		in.WriteErr(err)
 		return
 	}
-	defer session.EndTransaction()
+	defer session.Rollback()
 	var ids []int32
 	for _, module := range data.Modules {
 
@@ -211,7 +212,7 @@ func tree_checkUnique(module *protocol.MSG_PROJECT_tree_cache, modules []*protoc
 }
 func tree_updateList(data *protocol.MSG_PROJECT_tree_updateList, in *protocol.Msg) {
 	for _, v := range data.Modules {
-		v.TimeStamp = time.Now().Unix()
+		v.TimeStamp = time.Now()
 	}
 	update, err := HostConn.DB.Table(db.TABLE_MODULE).ReplaceAll(data.Modules)
 	in.WriteErr(err)
@@ -222,7 +223,7 @@ func tree_updateList(data *protocol.MSG_PROJECT_tree_updateList, in *protocol.Ms
 	}
 }
 func tree_delete(data *protocol.MSG_PROJECT_tree_delete, in *protocol.Msg) {
-	_, err := in.DB.Table(db.TABLE_MODULE).Where(map[string]interface{}{"Id": data.Ids}).Update(map[string]interface{}{"Deleted": true, "TimeStamp": time.Now().Unix()})
+	_, err := in.DB.Table(db.TABLE_MODULE).Where(map[string]interface{}{"Id": data.Ids}).Update(map[string]interface{}{"Deleted": true, "TimeStamp": time.Now()})
 	in.WriteErr(err)
 	for _, id := range data.Ids {
 		tree_setCache(id)
@@ -249,6 +250,65 @@ func tree_getPairsByIds(data *protocol.MSG_PROJECT_tree_getPairsByIds, in *proto
 	out := protocol.GET_MSG_PROJECT_tree_getPairsByIds_result()
 	for _, t := range trees {
 		out.List = append(out.List, protocol.HtmlKeyValueStr{strconv.Itoa(int(t.Id)), t.Name})
+	}
+	in.SendResult(out)
+	out.Put()
+}
+func tree_getTaskTreeModules(data *protocol.MSG_PROJECT_tree_getTaskTreeModules, in *protocol.Msg) {
+	out := protocol.GET_MSG_PROJECT_tree_getTaskTreeModules_result()
+	out.ProjectModules = map[int32]int32{}
+
+	//$field = $parent ? 'path' : 'id';
+
+	//默认true if($linkStory){
+	project := HostConn.GetProjectById(data.ProjectID)
+	var modules []*db.Module
+	err := in.DB.Table(db.TABLE_MODULE + " as t1").Field("t1.Path as Path,t1.Id as Id").LeftJoin(db.TABLE_STORY + " as t2").On("t2.Module = t1.Id").Where(map[string]interface{}{"t2.Id": project.Storys, "t1.Deleted": false, "t2.Deleted": false}).Limit(0).Select(&modules)
+	if err != nil {
+		in.WriteErr(err)
+		return
+	}
+	for _, m := range modules {
+		if data.Parent {
+			for _, id := range m.Path {
+				out.ProjectModules[id] = id
+			}
+		} else {
+			out.ProjectModules[m.Id] = m.Id
+		}
+	}
+	if err = in.DB.Table(db.TABLE_MODULE).Field("Path,Id").Where(map[string]interface{}{"Root": data.ProjectID, "Type": "task", "Deleted": false}).Limit(0).Select(&modules); err != nil {
+		in.WriteErr(err)
+		return
+	}
+
+	/* Add task paths of this project.*/
+	for _, m := range modules {
+		if data.Parent {
+			for _, id := range m.Path {
+				out.ProjectModules[id] = id
+			}
+		} else {
+			out.ProjectModules[m.Id] = m.Id
+		}
+	}
+	if err = in.DB.Table(db.TABLE_MODULE + " as t1").Field("t1.Path as Path,t1.Id as Id").LeftJoin(db.TABLE_TASK + " as t2").On("t2.Module = t1.Id").Where(map[string]interface{}{
+		"t2.Module":  []interface{}{mysql.WhereOperatorNE, 0},
+		"t2.Project": data.ProjectID,
+		"t1.Deleted": false, "t2.Deleted": false,
+		"t1.Type": "story",
+	}).Limit(0).Select(&modules); err != nil {
+		in.WriteErr(err)
+		return
+	}
+	for _, m := range modules {
+		if data.Parent {
+			for _, id := range m.Path {
+				out.ProjectModules[id] = id
+			}
+		} else {
+			out.ProjectModules[m.Id] = m.Id
+		}
 	}
 	in.SendResult(out)
 	out.Put()

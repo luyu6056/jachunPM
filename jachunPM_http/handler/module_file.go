@@ -26,6 +26,7 @@ func init() {
 	httpHandlerMap["GET"]["/file/tmpimg"] = get_file_tmpimg
 	httpHandlerMap["GET"]["/file/read"] = get_file_read
 	httpHandlerMap["GET"]["/file/buildform"] = get_file_buildform
+	httpHandlerMap["POST"]["/file/ajaxUploadTmp"] = post_file_ajaxUploadTmp
 }
 
 func post_file_ajaxPasteImage(data *TemplateData) (err error) {
@@ -286,4 +287,25 @@ func fileFuncs() {
 		return template.HTML("")
 	}
 
+}
+func post_file_ajaxUploadTmp(data *TemplateData) (err error) {
+	blockSize, _ := strconv.Atoi(data.ws.Query("blockSize"))
+	index, _ := strconv.Atoi(data.ws.Query("index"))
+	if len(data.ws.Body()) > blockSize {
+		libraries.DebugLog("上传的文件%d大于blockSize%d", len(data.ws.Body()), blockSize)
+		return errors.New("Error blockSize")
+	}
+	out := protocol.GET_MSG_FILE_uploadTmp()
+	out.BlockSize = blockSize
+	out.Data = append(out.Data, data.ws.Body()...)
+	out.Index = index
+	out.Name = data.ws.Query("name")
+	err = data.SendMsgWaitResultToDefault(out, nil)
+	out.Put()
+	if err != nil {
+		data.ws.WriteString(err.Error())
+	} else {
+		data.ws.WriteString("")
+	}
+	return nil
 }

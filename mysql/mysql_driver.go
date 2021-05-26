@@ -534,7 +534,6 @@ func (mysql *Mysql_Conn) Exec(sql []byte) (lastInsertId int64, rowsAffected int6
 	}
 	rowsAffected, lastInsertId, _, errmsg, err := mysql.readmsg()
 	if errmsg != "" {
-		DEBUG(mysql.readmsg())
 		if strings.Contains(errmsg, "1927-Connection was killed") {
 			err = errors.New("EOF")
 		} else { //err报文不影响mysql的status,在这里重新包装err

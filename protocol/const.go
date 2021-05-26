@@ -3,6 +3,7 @@ package protocol
 import (
 	"libraries"
 	"sync"
+	"time"
 )
 
 const (
@@ -23,6 +24,7 @@ const (
 	SessionKeepLoginExpires = 7 * 86400 //keepLogin的session
 )
 
+var ZEROTIME, _ = time.Parse("2006-01-02", "2000-01-01")
 var buf_pool = sync.Pool{New: func() interface{} {
 	return new(libraries.MsgBuffer)
 }}
@@ -51,6 +53,24 @@ const (
 	OaServerNo      = 7
 	MailServerNo    = 8
 )
+
+var serverNoToStr = map[ServerNo]string{
+	HostServerNo:    "common",
+	HttpServerNo:    "http",
+	LogServerNo:     "log",
+	UserServerNo:    "user",
+	ProjectServerNo: "project",
+	TestServerNo:    "test",
+	OaServerNo:      "oa",
+	MailServerNo:    "mail",
+}
+
+func (n ServerNo) String() string {
+	if n > 127 {
+		return serverNoToStr[n-127] + "_cache"
+	}
+	return serverNoToStr[n]
+}
 
 type CountryNo string
 
