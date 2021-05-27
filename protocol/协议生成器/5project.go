@@ -27,7 +27,7 @@ type MSG_PROJECT_product_cache struct {
 	Acl         string
 	Whitelist   []int32
 	CreatedBy   int32
-	CreatedDate int64
+	CreatedDate time.Time
 	Order       int32
 	Deleted     bool
 	TimeStamp   time.Time

@@ -1529,6 +1529,15 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 								if sql_str[1] != timestr {
 									is_change = 19
 									sql_str[1] = timestr
+									if sc, _ := Preg_match_result(`default\((\d+)\)`, tag, 1); len(sc) > 0 {
+
+									} else if sc, _ := Preg_match_result(`default\('([^']*)'\)`, tag, 1); len(sc) > 0 {
+
+									} else {
+										//重新赋予初始值
+										default_str = "current_timestamp()"
+									}
+
 								}
 								if Preg_match(`^\d{4}-\d{2}-\d{2}$`, default_str) {
 									default_str += " 00:00:00"
@@ -1619,6 +1628,7 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 							}
 							sql_str[0] = "modify column `" + field_str + "`"
 							sql = append(sql, strings.Join(sql_str, " "))
+							//DEBUG(strings.Join(sql_str, " "))
 						}
 					} else {
 						var after string

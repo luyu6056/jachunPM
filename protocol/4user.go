@@ -52,6 +52,9 @@ const (
 	CMD_MSG_USER_Group_getPairs_result = -820050940
 	CMD_MSG_USER_team_getByTypeUid = 468566788
 	CMD_MSG_USER_team_getByTypeUid_result = 769103364
+	CMD_MSG_USER_Userquery_info = 775618820
+	CMD_MSG_USER_user_getUserqueryByWhere = -1330589692
+	CMD_MSG_USER_user_getUserqueryByWhere_result = 1709400580
 )
 
 type MSG_USER_GET_LoginSalt struct {
@@ -2820,6 +2823,178 @@ func (data *MSG_USER_team_getByTypeUid_result) getQueryResultID() uint32 {
 	return data.QueryResultID
 }
 func (data *MSG_USER_team_getByTypeUid_result) setQueryResultID(id uint32) {
+	data.QueryResultID = id
+}
+
+type MSG_USER_Userquery_info struct {
+	Id int32
+	Uid int32
+	Module string
+	Title string
+	Form string
+	Sql string
+	Shortcut bool
+}
+
+var pool_MSG_USER_Userquery_info = sync.Pool{New: func() interface{} { return &MSG_USER_Userquery_info{} }}
+
+func GET_MSG_USER_Userquery_info() *MSG_USER_Userquery_info {
+	return pool_MSG_USER_Userquery_info.Get().(*MSG_USER_Userquery_info)
+}
+
+func (data *MSG_USER_Userquery_info) cmd() int32 {
+	return CMD_MSG_USER_Userquery_info
+}
+
+func (data *MSG_USER_Userquery_info) Put() {
+	data.Id = 0
+	data.Uid = 0
+	data.Module = ``
+	data.Title = ``
+	data.Form = ``
+	data.Sql = ``
+	data.Shortcut = false
+	pool_MSG_USER_Userquery_info.Put(data)
+}
+func (data *MSG_USER_Userquery_info) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_Userquery_info,buf)
+	WRITE_MSG_USER_Userquery_info(data, buf)
+}
+
+func WRITE_MSG_USER_Userquery_info(data *MSG_USER_Userquery_info, buf *libraries.MsgBuffer) {
+	WRITE_int32(data.Id, buf)
+	WRITE_int32(data.Uid, buf)
+	WRITE_string(data.Module, buf)
+	WRITE_string(data.Title, buf)
+	WRITE_string(data.Form, buf)
+	WRITE_string(data.Sql, buf)
+	WRITE_bool(data.Shortcut, buf)
+}
+
+func READ_MSG_USER_Userquery_info(buf *libraries.MsgBuffer) *MSG_USER_Userquery_info {
+	data := pool_MSG_USER_Userquery_info.Get().(*MSG_USER_Userquery_info)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_Userquery_info) read(buf *libraries.MsgBuffer) {
+	data.Id = READ_int32(buf)
+	data.Uid = READ_int32(buf)
+	data.Module = READ_string(buf)
+	data.Title = READ_string(buf)
+	data.Form = READ_string(buf)
+	data.Sql = READ_string(buf)
+	data.Shortcut = READ_bool(buf)
+
+}
+
+type MSG_USER_user_getUserqueryByWhere struct {
+	QueryID uint32
+	Where map[string]interface{}
+}
+
+var pool_MSG_USER_user_getUserqueryByWhere = sync.Pool{New: func() interface{} { return &MSG_USER_user_getUserqueryByWhere{} }}
+
+func GET_MSG_USER_user_getUserqueryByWhere() *MSG_USER_user_getUserqueryByWhere {
+	return pool_MSG_USER_user_getUserqueryByWhere.Get().(*MSG_USER_user_getUserqueryByWhere)
+}
+
+func (data *MSG_USER_user_getUserqueryByWhere) cmd() int32 {
+	return CMD_MSG_USER_user_getUserqueryByWhere
+}
+
+func (data *MSG_USER_user_getUserqueryByWhere) Put() {
+	data.QueryID = 0
+	data.Where = nil
+	pool_MSG_USER_user_getUserqueryByWhere.Put(data)
+}
+func (data *MSG_USER_user_getUserqueryByWhere) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_user_getUserqueryByWhere,buf)
+	WRITE_MSG_USER_user_getUserqueryByWhere(data, buf)
+}
+
+func WRITE_MSG_USER_user_getUserqueryByWhere(data *MSG_USER_user_getUserqueryByWhere, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryID, buf)
+	WRITE_map(data.Where,buf)
+}
+
+func READ_MSG_USER_user_getUserqueryByWhere(buf *libraries.MsgBuffer) *MSG_USER_user_getUserqueryByWhere {
+	data := pool_MSG_USER_user_getUserqueryByWhere.Get().(*MSG_USER_user_getUserqueryByWhere)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_user_getUserqueryByWhere) read(buf *libraries.MsgBuffer) {
+	data.QueryID = READ_uint32(buf)
+	READ_map(&data.Where,buf)
+
+}
+func (data *MSG_USER_user_getUserqueryByWhere) getQueryID() uint32 {
+	return data.QueryID
+}
+func (data *MSG_USER_user_getUserqueryByWhere) setQueryID(id uint32) {
+	data.QueryID = id
+}
+
+type MSG_USER_user_getUserqueryByWhere_result struct {
+	QueryResultID uint32
+	List []*MSG_USER_Userquery_info
+}
+
+var pool_MSG_USER_user_getUserqueryByWhere_result = sync.Pool{New: func() interface{} { return &MSG_USER_user_getUserqueryByWhere_result{} }}
+
+func GET_MSG_USER_user_getUserqueryByWhere_result() *MSG_USER_user_getUserqueryByWhere_result {
+	return pool_MSG_USER_user_getUserqueryByWhere_result.Get().(*MSG_USER_user_getUserqueryByWhere_result)
+}
+
+func (data *MSG_USER_user_getUserqueryByWhere_result) cmd() int32 {
+	return CMD_MSG_USER_user_getUserqueryByWhere_result
+}
+
+func (data *MSG_USER_user_getUserqueryByWhere_result) Put() {
+	data.QueryResultID = 0
+	for _,v := range data.List {
+		v.Put()
+	}
+	data.List = data.List[:0]
+	pool_MSG_USER_user_getUserqueryByWhere_result.Put(data)
+}
+func (data *MSG_USER_user_getUserqueryByWhere_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_user_getUserqueryByWhere_result,buf)
+	WRITE_MSG_USER_user_getUserqueryByWhere_result(data, buf)
+}
+
+func WRITE_MSG_USER_user_getUserqueryByWhere_result(data *MSG_USER_user_getUserqueryByWhere_result, buf *libraries.MsgBuffer) {
+	WRITE_uint32(data.QueryResultID, buf)
+	WRITE_int32(int32(len(data.List)), buf)
+	for _, v := range data.List{
+		WRITE_MSG_USER_Userquery_info(v, buf)
+	}
+}
+
+func READ_MSG_USER_user_getUserqueryByWhere_result(buf *libraries.MsgBuffer) *MSG_USER_user_getUserqueryByWhere_result {
+	data := pool_MSG_USER_user_getUserqueryByWhere_result.Get().(*MSG_USER_user_getUserqueryByWhere_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_user_getUserqueryByWhere_result) read(buf *libraries.MsgBuffer) {
+	data.QueryResultID = READ_uint32(buf)
+	List_len := int(READ_int32(buf))
+	if List_len>cap(data.List){
+		data.List= make([]*MSG_USER_Userquery_info, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
+	for i := 0; i < List_len; i++ {
+		data.List[i] = READ_MSG_USER_Userquery_info(buf)
+	}
+
+}
+func (data *MSG_USER_user_getUserqueryByWhere_result) getQueryResultID() uint32 {
+	return data.QueryResultID
+}
+func (data *MSG_USER_user_getUserqueryByWhere_result) setQueryResultID(id uint32) {
 	data.QueryResultID = id
 }
 

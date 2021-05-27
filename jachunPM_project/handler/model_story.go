@@ -584,7 +584,7 @@ func story_getById(id int32, version int16) (story *protocol.MSG_PROJECT_story, 
 		return
 	}
 	var projects []*db.Project
-	if err = HostConn.DB.Table(db.TABLE_PROJECT).Field("Id").Where("Story=?", story.Id).Order("`order` desc").Select(&projects); err != nil {
+	if err = HostConn.DB.Table(db.TABLE_PROJECT).Field("Id").Where("Story=?", story.Id).Order("order desc").Select(&projects); err != nil {
 		return
 	}
 	for _, p := range projects {

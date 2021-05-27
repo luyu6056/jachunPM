@@ -55,7 +55,7 @@ type sql_buffer struct {
 	limit             MsgBuffer
 	limit_prepare_arg []interface{}
 	lock              MsgBuffer
-	join              MsgBuffer
+	joinTable         MsgBuffer
 	on                MsgBuffer
 	totle_count       int
 	attr              MsgBuffer
@@ -83,13 +83,14 @@ func (this *Mysql_Build) Reset(db *MysqlDB) {
 	this.sql.where_prepare_arg = this.sql.where_prepare_arg[:0]
 	this.sql.attr.Reset()
 	this.sql.group.Reset()
-	this.sql.join.Reset()
+	this.sql.joinTable.Reset()
 	this.sql.limit.Reset()
 	this.sql.limit_prepare_arg = this.sql.limit_prepare_arg[:0]
 	this.sql.lock.Reset()
 	this.sql.on.Reset()
 	this.sql.order.Reset()
 	this.sql.table.Reset()
+	this.sql.table.WriteByte('`')
 	this.sql.table.Write(Tablepre)
 	this.sql.field.WriteByte(42)
 	this.sql.totle_count = -1
@@ -105,18 +106,30 @@ var buildPool = sync.Pool{New: func() interface{} {
 	return New_mysqlBuild()
 }}
 
-func (t *Transaction) Table(tablename string) *Mysql_Build {
+type Mysql_Table struct {
+	*Mysql_Build
+}
+
+func (t *Transaction) Table(tablename string) *Mysql_Table {
 	build := buildPool.Get().(*Mysql_Build)
 	build.Reset(t.conn.db)
 	build.Transaction = t
 	build.sql.table.WriteString(tablename)
-	return build
+	build.sql.table.WriteByte('`')
+	return &Mysql_Table{build}
 }
-func (db *MysqlDB) Table(tablename string) *Mysql_Build {
+func (db *MysqlDB) Table(tablename string) *Mysql_Table {
 	build := buildPool.Get().(*Mysql_Build)
 	build.Reset(db)
 	build.sql.table.WriteString(tablename)
-	return build
+	build.sql.table.WriteByte('`')
+	return &Mysql_Table{build}
+}
+func (t *Mysql_Table) Alias(as string) *Mysql_Build {
+	t.sql.table.WriteString(" as `")
+	t.sql.table.WriteString(key_srp.Replace(as))
+	t.sql.table.WriteByte('`')
+	return t.Mysql_Build
 }
 func (this *Mysql_Build) SetErr(err error) {
 	if this.err == nil {
@@ -130,17 +143,27 @@ func (this *Mysql_Build) Prepare() *Mysql_Build {
 	return this
 }
 
-//where Join on 多表联合查询,暂达成双表联查
-func (this *Mysql_Build) LeftJoin(t string) *Mysql_Build {
-	if this.err == nil {
-		this.sql.join.Write([]byte{32, 108, 101, 102, 116, 32, 106, 111, 105, 110, 32})
-		this.sql.join.Write(Tablepre)
-		this.sql.join.WriteString(t)
-	}
-
-	return this
+type Mysql_JoinTable struct {
+	*Mysql_Build
 }
 
+//where Join on 多表联合查询,暂达成双表联查
+func (this *Mysql_Build) LeftJoin(t string) *Mysql_JoinTable {
+	if this.err == nil {
+		this.sql.joinTable.Write([]byte{32, 108, 101, 102, 116, 32, 106, 111, 105, 110, 32, 96})
+		this.sql.joinTable.Write(Tablepre)
+		this.sql.joinTable.WriteString(t)
+		this.sql.joinTable.WriteByte('`')
+	}
+
+	return &Mysql_JoinTable{this}
+}
+func (t *Mysql_JoinTable) Alias(as string) *Mysql_Build {
+	t.sql.joinTable.WriteString(" as `")
+	t.sql.joinTable.WriteString(key_srp.Replace(as))
+	t.sql.joinTable.WriteByte('`')
+	return t.Mysql_Build
+}
 func (this *Mysql_Build) Lock(lock bool) *Mysql_Build {
 	if lock && this.err == nil {
 		this.sql.lock.WriteString(` FOR UPDATE`)
@@ -671,9 +694,21 @@ func (this *Mysql_Build) Field(field string) *Mysql_Build {
 func (this *Mysql_Build) Order(order string) *Mysql_Build {
 	if order != `` && this.err == nil {
 		order = strings.Replace(strings.ToLower(order), `order by`, ``, -1)
-		order = strings.Replace(order, "_", " ", 1)
+		//为项目管理系统添加的
+		var orders []string
+		for _, o := range strings.Split(order, ",") {
+			o = strings.Trim(o, " ")
+			if s := strings.Split(o, "_"); len(s) == 2 {
+				orders = append(orders, "`"+s[0]+"` "+s[1])
+			} else if s := strings.Split(o, " "); len(s) == 2 {
+				orders = append(orders, "`"+s[0]+"` "+s[1])
+			} else {
+				orders = append(orders, "`"+o+"`")
+			}
+		}
+
 		this.sql.order.Write([]byte{32, 79, 82, 68, 69, 82, 32, 66, 89, 32})
-		this.sql.order.WriteString(order)
+		this.sql.order.WriteString(strings.Join(orders, ","))
 	}
 	return this
 }
@@ -762,7 +797,7 @@ func (this *Mysql_Build) Select(s interface{}) (err error) {
 	this.buffer.Write(this.sql.field.Bytes())
 	this.buffer.Write([]byte{32, 102, 114, 111, 109, 32})
 	this.buffer.Write(this.sql.table.Bytes())
-	this.buffer.Write(this.sql.join.Bytes())
+	this.buffer.Write(this.sql.joinTable.Bytes())
 	this.buffer.Write(this.sql.on.Bytes())
 	this.buffer.Write(this.sql.where.Bytes())
 	for _, v := range this.sql.where_prepare_arg {
@@ -798,7 +833,7 @@ func (this *Mysql_Build) SelectKey(key string) (map[string]map[string]string, er
 	this.buffer.Write(this.sql.field.Bytes())
 	this.buffer.Write([]byte{32, 102, 114, 111, 109, 32})
 	this.buffer.Write(this.sql.table.Bytes())
-	this.buffer.Write(this.sql.join.Bytes())
+	this.buffer.Write(this.sql.joinTable.Bytes())
 	this.buffer.Write(this.sql.on.Bytes())
 	this.buffer.Write(this.sql.where.Bytes())
 	for _, v := range this.sql.where_prepare_arg {
@@ -1274,7 +1309,7 @@ func (this *Mysql_Build) Find(s interface{}) (err error) {
 	this.buffer.Write(this.sql.field.Bytes())
 	this.buffer.Write([]byte{32, 102, 114, 111, 109, 32})
 	this.buffer.Write(this.sql.table.Bytes())
-	this.buffer.Write(this.sql.join.Bytes())
+	this.buffer.Write(this.sql.joinTable.Bytes())
 	this.buffer.Write(this.sql.on.Bytes())
 	this.buffer.Write(this.sql.where.Bytes())
 	for _, v := range this.sql.where_prepare_arg {
@@ -1303,7 +1338,7 @@ func (this *Mysql_Build) FindMap() (m map[string]string, err error) {
 	this.buffer.Write(this.sql.field.Bytes())
 	this.buffer.Write([]byte{32, 102, 114, 111, 109, 32})
 	this.buffer.Write(this.sql.table.Bytes())
-	this.buffer.Write(this.sql.join.Bytes())
+	this.buffer.Write(this.sql.joinTable.Bytes())
 	this.buffer.Write(this.sql.on.Bytes())
 	this.buffer.Write(this.sql.where.Bytes())
 	for _, v := range this.sql.where_prepare_arg {

@@ -607,6 +607,7 @@ func (client *RpcClient) GetTreeById(moduleID int32) (res *MSG_PROJECT_tree_cach
 func (client *RpcClient) GetProductById(productID int32) (res *MSG_PROJECT_product_cache) {
 	err := client.CacheGet(ProjectServerNo, PATH_PROJECT_PRODUCT_CACHE, strconv.Itoa(int(productID)), &res)
 	if err != nil {
+
 		libraries.DebugLog("获取Product缓存失败%+v", err)
 	}
 	return
@@ -617,6 +618,7 @@ func (client *RpcClient) SetTickHand(f func(time.Time)) {
 func (client *RpcClient) GetProjectById(id int32) (res *MSG_PROJECT_project_cache) {
 	err := client.CacheGet(ProjectServerNo, PATH_PROJECT_PROJECT_CACHE, strconv.Itoa(int(id)), &res)
 	if err != nil {
+
 		libraries.DebugLog("获取project缓存失败%+v", err)
 	}
 	return

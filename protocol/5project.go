@@ -217,7 +217,7 @@ type MSG_PROJECT_product_cache struct {
 	Acl string
 	Whitelist []int32
 	CreatedBy int32
-	CreatedDate int64
+	CreatedDate time.Time
 	Order int32
 	Deleted bool
 	TimeStamp time.Time
@@ -250,7 +250,7 @@ func (data *MSG_PROJECT_product_cache) Put() {
 	data.Acl = ``
 	data.Whitelist = data.Whitelist[:0]
 	data.CreatedBy = 0
-	data.CreatedDate = 0
+	data.CreatedDate = time.Unix(0,0)
 	data.Order = 0
 	data.Deleted = false
 	data.TimeStamp = time.Unix(0,0)
@@ -290,7 +290,7 @@ func WRITE_MSG_PROJECT_product_cache(data *MSG_PROJECT_product_cache, buf *libra
 		WRITE_int32(v, buf)
 	}
 	WRITE_int32(data.CreatedBy, buf)
-	WRITE_int64(data.CreatedDate, buf)
+	WRITE_int64(data.CreatedDate.UnixNano(), buf)
 	WRITE_int32(data.Order, buf)
 	WRITE_bool(data.Deleted, buf)
 	WRITE_int64(data.TimeStamp.UnixNano(), buf)
@@ -346,7 +346,7 @@ func (data *MSG_PROJECT_product_cache) read(buf *libraries.MsgBuffer) {
 		data.Whitelist[i] = READ_int32(buf)
 	}
 	data.CreatedBy = READ_int32(buf)
-	data.CreatedDate = READ_int64(buf)
+	data.CreatedDate = time.Unix(0, READ_int64(buf))
 	data.Order = READ_int32(buf)
 	data.Deleted = READ_bool(buf)
 	data.TimeStamp = time.Unix(0, READ_int64(buf))

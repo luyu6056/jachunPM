@@ -9,7 +9,7 @@
     {{html_a (helper_createLink "project" "all"  "status=suspended&projectID=" .Data.project.Id "&orderBy=" .Data.orderBy "&productID=" .Data.productID) (strAdd "<span class='text'>" (getValue .Lang.project.statusList "suspended") "</span>")  "" "class='btn btn-link' id='suspendedTab'"}}
     {{html_a (helper_createLink "project" "all"  "status=closed&projectID=" .Data.project.Id "&orderBy=" .Data.orderBy "&productID=" .Data.productID) (strAdd "<span class='text'>" (getValue .Lang.project.statusList "closed") "</span>")  "" "class='btn btn-link' id='closedTab'"}}
     <div class='input-control space w-180px'>
-      {{html_select "product"  .Data.products  .Data.productID  (strAdd "class='chosen form-control' onchange='byProduct(this.value, " .Data.projectID ", \"" .Data.status "\"')")}}
+      {{html_select "product"  .Data.products  .Data.productID  (strAdd "class='chosen form-control' onchange='byProduct(this.value, " .Data.projectID ", \"" .Data.status "\")'")}}
     </div>
   </div>
   <div class='btn-toolbar pull-right'>
@@ -40,7 +40,7 @@
           <th class='w-70px'>{{.Lang.project.totalLeft}}</th>
           <th class='w-150px'>{{.Lang.project.progress}}</th>
           {{if $canOrder}}
-          <th class='w-60px sort-default'>{{common_printOrderLink . "order"  .Data.orderBy  $vars  .Lang.project.updateOrder}}</th>
+          <th class='w-100px sort-default'>{{common_printOrderLink . "order"  .Data.orderBy  $vars  .Lang.project.updateOrder}}</th>
           {{end}}
         </tr>
       </thead>

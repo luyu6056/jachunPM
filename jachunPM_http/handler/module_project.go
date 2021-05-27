@@ -1582,7 +1582,7 @@ func get_project_delete(data *TemplateData) (err error) {
 	return nil
 }
 func get_project_task(data *TemplateData) (err error) {
-	status := data.ws.Query("status")
+	status := data.ws.Query("type")
 	if status == "" {
 		status = "unclosed"
 	}
@@ -1672,6 +1672,7 @@ func get_project_task(data *TemplateData) (err error) {
 			return
 		}
 		data.Data["tasks"] = result.List
+		data.Page.Total = result.Total
 		out.Put()
 		defer result.Put()
 	}
@@ -1711,10 +1712,16 @@ func get_project_task(data *TemplateData) (err error) {
 	data.Data["projectID"] = projectID
 	data.Data["project"] = project
 	data.Data["productID"] = productID
+	if productID > 0 {
+		data.Data["product"] = HostConn.GetProductById(int32(productID))
+	}
 	if data.Data["modules"], err = tree_getTaskOptionMenu(project.Id, 0, 0); err != nil {
 		return
 	}
 	data.Data["moduleID"] = moduleID
+	if moduleID > 0 {
+		data.Data["module"] = HostConn.GetTreeById(int32(moduleID))
+	}
 	if data.Data["moduleTree"], err = tree_getTaskTreeMenu(data, int32(projectID), int32(productID), 0, tree_createTaskLink); err != nil {
 		return
 	}
@@ -1741,14 +1748,23 @@ func get_project_task(data *TemplateData) (err error) {
 		data.Data["useDatatable"] = false
 		cellMode = "table"
 	}
-	data.Data["customFields"] = datatable_getSetting(data, "project", "task")
+	customFields := datatable_getSetting(data, "project", "task")
+	if project.Type == "ops" {
+		for i := len(customFields) - 1; i >= 0; i-- {
+			if customFields[i].Id == "story" {
+				customFields = append(customFields[:i], customFields[i+1:]...)
+			}
+		}
+	}
+
+	data.Data["customFields"] = customFields
 	data.Data["widths"] = datatable_setFixedFieldWidth(data.Data["customFields"].([]*config.ConfigDatatable))
 	//分段渲染
 	buf := bufpool.Get().(*libraries.MsgBuffer)
 	taskCellHtml := ""
 	n := 0
 	outHtml := true
-	var taskhtml []string
+	taskhtml := []string{}
 	for _, task := range data.Data["tasks"].([]*protocol.MSG_PROJECT_TASK) {
 		n++
 		buf.WriteString("<tr data-id='")
@@ -1756,11 +1772,11 @@ func get_project_task(data *TemplateData) (err error) {
 		buf.WriteString("' data-status='")
 		buf.WriteString(task.Status)
 		buf.WriteString("' data-estimate='")
-		buf.WriteString(fmt.Sprintf("%.2f", task.Estimate))
+		buf.WriteString(strconv.Itoa(int(task.Estimate)))
 		buf.WriteString("' data-consumed='")
-		buf.WriteString(fmt.Sprintf("%.2f", task.Consumed))
+		buf.WriteString(strconv.Itoa(int(task.Consumed)))
 		buf.WriteString("' data-left='")
-		buf.WriteString(fmt.Sprintf("%.2f", task.Left))
+		buf.WriteString(strconv.Itoa(int(task.Left)))
 		buf.WriteString("'>")
 		for _, field := range data.Data["customFields"].([]*config.ConfigDatatable) {
 			buf.WriteString(task_printCell(data, field, task, users, browseType, branchGroups, modulePairs, cellMode, false, 0))
@@ -1785,11 +1801,11 @@ func get_project_task(data *TemplateData) (err error) {
 				buf.WriteString("' data-status='")
 				buf.WriteString(child.Status)
 				buf.WriteString("' data-estimate='")
-				buf.WriteString(fmt.Sprintf("%0.2f", child.Estimate))
+				buf.WriteString(strconv.Itoa(int(child.Estimate)))
 				buf.WriteString("' data-consumed='")
-				buf.WriteString(fmt.Sprintf("%0.2f", child.Consumed))
+				buf.WriteString(strconv.Itoa(int(child.Consumed)))
 				buf.WriteString("' data-left='")
-				buf.WriteString(fmt.Sprintf("%0.2f", child.Left))
+				buf.WriteString(strconv.Itoa(int(child.Left)))
 				buf.WriteString("'>\r\n")
 				for _, field := range data.Data["customFields"].([]*config.ConfigDatatable) {
 					end_flag1 := 0
@@ -1817,11 +1833,11 @@ func get_project_task(data *TemplateData) (err error) {
 						buf.WriteString("' data-status='")
 						buf.WriteString(grandchild.Status)
 						buf.WriteString("' data-estimate='")
-						buf.WriteString(fmt.Sprintf("%0.2f", grandchild.Estimate))
+						buf.WriteString(strconv.Itoa(int(grandchild.Estimate)))
 						buf.WriteString("' data-consumed='")
-						buf.WriteString(fmt.Sprintf("%0.2f", grandchild.Consumed))
+						buf.WriteString(strconv.Itoa(int(grandchild.Consumed)))
 						buf.WriteString("' data-left='")
-						buf.WriteString(fmt.Sprintf("%0.2f", grandchild.Left))
+						buf.WriteString(strconv.Itoa(int(grandchild.Left)))
 						buf.WriteString("'>\r\n")
 						for _, field := range data.Data["customFields"].([]*config.ConfigDatatable) {
 							end_flag := 0
@@ -1856,7 +1872,7 @@ func get_project_task(data *TemplateData) (err error) {
 	bufpool.Put(buf)
 	return nil
 }
-func project_summary(data *TemplateData, tasks []*protocol.MSG_PROJECT_TASK) string {
+func project_summary(data *TemplateData, tasks []*protocol.MSG_PROJECT_TASK) template.HTML {
 	var taskSum, statusWait, statusDone, statusDoing, statusClosed, statusCancel, statusPause int
 	var totalEstimate, totalConsumed, totalLeft float64
 
@@ -1882,5 +1898,5 @@ func project_summary(data *TemplateData, tasks []*protocol.MSG_PROJECT_TASK) str
 		taskSum++
 	}
 
-	return fmt.Sprintf(data.Lang["project"]["taskSummary"].(string), taskSum, statusWait, statusDoing, totalEstimate, math.Round(totalConsumed*10)/10, math.Round(totalLeft*10)/10)
+	return template.HTML(fmt.Sprintf(data.Lang["project"]["taskSummary"].(string), taskSum, statusWait, statusDoing, totalEstimate, math.Round(totalConsumed*10)/10, math.Round(totalLeft*10)/10))
 }

@@ -91,10 +91,10 @@ type Product struct {
 	PO          int32
 	QD          int32
 	RD          int32
-	Acl         string  `db:"type:enum('open','private','custom')"`
-	Whitelist   []int32 `db:"type:tinytext"`
+	Acl         string `db:"type:enum('open','private','custom')"`
+	Whitelist   []int32
 	CreatedBy   int32
-	CreatedDate int64
+	CreatedDate time.Time
 	Order       int32
 	Deleted     bool
 	TimeStamp   time.Time `db:"default(current_timestamp());extra('on update current_timestamp()')"`

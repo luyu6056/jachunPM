@@ -27,7 +27,7 @@ func HandleTick(t time.Time) {
 		if err != nil {
 			panic("检查module失败" + err.Error())
 		}
-		err = HostConn.DB.Table(db.TABLE_BRANCH).Order("`Order` desc,id desc").Limit(0).Select(&branchs)
+		err = HostConn.DB.Table(db.TABLE_BRANCH).Order("Order desc,id desc").Limit(0).Select(&branchs)
 		if err != nil {
 			panic("检查branch失败" + err.Error())
 		}

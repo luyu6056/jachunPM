@@ -99,7 +99,7 @@ func product_setCache(id int32) {
 	HostConn.DB.Table(db.TABLE_PRODUCT).Prepare().Where("Id=?", id).Find(&product)
 	if product.Id != 0 {
 		//检查branch分支
-		HostConn.DB.Table(db.TABLE_BRANCH).Prepare().Where("Product=?", id).Order("`Order` asc,Id asc").Limit(0).Select(&product.Branchs)
+		HostConn.DB.Table(db.TABLE_BRANCH).Prepare().Where("Product=?", id).Order("Order asc,Id asc").Limit(0).Select(&product.Branchs)
 		var branchIds = make([]int32, len(product.Branchs))
 		matchBranch := true
 		for k, b := range product.Branchs {
@@ -116,7 +116,7 @@ func product_setCache(id int32) {
 		}
 
 		//检查plan计划
-		res, _ := HostConn.DB.Table(db.TABLE_PRODUCTPLAN).Prepare().Field("Id").Where("Product=?", id).Limit(0).Order("`Order` asc,Id asc").SelectMap()
+		res, _ := HostConn.DB.Table(db.TABLE_PRODUCTPLAN).Prepare().Field("Id").Where("Product=?", id).Limit(0).Order("Order asc,Id asc").SelectMap()
 		var planIds = make([]int32, len(res))
 		matchPlan := true
 		for k, v := range res {

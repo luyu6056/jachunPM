@@ -775,4 +775,257 @@ func configInit(local protocol.CountryNo) {
 	for k, v := range Lang[local]["action"]["label"].(map[string]interface{}) {
 		Config[local]["action"]["label"][k] = v
 	}
+
+	Config[local]["task"] = make(map[string]map[string]interface{})
+	Config[local]["task"]["common"] = map[string]interface{}{
+		"batchCreate": 5,
+	}
+	Config[local]["task"]["create"] = map[string]interface{}{
+		"requiredFields": []string{"name", "type"},
+	}
+	Config[local]["task"]["edit"] = map[string]interface{}{
+		"requiredFields": Config[local]["task"]["create"]["requiredFields"].([]string),
+	}
+
+	Config[local]["task"]["finish"] = map[string]interface{}{
+		"requiredFields": []string{"consumed"},
+	}
+	Config[local]["task"]["activate"] = map[string]interface{}{
+		"requiredFields": []string{"left"},
+	}
+
+	Config[local]["task"]["editor"] = map[string]interface{}{
+		"create":      map[string]interface{}{"id": []string{"desc"}, "tools": "simpleTools"},
+		"edit":        map[string]interface{}{"id": []string{"desc", "comment"}, "tools": "simpleTools"},
+		"view":        map[string]interface{}{"id": []string{"comment", "lastComment"}, "tools": "simpleTools"},
+		"assignto":    map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
+		"start":       map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
+		"restart":     map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
+		"finish":      map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
+		"close":       map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
+		"activate":    map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
+		"cancel":      map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
+		"pause":       map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
+		"finishall":   map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
+		"batchcreate": map[string]interface{}{"id": []string{"desc0", "desc1", "desc2", "desc3", "desc4"}, "tools": "simpleTools"},
+	}
+	Config[local]["task"]["common"]["exportFields"] = []string{"id", "project", "module", "story", "name", "desc", "type", "pri,estStarted", "realStarted", "deadline", "status,estimate", "consumed", "left", "mailto", "progress", "openedBy", "openedDate", "assignedTo", "assignedDate", "finishedBy", "proofreading", "finishedDate", "canceledBy", "canceledDate", "closedBy", "closedDate", "closedReason", "lastEditedBy", "lastEditedDate", "files"}
+
+	Config[local]["task"]["common"]["customCreateFields"] = []string{"story", "estStarted", "deadline", "mailto", "pri", "estimate"}
+	Config[local]["task"]["common"]["customBatchCreateFields"] = []string{"module", "story", "assignedTo", "estimate", "estStarted", "deadline", "desc", "pri"}
+	Config[local]["task"]["common"]["customBatchEditFields"] = []string{"module", "assignedTo", "status", "pri", "estimate", "record", "left", "estStarted", "deadline", "finishedBy", "canceledBy", "closedBy", "closedReason"}
+
+	Config[local]["task"]["custom"] = map[string]interface{}{
+		"createFields":      Config[local]["task"]["common"]["customCreateFields"],
+		"batchCreateFields": []string{"module", "story", "assignedTo", "estimate", "desc", "pri"},
+		"batchEditFields":   []string{"module", "assignedTo", "status", "pri", "estimate", "record", "left", "finishedBy", "closedBy", "closedReason"},
+	}
+
+	Config[local]["task"]["datatable"] = map[string]interface{}{
+		"defaultField": []string{"id", "pri", "project", "name", "status", "assignedTo", "finishedBy", "estimate", "consumed", "left", "progress", "finalfile", "examine", "deadline", "actions"},
+		"fieldList": map[string]map[string]string{
+			"id": map[string]string{
+				"title":    "idAB",
+				"fixed":    "left",
+				"width":    "70",
+				"required": "yes",
+			},
+			"pri": map[string]string{
+				"title":    "priAB",
+				"fixed":    "left",
+				"width":    "50",
+				"required": "no",
+			},
+			"project": map[string]string{
+				"title":    "project",
+				"fixed":    "left",
+				"width":    "auto",
+				"required": "no",
+			},
+
+			"name": map[string]string{
+				"title":    "name",
+				"fixed":    "left",
+				"width":    "auto",
+				"required": "yes",
+			},
+			"type": map[string]string{
+				"title":    "type",
+				"fixed":    "no",
+				"width":    "80",
+				"required": "no",
+			},
+			"status": map[string]string{
+				"title":    "statusAB",
+				"fixed":    "no",
+				"width":    "80",
+				"required": "no",
+			},
+			"estimate": map[string]string{
+				"title":    "estimateAB",
+				"fixed":    "no",
+				"width":    "60",
+				"required": "no",
+			},
+			"consumed": map[string]string{
+				"title":    "consumedAB",
+				"fixed":    "no",
+				"width":    "60",
+				"required": "no",
+			},
+			"left": map[string]string{
+				"title":    "leftAB",
+				"fixed":    "no",
+				"width":    "60",
+				"required": "no",
+			},
+			"progress": map[string]string{
+				"title":    "progress",
+				"fixed":    "no",
+				"width":    "50",
+				"required": "no",
+				"sort":     "no",
+			},
+			"deadline": map[string]string{
+				"title":    "deadlineAB",
+				"fixed":    "no",
+				"width":    "60",
+				"required": "no",
+			},
+			"openedBy": map[string]string{
+				"title":    "openedByAB",
+				"fixed":    "no",
+				"width":    "70",
+				"required": "no",
+			},
+			"openedDate": map[string]string{
+				"title":    "openedDate",
+				"fixed":    "no",
+				"width":    "90",
+				"required": "no",
+			},
+			"estStarted": map[string]string{
+				"title":    "estStarted",
+				"fixed":    "no",
+				"width":    "90",
+				"required": "no",
+			},
+			"realStarted": map[string]string{
+				"title":    "realStarted",
+				"fixed":    "no",
+				"width":    "90",
+				"required": "no",
+			},
+			"placeOrder": map[string]string{
+				"title":    "placeOrder",
+				"fixed":    "no",
+				"width":    "90",
+				"required": "no",
+			},
+			"assignedTo": map[string]string{
+				"title":    "assignedTo",
+				"fixed":    "no",
+				"width":    "100",
+				"required": "no",
+			},
+			"assignedDate": map[string]string{
+				"title":    "assignedDate",
+				"fixed":    "no",
+				"width":    "90",
+				"required": "no",
+			},
+			"finishedBy": map[string]string{
+				"title":    "finishedByAB",
+				"fixed":    "no",
+				"width":    "80",
+				"required": "no",
+			},
+			"finishedDate": map[string]string{
+				"title":    "finishedDateAB",
+				"fixed":    "no",
+				"width":    "90",
+				"required": "no",
+			},
+			"canceledBy": map[string]string{
+				"title":    "canceledBy",
+				"fixed":    "no",
+				"width":    "80",
+				"required": "no",
+			},
+			"canceledDate": map[string]string{
+				"title":    "canceledDate",
+				"fixed":    "no",
+				"width":    "90",
+				"required": "no",
+			},
+			"closedBy": map[string]string{
+				"title":    "closedBy",
+				"fixed":    "no",
+				"width":    "80",
+				"required": "no",
+			},
+			"closedDate": map[string]string{
+				"title":    "closedDate",
+				"fixed":    "no",
+				"width":    "90",
+				"required": "no",
+			},
+			"closedReason": map[string]string{
+				"title":    "closedReason",
+				"fixed":    "no",
+				"width":    "80",
+				"required": "no",
+			},
+			"finalfile": map[string]string{
+				"title":    "finalfile",
+				"fixed":    "no",
+				"width":    "80",
+				"required": "no",
+			},
+			"examine": map[string]string{
+				"title":    "examine",
+				"fixed":    "no",
+				"width":    "80",
+				"required": "no",
+			},
+			"proofreading": map[string]string{
+				"title":    "proofreading",
+				"fixed":    "no",
+				"width":    "80",
+				"required": "no",
+			},
+			"story": map[string]string{
+				"title":    "storyAB",
+				"fixed":    "no",
+				"width":    "40",
+				"required": "no",
+				"name":     Lang[local]["task"]["story"].(string),
+			},
+			"mailto": map[string]string{
+				"title":    "mailto",
+				"fixed":    "no",
+				"width":    "100",
+				"required": "no",
+			},
+			"lastEditedBy": map[string]string{
+				"title":    "lastEditedBy",
+				"fixed":    "no",
+				"width":    "80",
+				"required": "no",
+			},
+			"lastEditedDate": map[string]string{
+				"title":    "lastEditedDate",
+				"fixed":    "no",
+				"width":    "90",
+				"required": "no",
+			},
+			"actions": map[string]string{
+				"title":    "actions",
+				"fixed":    "right",
+				"width":    "190",
+				"required": "yes",
+			},
+		},
+	}
+
 }

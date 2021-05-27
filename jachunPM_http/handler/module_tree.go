@@ -1158,8 +1158,8 @@ func tree_getTaskTreeMenu(data *TemplateData, rootID, productID, startModule int
 	if err != nil {
 		return template.HTML(""), err
 	}
-	if len(products) == 0 {
-		extra["tip"] = false
+	if products == nil {
+
 		return tree_getTreeMenu(data, rootID, "task", startModule, callback, extra, 0)
 	}
 	buf := bufpool.Get().(*libraries.MsgBuffer)

@@ -443,7 +443,7 @@ func (msg *Msg) BeginTransaction() (*MsgDBTransaction, error) {
 }
 
 //封装一下，如果事务存在，则自动切换到事务
-func (db *MsgDB) Table(tablename string) *mysql.Mysql_Build {
+func (db *MsgDB) Table(tablename string) *mysql.Mysql_Table {
 	if db.transaction == nil {
 		if db.transactionNo == 0 {
 			return db.DB.Table(tablename)
@@ -465,7 +465,7 @@ func (db *MsgDB) Raw(sql string, arg ...interface{}) *mysql.Mysql_RawBuild {
 }
 
 //封装一下事务
-func (t *MsgDBTransaction) Table(tablename string) *mysql.Mysql_Build {
+func (t *MsgDBTransaction) Table(tablename string) *mysql.Mysql_Table {
 	return t.t.Table(tablename)
 }
 func (t *MsgDBTransaction) Raw(sql string, arg ...interface{}) *mysql.Mysql_RawBuild {

@@ -586,9 +586,46 @@ func isClickableFuncs() {
 		}
 		return true
 	}
+	global_Funcs["MSG_PROJECT_TASK_isClickable"] = func(data *TemplateData, obj interface{}, action string) bool {
+		task := obj.(*protocol.MSG_PROJECT_TASK)
+		if len(task.Children) > 0 {
+			if action == "start" || action == "recordestimate" || action == "finish" || action == "cancel" || action == "pause" || action == "internalaudit" || action == "proofreading" || action == "activate" || action == "assignto" || action == "close" {
+				return false
+			}
+		}
+
+		switch action {
+		case "start":
+			return task.Status == "wait"
+		case "examine":
+			return task.Status != "wait"
+		case "restart":
+			return task.Status == "pause"
+		case "pause", "internalaudit":
+			return task.Status == "doing"
+		case "assignto":
+			return task.Status != "closed" && task.Status != "cancel"
+		case "close":
+			return task.Status == "done" || task.Status == "cancel"
+		case "activate":
+			return task.Status == "done" || task.Status == "closed" || task.Status == "cancel"
+		case "proofreading":
+			return task.Status == "done" && task.Finalfile
+		case "finish":
+			return task.Status != "done" && task.Status != "closed" && task.Status != "cancel"
+		case "cancel":
+			return task.Status != "done" && task.Status != "closed" && task.Status != "cancel"
+		case "batchcreate":
+			if task.Team > 0 || task.Ancestor > 0 {
+				return false
+			}
+		}
+
+		return true
+	}
 
 }
-func html_checkbox(name string, options []protocol.HtmlKeyValueStr, value ...interface{}) string {
+func html_checkbox(name string, options []protocol.HtmlKeyValueStr, value ...interface{}) string { //$checked = "", $attrib = "", $type = 'inline')
 	if len(options) == 0 {
 		return ""
 	}

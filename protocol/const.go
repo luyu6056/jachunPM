@@ -24,7 +24,7 @@ const (
 	SessionKeepLoginExpires = 7 * 86400 //keepLogin的session
 )
 
-var ZEROTIME, _ = time.Parse("2006-01-02", "2000-01-01")
+var ZEROTIME, _ = time.Parse("2006-01-02", "2010-01-01") //导入的0000-00-00 00:00:00会变成2000-01-01，所以这个值设置大一点
 var buf_pool = sync.Pool{New: func() interface{} {
 	return new(libraries.MsgBuffer)
 }}

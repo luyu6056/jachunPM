@@ -98,7 +98,7 @@ func post_product_create(data *TemplateData) (e error) {
 	insert := protocol.GET_MSG_PROJECT_product_cache()
 	insert.Status = "normal"
 	insert.CreatedBy = data.User.Id
-	insert.CreatedDate = time.Now().Unix()
+	insert.CreatedDate = time.Now()
 
 	for key, v := range data.ws.GetAllPost() {
 		switch key {
@@ -1130,16 +1130,17 @@ func get_product_project(data *TemplateData) (err error) {
 	templateOut("product.project.html", data)
 	return
 }
-func product_getProductsByProject(projectID int32) (products []*protocol.MSG_PROJECT_product_cache) {
+func product_getProductsByProject(projectID int32) []*protocol.MSG_PROJECT_product_cache {
 	project := HostConn.GetProjectById(projectID)
 	if project == nil {
 		return nil
 	}
+	products := []*protocol.MSG_PROJECT_product_cache{}
 	for _, id := range project.Products {
 		product := HostConn.GetProductById(id)
 		if product != nil {
 			products = append(products, product)
 		}
 	}
-	return
+	return products
 }

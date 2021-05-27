@@ -593,13 +593,63 @@ func project_getProjectTasks(data *protocol.MSG_PROJECT_project_getProjectTasks,
 		where["RoleRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t1.AssignedTo` = " + strconv.Itoa(int(in.GetUserID())) + " or t1.AssignedTo = ''"}
 	}
 	out := protocol.GET_MSG_PROJECT_project_getProjectTasks_result()
-	err := in.DB.Table(db.TABLE_TASK+" as t1").Field("DISTINCT t1.*, t2.Id AS StoryID, t2.Title AS StoryTitle, t2.Product as Product, t2.Branch as Branch, t2.version AS LatestStoryVersion, t2.Status AS StoryStatus").LeftJoin(db.TABLE_STORY+" as t2").On("t1.Story = t2.Id").Where(where).Order(data.OrderBy).Limit((data.Page-1)*data.PerPage, data.PerPage).Select(&out.List)
+	err := in.DB.Table(db.TABLE_TASK).Alias("t1").Field("DISTINCT t1.*, t2.Id AS StoryID, t2.Title AS StoryTitle, t2.Product as Product, t2.Branch as Branch, t2.version AS LatestStoryVersion, t2.Status AS StoryStatus").LeftJoin(db.TABLE_STORY).Alias("t2").On("t1.Story = t2.Id").Where(where).Order(data.OrderBy).Limit((data.Page-1)*data.PerPage, data.PerPage).Select(&out.List)
 	if err != nil {
 		in.WriteErr(err)
 		return
 	}
-	if data.Total == 0 {
-		data.Total, err = in.DB.Table(db.TABLE_TASK).Where(where).Count()
+	out.Total = data.Total
+	if out.Total == 0 {
+		out.Total, err = in.DB.Table(db.TABLE_TASK).Alias("t1").Field("DISTINCT t1.Id").LeftJoin(db.TABLE_STORY).Alias("t2").On("t1.Story = t2.Id").Where(where).Count()
+		if err != nil {
+			in.WriteErr(err)
+			return
+		}
+	}
+	//获取子任务
+	var parents, ancestors []int32
+	for _, t := range out.List {
+		if t.Parent == -1 {
+			parents = append(parents, t.Id)
+		}
+	}
+	var children []*protocol.MSG_PROJECT_TASK
+	if len(parents) > 0 {
+		where["t1.Parent"] = parents
+		delete(where, "t1.Project")
+		if err = in.DB.Table(db.TABLE_TASK).Alias("t1").Field("DISTINCT t1.*, t2.Id AS StoryID, t2.Title AS StoryTitle, t2.Product as Product, t2.Branch as Branch, t2.version AS LatestStoryVersion, t2.Status AS StoryStatus").LeftJoin(db.TABLE_STORY).Alias("t2").On("t1.Story = t2.Id").Where(where).Order(data.OrderBy).Limit((data.Page-1)*data.PerPage, data.PerPage).Select(&children); err != nil {
+			in.WriteErr(err)
+			return
+		}
+
+		for _, child := range children {
+			for _, task := range out.List {
+				if task.Id == child.Parent {
+					task.Children = append(task.Children, child)
+					break
+				}
+			}
+			if child.Ancestor == -1 {
+				ancestors = append(ancestors, child.Id)
+			}
+		}
+	}
+	//获取孙任务
+	if len(ancestors) > 0 {
+		var grandchildrens []*protocol.MSG_PROJECT_TASK
+		where["t1.Parent"] = ancestors
+		if err = in.DB.Table(db.TABLE_TASK).Alias("t1").Field("DISTINCT t1.*, t2.Id AS StoryID, t2.Title AS StoryTitle, t2.Product as Product, t2.Branch as Branch, t2.version AS LatestStoryVersion, t2.Status AS StoryStatus").LeftJoin(db.TABLE_STORY).Alias("t2").On("t1.Story = t2.Id").Where(where).Order(data.OrderBy).Limit((data.Page-1)*data.PerPage, data.PerPage).Select(&grandchildrens); err != nil {
+			in.WriteErr(err)
+			return
+		}
+		for _, grandchild := range grandchildrens {
+			for _, child := range children {
+				if child.Id == grandchild.Parent {
+					child.Grandchildren = append(child.Grandchildren, child)
+					break
+				}
+			}
+		}
 	}
 	in.SendResult(out)
 	out.Put()

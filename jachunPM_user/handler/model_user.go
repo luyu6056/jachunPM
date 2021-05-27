@@ -439,3 +439,12 @@ func user_insertUpdateContactList(data *protocol.MSG_USER_insertUpdateContactLis
 	}
 
 }
+func user_getUserqueryByWhere(data *protocol.MSG_USER_user_getUserqueryByWhere, in *protocol.Msg) {
+	out := protocol.GET_MSG_USER_user_getUserqueryByWhere_result()
+	if err := in.DB.Table(db.TABLE_USERQUERY).Where(data.Where).Limit(0).Select(&out.List); err != nil {
+		in.WriteErr(err)
+	} else {
+		in.SendResult(out)
+	}
+	return
+}

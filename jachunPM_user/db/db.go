@@ -14,6 +14,7 @@ const (
 	TABLE_GROUP       = "group"
 	TABLE_USERCONTACT = "usercontact"
 	TABLE_TEAM        = "team"
+	TABLE_USERQUERY   = "userquery"
 )
 
 func Init() *mysql.MysqlDB {
@@ -34,6 +35,7 @@ func Init() *mysql.MysqlDB {
 		new(Group),
 		new(Usercontact),
 		new(Team),
+		new(Userquery),
 	)
 	if errs != nil {
 		log.Fatalf("数据库启动失败%v", errs)
@@ -174,4 +176,18 @@ type Team struct {
 
 func (*Team) TableName() string {
 	return TABLE_TEAM
+}
+
+type Userquery struct {
+	Id       int32  `db:"auto_increment;pk"`
+	Uid      int32  `db:"index"`
+	Module   string `db:"type:varchar(30)"`
+	Title    string `db:"type:varchar(90)"`
+	Form     string
+	Sql      string
+	Shortcut bool
+}
+
+func (*Userquery) TableName() string {
+	return TABLE_USERQUERY
 }

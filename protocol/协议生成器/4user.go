@@ -267,3 +267,20 @@ type MSG_USER_team_getByTypeUid_result struct {
 	QueryResultID uint32
 	List          []*MSG_USER_team_info
 }
+type MSG_USER_Userquery_info struct {
+	Id       int32
+	Uid      int32
+	Module   string
+	Title    string
+	Form     string
+	Sql      string
+	Shortcut bool
+}
+type MSG_USER_user_getUserqueryByWhere struct {
+	QueryID uint32
+	Where   map[string]interface{}
+}
+type MSG_USER_user_getUserqueryByWhere_result struct {
+	QueryResultID uint32
+	List          []*MSG_USER_Userquery_info
+}

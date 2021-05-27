@@ -1,88 +1,91 @@
 {{template "header.html" .}}
 {{template "chart.html" .}}
 {{template "datepicker.html" .}}
-{{template "datatable.html" .}}
+{{template "datatable.fix.html" .}}
 <div id="mainMenu" class="clearfix">
 	<div id="sidebarHeader">
 		<div class="title">
-			<?php
-			if(!empty($productID))
-			{
-					$product    = $this->product->getById($productID);
-					$removeLink = (eq browseType "byproduct") ? inlink('task', "projectID=$projectID&browseType=$status&param=0&orderBy=$orderBy&recTotal=0&recPerPage={$pager->recPerPage}") : 'javascript:removeCookieByKey("productBrowseParam")';
-					$product->name;
-					html_a $removeLink  "<i class='icon icon-sm icon-close'></i>" ""  "class='text-muted'"
-			}
-			elseif(!empty($moduleID))
-			{
-					$module     = $this->tree->getById($moduleID);
-					$removeLink = (eq browseType "bymodule") ? inlink('task', "projectID=$projectID&browseType=$status&param=0&orderBy=$orderBy&recTotal=0&recPerPage={$pager->recPerPage}") : 'javascript:removeCookieByKey("moduleBrowseParam")';
-					$module->name;
-					html_a $removeLink  "<i class='icon icon-sm icon-close'></i>" ""  "class='text-muted'"
-			}
-			else
-			{
-					$this->app->loadLang('tree');
-					$this->lang->tree->all;
-			}
-			?>
+			{{- if .Data.productID}}
+					{{.Data.product.Name}}
+					{{html_a (or (and (eq $.Data.browseType "byproduct") (helper_createLink "project" "task" "projectID=" $.Data.projectID "&browseType=" $.Data.status "&param=0&orderBy=" $.Data.orderBy "&recTotal=0&recPerPage=" $.Page.PerPage)) "javascript:removeCookieByKey(\"productBrowseParam\")")  "<i class='icon icon-sm icon-close'></i>" ""  "class='text-muted'"}}
+			{{- else if .Data.moduleID}}
+					{{.Data.module.Name}}					
+					{{html_a (or (and (eq $.Data.browseType "bymodule") (helper_createLink "project" "task" "projectID=" $.Data.projectID "&browseType=" $.Data.status "&param=0&orderBy=" $.Data.orderBy "&recTotal=0&recPerPage=" $.Page.PerPage)) "javascript:removeCookieByKey(\"moduleBrowseParam\")")  "<i class='icon icon-sm icon-close'></i>" ""  "class='text-muted'"}}
+			{{- else}}
+			{{.Lang.tree.all}}
+			{{- end}}
 		</div>
 	</div>
 	<div class="btn-toolbar pull-left">
-		
+		{{- range  $menuItem :=custom_getFeatureMenu . "project" "task"}}
+			{{- if not (or (and (eq $.Data.project.Type "ops") (eq $menuItem.Name "needconfirm")) $menuItem.Hidden)}}
+				{{- $menuType :=  $menuItem.Name}}
+				{{- if eq $menuType "QUERY"}}
+						{{- if $.Data.custom_queryList}}
+		<div class='btn-group' id='query'>
+		{{- $active:= false}}{{$title:=""}}
+		{{- range $query := $.Data.custom_queryList}}{{if and (eq (session $ "taskBrowseType") "bysearch") (eq $query.Id  $.Data.param)}}{{$active = true}}{{$title = $query.Title}}{{end}}{{end}}
+		{{- if $active}}
+			{{html_a "javascript:;" (strAdd "<span class='text'>" $title "</span> <span class='label label-light label-badge'>" $.Page.Total "</span><span class='caret'></span>") "" "data-toggle='dropdown' class='btn btn-link btn-active-text'"}}
+		{{- else}}
+			{{html_a "javascript:;" (strAdd $menuItem.Text " <span class='caret'></span>") "" "data-toggle='dropdown' class='btn btn-link'"}}
+		{{- end}}
+			<ul class='dropdown-menu'>
+		{{- range $query:=$.Data.custom_queryList}}
+				<li{{if eq $query.Id  $.Data.param}} class='active'{{end}}>
+					{{html_a (helper_createLink "project" "task"  "projectID=" $.Data.projectID "&type=bySearch&param=" $query.Id)  $query.Title}}
+				</li>
+		{{- end}}
+			</ul>
+		</div>
+						{{- end}}
+				{{- else if and (ne $menuType "status") (ne $menuType "QUERY")}}
+						{{- $label := strAdd "<span class='text'>" $menuItem.Text "</span>"}}{{$active  :=""}}
+						{{- if eq $menuType $.Data.browseType}}{{$label = strAdd $label "<span class='label label-light label-badge'>" $.Page.Total "</span>"}}{{$active = "btn-active-text"}}{{end}}
+					{{html_a (helper_createLink "project" "task"  "projectID=" $.Data.projectID "&type=" $menuType)  $label "" (strAdd "id='" $menuType "' class='btn btn-link " $active "'")}}
+				{{- else if eq $menuType "status"}}
+					<div class='btn-group'>
+						{{$taskBrowseType:=(session $ "taskBrowseType")}}
+						{{- $active :=getValue $.Lang.project.statusSelects $taskBrowseType}}
+						{{- if $active}}
+						{{html_a "javascript:;" (strAdd "<span class='text'>" $active "</span> <span class='label label-light label-badge'>" $.Page.Total "</span><span class='caret'></span>") "" "data-toggle='dropdown' class='btn btn-link btn-active-text'"}}
+						{{- else}}
+						{{html_a "javascript:;" (strAdd $menuItem.Text " <span class='caret'></span>") "" "data-toggle='dropdown' class='btn btn-link'"}}
+						{{- end}}
+						<ul class='dropdown-menu'>
+						{{range $kv:=$.Lang.project.statusSelects}}{{if ne $kv.Key ""}}
+							<li{{if eq $kv.Key $taskBrowseType}} class='active'{{end}}>
+								{{html_a (helper_createLink "project" "task"  "projectID=" $.Data.projectID "&type=" $kv.Key)  $kv.Value}}
+							</li>
+						{{end}}{{end}}
+						</ul></div>
+				{{- end}}
+		{{- end}}{{end}}
 		<a class="btn btn-link querybox-toggle" id='bysearchTab'><i class="icon icon-search muted"></i> {{.Lang.product.searchStory}}</a>
 	</div>
 	<div class="btn-toolbar pull-right">
-		<?php
-		if(!isset($browseType)) $browseType = '';
-		if(!isset($orderBy))    $orderBy = '';
-		common_printIcon "task" "report"  "project=$projectID&browseType=$browseType" "', 'button', 'bar-chart muted"
-		?>
-
+		{{common_printIcon . "task" "report"  (strAdd "projectID=" $.Data.projectID "&browseType=" $.Data.browseType) "" "button" "bar-chart muted"}}
 		<div class="btn-group dropdown-hover">
-			<button class="btn btn-link" data-toggle="dropdown"><i class="icon icon-export muted"></i> <span class="text">{{.Lang.export}}</span> <span class="caret"></span></button>
+			<button class="btn btn-link" data-toggle="dropdown"><i class="icon icon-export muted"></i> <span class="text">{{.Lang.common.export}}</span> <span class="caret"></span></button>
 			<ul class="dropdown-menu pull-right" id='exportActionMenu'>
-				<?php
-				$class = common_hasPriv "task" "export" ? '' : "class=disabled";
-				$misc  = common_hasPriv "task" "export" ? "class='export'" : "class=disabled";
-				$link  = common_hasPriv "task" "export') ? (helper_createLink 'task" "export"  "project=$projectID&orderBy=$orderBy&type=$browseType" : '#';
-				"<li $class>" . html_a $link  .Lang.story.export ""  $misc . "</li>";
-				?>
-				
-				<?php
-				$class = common_hasPriv "task" "exportfile" ? '' : "class=disabled";
-				$misc  = common_hasPriv "task" "exportfile" ? "class='exportfile'" : "class=disabled";
-				$link  = common_hasPriv "task" "exportfile') ? (helper_createLink 'task" "exportfile"  "project=$projectID&orderBy=id&type=$browseType" : '#';
-				"<li $class>" . html_a $link "<span>'..Lang.project.exportfile.'</span>" "" . "</li>";
-				?>
+				{{$export_hasPriv := common_hasPriv . "task" "export"}}
+				{{if $export_hasPriv}}<li>{{else}}<li class=disabled>{{end}}{{html_a (or (and $export_hasPriv (helper_createLink "task" "export" "projectID=" $.Data.projectID "&orderBy=" $.Data.orderBy "&type=" $.Data.browseType)) "#")  .Lang.story.export ""  (or (and $export_hasPriv "class='export'") "class=disabled")}}</li>
+				{{$exportfile_hasPriv := common_hasPriv . "task" "exportfile"}}
+				{{if $exportfile_hasPriv}}<li>{{else}}<li class=disabled>{{end}}{{html_a (or (and $exportfile_hasPriv (helper_createLink "task" "exportfile" "projectID=" $.Data.projectID "&orderBy=id&type=" $.Data.browseType)) "#") (strAdd "<span>" .Lang.project.exportfile "</span>") "" (or (and $exportfile_hasPriv "class='exportfile'") "class=disabled")}}</li>
 			</ul>
 		</div>
 
 		<div class="btn-group dropdown-hover">
-			<button class="btn btn-link" data-toggle="dropdown"><i class="icon icon-import muted"></i> <span class="text">{{.Lang.import}}</span> <span class="caret"></span></button>
+			<button class="btn btn-link" data-toggle="dropdown"><i class="icon icon-import muted"></i> <span class="text">{{.Lang.common.import}}</span> <span class="caret"></span></button>
 			<ul class="dropdown-menu pull-right" id='importActionMenu'>
-				<?php
-				$class = common_hasPriv "project" "importTask" ? '' : "class=disabled";
-				$misc  = common_hasPriv "project" "importTask" ? "class='import'" : "class=disabled";
-				$link  = common_hasPriv "project" "importTask') ? (helper_createLink 'project" "importTask"  "project=$project->id" : '#';
-				"<li $class>" . html_a $link  .Lang.project.importTask ""  $misc . "</li>";
-
-				$class = common_hasPriv "project" "importBug" ? '' : "class=disabled";
-				$misc  = common_hasPriv "project" "importBug" ? "class='import'" : "class=disabled";
-				$link  = common_hasPriv "project" "importBug') ? (helper_createLink 'project" "importBug"  "project=$project->id" : '#';
-				"<li $class>" . html_a $link  .Lang.project.importBug ""  $misc . "</li>";
-				?>
+				{{$importTask_hasPriv := common_hasPriv . "task" "importTask"}}
+				{{if $importTask_hasPriv}}<li>{{else}}<li class=disabled>{{end}}{{html_a (or (and $importTask_hasPriv (helper_createLink "project" "importTask" "projectID=" $.Data.projectID)) "#") .Lang.project.importTask  "" (or (and $importTask_hasPriv "class='import'") "class=disabled")}}</li>
+				{{$importBug_hasPriv := common_hasPriv . "task" "importBug"}}
+				{{if $importBug_hasPriv}}<li>{{else}}<li class=disabled>{{end}}{{html_a (or (and $importBug_hasPriv (helper_createLink "project" "importBug" "projectID=" $.Data.projectID)) "#")  .Lang.project.importBug  "" (or (and $importBug_hasPriv "class='import'") "class=disabled")}}</li>
 			</ul>
 		</div>
-		<?php
-		$checkObject = new stdclass();
-		$checkObject->project = $projectID;
-		$link = (helper_createLink 'task', 'batchCreate', "project=$projectID" . (isset($moduleID) ? "&storyID=&moduleID=$moduleID" : ''));
-		if(common_hasPriv "task" "batchCreate"  $checkObject)) html_a $link  "<i class='icon icon-plus'></i> {.Lang.task.batchCreate}" ""  "class='btn btn btn-secondary'"
-
-		$link = (helper_createLink 'task', 'create', "project=$projectID" . (isset($moduleID ? "&storyID=&moduleID=$moduleID" : ''));
-		if(common_hasPriv "task" "create"  $checkObject)) html::a($link  "<i class='icon icon-plus'></i> {.Lang.task.create}", '', "class='btn btn-primary'"
-		?>
+		{{if common_hasPriv . "task" "batchCreate"  $.Data.checkObject}}{{html_a (helper_createLink "task" "batchCreate" "projectID=" $.Data.projectID "&storyID=&moduleID=" $.Data.moduleID)  (strAdd "<i class='icon icon-plus'></i>" .Lang.task.batchCreate) ""  "class='btn btn btn-secondary'"}}{{end}}
+		{{if common_hasPriv . "task" "create"  $.Data.checkObject}}{{html_a (helper_createLink "task" "create" "projectID=" $.Data.projectID "&storyID=&moduleID=" $.Data.moduleID)  (strAdd "<i class='icon icon-plus'></i>" .Lang.task.create) "" "class='btn btn-primary'"}}{{end}}
 	</div>
 </div>
 <div id="mainContent" class="main-row fade">
@@ -123,7 +126,7 @@
 				<span class="text-muted">{{.Lang.task.noTask}}</span>
 				{{if common_hasPriv . "task" "create"  .Data.checkObject}}
 				<span class="text-muted">{{.Lang.common.youCould}}</span>
-				{{html_a (helper_createLink "task" "create"  "project=" .Data.projectID (or (and .Data.moduleID (strAdd "&storyID=&moduleID=" .Data.moduleID)) ""))  (strAdd "<i class='icon icon-plus'></i> " .Lang.task.create) "" "class='btn btn-info'"}}
+				{{html_a (helper_createLink "task" "create"  "projectID=" .Data.projectID (or (and .Data.moduleID (strAdd "&storyID=&moduleID=" .Data.moduleID)) ""))  (strAdd "<i class='icon icon-plus'></i> " .Lang.task.create) "" "class='btn btn-info'"}}
 				{{end}}
 			</p>
 		</div>
@@ -131,40 +134,15 @@
 		<form class="main-table table-task skip-iframe-modal" method="post" id='projectTaskForm'>
 			<div class="table-header fixed-right">
 				<nav class="btn-toolbar pull-right"></nav>
-			</div>
-
-			<?php
-			
-			$vars         = "projectID=$project->id&status=$status&parma=$param&orderBy=%s&recTotal=$recTotal&recPerPage=$recPerPage";
-
-			if($useDatatable) include '../../common/view/datatable.html.php';
-
-			$customFields = $this->datatable->getSetting('project');
-		 
-			if((eq project->type "ops"))
-			{
-					foreach($customFields as $id => (eq customField)
-					{
-							if($customField->id "story")) unset($customFields[$id]);
-					}
-			}
-			$widths  = $this->datatable->setFixedFieldWidth($customFields);
-			$columns = 0;
-			?>
+			</div>	
+			{{template "datatable.html" .}}	 
 			{{if not .Data.useDatatable}}<div class="table-responsive">{{end}}
 			<table class='table has-sort-head{{if .Data.useDatatable}} datatable{{end}}' id='taskList' data-fixed-left-width='{{index .Data.widths "leftWidth"}}' data-fixed-right-width='{{index .Data.widths "rightWidth"}}'>
 				<thead>
 					<tr>
-					<?php
-					foreach($customFields as $field)
-					{
-							if($field->show)
-							{
-									$this->datatable->printHead($field, $orderBy, $vars);
-									$columns++;
-							}
-					}
-					?>
+					{{- range $field := $.Data.customFields}}{{if $field.Show}}
+						{{datatable_printHead $ $field $.Data.orderBy (strAdd "projectID=" $.Data.project.Id "&status=" $.Data.status "&parma=" $.Data.param "&orderBy=%s&recTotal=" $.Page.Total "&recPerPage=" $.Page.PerPage)}}
+					{{- end}}{{end}}
 					</tr>
 				</thead>
 				<tbody>
@@ -176,48 +154,28 @@
 			<div class="table-footer">
 				<div class="checkbox-primary check-all"><label>{{.Lang.common.selectAll}}</label></div>
 				<div class="table-actions btn-toolbar">
-					<?php
-					$canBatchEdit         = common_hasPriv "task" "batchEdit"  !empty($task ? $task : null);
-					$canBatchClose        = (common_hasPriv "task" "batchClose"  !empty($task ? $task : null) && strtolower((ne browseType) "closedBy"));
-					$canBatchCancel       = common_hasPriv "task" "batchCancel"  !empty($task ? $task : null);
-					$canbatchexamine       = common_hasPriv "task" "batchexamine"  !empty($task ? $task : null);
-					$canbatchproofreading       = common_hasPriv "task" "batchproofreading"  !empty($task ? $task : null);
-					{{$canBatchChangeModule := common_hasPriv . "task" "batchChangeModule"  }}
-					{{$canBatchAssignTo     := common_hasPriv "task" "batchAssignTo"  }}
-					{{$canBatchPlaceOrder       := common_hasPriv "task" "placeOrder" }}
-					?>
+					{{- $canBatchEdit         := common_hasPriv . "task" "batchEdit"}}
+					{{- $canBatchClose        := and (common_hasPriv . "task" "batchClose") (ne .Data.browseType "closedBy")}}
+					{{- $canBatchCancel       := common_hasPriv . "task" "batchCancel"}}
+					{{- $canbatchexamine      := common_hasPriv . "task" "batchexamine"}}
+					{{- $canbatchproofreading := common_hasPriv . "task" "batchproofreading"}}
+					{{- $canBatchChangeModule := common_hasPriv . "task" "batchChangeModule"}}
+					{{- $canBatchAssignTo     := common_hasPriv . "task" "batchAssignTo"  }}
+					{{- $canBatchPlaceOrder       := common_hasPriv . "task" "placeOrder" }}
 					<div class='btn-group dropup'>
-						<?php
-						$actionLink = (helper_createLink 'task', 'batchEdit', "projectID=$projectID");
-						$disabled   = $canBatchEdit ? '' : "disabled='disabled'";
-
-						html_commonButton .Lang.edit  "data-form-action='$actionLink' $disabled"
-						"<button type='button' class='btn dropdown-toggle' data-toggle='dropdown'><span class='caret'></span></button>";
-						"<ul class='dropdown-menu'>";
-
-						$actionLink = (helper_createLink 'task', 'batchClose');
-						$misc = $canBatchClose ? "onclick=\"setFormAction('$actionLink', 'hiddenwin', '#taskList')\"" : "class='disabled'";
-						"<li>" . html_a "#"  .Lang.close ""  $misc . "</li>";
-
-						$actionLink = (helper_createLink 'task', 'batchCancel');
-						$misc = $canBatchCancel ? "onclick=\"setFormAction('$actionLink', 'hiddenwin', '#taskList')\"" : "class='disabled'";
-						"<li>" . html_a "#"  .Lang.task.cancel ""  $misc . "</li>";
-						"</ul>";
-						?>
+						{{html_commonButton .Lang.common.edit (strAdd "data-form-action='" (helper_createLink "task" "batchEdit" "projectID=" .Data.projectID) "'" (or (and $canBatchEdit " ") " disabled='disabled'"))}}
+						<button type='button' class='btn dropdown-toggle' data-toggle='dropdown'><span class='caret'></span></button>
+						<ul class='dropdown-menu'>
+						<li>{{html_a "#"  .Lang.common.close ""  (or (and $canBatchClose (strAdd "onclick=\"setFormAction('" (helper_createLink "task" "batchClose") "', 'hiddenwin', '#taskList')\"")) "class='disabled'")}}</li>
+						<li>{{html_a "#"  .Lang.task.cancel ""  (or (and $canBatchCancel (strAdd "onclick=\"setFormAction('" (helper_createLink "task" "batchCancel") "', 'hiddenwin', '#taskList')\"")) "class='disabled'")}}</li>
+						</ul>
 					</div>
 					
 					<div class='btn-group dropup'>
-						<?php
-						$actionLink = (helper_createLink 'task', 'batchEdit', "projectID=$projectID");
-						$disabled   = $canBatchEdit ? '' : "disabled='disabled'";
-
-						html_commonButton .Lang.project.batchEdit  "data-form-action='$actionLink' $disabled"
-						"<button type='button' class='btn dropdown-toggle' data-toggle='dropdown'><span class='caret'></span></button>";
-						"<ul class='dropdown-menu'>";
-
-						$actionLink = (helper_createLink 'task', 'batchexamine');
-						$misc = $canbatchexamine ? "onclick=\"setFormAction('$actionLink', 'hiddenwin', '#taskList')\"" : "class='disabled'";
-						"<li>" . html_a "#"  .Lang.task.batchexamine  ""  $misc . "</li>";
+						{{html_commonButton .Lang.project.batchEdit (strAdd "data-form-action='" (helper_createLink "task" "batchEdit" "projectID=" .Data.projectID) "'" (or (and $canBatchEdit " ") " disabled='disabled'"))}}
+						<button type='button' class='btn dropdown-toggle' data-toggle='dropdown'><span class='caret'></span></button>
+						<ul class='dropdown-menu'>
+						<li>{{html_a "#"  .Lang.task.batchexamine ""  (or (and $canbatchexamine (strAdd "onclick=\"setFormAction('" (helper_createLink "task" "batchexamine") "', 'hiddenwin', '#taskList')\"")) "class='disabled'")}}</li>
 
 						$actionLink = (helper_createLink 'task', 'batchproofreading');
 						$misc = $canbatchproofreading ? "onclick=\"setFormAction('$actionLink', 'hiddenwin', '#taskList')\"" : "class='disabled'";
@@ -247,8 +205,7 @@
 						$actionLink = (helper_createLink 'task', 'placeOrder',"action=0");
 						$misc = $canBatchPlaceOrder ? "onclick=\"setFormAction('$actionLink', 'hiddenwin', '#taskList')\"" : "class='disabled'";
 						"<li>" . html_a "#"  .Lang.task.cancelPlaceOrder ""  $misc . "</li>";
-						"</ul>";
-						?>
+						</ul>
 					</div>
 					
 					{{if $canBatchChangeModule}}
@@ -321,10 +278,10 @@
 	</div>
 </div>
 <script>
+var moduleID={{.Data.moduleID}},productID={{.Data.productID}},projectID={{.Data.projectID}},browseType={{.Data.browseType}},replaceID="taskList";
 $(function()
 {
-	var moduleID={{.Data.moduleID}},productID={{.Data.productID}},projectID={{.Data.projectID}},browseType={{.Data.browseType}},replaceID="taskList";
-	$('#exportActionMenu li span').each(function(index  el {
+	$('#exportActionMenu li span').each(function(index, el) {
 		$(this).unbind().click(function(event) {
 			if(confirm('是否要导出所有文件')) $(this).parents().click();
 		});

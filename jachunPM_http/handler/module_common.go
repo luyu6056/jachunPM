@@ -15,15 +15,16 @@ import (
 )
 
 type moduleMenu struct {
-	name      string
-	text      string
-	module    string
-	method    string
-	class     string
-	vars      []protocol.HtmlKeyValueStr
-	hidden    bool
-	alias     []string
-	subModule []string
+	Name      string
+	Text      string
+	Module    string
+	Method    string
+	Class     string
+	Vars      []protocol.HtmlKeyValueStr
+	Hidden    bool
+	Alias     []string
+	SubModule []string
+	Link      map[string]string
 }
 type commonPreAndNext struct {
 	pre  interface{}
@@ -118,25 +119,25 @@ func commonModelFuncs() {
 		buf := bufpool.Get().(*libraries.MsgBuffer)
 		buf.WriteString("<ul class='nav nav-default'>\n")
 		for key, menuItem := range menu {
-			if !menuItem.hidden {
+			if !menuItem.Hidden {
 				buf.WriteString("<li ")
-				if menuItem.name == moduleName {
+				if menuItem.Name == moduleName {
 					buf.WriteString(classActive)
 				}
 				buf.WriteString("data-id='")
-				buf.WriteString(menuItem.name)
+				buf.WriteString(menuItem.Name)
 				buf.WriteString("'><a href='")
-				buf.WriteString(createLink(menuItem.module, menuItem.method, menuItem.vars))
+				buf.WriteString(createLink(menuItem.Module, menuItem.Method, menuItem.Vars))
 				buf.WriteString("' ")
-				if menuItem.name == moduleName {
+				if menuItem.Name == moduleName {
 					buf.WriteString(classActive)
 				}
 				buf.WriteString(">")
-				buf.WriteString(menuItem.text)
+				buf.WriteString(menuItem.Text)
 				buf.WriteString("</a></li>\n")
 				if key != len(menu)-1 {
 					for _, v := range data.Lang["common"]["dividerMenu"].([]string) {
-						if v == menuItem.name {
+						if v == menuItem.Name {
 							buf.WriteString("<li class='divider'></li>")
 							break
 						}
@@ -181,15 +182,15 @@ func commonModelFuncs() {
 
 		/* Cycling to print every sub menu. */
 		for _, menuItem := range menu {
-			if menuItem.hidden {
+			if menuItem.Hidden {
 				continue
 			}
-			if isMobile && menuItem.name == "" {
+			if isMobile && menuItem.Name == "" {
 				continue
 			}
 			if dividerMenu, ok := data.Lang[moduleName]["dividerMenu"].([]string); ok {
 				for _, v := range dividerMenu {
-					if v == menuItem.name {
+					if v == menuItem.Name {
 						buf.WriteString("<li class='divider'></li>")
 						break
 					}
@@ -197,7 +198,7 @@ func commonModelFuncs() {
 			}
 
 			active := ``
-			for _, s := range menuItem.subModule {
+			for _, s := range menuItem.SubModule {
 				if s == currentModule {
 					active = `active`
 					break
@@ -205,7 +206,7 @@ func commonModelFuncs() {
 			}
 
 			if moduleName == currentModule {
-				for _, a := range menuItem.alias {
+				for _, a := range menuItem.Alias {
 					if a == currentModule {
 						active = `active`
 						break
@@ -213,11 +214,11 @@ func commonModelFuncs() {
 				}
 			}
 
-			if active == "" && menuItem.module == currentModule {
-				if menuItem.method == currentMethod {
+			if active == "" && menuItem.Module == currentModule {
+				if menuItem.Method == currentMethod {
 					active = `active`
 				} else {
-					for _, a := range menuItem.alias {
+					for _, a := range menuItem.Alias {
 						if a == currentMethod {
 							active = `active`
 							break
@@ -227,17 +228,17 @@ func commonModelFuncs() {
 			}
 
 			if isMobile {
-				buf.WriteString(html_a(createLink(menuItem.module, menuItem.method, menuItem.vars), menuItem.text, "", "class='"+menuItem.class+" "+active+"'"))
+				buf.WriteString(html_a(createLink(menuItem.Module, menuItem.Method, menuItem.Vars), menuItem.Text, "", "class='"+menuItem.Class+" "+active+"'"))
 				buf.WriteString("\n")
 			} else {
 				buf.WriteString("<li class='")
-				buf.WriteString(menuItem.class)
+				buf.WriteString(menuItem.Class)
 				buf.WriteByte(' ')
 				buf.WriteString(active)
 				buf.WriteString("' data-id='")
-				buf.WriteString(menuItem.name)
+				buf.WriteString(menuItem.Name)
 				buf.WriteString("'>")
-				buf.WriteString(html_a(createLink(menuItem.module, menuItem.method, menuItem.vars), menuItem.text, ""))
+				buf.WriteString(html_a(createLink(menuItem.Module, menuItem.Method, menuItem.Vars), menuItem.Text, ""))
 				//buf.WriteString(subMenu)
 				buf.WriteString("</li>\n")
 			}
@@ -484,18 +485,18 @@ func getModuleMenu(module string, data *TemplateData) (menu []moduleMenu) {
 			l := strings.Split(v.Value["link"], "|")
 			if len(l) > 2 {
 				menuItem := moduleMenu{
-					name:   v.Key,
-					hidden: v.Value["hidden"] == "true",
-					text:   l[0],
-					module: l[1],
-					method: l[2],
-					class:  v.Value["class"],
+					Name:   v.Key,
+					Hidden: v.Value["hidden"] == "true",
+					Text:   l[0],
+					Module: l[1],
+					Method: l[2],
+					Class:  v.Value["class"],
 				}
 				if alias, ok := v.Value["alias"]; ok {
-					menuItem.alias = strings.Split(alias, ",")
+					menuItem.Alias = strings.Split(alias, ",")
 				}
 				if subModule, ok := v.Value["subModule"]; ok {
-					menuItem.subModule = strings.Split(subModule, ",")
+					menuItem.SubModule = strings.Split(subModule, ",")
 				}
 				if len(l) == 4 {
 					for _, vars := range strings.Split(l[3], "&") {
@@ -507,7 +508,7 @@ func getModuleMenu(module string, data *TemplateData) (menu []moduleMenu) {
 									value = fmt.Sprintf(value, r)
 								}
 							}
-							menuItem.vars = append(menuItem.vars, protocol.HtmlKeyValueStr{s[0], value})
+							menuItem.Vars = append(menuItem.Vars, protocol.HtmlKeyValueStr{s[0], value})
 						}
 
 					}
@@ -601,6 +602,10 @@ func common_printIcon(data *TemplateData, module, method, vars string, object in
 		case reflect.Map:
 			if k := r.MapIndex(reflect.ValueOf("isClickableKey")); k.Kind() == reflect.String {
 				key = k.String()
+			}
+		case reflect.String:
+			if r.String() == "" {
+				key = "null"
 			}
 		}
 		if f_interface, ok := global_Funcs[key+"_isClickable"]; ok {

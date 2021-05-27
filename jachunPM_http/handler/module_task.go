@@ -32,13 +32,15 @@ func task_printCell(data *TemplateData, col *config.ConfigDatatable, task *proto
 		case "status":
 			buf.WriteString(" task-")
 			buf.WriteString(task.Status)
-
+			buf.WriteString("'")
 		case "id":
 			buf.WriteString(" cell-id'")
 
 		case "deadline":
 			if task.Delay > 0 {
 				buf.WriteString(" text-center delayed'")
+			} else {
+				buf.WriteString("'")
 			}
 		case "assignedTo":
 			buf.WriteString(" has-btn text-left'")
@@ -60,13 +62,16 @@ func task_printCell(data *TemplateData, col *config.ConfigDatatable, task *proto
 			buf.WriteString("' title='")
 			buf.WriteString(task.StoryTitle)
 			buf.WriteString("'")
+		default:
+			buf.WriteString("'")
 		}
+		buf.WriteString(">")
 		//echo "<td class='" . $class . "'" . $title . ">";
 		switch id {
 		case "id":
 			if canBatchAction {
 
-				buf.WriteString(html_checkbox("taskIDList", []protocol.HtmlKeyValueStr{{strconv.Itoa(int(task.Id)), ""}}))
+				buf.WriteString(html_checkbox("taskIDList", []protocol.HtmlKeyValueStr{{strconv.Itoa(int(task.Id)), ""}}, "", "", "block"))
 				buf.WriteString(html_a(createLink("task", "view", "taskID="+strconv.Itoa(int(task.Id))), fmt.Sprintf("%03d", task.Id)))
 			} else {
 				buf.WriteString(fmt.Sprintf("%03d", task.Id))
@@ -175,7 +180,7 @@ func task_printCell(data *TemplateData, col *config.ConfigDatatable, task *proto
 				buf.WriteString("<span class='status-task status-")
 				buf.WriteString(task.Status)
 				buf.WriteString("'> ")
-				for _, kv := range data.Lang["task"]["statusList"].([]*protocol.HtmlKeyValueStr) {
+				for _, kv := range data.Lang["task"]["statusList"].([]protocol.HtmlKeyValueStr) {
 					if kv.Key == task.Status {
 						buf.WriteString(kv.Value)
 						break
@@ -186,12 +191,12 @@ func task_printCell(data *TemplateData, col *config.ConfigDatatable, task *proto
 				buf.WriteString("</span>")
 			}
 		case "estimate":
-			buf.WriteString(fmt.Sprintf("%0.1f", math.Round(task.Estimate*10)/10))
+			buf.WriteString(strconv.Itoa(int(math.Round(task.Estimate*10) / 10)))
 		case "consumed":
-			buf.WriteString(fmt.Sprintf("%0.1f", math.Round(task.Consumed*10)/10))
+			buf.WriteString(strconv.Itoa(int(math.Round(task.Consumed*10) / 10)))
 
 		case "left":
-			buf.WriteString(fmt.Sprintf("%0.1f", math.Round(task.Left*10)/10))
+			buf.WriteString(strconv.Itoa(int(math.Round(task.Left*10) / 10)))
 
 		case "progress":
 			buf.WriteString(strconv.Itoa(int(task.Progress)))

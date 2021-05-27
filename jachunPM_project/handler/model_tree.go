@@ -263,7 +263,7 @@ func tree_getTaskTreeModules(data *protocol.MSG_PROJECT_tree_getTaskTreeModules,
 	//默认true if($linkStory){
 	project := HostConn.GetProjectById(data.ProjectID)
 	var modules []*db.Module
-	err := in.DB.Table(db.TABLE_MODULE + " as t1").Field("t1.Path as Path,t1.Id as Id").LeftJoin(db.TABLE_STORY + " as t2").On("t2.Module = t1.Id").Where(map[string]interface{}{"t2.Id": project.Storys, "t1.Deleted": false, "t2.Deleted": false}).Limit(0).Select(&modules)
+	err := in.DB.Table(db.TABLE_MODULE).Alias("t1").Field("t1.Path as Path,t1.Id as Id").LeftJoin(db.TABLE_STORY).Alias("t2").On("t2.Module = t1.Id").Where(map[string]interface{}{"t2.Id": project.Storys, "t1.Deleted": false, "t2.Deleted": false}).Limit(0).Select(&modules)
 	if err != nil {
 		in.WriteErr(err)
 		return
@@ -292,7 +292,7 @@ func tree_getTaskTreeModules(data *protocol.MSG_PROJECT_tree_getTaskTreeModules,
 			out.ProjectModules[m.Id] = m.Id
 		}
 	}
-	if err = in.DB.Table(db.TABLE_MODULE + " as t1").Field("t1.Path as Path,t1.Id as Id").LeftJoin(db.TABLE_TASK + " as t2").On("t2.Module = t1.Id").Where(map[string]interface{}{
+	if err = in.DB.Table(db.TABLE_MODULE).Alias("t1").Field("t1.Path as Path,t1.Id as Id").LeftJoin(db.TABLE_TASK).Alias("t2").On("t2.Module = t1.Id").Where(map[string]interface{}{
 		"t2.Module":  []interface{}{mysql.WhereOperatorNE, 0},
 		"t2.Project": data.ProjectID,
 		"t1.Deleted": false, "t2.Deleted": false,
