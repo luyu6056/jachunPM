@@ -1,0 +1,327 @@
+{{template "header.html" .}}
+{{template "kindeditor.html" .}}
+{{$browseLink := (or (and (session . "taskList") (session . "taskList")) (helper_createLink "project" "browse" (strAdd "projectID=" .Data.task.Project)))}}
+<div id="mainMenu" class="clearfix">
+  <div class="btn-toolbar pull-left">
+    {{if not .App.onlybody}}
+    {{html_a $browseLink (strAdd "<i class='icon icon-back icon-sm'></i> "  .Lang.common.goback) ""  "class='btn btn-secondary'"}}
+    <div class="divider"></div>
+    {{end}}
+    <div class="page-title">
+      <span class="label label-id">{{$.Data.task.Id}}</span>
+      <span class="text" title='{{$.Data.task.Name}}' style='color: {{$.Data.task.Color}};'>
+        {{if gt $.Data.task.Ancestor 0}}<span class="label label-badge label-primary no-margin">{{.Lang.task.grandchildrenAB}}</span>{{else if gt $.Data.task.Parent 0}}<span class="label label-badge label-primary no-margin">{{.Lang.task.childrenAB}}</span>{{end}}
+        {{if .Data.task.Team}}<span class="label label-badge label-primary no-margin">{{.Lang.task.multipleAB}}</span>{{end}}
+        {{toHtml $.Data.taskName}}
+      </span>
+      {{if $.Data.task.Deleted}}
+      <span class='label label-danger'>{{.Lang.task.deleted}}</span>
+      {{end}}
+      {{if ne $.Data.task.FromBug 0}}
+      <small>{{html_icon . (strAdd .Lang.icons.bug " " .Lang.task.fromBug .Lang.common.colon $.Data.task.FromBug)}}</small>
+      {{end}}
+    </div>
+  </div>
+  {{if not $.App.onlybody}}
+  <div class="btn-toolbar pull-right">
+    {{if common_hasPriv . "task" "create"  .Data.checkObject}}{{html_a (helper_createLink "task" "create" "projectID=" $.Data.task.Project "&storyID=" $.Data.task.Story "&moduleID=" $.Data.task.Module)  (strAdd "<i class='icon icon-plus'></i> " .Lang.task.create) "" "class='btn btn-primary'"}}{{end}}
+  </div>
+  {{end}}
+</div>
+<div id="mainContent" class="main-row">
+  <div class="main-col col-8">
+    <div class="cell">
+      <div class="detail">
+        <div class="detail-title">{{.Lang.task.legendDesc}}</div>
+        <div class="detail-content article-content">
+          {{if $.Data.task.Desc}}{{bbcode2html $.Data.task.Desc true}}{{else}}<div class='text-center text-muted'>{{.Lang.common.noData}}</div>{{end}}
+        </div>
+      </div>
+      {{if ne $.Data.project.Type "ops"}}
+      {{if ne $.Data.task.FromBug  0}}
+      <div class="detail">
+        <div class="detail-title">{{.Lang.bug.steps}}</div>
+        <div class="detail-content article-content">
+          {{or (and $.Data.task.BugSteps $.Data.task.BugSteps) (strAdd "<div class='text-center text-muted'>"  .Lang.common.noData "</div>")}}
+        </div>
+      </div>
+      {{else if $.Data.task.Story}}
+      <div class="detail">
+        <div class='detail-title'>{{.Lang.task.storySpec}}</div>
+        <div class='detail-content article-content'>
+          {{or (and (or $.Data.task.StorySpec $.Data.task.StoryFiles) $.Data.task.StorySpec) (strAdd "<div class='text-center text-muted'>"  .Lang.common.noData "</div>")}}
+        </div>
+        {{file_printFiles . $.Data.task.StoryFiles false ""}}
+      </div>
+      <div class='detail'>
+        <div class='detail-title'>{{.Lang.task.storyVerify}}</div>
+        <div class='detail-content article-content'>
+          {{or (and $.Data.task.StoryVerify $.Data.task.StoryVerify) (strAdd "<div class='text-center text-muted'>"  .Lang.common.noData "</div>")}}
+        </div>
+      </div>
+      {{end}}
+      {{if $.Data.Cases}}
+      <div class='detail'>
+        <div class='detail-title'>{{.Lang.task.case}}</div>
+        <div class='detail-content article-content'>
+          <ul class='list-unstyled'>
+            {{- range $kv := $.Data.Cases}}
+            <li>{{html_a (helper_createLink "testcase" "view"  "caseID=" $kv.Key true) (strAdd "#" $kv.Key " "  $kv.Value) "" "data-toggle='modal' data-type='iframe' data-width='90%'"}}</li>
+            {{- end}}
+          </ul>
+        </div>
+      </div>
+      {{end}}
+      {{end}}
+      {{if $.Data.task.Children}}
+      <div class='detail'>
+        <div class='detail-title'>{{.Lang.task.children}}</div>
+        <div class='detail-content article-content'>
+          <table class='table table-hover table-fixed'>
+            <thead>
+              <tr class='text-center'>
+                <th class='w-50px'> {{.Lang.task.id}}</th>
+                <th class='w-40px'> {{.Lang.task.lblPri}}</th>
+                <th>                {{.Lang.task.name}}</th>
+                <th class='w-100px'>{{.Lang.task.deadline}}</th>
+                <th class='w-80px'> {{.Lang.task.assignedTo}}</th>
+                <th class='w-80px'> {{.Lang.task.status}}</th>
+                <th class='w-60px visible-lg'>{{.Lang.task.consumedAB}}{{.Lang.task.lblHour}}</th>
+                <th class='w-60px visible-lg'>{{.Lang.task.leftAB}}{{.Lang.task.lblHour}}</th>
+                <th class='w-250px'>{{.Lang.common.actions}}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{- range $child:=$.Data.task.Children }}
+              <tr class='text-center'>
+                <td>{{$child.Id}}</td>
+                <td><span class='pri-{{$child.Pri}}'>{{or (and (gt $child.Pri 0) (getValue $.Lang.task.priList $child.Pri)) ""}}</span></td>
+                <td class='text-left' title='{{$child.Name}}'><a class="iframe" data-width="90%" href="{{helper_createLink "task" "view" "taskID=" $child.Id true}}">{{$child.Name}}</a></td>
+                <td>{{date "2006-01-02" $child.Deadline}}</td>
+                <td>{{getValue $.Data.users $child.AssignedTo}}</td>
+                <td>{{getValue $.Lang.task.statusList $child.Status}}</td>
+                <td class='visible-lg'>{{$child.Consumed}}</td>
+                <td class='visible-lg'>{{$child.Left}}</td>
+                <td class='c-actions'>
+                  {{- common_printIcon $ "task" "assignTo"  (strAdd "projectID=" $child.Project "&taskID=" $child.Id)  $child "list" "" "" "iframe" "true"}}
+                  {{- common_printIcon $ "task" "start"     (strAdd "taskID=" $child.Id)  $child "list" "" "" "iframe" "true"}}
+                  {{- common_printIcon $ "task" "activate"  (strAdd "taskID=" $child.Id)  $child "list" "" "" "iframe" "true"}}
+                  {{- common_printIcon $ "task" "recordEstimate"  (strAdd "taskID=" $child.Id)  $child "list" "time" "" "iframe" "true"}}
+                  {{- common_printIcon $ "task" "finish"  (strAdd "taskID=" $child.Id)  $child "list" "" "" "iframe" "true"}}
+                  {{- common_printIcon $ "task" "close"   (strAdd "taskID=" $child.Id)  $child "list" "" "" "iframe" "true"}}
+                  {{- common_printIcon $ "task" "edit"    (strAdd "taskID=" $child.Id)  $child "list" ""}}
+                </td>
+              </tr>
+              {{- end}}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {{end}}
+      {{file_printFiles . $.Data.ProcessFile true "processFile"}}
+      {{file_printFiles . $.Data.FeedbackFile true "feedbackFile"}}
+    
+      {{template "action.html" .}}
+
+    </div>
+  
+    <div class='main-actions'>
+      <div class="btn-toolbar">
+        {{- common_printBack . $browseLink}}
+        {{- if not .App.onlybody}}<div class='divider'></div>{{end}}
+        {{- if not $.Data.task.Deleted}}
+        {{common_printIcon . "task" "assignTo"        (strAdd "projectID=" $.Data.task.Project "&taskID=" $.Data.task.Id)  $.Data.task "button" "" "" "iframe" "true" "" (or (and (not $.Data.taskTeam) .Lang.task.assignTo) .Lang.task.transfer)}}
+        {{common_printIcon . "task" "start"           (strAdd "taskID=" $.Data.task.Id)  $.Data.task "button" "" "" "iframe showinonlybody" "true"}}
+        {{common_printIcon . "task" "restart"         (strAdd "taskID=" $.Data.task.Id)  $.Data.task "button" "" "" "iframe showinonlybody" "true"}}
+        {{common_printIcon . "task" "recordEstimate"  (strAdd "taskID=" $.Data.task.Id)  $.Data.task "button" "" "" "iframe showinonlybody" "true"}}
+        {{common_printIcon . "task" "pause"           (strAdd "taskID=" $.Data.task.Id)  $.Data.task "button" "" "" "iframe showinonlybody" "true"}}
+        {{common_printIcon . "task" "internalaudit"   (strAdd "taskID=" $.Data.task.Id)  $.Data.task "button" "" "" "iframe showinonlybody" "true"}}
+        {{common_printIcon . "task" "proofreading"    (strAdd "taskID=" $.Data.task.Id)  $.Data.task "button" "" "" "iframe showinonlybody" "true"}}
+        {{common_printIcon . "task" "finish"          (strAdd "taskID=" $.Data.task.Id)  $.Data.task "button" "" "" "iframe showinonlybody text-success" "true"}}
+        {{common_printIcon . "task" "activate"        (strAdd "taskID=" $.Data.task.Id)  $.Data.task "button" "" "" "iframe showinonlybody text-success" "true"}}
+        {{common_printIcon . "task" "close"           (strAdd "taskID=" $.Data.task.Id)  $.Data.task "button" "" "" "iframe showinonlybody" "true"}}
+        {{common_printIcon . "task" "cancel"          (strAdd "taskID=" $.Data.task.Id)  $.Data.task "button" "" "" "iframe showinonlybody" "true"}}
+        {{- if not .App.onlybody}}<div class='divider'></div>{{end}}
+        {{common_printIcon . "task" "batchCreate"  (strAdd "projectID=" $.Data.task.Project "&storyID=" $.Data.task.Story "&moduleID=" $.Data.task.Module "&taskID=" $.Data.task.Id) $.Data.task "button" "plus"}}
+        {{common_printIcon . "task" "edit"    (strAdd "taskID=" $.Data.task.Id)  $.Data.task "" ""}}
+        {{common_printIcon . "task" "create"  (strAdd "productID=0&storyID=0&moduleID=0&taskID=" $.Data.task.Id)  $.Data.task "button" "copy"}}
+        {{common_printIcon . "task" "delete"  (strAdd "projectID=" $.Data.task.Project "&taskID=" $.Data.task.Id)  $.Data.task "button" "" "hiddenwin"}}
+        {{if gt $.Data.task.Parent 0}}{{html_a (helper_createLink "task" "view"  "taskID=" $.Data.task.Parent)  "<i class='icon icon-chevron-double-up'></i>" "" (strAdd "class='btn btn-link' title='" .Lang.task.parent "'")}}{{end}}
+        {{end}}
+      </div>
+    </div>
+  </div>
+  <div class="side-col col-4">
+    <div class="cell">
+      <div class='tabs'>
+        <ul class='nav nav-tabs'>
+          <li class='active'><a href='#legendBasic' data-toggle='tab'>{{.Lang.task.legendBasic}}</a></li>
+          <li><a href='#legendLife' data-toggle='tab'>{{.Lang.task.legendLife}}</a></li>
+          {{if $.Data.taskTeam}}
+          <li><a href='#legendTeam' data-toggle='tab'>{{.Lang.task.team}}</a></li>
+          {{end}}
+        </ul>
+        <div class='tab-content'>
+          <div class='tab-pane active' id='legendBasic'>
+            <table class="table table-data">
+              <tbody>
+                <tr>
+                  <th>{{.Lang.task.project}}</th>
+                  <td>{{if common_hasPriv . "project" "view" .Data.project}}{{common_printLink . "project" "view" (strAdd "projectID=" $.Data.task.Project)  $.Data.project.Name}}{{else}}{{.Data.project.Name}}{{end}}</td>
+                </tr>
+                <tr>
+                  <th>{{.Lang.task.module}}</th>
+                  <td title='{{.Data.moduleTitle}}'>{{.Data.modulePath}}</td>
+                </tr>
+                <tr class='nofixed'>
+                  <th>{{.Lang.task.story}}</th>
+                  <td>
+                    {{if not $.Data.task.StoryTitle}}{{.Lang.common.noData}}{{else}}
+                    {{if common_hasPriv . "story" "view"}}{{common_printLink . "story" "view" (strAdd "storyID=" $.Data.task.Story) $.Data.task.StoryTitle "" "class='iframe' data-width='80%'" "true" "true"}}{{else}}{{$.Data.task.StoryTitle}}{{end}}
+                    {{end}}
+                    {{if $.Data.task.NeedConfirm}}
+                        (<span class='warning'>{{.Lang.story.changed}}</span>
+                        {{- html_a (helper_createLink "task" "confirmStoryChange"  (strAdd "taskID=" $.Data.task.Id))  .Lang.common.confirm "hiddenwin" "class='btn btn-mini btn-info'"}})
+                    {{end}}
+                  </td>
+                </tr>
+                {{if gt $.Data.task.FromBug 0}}
+                <tr>
+                  <th>{{.Lang.task.fromBug}}</th>
+                  <td>{{html_a (helper_createLink "bug" "view"  "bugID=" $.Data.task.FromBug true) (strAdd "#" $.Data.task.FromBug " " $.Data.fromBug.Title) "" "class='iframe' data-width='80%'"}}</td>
+                </tr>
+                {{end}}
+                <tr>
+                  <th>{{if $.Data.task.Team}}{{.Lang.task.transferTo}}{{else}}{{.Lang.task.assignTo}}{{end}}</th>
+                  <td>{{if $.Data.task.AssignedTo}}{{getValue $.Data.users $.Data.task.AssignedTo}}{{.Lang.common.at}}{{date "2006-01-02 15:04:05" $.Data.task.AssignedDate}}{{else}}{{.Lang.common.noData}}{{end}}</td>
+                </tr>
+                <tr>
+                  <th>{{.Lang.task.type}}</th>
+                  <td>{{getValue .Lang.task.typeList $.Data.task.Type}}</td>
+                </tr>
+                <tr>
+                  <th>{{.Lang.task.status}}</th>
+                  <td><span class='status-task status-{{$.Data.task.Status}}'><span class="label label-dot"></span> {{getValue .Lang.task.statusList $.Data.task.Status}}</td>
+                </tr>
+                <tr>
+                  <th>{{.Lang.task.pri}}</th>
+                  <td><span class='label-pri label-pri-{{$.Data.task.Pri}}' title='{{getValue .Lang.task.priList $.Data.task.Pri}}'>{{if eq $.Data.task.Pri 0}}{{.Lang.common.noData}}{{else}}{{getValue .Lang.task.priList $.Data.task.Pri}}{{end}}</span></td>
+                </tr>
+                <tr>
+                  <th>{{.Lang.task.mailto}}</th>
+                  <td>
+                    {{- if eq (len .Data.task.Mailto) 0}}
+                        {{- .Lang.common.noData}}
+                    {{- else}}
+                        {{- range $id := $.Data.task.Mailto}} {{getValue $.Data.users $id}}{{end}}
+                    {{- end}}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class='tab-pane' id='legendLife'>
+            <table class='table table-data'>
+              <tr>
+                <th>{{.Lang.task.openedBy}}</th>
+                <td>{{if $.Data.task.OpenedBy}}{{getValue .Data.users $.Data.task.OpenedBy}}{{.Lang.common.at}}{{date "2006-01-02 15:04:05" $.Data.task.OpenedDate}}{{else}}{{.Lang.common.noData}}{{end}}</td>
+              </tr>
+              <tr>
+                <th>{{.Lang.task.finishedBy}}</th>
+                <td>{{if $.Data.task.FinishedBy}}{{getValue .Data.users $.Data.task.FinishedBy}}{{.Lang.common.at}}{{date "2006-01-02 15:04:05" $.Data.task.FinishedDate}}{{else}}{{.Lang.common.noData}}{{end}}</td>
+              </tr>
+              <tr>
+                <th>{{.Lang.task.canceledBy}}</th>
+                <td>{{if $.Data.task.CanceledBy}}{{getValue .Data.users $.Data.task.CanceledBy}}{{.Lang.common.at}}{{date "2006-01-02 15:04:05" $.Data.task.CanceledDate}}{{else}}{{.Lang.common.noData}}{{end}}</td>
+              </tr>
+              <tr>
+                <th>{{.Lang.task.closedBy}}</th>
+                <td>{{if $.Data.task.ClosedBy}}{{getValue .Data.users $.Data.task.ClosedBy}}{{.Lang.common.at}}{{date "2006-01-02 15:04:05" $.Data.task.ClosedDate}}{{else}}{{.Lang.common.noData}}{{end}}</td>
+              </tr>
+              <tr>
+                <th>{{.Lang.task.closedReason}}</th>
+                <td>{{if $.Data.task.ClosedReason}}{{getValue .Lang.task.reasonList $.Data.task.ClosedReason}}{{else}}{{.Lang.common.noData}}{{end}}</td>
+              </tr>
+              <tr>
+                <th>{{.Lang.task.lastEdited}}</th>
+                <td>{{if $.Data.task.LastEditedBy}}{{getValue .Data.users $.Data.task.LastEditedBy}}{{.Lang.common.at}}{{date "2006-01-02 15:04:05" $.Data.task.LastEditedDate}}{{else}}{{.Lang.common.noData}}{{end}}</td>
+              </tr>
+            </table>
+          </div>
+          <div class='tab-pane' id='legendTeam'>
+            <table class='table table-data'>
+              <thead>
+              <tr>
+                <th>{{.Lang.task.team}}</th>
+                <th class='text-center'>{{.Lang.task.estimate}}</th>
+                <th class='text-center'>{{.Lang.task.consumed}}</th>
+                <th class='text-center'>{{.Lang.task.left}}</th>
+              </tr>
+              </thead>
+                {{range $member:=.Data.taskTeams}}
+                <tr class='text-center'>
+                  <td class='text-left'>{{getValue $.Data.users $member.Account}}</td>
+                  <td>{{$member.Estimate}}</td>
+                  <td>{{$member.Consumed}}</td>
+                  <td>{{$member.Left}}</td>
+                </tr>
+                {{end}}
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class='cell'>
+      <details class="detail" open>
+        <summary class="detail-title">{{.Lang.task.legendEffort}}</summary>
+        <div class="detail-content">
+          <table class='table table-data'>
+            <tr>
+              <th>{{.Lang.task.estStarted}}</th>
+              <td>{{date "2006-01-02" $.Data.task.EstStarted}}</td>
+            </tr>
+            <tr>
+              <th>{{.Lang.task.realStarted}}</th>
+              <td>{{date "2006-01-02" $.Data.task.RealStarted}} </td>
+            </tr>
+            <tr>
+              <th>{{.Lang.task.deadline}}</th>
+              <td>{{date "2006-01-02" $.Data.task.Deadline}}
+                {{if $.Data.task.Delay}}{{toHtml (printf .Lang.task.delayWarning $.Data.task.Delay)}}{{end}}
+              </td>
+            </tr>
+            <tr>
+              <th>{{.Lang.task.estimate}}</th>
+              <td>{{$.Data.task.Estimate}}{{.Lang.common.workingHour}}</td>
+            </tr>
+            <tr>
+              <th>{{.Lang.task.consumed}}</th>
+              <td>{{printf "%.0f" $.Data.task.Consumed}}{{.Lang.common.workingHour}}</td>
+            </tr>
+            <tr>
+              <th>{{.Lang.task.left}}</th>
+              <td>{{$.Data.task.Left}}{{.Lang.common.workingHour}}</td>
+            </tr>
+          </table>
+        </div>
+      </details>
+    </div>
+    <div class='cell'>
+      <details class="detail" open>
+        <summary class="detail-title">{{getValue .Lang.file.typeChoices "sourceFile"}}</summary>
+        <div class="detail-content">
+        {{file_printFiles . $.Data.SourceFile true "sourceFile"}}
+        </div>
+      </details>
+  </div>
+   <div class='cell'>
+      <details class="detail" open>
+        <summary class="detail-title">{{getValue .Lang.file.FinalFile "FinalFile"}}</summary>
+        <div class="detail-content">
+        {{file_printFiles . $.Data.FinalFile true "FinalFile"}}
+        </div>
+      </details>
+  </div>
+  </div>
+</div> 
+{{template "footer.html" .}}

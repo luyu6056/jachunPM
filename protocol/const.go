@@ -7,15 +7,13 @@ import (
 )
 
 const (
-	MaxOutLen       = 1<<32 - 1
-	MsgHeadLen      = 4 + 1 + 2 + 2 + 4 + 3 //不包含cmd
-	MaxMsgLen       = 1<<24 - 1 + MsgHeadLen
-	MaxMsgNum       = 127
-	MaxMsgTtl       = 100 //目前只允许查询100次
-	Rpcmsgnum       = 200 //缓冲消息数
-	MaxReconnectNum = 0   //重试次数,0无限制
-	//满足任一条件开启压缩
-	CompressMinLen          = 8000      //最小压缩长度
+	MaxOutLen               = 2<<32 - 1
+	MsgHeadLen              = 4 + 2 + 2 + 2 + 4 + 4 + 3 //不包含cmd
+	MaxMsgLen               = 2<<24 - 1 - MsgHeadLen
+	MaxMsgNum               = 127
+	MaxMsgTtl               = 1000      //目前只允许查询1000次
+	Rpcmsgnum               = 200       //缓冲消息数
+	MaxReconnectNum         = 0         //重试次数,0无限制
 	CompressMinNum          = 5         //最小压缩消息数
 	DefaultWindowSize       = 20        //默认窗口值，为msg消息数量，窗口值允许为负值
 	RpcTickDefaultTime      = 1         //单位秒
@@ -24,7 +22,14 @@ const (
 	SessionKeepLoginExpires = 7 * 86400 //keepLogin的session
 )
 
-var ZEROTIME, _ = time.Parse("2006-01-02", "2010-01-01") //导入的0000-00-00 00:00:00会变成2000-01-01，所以这个值设置大一点
+var ZEROTIME, _ = time.Parse("2006-01-02", "0000-01-01")
+var NORMALTIME, _ = time.Parse("2006-01-02", "2010-01-01")
+
+const (
+	ADMINUSER = 1
+	CLOSEUSER = -1
+)
+
 var buf_pool = sync.Pool{New: func() interface{} {
 	return new(libraries.MsgBuffer)
 }}
@@ -41,10 +46,10 @@ func BufPoolPut(buf *libraries.MsgBuffer) {
 type ServerNo uint8
 
 const (
-	MaxServerNoNum  = 7
-	HostServerNo    = 0
-	CommomServerNo  = 0 //hostServer别名
-	FileServerNo    = 0 //file集成在网关内
+	MaxServerNoNum = 8
+
+	HostServerNo    = 1
+	FileServerNo    = 1 //file集成在网关内
 	HttpServerNo    = 2
 	LogServerNo     = 3
 	UserServerNo    = 4
@@ -55,7 +60,7 @@ const (
 )
 
 var serverNoToStr = map[ServerNo]string{
-	HostServerNo:    "common",
+	HostServerNo:    "host",
 	HttpServerNo:    "http",
 	LogServerNo:     "log",
 	UserServerNo:    "user",
@@ -114,3 +119,8 @@ const (
 	CONIFG_weakPasswordSpecial    = 1 << 2 //包含特殊字符
 	CONIFG_weakPasswordNum        = 1 << 3 //包含数字
 )
+
+var CMD_NO_CHECK_TTL = map[int32]int{
+	CMD_MSG_FILE_RangeDown:        0,
+	CMD_MSG_FILE_RangeDown_result: 0,
+}

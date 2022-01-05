@@ -1,0 +1,33 @@
+{{template "header.html" .}}
+{{template "kindeditor.html" .}}
+<div id='mainContent' class='main-content'>
+  <div class='center-block'>
+    <div class='main-header'>
+      <h2>
+        <span class='label label-id'>{{$.Data.task.Id}}</span>
+        {{if $.App.onlybody}}<span title='{{$.Data.task.Name}}'>{{$.Data.task.Name}}</span>{{html_a (helper_createLink "task" "view"  "task=" $.Data.task.Id)  $.Data.task.Name}}
+        {{else}}
+        <small> {{.Lang.common.arrow}}{{.Lang.task.cancel}}</small>
+        {{end}}
+      </div>
+    </div>
+
+    <form method='post' target='hiddenwin'>
+      <table class='table table-form'>
+        <tr>
+          <th class='w-50px'>{{.Lang.common.comment}}</th>
+          <td>{{html_textarea "comment" ""  "rows='6' class='form-control'"}}</td>
+        </tr>
+        <tr>
+          <td colspan='2' class='text-center'>
+            {{html_submitButton . .Lang.task.cancel}}
+            {{html_linkButton . .Lang.common.goback  (session . "taskList")}}
+          </td>
+        </tr>
+      </table>
+    </form>
+    <hr class='small' />
+    <div class='main'>{{template "action.html" .}}</div>
+  </div>
+</div>
+{{template "footer.html" .}}

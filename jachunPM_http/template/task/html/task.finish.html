@@ -1,0 +1,75 @@
+{{template "header.html" .}}
+{{template "kindeditor.html" .}}
+{{template "datepicker.html" .}}
+<div id='mainContent' class='main-content'>
+  <div class='center-block'>
+    {{if and $.Data.task.Team  (ne $.Data.task.AssignedTo $.User.Id)}}
+    <div class="alert with-icon">
+      <i class="icon-exclamation-sign"></i>
+      <div class="content">
+        <p>{{printf .Lang.task.deniedNotice (strAdd "<strong>" $.Data.task.AssignedToRealName "</strong>") .Lang.task.finish}}</p>
+      </div>
+    </div>
+    {{else}}
+    <div class='main-header'>
+      <h2>
+        <span class='label label-id'>{{$.Data.task.Id}}</span>
+        {{if $.App.onlybody}}<span title='{{$.Data.task.Name}}'>{{$.Data.task.Name}}</span>{{else}}{{html_a (helper_createLink "task" "view"  "task=" $.Data.task.Id)  $.Data.task.Name}}{{end}}
+        {{if not $.App.onlybody}}
+        <small> {{.Lang.common.arrow}}{{.Lang.task.finish}}</small>
+        {{end}}
+      </div>
+    </div>
+    <form method='post' enctype='multipart/form-data' target='hiddenwin'>
+      <table class='table table-form'>
+        <tr>
+          <th class='w-80px'>{{if $.Data.task.Team}}{{.Lang.task.common}}{{.Lang.task.consumed}}{{else}}{{.Lang.task.hasConsumed}}{{end}}</th>
+          <td class='w-p25-f'>{{$.Data.task.Consumed}} {{.Lang.common.workingHour}}</td>
+          <td></td>
+        </tr>
+        {{if $.Data.task.Team}}
+        <tr>
+          <th class='w-80px'>{{.Lang.task.hasConsumed}}</th>
+          <td class='w-p25-f'>{{$.Data.MyConsumed}} {{.Lang.common.workingHour}}</td><td></td>
+        </tr>
+        {{end}}
+        <tr>
+          <th>{{if $.Data.task.Team}}{{.Lang.task.myConsumed}}{{else}}{{.Lang.task.consumed}}{{end}}</th>
+          <td>
+            {{$consumed := or (and $.Data.task.Team $.Data.MyConsumed) $.Data.task.Consumed}}
+            <div class='input-group'>{{html_input "consumed"  $consumed  "class='form-control' autocomplete='off'"}} <span class='input-group-addon'>{{.Lang.task.hour}}</span></div>
+          </td>
+        </tr>
+         <tr>
+            <th>{{.Lang.task.mailto}}</th>
+            <td>
+              <div class='input-group'>
+                {{html_select "mailto" $.Data.members  $.Data.task.Mailto "class=\"form-control\" multiple"}}
+                {{fetch . "my" "buildContactLists"}}
+              </div>
+            </td>
+          </tr>
+        <tr>
+          <th>{{.Lang.task.finishedDate}}</th>
+          <td><div class='datepicker-wrapper'>{{html_input "finishedDate" (date "today") "class='form-control form-date'"}}</div></td><td></td>
+        </tr>
+  
+        <tr>
+          <th>{{.Lang.common.comment}}</th>
+          <td colspan='2'>{{html_textarea "comment" ""  "rows='6' class='w-p98'"}}</td>
+        </tr>
+        <tr>
+          <td colspan='3' class='text-center form-actions'>
+            {{html_submitButton . .Lang.task.finish}}
+            {{html_linkButton . .Lang.common.goback  (session . "taskList") "self" "" "btn btn-wide"}}
+          </td>
+        </tr>
+      </table>
+    </form>
+    <hr class='small' />
+    <div class='main'>{{template "action.html" .}}</div>
+    {{end}}
+  </div>
+</div>
+
+{{template "footer.html" .}}

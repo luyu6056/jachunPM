@@ -100,6 +100,14 @@ func action_transformActions(where map[string]interface{}, order string, in *pro
 			objectNames[typename] = result.List
 			out.Put()
 		case "task":
+			out := protocol.GET_MSG_PROJECT_task_getPairs()
+			out.Where = map[string]interface{}{"Id": ids}
+			var result *protocol.MSG_PROJECT_task_getPairs_result
+			if err = in.SendMsgWaitResult(0, out, &result); err != nil {
+				return
+			}
+			objectNames[typename] = result.List
+			out.Put()
 		case "build":
 		case "bug":
 		case "case":
@@ -221,14 +229,20 @@ func action_AddHistory(data *protocol.MSG_LOG_Action_AddHistory, in *protocol.Ms
 	var action *protocol.MSG_LOG_Action
 	err := in.DB.Table(db.TABLE_ACTION).Prepare().Where("Id=?", data.Id).Find(&action)
 	if err != nil {
-		libraries.DebugLog("增加history失败%+v", err)
+		libraries.ReleaseLog("增加history失败%+v", err)
 	}
 	if action != nil {
 		action.Historys = append(action.Historys, data.History...)
 	}
 	_, err = in.DB.Table(db.TABLE_ACTION).Where("Id=?", data.Id).Update("Historys = ?", action.Historys)
 	if err != nil {
-		libraries.DebugLog("增加history失败%+v", err)
+		libraries.ReleaseLog("增加history失败%+v", err)
 	}
 
+}
+func action_read(data *protocol.MSG_LOG_Action_set_read, in *protocol.Msg) {
+	_, err := in.DB.Table(db.TABLE_ACTION).Prepare().Where("'objectType' = ? and 'objectID' = ? and 'read' = 0", data.ObjectType, data.ObjectID).Update(map[string]interface{}{"read": 1})
+	if err != nil {
+		libraries.ReleaseLog("修改action为read失败，data:%+v ,err:%+v", data, err)
+	}
 }

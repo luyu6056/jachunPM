@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"codec"
+	"errors"
 	"fmt"
 	"jachunPM_http/js"
 	"libraries"
@@ -25,6 +27,7 @@ type HttpRequest interface {
 	AddQuery(name, value string)
 	Cookie(key string) string
 	Session() *cache.Hashvalue
+	URI() string
 
 	Header(name string) string
 	Method() string
@@ -39,6 +42,7 @@ type HttpRequest interface {
 	Redirect(url string)
 	DelSession()
 	Close()
+	RangeDownload(r codec.HttpIoReader, size int64, name string)
 }
 
 var httpHandlerMap = map[string]map[string]func(data *TemplateData) error{
@@ -51,12 +55,7 @@ var httpHandlerModuleInit = map[string]map[string]func(data *TemplateData) error
 }
 
 func HttpHandler(ws HttpRequest) gnet.Action {
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Println(err)
-			debug.PrintStack()
-		}
-	}()
+
 	if m, ok := httpHandlerMap[ws.Method()]; ok {
 		if f, ok := m[ws.Path()]; ok {
 			//检查是否登录
@@ -75,6 +74,16 @@ func HttpHandler(ws HttpRequest) gnet.Action {
 					return gnet.None
 				}
 			}
+			defer func() {
+				if err := recover(); err != nil {
+					data.outErr(errors.New(fmt.Sprintf("执行错误,panic %v", err)))
+					fmt.Println(err)
+					debug.PrintStack()
+				}
+				if data.User != nil {
+					data.User.Put()
+				}
+			}()
 			//检查权限
 			//执行moduleInit
 			if init, ok := httpHandlerModuleInit[ws.Method()][data.App["moduleName"].(string)]; ok {
@@ -88,12 +97,11 @@ func HttpHandler(ws HttpRequest) gnet.Action {
 			if err := f(data); err != nil {
 				data.outErr(err)
 			}
-			if data.User != nil {
-				data.User.Put()
-			}
+
 			return gnet.None
 		}
 	}
+
 	return ws.StaticHandler()
 
 }

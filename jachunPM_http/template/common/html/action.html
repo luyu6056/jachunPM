@@ -61,7 +61,7 @@
         <style>.comment .comment-content{width: 98%}</style>
         {{end}}
         <div class='article-content comment'>
-          <div class='comment-content'>{{strings_replace $action.Comment "\n" "<br>"}}</div>
+          <div class='comment-content'>{{toHtml (strings_replace $action.Comment "\n" "<br>")}}</div>
         </div>
         {{if $canEditComment}}
         <form method='post' class='comment-edit-form' action='{{helper_createLink "action" "editComment" "actionID=" $action.Id}}'>
@@ -69,8 +69,8 @@
           {{html_textarea "lastComment" $action.Comment "rows='8' autofocus='autofocus'"}}
           </div>
           <div class="form-group form-actions">
-          {{html_submitButton .Lang.common.save}}
-          {{html_commonButton .Lang.common.close "" "btn btn-wide btn-hide-form"}}
+          {{html_submitButton $ $.Lang.common.save}}
+          {{html_commonButton $.Lang.common.close "" "btn btn-wide btn-hide-form"}}
           </div>
         </form>
         {{end}}

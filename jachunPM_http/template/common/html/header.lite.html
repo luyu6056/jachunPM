@@ -7,14 +7,13 @@
   <meta name="renderer" content="webkit">
   <title>{{.Data.title}} - {{.Lang.common.jachunPM}}</title>
 {{- if .Config.common.common.debug}}
-  {{- $timestamp := time}}
-  {{css_import (strAdd .Config.common.common.themeRoot  "zui/css/min.css?t="  $timestamp)}}
-  {{css_import (strAdd .Config.common.common.defaultTheme  "style.css?t="  $timestamp)}}
-  {{css_import .Config.common.common.langTheme}}
-  {{if eq (strpos .Config.common.common.langTheme "default") -1}}{{css_import (strAdd .App.ClientTheme   "style.css?t="  $timestamp)}}{{end}}
+  {{css_import (strAdd .Config.common.common.themeRoot  "zui/css/min.css?t=")}}
+  {{css_import (strAdd .Config.common.common.defaultTheme  "style.css?t=")}}
+  {{css_import .App.langTheme}}
+  {{if eq (strpos .Config.common.common.langTheme "default") -1}}{{css_import (strAdd .App.ClientTheme   "style.css?t=")}}{{end}}
   {{js_import (strAdd .Config.common.common.jsRoot  "jquery/lib.js")}}
-  {{js_import (strAdd .Config.common.common.jsRoot  "zui/min.js?t="  $timestamp)}}
-  {{js_import (strAdd .Config.common.common.jsRoot  "my.full.js?t="  $timestamp)}}
+  {{js_import (strAdd .Config.common.common.jsRoot  "zui/min.js?t=")}}
+  {{js_import (strAdd .Config.common.common.jsRoot  "my.full.js?t=")}}
 {{- else}}
   {{css_import (strAdd .Config.common.common.defaultTheme .App.ClientLang "." .App.ClientTheme ".css")}}  
   {{js_import (strAdd .Config.common.common.jsRoot  "all.js")}}
@@ -29,10 +28,15 @@
 <script>config.onlybody = {{.App.onlybody}};
 config.currentMethod='{{.App.methodName}}';
 config.currentModule='{{.App.moduleName}}';
+{{if .Data.queryID}}config.queryID='{{.Data.queryID}}';{{end}}
 var lang={};
 lang.submitting = '{{.Lang.common.loading}}';
 lang.save       = '{{.Lang.common.save}}';
 lang.timeout    = '{{.Lang.common.timeout}}';
+{{- $currentConfig := (getValue (getValue .Config .App.moduleName) .App.methodName)}}
+{{- if getValue $currentConfig "requiredFields"}}
+config.requiredFields={{getValue $currentConfig "requiredFields"}};
+{{- end}}
 window.closetrigger=function(reload){
   $('#triggerModal').data('zui.modaltrigger').close()
   if(reload){

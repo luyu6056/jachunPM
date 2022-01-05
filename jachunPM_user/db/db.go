@@ -4,6 +4,7 @@ import (
 	"jachunPM_user/config"
 	"log"
 	"mysql"
+	"protocol"
 	"time"
 )
 
@@ -15,6 +16,7 @@ const (
 	TABLE_USERCONTACT = "usercontact"
 	TABLE_TEAM        = "team"
 	TABLE_USERQUERY   = "userquery"
+	TABLE_Config     = "config"
 )
 
 func Init() *mysql.MysqlDB {
@@ -36,10 +38,12 @@ func Init() *mysql.MysqlDB {
 		new(Usercontact),
 		new(Team),
 		new(Userquery),
+		new(Config),
 	)
 	if errs != nil {
 		log.Fatalf("数据库启动失败%v", errs)
 	}
+	db.Regsiter(&protocol.MSG_USER_team_info{}, &protocol.MSG_USER_INFO_cache{})
 	return db
 }
 
@@ -53,7 +57,7 @@ type User struct {
 	Realname    string `db:"type:varchar(100)"`
 	Group       []int32
 	Commiter    string    `db:"type:varchar(100)"`
-	Gender      int8      `db:"default(0)"` // 0男，1女
+	Gender      int8      `db:"default(0)"` // 1男，0女
 	Email       string    `db:"type:varchar(90)"`
 	QQ          int64     `db:"type:varchar(20)"`
 	Mobile      string    `db:"type:varchar(11)"`
@@ -62,7 +66,7 @@ type User struct {
 	Dingding    string    `db:"type:varchar(90)"`
 	Address     string    `db:"type:varchar(120)"`
 	Zipcode     string    `db:"type:varchar(10)"`
-	Join        time.Time `db:"not null;default('0000-00-00')"`
+	Join        time.Time `db:"type:date;default('0000-00-00')"`
 	Visits      int32     `db:"default(0)"`            //访问次数
 	Ip          string    `db:"type:varchar(15)"`      //上次登录ip
 	Last        time.Time `db:"default('0000-00-00')"` //上次登录时间
@@ -190,4 +194,17 @@ type Userquery struct {
 
 func (*Userquery) TableName() string {
 	return TABLE_USERQUERY
+}
+
+type Config struct {
+	Id      int32  `db:"auto_increment;pk"`
+	Uid     int32  `db:"index"`
+	Module  string `db:"type:varchar(30)"`
+	Key     string `db:"type:varchar(90)"`
+	Value   string
+	Section string
+}
+
+func (*Config) TableName() string {
+	return TABLE_Config
 }

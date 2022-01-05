@@ -23,6 +23,7 @@ type HtmlKeyValueInterface struct {
 	Key   string
 	Value interface{}
 }
+type ChangeHistory []*MSG_LOG_History
 
 //本代码是给msg加入chan bytes.Buffer
 var msg = make(map[int32]string)
@@ -69,7 +70,7 @@ func main() {
 	h := "\n" //换行符
 
 	out := new(bytes.Buffer)
-	for serverid, name := range []string{"0common.go", "", "", "3log.go", "4user.go", "5project.go", "6test.go"} {
+	for serverid, name := range []string{"", "1host.go", "", "3log.go", "4user.go", "5project.go", "6test.go"} {
 		func() {
 			name = BASE_ROOT_PATH + DS + name
 			b, err := ioutil.ReadFile(name)
@@ -219,7 +220,7 @@ func main() {
 						case "time.Time":
 							out.WriteString("	data.")
 							out.WriteString(f.name)
-							out.WriteString(" = time.Unix(0,0)\n")
+							out.WriteString(" = time.UnixMicro(0)\n")
 						default:
 							if f.typ[:2] == "[]" {
 								out.WriteString("	data.")
@@ -256,25 +257,25 @@ func main() {
 				for _, f := range _struct.field {
 					switch {
 					case f.typ == "[]byte":
-						out.WriteString("	WRITE_int32(int32(len(data.")
+						out.WriteString("	WRITE_int(len(data.")
 						out.WriteString(f.name)
-						out.WriteString(")), buf)\n")
+						out.WriteString("), buf)\n")
 						out.WriteString("	buf.Write(data.")
 						out.WriteString(f.name)
 						out.WriteString(")\n")
 					case f.typ == "[][]byte":
-						out.WriteString("	WRITE_int32(int32(len(data.")
+						out.WriteString("	WRITE_int(len(data.")
 						out.WriteString(f.name)
-						out.WriteString(")), buf)\n")
+						out.WriteString("), buf)\n")
 						out.WriteString("	for _, v := range data.")
 						out.WriteString(f.name)
 						out.WriteString("{\n")
-						out.WriteString("		WRITE_int32(int32(len(v)), buf)\n		buf.Write(v)\n")
+						out.WriteString("		WRITE_int(len(v), buf)\n		buf.Write(v)\n")
 						out.WriteString("	}\n")
 					case f.typ[:2] == "[]":
-						out.WriteString("	WRITE_int32(int32(len(data.")
+						out.WriteString("	WRITE_int(len(data.")
 						out.WriteString(f.name)
-						out.WriteString(")), buf)\n")
+						out.WriteString("), buf)\n")
 						out.WriteString("	for _, v := range data.")
 						out.WriteString(f.name)
 						out.WriteString("{\n")
@@ -290,7 +291,7 @@ func main() {
 					case f.typ == "time.Time":
 						out.WriteString("	WRITE_int64(data.")
 						out.WriteString(f.name)
-						out.WriteString(".UnixNano(), buf)\n")
+						out.WriteString(".UnixMicro(), buf)\n")
 					case len(f.typ) > 4 && f.typ[:4] == "map[":
 						out.WriteString("	WRITE_map(data.")
 						out.WriteString(f.name)
@@ -335,14 +336,14 @@ func main() {
 					bin = bin1
 					*Platform_list = append(*Platform_list, *data)
 				}*/
-				var hasQueryID, hasResultQueryID bool
+				//var hasQueryID, hasResultQueryID bool
 				for _, f := range _struct.field {
 					switch {
 					case f.typ == "[]byte":
 						l := f.name + "_len"
 						out.WriteString("	")
 						out.WriteString(l)
-						out.WriteString(" := int(READ_int32(buf))\n")
+						out.WriteString(" := READ_int(buf)\n")
 						out.WriteString("	data.")
 						out.WriteString(f.name)
 						out.WriteString(" = make(")
@@ -358,9 +359,9 @@ func main() {
 						l := f.name + "_len"
 						out.WriteString("	")
 						out.WriteString(l)
-						out.WriteString(" := int(READ_int32(buf))\n	for i := 0; i < ")
+						out.WriteString(" := READ_int(buf)\n	for i := 0; i < ")
 						out.WriteString(l)
-						out.WriteString("; i++ {\n		l := READ_int32(buf)\n		b := make([]byte,l)\n		copy(b,buf.Next(int(l)))\n")
+						out.WriteString("; i++ {\n		l := READ_int(buf)\n		b := make([]byte,l)\n		copy(b,buf.Next(int(l)))\n")
 						out.WriteString("		data.")
 						out.WriteString(f.name)
 						out.WriteString(" = append(data.")
@@ -371,7 +372,7 @@ func main() {
 						l := f.name + "_len"
 						out.WriteString("	")
 						out.WriteString(l)
-						out.WriteString(" := int(READ_int32(buf))\n	if ")
+						out.WriteString(" := READ_int(buf)\n	if ")
 						out.WriteString(l)
 						out.WriteString(">cap(data.")
 						out.WriteString(f.name)
@@ -407,7 +408,7 @@ func main() {
 					case f.typ == "time.Time":
 						out.WriteString("	data.")
 						out.WriteString(f.name)
-						out.WriteString(" = time.Unix(0, READ_int64(buf))\n")
+						out.WriteString(" = time.UnixMicro(READ_int64(buf))\n")
 					case len(f.typ) > 4 && f.typ[:4] == "map[":
 						out.WriteString("	READ_map(&data.")
 						out.WriteString(f.name)
@@ -436,18 +437,18 @@ func main() {
 							out.WriteString(" = READ_")
 							out.WriteString(f.typ)
 							out.WriteString("(buf)\n")
-							if f.name == "QueryID" && f.typ == "uint32" {
+							/*if f.name == "QueryID" && f.typ == "uint32" {
 								hasQueryID = true
 							} else if f.name == "QueryResultID" && f.typ == "uint32" {
 								hasResultQueryID = true
-							}
+							}*/
 						}
 
 					}
 
 				}
 				out.WriteString("\n}\n")
-				if hasQueryID {
+				/*if hasQueryID {
 					out.WriteString("func (data *")
 					out.WriteString(_struct.name)
 					out.WriteString(") getQueryID() uint32 {\n")
@@ -465,7 +466,7 @@ func main() {
 					out.WriteString(_struct.name)
 					out.WriteString(") setQueryResultID(id uint32) {\n")
 					out.WriteString("	data.QueryResultID = id\n}\n")
-				}
+				}*/
 				out.WriteString("\n")
 			}
 			new_name := strings.Replace(name, BASE_ROOT_PATH, new_gopatch, 1)

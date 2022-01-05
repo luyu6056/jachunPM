@@ -1,0 +1,45 @@
+{{template "header.html" .}}
+{{template "kindeditor.html" .}}
+<div id='mainContent' class='main-content'>
+  <div class='center-block'>
+    {{if and $.Data.task.Team  (ne $.Data.task.AssignedTo $.User.Id)}}
+    <div class="alert with-icon">
+      <i class="icon-exclamation-sign"></i>
+      <div class="content">
+        <p>{{printf .Lang.task.deniedNotice (strAdd "<strong>" $.Data.task.AssignedToRealName "</strong>") .Lang.task.pause}}</p>
+      </div>
+    </div>
+    {{else}}
+    <div class='main-header'>
+      <h2>
+        <span class='label label-id'>{{$.Data.task.Id}}</span>
+        {{if $.App.onlybody}}<span title='{{$.Data.task.Name}}'>{{$.Data.task.Name}}</span>{{else}}{{html_a (helper_createLink "task" "view"  "task="  $.Data.task.Id)  $.Data.task.Name}}{{end}}
+        {{if not $.App.onlybody}}
+        <small>{{.Lang.common.arrow}}{{.Lang.task.pause}}</small>
+        {{end}}
+      </div>
+    </div>
+
+    <form method='post' enctype='multipart/form-data' target='hiddenwin'>
+      <table class='table table-form'>
+        <tr>
+          <th class='w-60px'>{{.Lang.common.comment}}</th>
+          <td>{{html_textarea "comment" ""  "rows='6' class='form-control'"}}</td>
+        </tr>
+        <tr>
+          <th>{{.Lang.task.proofreading2 }}</th>
+          <td colspan='2'>{{html_radio "proofreading"  .Lang.task.proofreadingPass $.Data.task.Proofreading}}</td>
+        </tr>
+        <tr>
+          <td colspan='2' class='text-center form-actions'>
+            {{html_submitButton .}}
+            {{html_linkButton . .Lang.common.goback  (session . "taskList") "self" "" "btn btn-wide"}}
+          </td>
+        </tr>
+      </table>
+    </form>
+    <hr class='small' />
+    {{end}}
+  </div>
+</div>
+{{template "footer.html" .}}

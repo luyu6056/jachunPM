@@ -20,7 +20,8 @@ const (
 	checkTypeNegative //负数
 	checkTypeUserId   //允许0或者空,不允许错误的值
 	checkTypeDate     //2006-01-02
-
+	checkTypeProjectID
+	checkTypeTaskID
 )
 
 var checkinfo = map[string]map[string]interface{}{ //目前接受checkType和[]protocol.htmlKeyValStr,func() ([]protocol.HtmlKeyValueStr, error)
@@ -70,6 +71,40 @@ var checkinfo = map[string]map[string]interface{}{ //目前接受checkType和[]p
 		"type":  config.Lang[protocol.DefaultLang]["project"]["typeList"].([]protocol.HtmlKeyValueStr),
 		"acl":   config.Lang[protocol.DefaultLang]["project"]["aclList"].([]protocol.HtmlKeyValueStr),
 	},
+	"/task/create": map[string]interface{}{
+		"type":       config.Lang[protocol.DefaultLang]["task"]["typeList"].([]protocol.HtmlKeyValueStr),
+		"assignedTo": checkTypeUserId,
+		"name":       checkTypeRequire,
+		"after":      config.Lang[protocol.DefaultLang]["task"]["afterChoices"].([]protocol.HtmlKeyValueStr),
+		"module":     checkTypePositive,
+		"mailto":     checkTypeUserId,
+		"pri":        config.Lang[protocol.DefaultLang]["task"]["priList"].([]protocol.HtmlKeyValueStr),
+		"estStarted": checkTypeDate,
+		"deadline":   checkTypeDate,
+	},
+	"/task/edit": map[string]interface{}{
+		"type":         config.Lang[protocol.DefaultLang]["task"]["typeList"].([]protocol.HtmlKeyValueStr),
+		"assignedTo":   checkTypeUserId,
+		"name":         checkTypeRequire,
+		"after":        config.Lang[protocol.DefaultLang]["task"]["afterChoices"].([]protocol.HtmlKeyValueStr),
+		"module":       checkTypePositive,
+		"mailto":       checkTypeUserId,
+		"parent":       checkTypeTaskID,
+		"project":      checkTypeProjectID & checkTypeRequire,
+		"pri":          config.Lang[protocol.DefaultLang]["task"]["priList"].([]protocol.HtmlKeyValueStr),
+		"estStarted":   checkTypeDate,
+		"deadline":     checkTypeDate,
+		"realStarted":  checkTypeDate,
+		"estimate":     checkTypeFloat,
+		"left":         checkTypeFloat,
+		"finishedBy":   checkTypeUserId,
+		"finishedDate": checkTypeDate,
+		"canceledBy":   checkTypeUserId,
+		"canceledDate": checkTypeDate,
+		"closedBy":     checkTypeUserId,
+		"closedDate":   checkTypeDate,
+		"closedReason": config.Lang[protocol.DefaultLang]["task"]["reasonList"].([]protocol.HtmlKeyValueStr),
+	},
 }
 
 //post请求检查
@@ -106,7 +141,8 @@ func (data *TemplateData) ajaxCheckPost() bool {
 						} else if v == "" {
 							continue
 						}
-						if typ&checkTypeInt == checkTypeInt {
+						switch {
+						case typ&checkTypeInt == checkTypeInt:
 							i, err := strconv.Atoi(v)
 							if err != nil {
 								return key, data.Lang["error"]["checkTypeInt"].(string)
@@ -125,7 +161,7 @@ func (data *TemplateData) ajaxCheckPost() bool {
 									return key, data.Lang["error"]["checkNegative"].(string)
 								}
 							}
-						} else if typ&checkTypeFloat == checkTypeFloat {
+						case typ&checkTypeFloat == checkTypeFloat:
 							f, err := strconv.ParseFloat(v, 64)
 							if err != nil {
 								return key, data.Lang["error"]["checkTypeInt"].(string)
@@ -144,7 +180,29 @@ func (data *TemplateData) ajaxCheckPost() bool {
 									return key, data.Lang["error"]["checkNegative"].(string)
 								}
 							}
-						} else {
+						case typ&checkTypeProjectID == checkTypeProjectID:
+							id, err := strconv.Atoi(v)
+							if err != nil {
+								return key, data.Lang["project"]["error"].(map[string]string)["NotFound"]
+							}
+							if id != 0 || require {
+								if HostConn.GetProjectById(int32(id)) == nil {
+									return key, data.Lang["project"]["error"].(map[string]string)["NotFound"]
+								}
+							}
+						case typ&checkTypeTaskID == checkTypeTaskID:
+							id, err := strconv.Atoi(v)
+							if err != nil {
+								return key, data.Lang["task"]["error"].(map[string]string)["notFoundTask"]
+							}
+							if id != 0 || require {
+								if task, err := task_getByID(data, int32(id)); err != nil {
+									return key, data.Lang["task"]["error"].(map[string]string)["notFoundTask"] + "_" + err.Error()
+								} else if task == nil {
+									return key, data.Lang["task"]["error"].(map[string]string)["notFoundTask"]
+								}
+							}
+						default:
 							switch typ {
 							case checkTypeRequire, checkTypeInt, checkTypeFloat:
 								//上面已处理

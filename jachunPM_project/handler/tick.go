@@ -16,7 +16,7 @@ func HandleTick(t time.Time) {
 	var branchs []*protocol.MSG_PROJECT_branch_info
 	var projects []*protocol.MSG_PROJECT_project_cache
 	now := time.Now().Unix()
-	if lastflush < now+86400 {
+	if lastflush < now-86400 {
 		//检查是否缺少默认admin
 		err := HostConn.DB.Table(db.TABLE_PRODUCT).Limit(0).Select(&products)
 		if err != nil {
@@ -151,6 +151,7 @@ func HandleTick(t time.Time) {
 		if err != nil {
 			libraries.ReleaseLog("检查branch刷新缓存失败%v", err)
 		}
+
 		err = HostConn.DB.Table(db.TABLE_PROJECT).Prepare().Where("UNIX_TIMESTAMP(TimeStamp)>?", t.Unix()-protocol.RpcTickDefaultTime*2).Limit(0).Select(&projects)
 		if err != nil {
 			libraries.ReleaseLog("检查projects刷新缓存失败%v", err)

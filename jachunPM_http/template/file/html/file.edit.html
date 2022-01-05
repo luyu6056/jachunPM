@@ -1,0 +1,39 @@
+{{template "header.lite.html" .}}
+<style>.main-form {margin: 15px -15px 0}</style>
+<script>
+function setFileName()
+{
+    time = setInterval("closeWindow()", 200);
+    return true;
+}
+
+function closeWindow()
+{
+    parent.$.closeModal();
+    clearInterval(time);
+}
+</script>
+<main id="main">
+  <div class="container">
+    <div id='mainContent' class='main-content'>
+      <div class='main-header'>
+        <h2>{{.Lang.file.inputFileName}}</h2>
+      </div>
+      <form class='main-form' method='post' target='hiddenwin' onsubmit='setFileName();'>
+        <table class='table table-form'>
+          <tr>
+            <td>
+              <div class='input-group'>
+                {{html_input "fileName"  $.Data.file.Name  "class='form-control' size='40' autocomplete='off'"}}
+                <input type="hidden" name="extension" value="{{$.Data.file.Ext}}"/>
+                <strong class='input-group-addon'>.{{$.Data.file.Ext}}</strong>
+              </div>
+            </td>
+            <td class='w-80px'>{{html_submitButton . .Lang.common.save "btn btn-primary btn-block"}}</td>
+          </tr>
+        </table>
+      </form>
+    </div>
+  </div>
+</main>
+{{template "footer.lite.html" .}}

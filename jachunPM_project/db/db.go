@@ -4,23 +4,25 @@ import (
 	"jachunPM_project/config"
 	"log"
 	"mysql"
+	"protocol"
 	"time"
 )
 
 const (
-	TABLE_MODULE      = "module"
-	TABLE_PRODUCT     = "product"
-	TABLE_DOCLIB      = "doclib"
-	TABLE_STORY       = "story"
-	TABLE_BRANCH      = "branch"
-	TABLE_PRODUCTPLAN = "productplan"
-	TABLE_PROJECT     = "project"
-	TABLE_STORYSPEC   = "storyspec"
-	TABLE_STORYSTAGE  = "storystage"
-	TABLE_TASK        = "task"
-	TABLE_RELEASE     = "release"
-	TABLE_BUILD       = "build"
-	TABLE_BURN        = "burn"
+	TABLE_MODULE       = "module"
+	TABLE_PRODUCT      = "product"
+	TABLE_DOCLIB       = "doclib"
+	TABLE_STORY        = "story"
+	TABLE_BRANCH       = "branch"
+	TABLE_PRODUCTPLAN  = "productplan"
+	TABLE_PROJECT      = "project"
+	TABLE_STORYSPEC    = "storyspec"
+	TABLE_STORYSTAGE   = "storystage"
+	TABLE_TASK         = "task"
+	TABLE_RELEASE      = "release"
+	TABLE_BUILD        = "build"
+	TABLE_BURN         = "burn"
+	TABLE_TASKESTIMATE = "taskestimate"
 )
 
 func Init() *mysql.MysqlDB {
@@ -49,7 +51,16 @@ func Init() *mysql.MysqlDB {
 		new(Release),
 		new(Build),
 		new(Burn),
+		new(TaskEstimate),
 	)
+	db.Regsiter(&protocol.MSG_PROJECT_product_cache{},
+		&protocol.MSG_PROJECT_tree_cache{},
+		&protocol.MSG_PROJECT_project_cache{},
+		&protocol.MSG_PROJECT_TASK{},
+		&protocol.MSG_PROJECT_TaskEstimate{},
+		&protocol.MSG_PROJECT_story{},
+	)
+
 	if errs != nil {
 		log.Fatalf("数据库启动失败%v", errs)
 	}
@@ -124,19 +135,19 @@ func (*Doclib) TableName() string {
 }
 
 type Story struct {
-	Id             int32   `db:"auto_increment;pk"`
-	Product        int32   `db:"default(0)"`
-	Project        int32   `db:"index"`
-	Branch         int32   `db:"default(0)"`        //平台
-	Module         int32   `db:"default(0)"`        //模块
-	Plan           int32   `db:"type:text"`         //计划
-	Source         string  `db:"type:varchar(20)"`  //需求来源
-	SourceNote     string  `db:"type:varchar(255)"` //备注
-	FromBug        int32   `db:"default(0)"`
-	Title          string  `db:"type:varchar(255)"`
-	Keywords       string  `db:"type:varchar(255)"`
-	Pri            int8    `db:"default(3)"` //优先级
-	Estimate       float64 `db:""`
+	Id             int32  `db:"auto_increment;pk"`
+	Product        int32  `db:"default(0)"`
+	Project        int32  `db:"index"`
+	Branch         int32  `db:"default(0)"`        //平台
+	Module         int32  `db:"default(0)"`        //模块
+	Plan           int32  `db:"type:text"`         //计划
+	Source         string `db:"type:varchar(20)"`  //需求来源
+	SourceNote     string `db:"type:varchar(255)"` //备注
+	FromBug        int32  `db:"default(0)"`
+	Title          string `db:"type:varchar(255)"`
+	Keywords       string `db:"type:varchar(255)"`
+	Pri            int8   `db:"default(3)"` //优先级
+	Estimate       float64
 	Status         string  `db:"type:enum('','changed','active','draft','closed')"`                                                                                //
 	Stage          string  `db:"type:enum('','wait','planned','projected','developing','developed','testing','tested','verified','released','closed');default(1)"` //
 	Mailto         []int32 `db:"type:json"`                                                                                                                        //抄送
@@ -262,34 +273,34 @@ func (*StoryStage) TableName() string {
 }
 
 type Task struct {
-	Id           int32     `db:"auto_increment;pk"`
-	Ancestor     int32     `db:"null"`
-	Parent       int32     `db:"not null;default(0)"`
-	Project      int32     `db:"default(0)"`
-	Module       int32     `db:"default(0)"`
-	Story        int32     `db:"default(0)"`
-	StoryVersion int16     `db:"not null;default(1)"`
-	FromBug      int32     `db:"default(0)"`
-	Name         string    `db:"type:varchar(255)"`
-	Type         string    `db:"type:varchar(20)"`
-	Pri          int8      `db:"default(0)"`
-	Estimate     float64   `db:""`
-	Consumed     float64   `db:""`
-	Left         float64   `db:""`
-	Deadline     time.Time `db:"not null"`
-	Status       string    `db:"type:varchar(32)"`
-	Color        string    `db:"type:varchar(7)"`
-	Mailto       []int32   `db:"type:json"`
-	Desc         string    `db:"type:text"`
-	OpenedBy     int32     `db:"type:varchar(30)"`
-	OpenedDate   time.Time `db:"not null"`
-	AssignedTo   int32     `db:"type:varchar(30)"`
-	AssignedDate time.Time `db:"not null"`
-	EstStarted   time.Time `db:"not null"`
-	RealStarted  time.Time `db:"not null"`
-	FinishedBy   int32     `db:"type:varchar(30)"`
-	FinishedDate time.Time `db:"not null"`
-	//FinishedList   string    `db:"type:text"` 暂时屏蔽，未发现有任务使用此字段
+	Id             int32     `db:"auto_increment;pk"`
+	Ancestor       int32     `db:"index"`
+	Parent         int32     `db:"not null;default(0);index"`
+	Project        int32     `db:"default(0);index"`
+	Module         int32     `db:"default(0)"`
+	Story          int32     `db:"default(0);index"`
+	StoryVersion   int16     `db:"not null;default(1)"`
+	FromBug        int32     `db:"default(0)"`
+	Name           string    `db:"type:varchar(255)"`
+	Type           string    `db:"type:varchar(20)"`
+	Pri            int8      `db:"default(0)"`
+	Estimate       float64   `db:""`
+	Consumed       float64   `db:""`
+	Left           float64   `db:""`
+	Deadline       time.Time `db:"type:date"`
+	Status         string    `db:"type:varchar(32)"`
+	Color          string    `db:"type:varchar(7)"`
+	Mailto         []int32   `db:"type:json"`
+	Desc           string    `db:"type:text"`
+	OpenedBy       int32     `db:"type:varchar(30)"`
+	OpenedDate     time.Time `db:"not null"`
+	AssignedTo     int32     `db:"type:varchar(30);index"`
+	AssignedDate   time.Time `db:"not null"`
+	EstStarted     time.Time `db:"type:date"`
+	RealStarted    time.Time `db:"type:date"`
+	FinishedBy     int32     `db:"type:varchar(30)"`
+	FinishedDate   time.Time `db:"not null"`
+	FinishedList   []int32   `db:""`
 	CanceledBy     int32     `db:"type:varchar(30)"`
 	CanceledDate   time.Time `db:"not null"`
 	ClosedBy       int32     `db:"type:varchar(30)"`
@@ -297,13 +308,13 @@ type Task struct {
 	ClosedReason   string    `db:"type:varchar(30)"`
 	LastEditedBy   int32     `db:"type:varchar(30)"`
 	LastEditedDate time.Time `db:"not null"`
-	Examine        bool      `db:"not null;default(0)"`
+	Examine        bool      `db:"not null;default(0);index"`
 	ExamineDate    time.Time `db:"not null"`
 	ExamineBy      int32     `db:"type:varchar(30)"`
 	Deleted        bool
 	Finalfile      bool `db:"default('0');type:varchar(3)"`
 	Proofreading   bool
-	Team           int32
+	Team           []int32
 	PlaceOrder     bool
 }
 
@@ -361,4 +372,20 @@ type Burn struct {
 
 func (*Burn) TableName() string {
 	return TABLE_BURN
+}
+
+type TaskEstimate struct {
+	Id       int32     `db:"auto_increment;pk"`
+	Task     int32     `db:"index"`
+	Date     time.Time `db:"not null"`
+	Estimate float64
+	Left     float64 `db:"default(0)"`
+	Consumed float64 `db:""`
+	Uid      int32
+	Account  string
+	Work     string `db:"type:text"`
+}
+
+func (*TaskEstimate) TableName() string {
+	return TABLE_TASKESTIMATE
 }

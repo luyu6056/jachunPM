@@ -1,0 +1,74 @@
+{{if eq $.Data.fieldset true}}
+<div class="detail">
+  <div class="detail-title">
+    {{if eq $.Data.type "feedbackFile"}}{{getValue .Lang.file.typeChoices "feedbackFile"}}{{else if eq $.Data.type "processFile"}}{{getValue .Lang.file.typeChoices "processFile"}}{{else if eq $.Data.type "file"}}{{.Lang.file.common}}}{{end}} 
+  <!-- <i class="icon icon-paper-clip icon-sm"></i> --></div>
+  <div class="detail-content">
+{{end}}
+{{if $.Data.files}}
+
+  <style>
+  .files-list>li>a {display: inline; word-wrap: break-word;}
+  .files-list>li>.right-icon {opacity: 1;}
+  </style>
+  <script>
+  /* Delete a file. */
+  function deleteFile(fileID)
+  {
+      if(!fileID) return;
+      hiddenwin.location.href =createLink('file', 'delete', 'fileID=' + fileID);
+  }
+  /* Download a file, append the mouse to the link. Thus we call decide to open the file in browser no download it. */
+  function downloadFile(fileID, extension, imageWidth, fileTitle)
+  {
+      if(!fileID) return;
+      var fileTypes      = 'txt,jpg,jpeg,gif,png,bmp';
+      var type  = '{{$.Data.type}}';
+      var windowWidth    = $(window).width();
+      var url            = createLink('file', 'download', 'fileID=' + fileID + '&mouse=left') ;
+      var width          = (windowWidth > imageWidth) ? ((imageWidth < windowWidth * 0.5) ? windowWidth * 0.5 : imageWidth) : windowWidth;
+      var checkExtension = fileTitle.lastIndexOf('.' + extension) == (fileTitle.length - extension.length - 1);
+      if(type == 'spec'){
+    	  window.open(url, '_blank');
+      }else{
+    	  if(fileTypes.indexOf(extension) >= 0 && checkExtension)
+          {
+              $('<a>').modalTrigger({url: url, type: 'iframe', width: width}).trigger('click');
+          }
+          else
+          {
+              window.open(url, '_blank');
+          }
+          }
+      
+      return false;
+  }
+  </script>
+    <ul class="files-list">
+      {{- range $file := $.Data.files}}
+          {{- if common_hasPriv $ "file"  "download"}}
+              {{- $fileTitle  := strAdd "<i class='icon icon-file-text'></i> &nbsp;" $file.Name}}
+              {{- if eq $.Data.type "spec"}}
+                <li title='{{$.Lang.file.uploadDate}}{{date "2006-01-02" $file.AddedDate}}'>{{html_a (helper_createLink "file" "download"  "fileID=" $file.FileID)  (strAdd $fileTitle  " <span class='text-muted'>(" (fileSize $file.Size) ")</span>") "_blank" (strAdd "onclick=\"return downloadFile(" $file.FileID ", '', 0, '" $file.Name "')\"")}}
+              {{else}}
+                  <li title='{{$.Lang.file.uploadDate}}{{date "2006-01-02" $file.AddedDate}}'>{{html_a (helper_createLink "file" "download"  "fileID=" $file.FileID) (strAdd $fileTitle  " <span class='text-muted'>(" (fileSize $file.Size) ")</span>") "_blank" (strAdd "onclick=\"return downloadFile(" $file.FileID ", '', 0, '" $file.Name "')\"")}}
+              {{- end}}
+              {{- if common_hasPriv $ $file.ObjectType "edit"  $file.ObjectID}}              
+                  <span class='right-icon'>&nbsp; 
+                  {{- if ne $.Data.type "spec"}}
+                  {{- common_printLink $ "file" "edit"  (strAdd "fileID=" $file.FileID)  $.Lang.file.edit "" (strAdd "data-width='400' class='edit iframe text-primary' title='" $.Lang.file.edit "'")}}&nbsp; 
+                  {{- if common_hasPriv $ "file" "delete"}}{{html_a "###"  $.Lang.common.delete  ""  (strAdd "class='text-primary' onclick='deleteFile(" $file.FileID ")' title='" $.Lang.common.delete "'")}}{{end}}
+                  {{- end}}</span>
+                  <span class='right-icon'>&nbsp; {{$.Lang.file.uploadDate}}{{date "2006-01-02 15:04:05" $file.AddedDate}} </span>
+              {{- end}}
+              </li>
+      {{- end}}{{end}}
+    </ul>
+{{else}}
+暂无相关文件
+{{end}}
+
+{{if eq $.Data.fieldset true}}
+  </div>
+</div>
+{{end}}

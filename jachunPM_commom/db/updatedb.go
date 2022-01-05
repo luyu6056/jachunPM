@@ -26,17 +26,17 @@ func WriteMsgLog(msg *protocol.Msg) {
 	log.LocalNo = uint8(msg.Local)
 	log.LocalId = uint8(msg.Local >> 8)
 	log.Msgno = msg.Msgno
-	log.RemoteNo = uint8(msg.Remote)
-	log.RemoteId = uint8(msg.Remote >> 8)
+	log.RemoteNo = uint8(msg.GetRemoteID())
+	log.RemoteId = uint8(msg.GetRemoteID() >> 8)
 	log.Timestamp = time.Now()
 	log.Err = ""
 	if msg.Ttl >= protocol.MaxMsgTtl {
 		msg.Ttl = 255
 	}
 	log.Ttl = msg.Ttl
-	if msg.Cmd == protocol.CMD_MSG_COMMON_QueryErr {
+	if msg.Cmd == protocol.CMD_MSG_HOST_QueryErr {
 		msg.ReadDataWithCopy()
-		if data, ok := msg.Data.(*protocol.MSG_COMMON_QueryErr); ok {
+		if data, ok := msg.Data.(*protocol.MSG_HOST_QueryErr); ok {
 			log.Err = data.Err
 			log.Stack = string(data.Stack)
 		}

@@ -107,14 +107,19 @@ func user_getPairs(params string, usersToAppended int32, in *protocol.Msg) ([]pr
 		if !strings.Contains(params, "noletter") {
 			value = strings.ToUpper(user.Account[:1]) + ":"
 		}
-		if user.Deleted && strings.Index(params, "realname") == -1 {
+		if user.Deleted {
 			value += user.Account
 		} else {
-			if user.Realname == "" {
+			if strings.Index(params, "account") != -1 {
 				value += user.Account
 			} else {
-				value += user.Realname
+				if user.Realname == "" {
+					value += user.Account
+				} else {
+					value += user.Realname
+				}
 			}
+
 		}
 		res = append(res, protocol.HtmlKeyValueStr{strconv.Itoa(int(user.Id)), value})
 	}
@@ -184,6 +189,12 @@ func user_updateMap(where map[string]interface{}, update map[string]interface{})
 	}
 	return err
 }
+func user_updateCacheById(uid int32) {
+	user, _ := getUserInfoByID(uid)
+	if user != nil {
+		user_setCache(user)
+	}
+}
 func user_setCache(user *db.User) {
 	cache := protocol.GET_MSG_USER_INFO_cache()
 	cache.Account = user.Account
@@ -216,6 +227,18 @@ func user_setCache(user *db.User) {
 	}
 	for k, v := range user.AclProjects {
 		cache.AclProjects[k] = v
+	}
+	var configs []*db.Config
+	HostConn.DB.Table(db.TABLE_Config).Prepare().Where("Uid=? or Uid=0", user.Id).Select(&configs)
+	cache.Config = make(map[string]map[string]map[string]string)
+	for _, config := range configs {
+		if cache.Config[config.Module] == nil {
+			cache.Config[config.Module] = make(map[string]map[string]string)
+		}
+		if cache.Config[config.Module][config.Section]==nil{
+			cache.Config[config.Module][config.Section] = make(map[string]string)
+		}
+		cache.Config[config.Module][config.Section][config.Key] = config.Value
 	}
 	HostConn.CacheSet(protocol.PATH_USER_INFO_CACHE, strconv.Itoa(int(user.Id)), cache, 0)
 	cache.Put()

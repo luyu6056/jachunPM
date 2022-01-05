@@ -144,6 +144,14 @@ func Order_product(list []*MSG_PROJECT_product_cache, f func(a, b *MSG_PROJECT_p
 	}
 }
 func Order_tree(list []*MSG_PROJECT_tree_cache, f func(a, b *MSG_PROJECT_tree_cache) bool) {
+	if f == nil {
+		f = func(a, b *MSG_PROJECT_tree_cache) bool {
+			if a.Order == b.Order {
+				return a.Id < b.Id
+			}
+			return a.Order > b.Order
+		}
+	}
 	max_len := len(list)
 	tmp := make([]*MSG_PROJECT_tree_cache, max_len)
 	for i := 0; i < max_len-max_len&1; i += 2 {
@@ -218,7 +226,7 @@ func Order_project(list []*MSG_PROJECT_project_cache, f func(a, b *MSG_PROJECT_p
 	if f == nil {
 		f = func(a, b *MSG_PROJECT_project_cache) bool {
 			if a.Order == b.Order {
-				return a.Id > b.Id
+				return a.Id < b.Id
 			}
 			return a.Order > b.Order
 		}
@@ -448,7 +456,7 @@ func Order_branch(list []*MSG_PROJECT_branch_info, f func(a, b *MSG_PROJECT_bran
 	if f == nil {
 		f = func(a, b *MSG_PROJECT_branch_info) bool {
 			if a.Order == b.Order {
-				return a.Id > b.Id
+				return a.Id < b.Id
 			}
 			return a.Order > b.Order
 		}
@@ -528,6 +536,81 @@ func order_diff(list []diff) {
 	}
 	max_len := len(list)
 	tmp := make([]diff, max_len)
+	for i := 0; i < max_len-max_len&1; i += 2 {
+		if f(list[i+1], list[i]) {
+			list[i], list[i+1] = list[i+1], list[i]
+		}
+
+	}
+	for i := 0; i < max_len-max_len&3; i += 4 {
+		if f(list[i+2], list[i]) {
+			list[i], list[i+2] = list[i+2], list[i]
+		}
+		if f(list[i+3], list[i+1]) {
+			list[i+1], list[i+3] = list[i+3], list[i+1]
+		}
+		if f(list[i+2], list[i+1]) {
+			list[i+1], list[i+2] = list[i+2], list[i+1]
+		}
+
+	}
+	if max_len&3 == 3 {
+		i := max_len - 3
+		if f(list[i+2], list[i]) {
+			list[i+1], list[i+2] = list[i+2], list[i+1]
+			list[i], list[i+1] = list[i+1], list[i]
+		} else if f(list[i+2], list[i+1]) {
+			list[i+1], list[i+2] = list[i+2], list[i+1]
+		}
+	}
+	var step, l, max, r int
+	step = 4
+	for step < max_len {
+		step <<= 1
+		for i := 0; i < max_len; i += step {
+			l, r, max = i, i+step/2, i+step
+			if max > max_len {
+				max = max_len
+			}
+			for index := i; index < max; index++ {
+				if l == step/2+i || (r < max && f(list[r], list[l])) {
+					tmp[index] = list[r]
+					r++
+				} else {
+					tmp[index] = list[l]
+					l++
+				}
+			}
+		}
+		if step < max_len {
+			for i := 0; i < max_len; i += step {
+				l, r, max = i, i+step/2, i+step
+				if max > max_len {
+					max = max_len
+				}
+				for index := i; index < max; index++ {
+					if l == step/2+i || (r < max && f(tmp[r], tmp[l])) {
+						list[index] = tmp[r]
+						r++
+					} else {
+						list[index] = tmp[l]
+						l++
+					}
+				}
+			}
+		} else {
+			copy(list, tmp)
+		}
+	}
+}
+func Order_htmlkvStr(list []HtmlKeyValueStr, f func(a, b HtmlKeyValueStr) bool) {
+	if f == nil {
+		f = func(a, b HtmlKeyValueStr) bool {
+			return a.Value < b.Value
+		}
+	}
+	max_len := len(list)
+	tmp := make([]HtmlKeyValueStr, max_len)
 	for i := 0; i < max_len-max_len&1; i += 2 {
 		if f(list[i+1], list[i]) {
 			list[i], list[i+1] = list[i+1], list[i]

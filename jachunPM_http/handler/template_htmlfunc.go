@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"html/template"
 	"jachunPM_http/config"
 	"libraries"
@@ -401,7 +402,12 @@ func htmlFuncs() {
 		return template.HTML(res)
 
 	}
-
+	global_Funcs["toHtml"] = func(i interface{}) template.HTML {
+		return template.HTML(fmt.Sprint(i))
+	}
+	global_Funcs["tohtml"] = func(i interface{}) template.HTML {
+		return template.HTML(fmt.Sprint(i))
+	}
 }
 func hookFuncs() {
 	global_Funcs["importHeaderHook"] = func(data *TemplateData) (res template.HTML) {
@@ -498,6 +504,7 @@ func html_input(name string, value ...string) string { // value  attrib
 func html_select(name string, options []protocol.HtmlKeyValueStr, selectedItem interface{}, attrib string, isappend ...bool) string {
 	var selectedItems []string
 	r := reflect.ValueOf(selectedItem)
+
 	if r.Kind() == reflect.Slice {
 		for i := 0; i < r.Len(); i++ {
 			selectedItems = append(selectedItems, libraries.I2S(r.Index(i).Interface()))
@@ -505,6 +512,7 @@ func html_select(name string, options []protocol.HtmlKeyValueStr, selectedItem i
 	} else {
 		selectedItems = []string{libraries.I2S(selectedItem)}
 	}
+
 	if len(isappend) > 0 && isappend[0] {
 		for _, item := range selectedItems {
 			find := false
@@ -589,7 +597,7 @@ func isClickableFuncs() {
 	global_Funcs["MSG_PROJECT_TASK_isClickable"] = func(data *TemplateData, obj interface{}, action string) bool {
 		task := obj.(*protocol.MSG_PROJECT_TASK)
 		if len(task.Children) > 0 {
-			if action == "start" || action == "recordestimate" || action == "finish" || action == "cancel" || action == "pause" || action == "internalaudit" || action == "proofreading" || action == "activate" || action == "assignto" || action == "close" {
+			if action == "start" || action == "recordEstimate" || action == "finish" || action == "cancel" || action == "pause" || action == "internalaudit" || action == "proofreading" || action == "activate" || action == "assignto" || action == "close" {
 				return false
 			}
 		}
@@ -616,7 +624,7 @@ func isClickableFuncs() {
 		case "cancel":
 			return task.Status != "done" && task.Status != "closed" && task.Status != "cancel"
 		case "batchcreate":
-			if task.Team > 0 || task.Ancestor > 0 {
+			if task.Ancestor > 0 {
 				return false
 			}
 		}

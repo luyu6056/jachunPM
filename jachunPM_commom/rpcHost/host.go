@@ -16,11 +16,11 @@ type HostServer struct {
 
 var Host HostServer
 
-func (HostServer) SendMsg(remote uint16, msgno uint32, ttl uint8, transactionNo uint32, out protocol.MSG_DATA) {
-	protocol.SendMsg(0, remote, msgno, ttl, transactionNo, out, rpcServerOutChan[protocol.HostServerNo])
+func (HostServer) SendMsg(remote uint16, msgno uint32, ttl uint16, transactionNo, queryID uint32, out protocol.MSG_DATA) {
+	protocol.SendMsg(protocol.HostServerNo, remote, msgno, ttl, transactionNo, queryID, out, rpcServerOutChan[protocol.HostServerNo])
 }
-func (HostServer) SendMsgWaitResult(remote uint16, msgno uint32, ttl uint8, transactionNo uint32, out protocol.MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
-	return protocol.SendMsgWaitResult(0, remote, msgno, ttl, transactionNo, out, result, rpcServerOutChan[protocol.HostServerNo], timeout...)
+func (HostServer) SendMsgWaitResult(remote uint16, msgno uint32, ttl uint16, transactionNo uint32, out protocol.MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
+	return protocol.SendMsgWaitResult(protocol.HostServerNo, remote, msgno, ttl, transactionNo, out, result, rpcServerOutChan[protocol.HostServerNo], timeout...)
 }
 
 func GetOneMsg() *protocol.Msg {

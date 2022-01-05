@@ -1,0 +1,221 @@
+{{template "header.html" .}}
+<div id="mainMenu" class="clearfix">
+  <div class="btn-toolbar pull-left">
+    {{$backLink := or (and (session . "taskList") (session . "taskList")) "javascript:history.go(-1)"}}
+    <a href="{{$backLink}}" class="btn btn-secondary">
+      <i class="icon icon-back icon-sm"></i> {{.Lang.common.goback}}
+    </a>
+    <div class="divider"></div>
+    <div class="page-title">
+      <span class='text' title='{{$.Data.root.Name}}'>{{.Lang.tree.common}}{{.Lang.common.colon}}{{$.Data.root.Name}}</span>
+    </div>
+  </div>
+</div>
+<div id="mainContent" class="main-row">
+  <div class="side-col col-4">
+    <div class='panel'>
+      <div class='panel-heading'>
+        <div class='panel-title'>{{$.Data.title}}</div>
+      </div>
+      <div class='panel-body'>
+        <ul id='modulesTree' data-name='tree-task'></ul>
+      </div>
+    </div>
+  </div>
+  <div class="main-col col-8">
+    <form id='childrenForm' class='form-ajax' method='post' target='hiddenwin' action='{{helper_createLink "tree" "manageChild" "root=" $.Data.root.Id "&viewType=task"}}'>
+      <div class='panel'>
+        <div class='panel-heading'>
+          <div class='panel-title'>{{.Lang.tree.manageTaskChild}}</div>
+        </div>
+        <div class='panel-body'>
+          <table class='table table-form table-auto'>
+            <tr>
+              <td class="text-middle text-right with-padding">
+                <span>{{html_a (helper_createLink "tree" "browsetask"  "root=" $.Data.root.Id "&productID=" $.Data.productID "&viewType=task")  (strAdd $.Data.root.Name "<i class='icon icon-angle-right muted'></i>")}}</span>
+                {{- range $module:= $.Data.parentModules}}
+                    <span>{{html_a (helper_createLink "tree" "browsetask"  "root=" $.Data.root.Id "&productID=" $.Data.productID "&moduleID=" $module.Id)  (strAdd $module.Name " <i class='icon icon-angle-right muted'></i>")}}</span>
+                {{- end}}
+              </td>
+              <td>
+                <div id='sonModule'>
+                  {{$maxOrder := 0}}
+                  {{if not $.Data.productID}}
+                  {{range $product:=$.Data.products}}
+                  <div class="table-row row-module">
+                    <div class="table-col col-module">{{html_input (strAdd "products[id" $product.Id "]")  $product.Name "class=form-control disabled='true' autocomplete='off'"}}</div>
+                  </div>
+                  {{end}}
+                  {{end}}
+                  {{range $sonModule:=  $.Data.sons}}
+                  {{if gt $sonModule.Order $maxOrder}}{{$maxOrder = $sonModule.Order}}{{end}}
+                  {{- $disabled := or (and (eq $sonModule.Type "task")  "") "disabled"}}
+                  <div class='table-row row-module'>
+                    <div class='table-col col-module'>{{html_input (strAdd "modules[" $sonModule.Id "]")  $sonModule.Name  (strAdd "class='form-control' autocomplete='off' placeholder='" $.Lang.tree.name "' " $disabled)}}</div>
+                    <div class='table-col col-shorts'>
+                      {{html_input (strAdd "shorts[" $sonModule.Id "]")  $sonModule.Short  (strAdd "class='form-control' autocomplete='off' placeholder='" $.Lang.tree.short "' " $disabled)}}
+                      {{html_hidden (strAdd "order[" $sonModule.Id "]")  $sonModule.Order}}
+                    </div>
+                    <div class="table-col col-actions">
+                      <button type="button" class="btn btn-link btn-icon btn-add" onclick="addItem(this)"><i class="icon icon-plus"></i></button>
+                    </div>
+                  </div>
+                  {{end}}
+                  {{range $i:=genlist 0 3}}
+                  <div class="table-row row-module row-module-new">
+                    <div class='table-col col-module'>{{html_input "modules" ""  (strAdd "class='form-control' autocomplete='off' placeholder='" $.Lang.tree.name "'")}}</div>
+                    <div class='table-col col-shorts'>{{html_input "shorts"  ""  (strAdd "class='form-control' autocomplete='off' placeholder='" $.Lang.tree.short "'")}}</div>
+                    <div class="table-col col-actions">
+                      <button type="button" class="btn btn-link btn-icon btn-add" onclick="addItem(this)"><i class="icon icon-plus"></i></button>
+                      <button type="button" class="btn btn-link btn-icon btn-delete" onclick="deleteItem(this)"><i class="icon icon-close"></i></button>
+                    </div>
+                    {{html_hidden "branch[]"  (or (and $.Data.module $.Data.module.Branch) "0")}}
+                  </div>
+                  {{end}}
+                </div>
+                <div id="insertItemBox" class="template">
+                  <div class="table-row row-module row-module-new">
+                    <div class="table-col col-module">{{html_input "modules" ""  (strAdd "class='form-control' autocomplete='off' placeholder='" $.Lang.tree.name "'")}}</div>
+                    <div class="table-col col-shorts">{{html_input "shorts" ""  (strAdd "class='form-control' autocomplete='off' placeholder='" $.Lang.tree.short "'")}}</div>
+                    <div class="table-col col-actions">
+                      <button type="button" class="btn btn-link btn-icon btn-add" onclick="addItem(this)"><i class="icon icon-plus"></i></button>
+                      <button type="button" class="btn btn-link btn-icon btn-delete" onclick="deleteItem(this)"><i class="icon icon-close"></i></button>
+                    </div>
+                    {{html_hidden "branch[]"  (or (and $.Data.module $.Data.module.Branch) "0")}}
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td></td>
+              <td colspan='2' class="form-actions">
+                {{html_submitButton .}}
+                {{html_a $backLink  .Lang.common.goback ""  "class='btn btn-wide'"}}
+                {{html_hidden "parentModuleID"  $.Data.currentModuleID}}
+                {{html_hidden "maxOrder"  $.Data.maxOrder}}
+                <input type='hidden' value='{{$.Data.currentModuleID}}' name='parentModuleID' />
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+$(function()
+{
+    var data = {{$.Data.tree}};
+    console.log(data)
+    var options = {
+        initialState: 'preserve',
+        data: data,
+        itemCreator: function($li, item)
+        {
+            var $toggle = $('<span class="module-name" data-id="' + item.id + '">' + link + '</span>');
+
+            var title = (item.type === 'product' ? '<i class="icon icon-cube text-muted"></i> ' : '') + item.name;
+            var link = item.id !== undefined ? ('<a href="' + createLink('tree', 'browsetask', 'rootID={{$.Data.rootID }}&viewType=task&moduleID={0}'.format(item.id)) + '">' + title + '</a>') : ('<span class="tree-toggle">' + title + '</span>');
+            var $toggle = $('<span class="module-name" data-id="' + item.id + '">' + link + '</span>');
+            if(item.type === 'task')
+            {
+                $toggle.append('&nbsp; <span class="text-muted">[T]</span>');
+                $li.addClass('task-item');
+            }
+            if(item.type === 'story') $li.addClass('story-item');
+            $li.append($toggle);
+            if(item.nodeType) $li.addClass('tree-item-' + item.nodeType);
+            return true;
+        },
+        actions:
+        {
+            sort:
+            {
+                title: '{{.Lang.tree.dragAndSort }}',
+                template: '<a class="sort-handler" href="javascript:;"><i class="icon icon-move"></i></a>'
+            },
+            edit:
+            {
+                linkTemplate: '{{helper_createLink "tree" "edit" "moduleID={0}&type=task"}}',
+                title: '{{.Lang.tree.edit }}',
+                template: '<a href="javascript:;"><i class="icon icon-edit"></i></a>'
+            },
+            "delete":
+            {
+                linkTemplate: '{{helper_createLink "tree" "delete" "rootID=" $.Data.rootID "&moduleID={0}"}}',
+                title: '{{.Lang.tree.delete }}',
+                template: '<a href="javascript:;"><i class="icon icon-close"></i></a>'
+            },
+            subModules:
+            {
+                linkTemplate: '{{helper_createLink "tree" "browseTask" "rootID=" $.Data.rootID "&viewType=task&moduleID={0}"}}',
+                title: '{{.Lang.tree.child }}',
+                template: '<a href="javascript:;"><i class="icon icon-treemap-alt"></i></a>'
+            }
+        },
+        action: function(event)
+        {
+            var action = event.action, $target = $(event.target), item = event.item;
+            if(action.type === 'edit')
+            {
+              console.log(action);
+                new $.zui.ModalTrigger({
+                    type: 'ajax',
+                    url: action.linkTemplate.format(item.id),
+                    keyboard: true
+                }).show();
+            }
+            else if(action.type === 'delete')
+            {
+                window.open(action.linkTemplate.format(item.id), 'hiddenwin');
+            }
+            else if(action.type === 'add')
+            {
+                window.location.href = action.linkTemplate.format(item.id);
+            }
+            else if(action.type === 'sort')
+            {
+                var orders = {};
+                $('#modulesTree').find('li:not(.tree-action-item)').each(function()
+                {
+                    var $li = $(this);
+                    var item = $li.data();
+                    orders[item.id] = $li.attr('data-order') || item.order;
+                });
+                $.post('{{helper_createLink "tree" "updateOrder" "root=" $.Data.root.Id "&viewType=task"}}', orders).fail(function()
+                {
+                    bootbox.alert(lang.timeout);
+                });
+            }
+            else if(action.type === 'subModules')
+            {
+                window.location.href = action.linkTemplate.format(item.id, item.branch);
+            }
+        }
+    };
+
+    {{if not (common_hasPriv . "tree" "updateorder")}}options.actions["sort"] = false{{end}};
+    {{if not (common_hasPriv . "tree" "edit")}}options.actions["edit"] = false{{end}};
+    {{if not (common_hasPriv . "tree" "delete")}}options.actions["delete"] = false{{end}};
+
+    var $tree = $('#modulesTree').tree(options);
+
+    var tree = $tree.data('zui.tree');
+    if(!tree.store.time) tree.expand($tree.find('li:not(.tree-action-item)').first());
+    if({{$.Data.currentModuleID }})
+    {
+        var $currentLi = $tree.find('.module-name[data-id=' + {{$.Data.currentModuleID }} + ']').closest('li');
+        if($currentLi.length) tree.show($currentLi);
+    }
+
+    $tree.on('mouseenter', 'li:not(.tree-action-item)', function(e)
+    {
+        $('#modulesTree').find('li.hover').removeClass('hover');
+        $(this).addClass('hover');
+        e.stopPropagation();
+    });
+
+    $tree.find('[data-toggle="tooltip"]').tooltip();
+});
+</script>
+{{template "footer.html" .}}

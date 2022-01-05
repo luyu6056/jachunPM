@@ -1,0 +1,184 @@
+{{template "header.html" .}}
+{{template "sortable.html" .}}
+{{template "kindeditor.html" .}}
+{{js_import (strAdd .Config.common.common.jsRoot "upload.js")}}
+<script type="text/javascript">var toTaskList = {{and .Data.task .Data.task.Id}}</script>
+<div id='mainContent' class='main-content'>
+  <div class='center-block'>
+    <div class='main-header'>
+      <h2>{{.Lang.task.create}}</h2>
+      <div class='btn-toolbar pull-right'>
+        {{template "customfield.html" .}}
+      </div>
+    </div>
+    <form class='load-indicator form-ajax' method='post' enctype='multipart/form-data' id='dataform'>
+      <table class='table table-form'>
+        <tr>
+          <th>{{.Lang.task.type}}</th>
+          <td>{{html_select "type"  .Lang.task.typeList  $.Data.task.Type  "class='form-control chosen' onchange='setOwners(this.value)' required"}}</td><td></td><td></td>
+        </tr>
+        <tr>
+          <th>{{.Lang.task.module}}</th>
+          <td id='moduleIdBox'>{{html_select "module"  .Data.moduleOptionMenu  $.Data.task.Module  (strAdd "class='form-control chosen' onchange='setStories(this.value," $.Data.project.Id ")'")}}</td><td></td><td></td>
+        </tr>
+        <tr>
+          <th>{{.Lang.task.assignedTo}}</th>
+          <td>
+            <div class="input-group" id="dataPlanGroup">
+              {{html_select "assignedTo"  $.Data.members  $.Data.task.AssignedTo  "class='form-control chosen'"}}
+              {{html_input "teamMember" ""  "class='form-control team-group fix-border hidden' readonly='readonly'"}}
+              <span class="input-group-btn team-group hidden"><a class="btn br-0" href="#modalTeam" data-toggle="modal">{{.Lang.task.team}}</a></span>
+            </div>
+          </td>
+          <!--<td>
+            <div class="checkbox-primary affair">
+              <input type="checkbox" name="multiple" value="1" id="multipleBox"><label for="multipleBox" class="no-margin">{{.Lang.task.multipleAB}}</label>
+            </div>
+            <button id='selectAllUser' type="button" class="btn btn-link{{if ne $.Data.task.Type "affair"}} hidden{{end}}">{{.Lang.task.selectAllUser}}</button>
+          </td>-->
+        </tr>
+        {{if and .Data.hasStoryField (ne .Data.project.Type "ops")}}
+        <tr>
+          <th>{{.Lang.task.story}}</th>
+          <td colspan='3'>
+            {{if eq (len $.Data.stories) 0}}
+            <span id='story'>{{toHtml (printf $.Lang.task.noticeLinkStory (html_a (helper_createLink "project" "linkStory"  "projectID=" $.Data.project.Id)  $.Lang.project.linkStory "_blank" "class='text-primary") (html_a (strAdd "javascript:loadStories(" $.Data.project.Id ")")  $.Lang.common.refresh "" "class='text-primary'"))}}</span>
+            {{else}}
+            <div class='input-group'>
+              {{html_select "story"  $.Data.stories  $.Data.task.Story  "class='form-control chosen' onchange='setStoryRelated()'"}}
+              <span class='input-group-btn' id='preview'><a href='#' class='btn iframe'>{{$.Lang.common.preview}}</a></span>
+            </div>
+            {{end}}
+          </td>
+        </tr>
+        {{end}}
+        <tr>
+          <th>{{.Lang.task.name}}</th>
+          <td colspan='3'>
+            <div class="input-group title-group">
+              <div class="input-control has-icon-right">
+                <div class="colorpicker">
+                  <button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown"><span class="cp-title"></span><span class="color-bar"></span><i class="ic"></i></button>
+                  <ul class="dropdown-menu clearfix">
+                    <li class="heading">{{.Lang.task.colorTag}}<i class="icon icon-close"></i></li>
+                  </ul>
+                  <input type="hidden" class="colorpicker" id="color" name="color" value="" data-icon="color" data-wrapper="input-control-icon-right" data-update-color="#name"  data-provide="colorpicker">
+                </div>
+                {{html_input "name"  $.Data.task.Name  "class='form-control' autocomplete='off' required"}}
+                <a href='javascript:copyStoryTitle();' id='copyButton' class='input-control-icon-right'>{{.Lang.task.copyStoryTitle}}</a>
+                {{html_hidden "storyEstimate"}}{{html_hidden "storyDesc"}}{{html_hidden "storyPri"}}
+              </div>
+              {{if .Data.hasPriField}} 
+              <span class="input-group-addon fix-border br-0">{{.Lang.task.pri}}</span>
+              {{if $.Data.hasCustomPri}}
+              {{html_select "pri" $.Data.priList  $.Data.task.Pri  "class='form-control'"}}
+              {{else}}
+              <div class="input-group-btn pri-selector" data-type="pri">
+                <button type="button" class="btn dropdown-toggle br-0" data-toggle="dropdown">
+                  <span class="pri-text"><span class="label-pri label-pri-{{$.Data.task.Pri}}" title="{{$.Data.task.Pri}}">{{$.Data.task.Pri}}</span></span> &nbsp;<span class="caret"></span>
+                </button>
+                <div class='dropdown-menu pull-right'>
+                  {{html_select "pri"  $.Data.priList  $.Data.task.Pri  "class='form-control' data-provide='labelSelector' data-label-class='label-pri'"}}
+                </div>
+              </div>
+              {{end}}
+              {{end}}
+              {{if .Data.hasEstimateField}}
+              <div class='table-col w-120px'>
+                <div class="input-group">
+                  <span class="input-group-addon fix-border br-0">{{.Lang.task.estimateAB}}</span>
+                  <input type="text" name="estimate" id="estimate" value="{{or (and $.Data.task.Estimate $.Data.task.Estimate) ""}}" class="form-control" autocomplete="off"></td>
+                </div>
+              </div>
+              {{end}}
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <th>{{.Lang.task.desc}}</th>
+          <td colspan='3'>{{html_textarea "desc"  (bbcode2html $.Data.task.Desc true false)  "rows='10' class='form-control'"}}</td>
+        </tr>
+        <tr>
+          <th>{{.Lang.common.files}}</th>
+          <td colspan='3'>{{fetch . "file" "buildform" "fileCount=2&percent=0.9&filesName=files&labelsName=labels&examine=&action=task"}}</td>
+        </tr>
+        {{if or $.Data.hasEstStartedField  $.Data.hasDeadlineField}}
+        <tr>
+          <th>{{.Lang.task.datePlan}}</th>
+          <td colspan='2'>
+            <div class='input-group'>
+              {{if $.Data.hasEstStartedField}}
+              {{html_input "estStarted"  $.Data.EstStarted  (strAdd "class='form-control form-date' placeholder='" .Lang.task.estStarted "'")}}
+              {{end}}
+              {{if and $.Data.hasEstStartedField  $.Data.hasDeadlineField}}
+              <span class='input-group-addon fix-border'>~</span>
+              {{end}}
+              {{if  $.Data.hasDeadlineField}}
+              {{html_input "deadline" $.Data.Deadline (strAdd "class='form-control form-date' placeholder='" .Lang.task.deadline "'")}}
+              {{end}}
+            </div>
+          </td>
+        </tr>
+        {{end}}
+        {{if $.Data.hasMailtoField}}
+        <tr>
+          <th>{{.Lang.story.mailto}}</th>
+          <td colspan='3'>
+            <div class="input-group">
+              {{html_select "mailto"  (or (and (eq .Data.project.Acl "private") $.Data.members) $.Data.users)  $.Data.task.Mailto (strAdd "class='form-control chosen' data-placeholder='" .Lang.common.chooseUsersToMail "' multiple")}}
+              {{fetch . "my" "buildContactLists"}}
+            </div>
+          </td>
+        </tr>
+        {{end}}
+        <tr>
+          <th>{{.Lang.task.afterSubmit}}</th>
+          <td colspan='3'>{{html_radio "after"  .Lang.task.afterChoices  (or (and $.Data.task.Id "toTaskList") "continueAdding")}}</td>
+        </tr>
+        <tr>
+          <td colspan='4' class='text-center form-actions'>
+            {{html_submitButton .}}
+            {{html_backButton .}}
+          </td>
+        </tr>
+      </table>
+
+      <div class='modal fade modal-team' id='modalTeam'>
+        <div class='modal-dialog'>
+          <div class='modal-header'>
+            <button type='button' class='close' data-dismiss='modal'>
+              <i class="icon icon-close"></i>
+            </button>
+            <h4 class='modal-title'>{{.Lang.task.team}}</h4>
+          </div>
+          <div class='modal-content with-padding'>
+            <table class="table table-form" id='taskTeamEditor'>
+              <tbody class='sortable'>
+                <tr class='template'>
+                  <td>{{html_select "team[]"  $.Data.members ""  "class='form-control chosen'"}}</td>
+                  <td>
+                    <div class='input-group'>
+                      {{html_input "teamEstimate[]" ""  (strAdd "class='form-control text-center' autocomplete='off' placeholder='" .Lang.task.estimateAB "'")}}
+                      <span class='input-group-addon'>{{.Lang.task.hour}}</span>
+                    </div>
+                  </td>
+                  <td class='w-130px sort-handler'>
+                    <button type="button" class="btn btn-link btn-sm btn-icon btn-add"><i class="icon icon-plus"></i></button>
+                    <button type='button' class='btn btn-link btn-sm btn-icon btn-move'><i class='icon-move'></i></button>
+                    <button type="button" class="btn btn-link btn-sm btn-icon btn-delete"><i class="icon icon-close"></i></button>
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan='3' class='text-center'>{{html_a "javascript:void(0)"  .Lang.common.confirm ""  "class='btn btn-primary' data-dismiss='modal'"}}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{{template "footer.html" .}}

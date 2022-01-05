@@ -51,6 +51,8 @@ func Handler(in *protocol.Msg) {
 		bug_getPairs(data, in)
 	case *protocol.MSG_TEST_bug_getCountByWhere:
 		bug_getCountByWhere(data, in)
+	case *protocol.MSG_TEST_CASE_getTaskCasePairs:
+		case_getTaskCasePairs(data, in)
 	default:
 		libraries.ReleaseLog("未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 	}

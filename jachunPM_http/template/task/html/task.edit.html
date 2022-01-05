@@ -1,0 +1,267 @@
+{{template "header.html" .}}
+{{template "datepicker.html" .}}
+{{template "kindeditor.html" .}}
+{{template "sortable.html" .}}
+{{js_import (strAdd .Config.common.common.jsRoot "upload.js")}}
+<script type="text/javascript">
+  var oldStoryID={{.Data.task.Story}},
+  oldAssignedTo={{$.Data.task.AssignedTo}},
+  oldProjectID={{$.Data.task.Project}},
+  confirmChangeProject={{$.Lang.task.confirmChangeProject}},
+  changeProjectConfirmed=false,
+  newRowCount={{if lt (len $.Data.task.Team) 6}}{{intsub 6 (len $.Data.task.Team)}}{{else}}1{{end}}
+</script>
+<div class='main-content' id='mainContent'>
+  <form class='form-ajax load-indicator main-form ' method='post' enctype='multipart/form-data' target='hiddenwin' id='dataform'>
+    <div class='main-header'>
+      <h2>
+        <span class='label label-id'>{{$.Data.task.Id}}</span>
+        {{html_a (helper_createLink "task" "view"  "taskID=" $.Data.task.Id)  $.Data.task.Name "" "class='task-name'"}}
+        <small>{{.Lang.common.arrow}}{{.Lang.task.edit}}</small>
+      </h2>
+    </div>
+    <div class='main-row'>
+      <div class='main-col col-8'>
+        <div class='cell'>
+          <div class='detail'>
+            <div class='detail-title'>{{.Lang.task.name}}</div>
+            <div class='detail-content'>
+              <div class='form-group'>
+                <div class='{{if and (not $.Data.task.Children) (not $.Data.task.Parent) (ne $.Data.task.Type "affair")}}input-group{{end}}'>
+                  <div class="input-control has-icon-right">
+                    <div class="colorpicker">
+                      <button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown" title="{{.Lang.task.colorTag }}"><span class="cp-title"></span><span class="color-bar"></span><i class="ic"></i></button>
+                      <ul class="dropdown-menu clearfix">
+                        <li class="heading">{{.Lang.task.colorTag}}<i class="icon icon-close"></i></li>
+                      </ul>
+                      <input type="hidden" class="colorpicker" id="color" name="color" value="{{$.Data.task.Color }}" data-icon="color" data-wrapper="input-control-icon-right" data-update-color=".task-name"  data-provide="colorpicker">
+                    </div>
+                    {{html_input "name"  $.Data.task.Name (strAdd "class='form-control task-name' autocomplete='off' placeholder='" .Lang.task.name  "'")}}
+                  </div>
+                  {{if and (not $.Data.task.Children) (not $.Data.task.Parent) (ne $.Data.task.Type "affair")}}
+                  <span class='input-group-addon'>
+                    <div class='checkbox-primary'>
+                      <input type='checkBox' name='multiple' id='multiple' value='1' {{if $.Data.task.Team}}checked{{end}} />
+                      <label for='multiple'>{{.Lang.task.multipleAB}}</label>
+                    </div>
+                  </span>
+                  {{end}}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class='detail'>
+            <div class='detail-title'>{{.Lang.task.desc}}</div>
+            <div class='detail-content'>
+              {{html_textarea "desc"  (bbcode2html $.Data.task.Desc true false)  "rows='8' class='form-control'"}}
+            </div>
+          </div>
+          <div class='detail'>
+            <div class='detail-title'>{{.Lang.common.comment}}</div>
+            <div class='detail-content'>{{html_textarea "comment" ""   "rows='5' class='form-control'"}}</div>
+          </div>
+          <div class='detail'>
+            <div class='detail-title'>{{.Lang.common.files}}</div>
+            <div class='detail-content'>{{fetch . "file" "buildform" "fileCount=1" "percent=0.9" "filesName=files" "labelsName=labels" (strAdd "examine=" $.Data.task.Examine) "action=task"}}</div>
+          </div>
+          <div class='detail text-center form-actions'>
+            {{html_hidden "lastEditedDate"  (date "Unix" $.Data.task.LastEditedDate)}}
+            {{html_hidden "consumed"  $.Data.task.Consumed}}
+            {{html_submitButton .}}
+            {{html_backButton .}}
+          </div>
+          {{template "action.html" .}}
+        </div>
+      </div>
+      <div class='side-col col-4'>
+        <div class='cell'>
+          <div class='detail'>
+            <div class='detail-title'>{{.Lang.task.legendBasic}}</div>
+            <table class='table table-form'>
+              {{if le $.Data.task.Parent 0}}
+              <tr>
+                <th class='w-80px'>{{.Lang.task.project}}</th>
+                <td>{{html_select "project"  $.Data.projects  $.Data.task.Project  "class=\"form-control chosen\" onchange=\"loadAll(this.value)\""}}</td>
+              </tr>
+              {{end}}
+              <tr>
+                <th class='w-80px'>{{.Lang.task.module}}</th>
+                <td id="moduleIdBox">{{html_select "module"  $.Data.modules  $.Data.task.Module  "class=\"form-control chosen\" onchange=\"loadModuleRelated()\""}}</td>
+              </tr>
+              {{if and (ne .Config.global.flow  "onlyTask") (ne .Data.project.Type "ops")}}
+              <tr>
+                <th>{{.Lang.task.story}}</th>
+                <td><span id="storyIdBox">{{html_select "story"  $.Data.stories  $.Data.task.Story  "class='form-control chosen'"}}</span></td>
+              </tr>
+              {{end}}
+              {{if not $.Data.task.Team}}
+              <tr>
+                <th>{{.Lang.task.parent}}</th>
+                <td>{{html_select "parent"  $.Data.tasks  $.Data.task.Parent  "class='form-control chosen'"}}</td>
+              </tr>
+              {{end}}
+        
+              <!--<tr class='{{if not $.Data.task.Team}}hidden{{end}}' id='teamTr'>
+                <th>{{.Lang.task.team}}</th>
+                <td>{{html_a "#modalTeam"  .Lang.task.team ""  "class='form-control btn' data-toggle='modal'"}}</td>
+              </tr>-->
+              <tr>
+                <th>{{.Lang.task.type}}</th>
+                <td>{{html_select "type"  .Lang.task.typeList  $.Data.task.Type  "class='form-control chosen'"}}</td>
+              </tr>
+              {{if not $.Data.task.Children}}
+              <tr>
+                <th>{{.Lang.task.status}}</th>
+                <td>{{html_select "status" .Lang.task.statusList  $.Data.task.Status  "class='form-control chosen'"}}</td>
+              </tr>
+              {{end}}
+              <tr>
+                <th>{{.Lang.task.pri}}</th>
+                <td>{{html_select "pri"  .Lang.task.priList  $.Data.task.Pri  "class='form-control chosen'"}} </td>
+              </tr>
+              <tr>
+                <th>{{.Lang.task.mailto}}</th>
+                <td>
+                  <div class='input-group'>
+                    {{html_select "mailto"  $.Data.MailtoUser  $.Data.task.Mailto "class='form-control' multiple"}}
+                    {{fetch . "my" "buildContactLists"}}
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </div>
+          <div class='detail'>
+            <div class='detail-title'>{{.Lang.task.legendEffort}}</div>
+            <table class='table table-form'>
+              <tr>
+                <th class='w-70px'>{{.Lang.task.estStarted}}</th>
+                <td>{{html_input "estStarted"  (date "2006-01-02" $.Data.task.EstStarted)  "class='form-control form-date'"}}</td>
+              </tr>
+              <tr>
+                <th>{{.Lang.task.realStarted}}</th>
+                <td>{{html_input "realStarted" (date "2006-01-02"  $.Data.task.RealStarted)  "class='form-control form-date'"}}</td>
+              </tr>
+              <tr>
+                <th>{{.Lang.task.deadline}}</th>
+                <td>{{html_input "deadline"  (date "2006-01-02" $.Data.task.Deadline)  "class='form-control form-date'"}}</td>
+              </tr>
+              <tr>
+                <th>{{.Lang.task.estimate}}</th>
+                <td>
+                  {{$disabled := or (and $.Data.task.Team "disabled='disabled'") ""}}
+                  {{html_input "estimate"  (printf "%.0f" $.Data.task.Estimate)  (strAdd "class='form-control' autocomplete='off' " $disabled)}}
+                </td>
+              </tr>
+              <tr>
+                <th>{{.Lang.task.consumed}}</th>
+                <td>{{$.Data.task.Consumed}} {{common_printIcon . "task" "recordEstimate"  (strAdd "taskID=" $.Data.task.Id)  $.Data.task "list" "" "" "record-estimate-toggle btn-link" "true"}}</td>
+              </tr>
+              <tr>
+                <th>{{.Lang.task.left}}</th>
+                <td>
+                  {{$disabled := or (and $.Data.task.Team "disabled='disabled'") ""}}
+                  {{html_input "left" (printf "%.0f" $.Data.task.Left)  (strAdd "class='form-control' autocomplete='off' " $disabled)}}
+                </td>
+              </tr>
+            </table>
+          </div>
+          <div class='detail'>
+            <div class='detail-title'>{{.Lang.task.legendLife}}</div>
+            <table class='table table-form'>
+              <tr>
+                <th class='w-70px'>{{.Lang.task.openedBy}}</th>
+                <td>{{getValue $.Data.users $.Data.task.OpenedBy}}</td>
+              </tr>
+              <tr>
+                <th>{{.Lang.task.finishedBy}}</th>
+                <td>{{html_select "finishedBy"  $.Data.members  $.Data.task.FinishedBy  "class='form-control chosen'"}}</td>
+              </tr>
+              <tr>
+                <th>{{.Lang.task.finishedDate}}</th>
+                <td>{{html_input "finishedDate"  (date "2006-01-02" $.Data.task.FinishedDate) "class='form-control form-date'"}}</td>
+              </tr>
+              <tr>
+                <th>{{.Lang.task.canceledBy}}</th>
+                <td>{{html_select "canceledBy"  $.Data.users  $.Data.task.CanceledBy "class='form-control chosen'"}}</td>
+              </tr>
+              <tr>
+                <th>{{.Lang.task.canceledDate}}</th>
+                <td>{{html_input "canceledDate"  (date "2006-01-02" $.Data.task.CanceledDate) "class='form-control form-date'"}}</td>
+              </tr>
+              <tr>
+                <th>{{.Lang.task.closedBy}}</th>
+                <td>{{html_select "closedBy"  $.Data.users  $.Data.task.ClosedBy "class='form-control chosen'"}}</td>
+              </tr>
+              <tr>
+                <th>{{.Lang.task.closedReason}}</th>
+                <td>{{html_select "closedReason"  .Lang.task.reasonList  $.Data.task.ClosedReason "class='form-control chosen'"}}</td>
+              </tr>
+              <tr>
+                <th>{{.Lang.task.closedDate}}</th>
+                <td>{{html_input "closedDate" (date "2006-01-02"  $.Data.task.ClosedDate) "class='form-control form-date'"}}</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!--<div class="modal fade modal-team" id="modalTeam">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">
+            <i class="icon icon-close"></i>
+          </button>
+          <h4 class="modal-title">{{.Lang.task.team}}</h4>
+        </div>
+        <div class="modal-content with-padding" id='taskTeamEditor'>
+          <table class='table table-form'>
+            <tbody class="sortable">
+              {{range $member:=$.Data.task.Team}}
+              <tr>
+                <td class='w-250px'>{{html_select "team[]"  $.Data.members  $member.Id  "class='form-control chosen'"}}</td>
+                <td>
+                  <div class='input-group'>
+                    <span class='input-group-addon'>{{$.Lang.task.estimate}}</span>
+                    {{html_input (strAdd "teamEstimate[" $member.Id "]")  $member.Estimate  (strAdd "class='form-control text-center' autocomplete='off' placeholder='" $.Lang.task.hour "'")}}
+                    <span class='input-group-addon fix-border'>{{.Lang.task.consumed}}</span>
+                    {{html_input (strAdd "teamConsumed[" $member.Id "]")  $member.Consumed  (strAdd "class='form-control text-center' autocomplete='off' readonly placeholder='" $.Lang.task.hour "'")}}
+                    <span class='input-group-addon fix-border'>{{.Lang.task.left}}</span>
+                    {{html_input (strAdd "teamLeft[" $member.Id "]")  $member.Left (strAdd "class='form-control text-center' autocomplete='off' placeholder='" $.Lang.task.hour "'")}}
+                  </div>
+                </td>
+                <td class='w-130px sort-handler'>
+                  <button type="button" class="btn btn-link btn-sm btn-icon btn-add"><i class="icon icon-plus"></i></button>
+                  <button type='button' class='btn btn-link btn-sm btn-icon btn-move'><i class='icon-move'></i></button>
+                  <button type="button" class="btn btn-link btn-sm btn-icon btn-delete"><i class="icon icon-close"></i></button>
+                </td>
+              </tr>
+              {{end}}
+              <tr class='template'>
+                <td class='w-250px'>{{html_select "team[]"  $.Data.members ""  "class='form-control chosen'"}}</td>
+                <td>
+                  <div class='input-group'>
+                    <span class='input-group-addon'>{{.Lang.task.estimate}}</span>
+                    {{html_input "teamEstimate[]" ""  (strAdd "class='form-control text-center' autocomplete='off' placeholder='" $.Lang.task.hour "'")}}
+                    <span class='input-group-addon fix-border'>{{.Lang.task.consumed}}</span>
+                    {{html_input "teamConsumed[]"  ""  (strAdd "class='form-control text-center' autocomplete='off' placeholder='" $.Lang.task.hour "'")}}
+                    <span class='input-group-addon fix-border'>{{.Lang.task.left}}</span>
+                    {{html_input "teamLeft[]" ""  (strAdd "class='form-control text-center' autocomplete='off' placeholder='" $.Lang.task.hour "'")}}
+                  </div>
+                </td>
+                <td class='w-130px sort-handler'>
+                  <button type="button" class="btn btn-link btn-sm btn-icon btn-add"><i class="icon icon-plus"></i></button>
+                  <button type='button' class='btn btn-link btn-sm btn-icon btn-move'><i class='icon-move'></i></button>
+                  <button type="button" class="btn btn-link btn-sm btn-icon btn-delete"><i class="icon icon-close"></i></button>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr><td colspan='3' class='text-center form-actions'>{{html_a "javascript:void(0)"  .Lang.common.confirm "" "class='btn btn-primary btn-wide' data-dismiss='modal'"}}</td></tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>-->
+  </form>
+</div>
+{{template "footer.html" .}}

@@ -1,9 +1,12 @@
-var add = 1024*1024*10//10mb传一次
-function fileUpload(C,index,uploadSize,allSize){
+function fileUpload(C,index,uploadSize,allSize,name){
+	var add = 1024*1024*10//10mb传一次
 	var file=C.find('input[type="file"]:enabled')[0].files[0];
 	if(!file){
 		C.submit();
 		return;
+	}
+	if(index==0){
+		name=file.name+"_。。_"+file.name+"_"+new Date().getTime();
 	}
 	var max=file.size;
 	var begin=add*index;
@@ -15,7 +18,7 @@ function fileUpload(C,index,uploadSize,allSize){
 		}
 		$('.form-ajax').addClass('percent_'+Math.floor(uploadSize/allSize*20)*5);
 		$.ajax({
-		    url: '/file/ajaxUploadTmp?name='+encodeURIComponent(file.name)+'&index='+index+'&blockSize='+add,
+		    url: '/file/ajaxUploadTmp?name='+encodeURIComponent(name)+'&index='+index+'&blockSize='+add,
 		    type: 'POST',
 		    cache: false,
 		    data: file.slice(begin,end),
@@ -29,7 +32,7 @@ function fileUpload(C,index,uploadSize,allSize){
 				$.zui.showMessager("上传失败:"+res)
 			}else{
 				uploadSize+=end-begin;
-				fileUpload(C,index+1,uploadSize,allSize);
+				fileUpload(C,index+1,uploadSize,allSize,name);
 			}
 			
 		}).fail(function(res) {
@@ -38,9 +41,11 @@ function fileUpload(C,index,uploadSize,allSize){
 			$.zui.showMessager("上传失败")
 		});
 	}else{
+		console.log($('input[type="file"]:enabled').eq(0));
+		$('input[type="file"]:enabled').eq(0).parent().find('.file-input-normal .file-input-rename').attr("name",name)
+		$('input[type="file"]:enabled').eq(0).parent().find('.file-input-normal .file-input-delete').attr("name",name)
 		C.find('input[type="file"]:enabled').eq(0).remove()
-		C.append('<input type="hidden" name="uploadFileTmpName" value="'+file.name+'" />');
-		fileUpload(C,0,uploadSize,allSize)
+		C.append('<input type="hidden" name="uploadFileTmpName" value="'+name+'" />');
+		fileUpload(C,0,uploadSize,allSize,"")
 	}
 }
-							

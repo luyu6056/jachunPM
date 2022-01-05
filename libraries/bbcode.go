@@ -23,7 +23,11 @@ var bbcodebufpool = sync.Pool{
 }
 
 func Html2bbcode(str string) string {
+	str = strings.Replace(str, "&nbsp;", " ", -1)
 
+	str = strings.Replace(str, "&lt;", "<", -1)
+	str = strings.Replace(str, "&gt;", ">", -1)
+	str = strings.Replace(str, "&amp;", "&", -1)
 	code := &DISCUZCODE{num: -1, html: make(map[int]string)}
 	m, _ := Preg_match_result(`<div\sclass=[""]?blockcode[""]?>[\s\S]*?<blockquote>([\s\S]+?)<\/blockquote>[\s\S]*?<\/div>`, str, -1)
 	for _, v := range m {
@@ -128,10 +132,6 @@ func Html2bbcode(str string) string {
 	str, _ = Preg_replace(`<[\/\!]*?[^<>]*?>`, "", str)
 
 	str = code.clearcode(str)
-	str = strings.Replace(str, "&nbsp;", " ", -1)
-	str = strings.Replace(str, "&lt;", "<", -1)
-	str = strings.Replace(str, "&gt;", ">", -1)
-	str = strings.Replace(str, "&amp;", "&", -1)
 
 	if code.num >= 0 {
 		for i := 0; i <= code.num; i++ {

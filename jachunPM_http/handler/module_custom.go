@@ -1,12 +1,18 @@
 package handler
 
 import (
+	"jachunPM_http/js"
 	"protocol"
 	"strings"
 )
 
+func init() {
+	httpHandlerMap["POST"]["/custom/ajaxSaveCustomFields"] = custom_ajaxSaveCustomFields
+	httpHandlerMap["GET"]["/custom/ajaxSaveCustomFields"] = custom_ajaxSaveCustomFields
+}
 func customModelFuncs() {
 	global_Funcs["custom_getFeatureMenu"] = func(data *TemplateData, module, method string) []moduleMenu {
+
 		var allMenu []protocol.HtmlKeyValueStr
 		if moduleconfig, ok := data.Lang[module]; ok {
 			if featureBar, ok := moduleconfig["featureBar"].(map[string][]protocol.HtmlKeyValueStr); ok {
@@ -17,6 +23,7 @@ func customModelFuncs() {
 		if data.Data["custom_queryList"], err = custom_mergeFeatureBar(data, module, method); err != nil {
 			panic(err)
 		}
+
 		return custom_setMenuByConfig(data, allMenu, nil)
 	}
 
@@ -120,4 +127,20 @@ func custom_setMenuByConfig(data *TemplateData, allMenu, customMenu []protocol.H
 		})
 	}
 	return
+}
+func custom_ajaxSaveCustomFields(data *TemplateData) (err error) {
+	out := protocol.GET_MSG_USER_config_save()
+	out.Uid = data.User.Id
+	out.Module = data.ws.Query("module")
+	out.Key = data.ws.Query("key")
+	out.Section = data.ws.Query("section")
+	if data.ws.Method() == "POST" {
+		out.Type = "add"
+		out.Value = strings.Join(data.ws.PostSlice("fields"), ",")
+		if err = data.SendMsgWaitResultToDefault(out, nil); err != nil {
+			return
+		}
+	}
+	data.ws.WriteString(js.Reload("parent"))
+	return nil
 }

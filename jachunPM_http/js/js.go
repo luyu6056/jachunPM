@@ -65,14 +65,15 @@ func Confirm(message, okURL, cancleURL string, okcancleTarget ...string) string 
 	protocol.BufPoolPut(buf)
 	return res
 }
-func Location(str string, window string) string {
-	if window == "" {
-		window = "self"
+func Location(str string, window ...string) string {
+	_window := "self"
+	if len(window) == 1 {
+		_window = window[0]
 	}
 	if str == "back" {
 		return `<script>setTimeout("history.back()",1000)</script>`
 	}
-	return `<script>setTimeout('` + window + ".location.href=\"" + strings.ReplaceAll(strings.ReplaceAll(str, `"`, `\"`), "'", `\'`) + `"',1000)</script>`
+	return `<script>setTimeout('` + _window + ".location.href=\"" + strings.ReplaceAll(strings.ReplaceAll(str, `"`, `\"`), "'", `\'`) + `"',1000)</script>`
 }
 func CloseModal(window, location, callback string) string {
 	if window == "" {

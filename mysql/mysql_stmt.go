@@ -34,7 +34,7 @@ const (
 	fieldTypeBit
 )
 const (
-	fieldTypeJSON fieldType = iota + 0xf5
+	fieldTypeJSON fieldType = iota + 0xf5 //245
 	fieldTypeNewDecimal
 	fieldTypeEnum
 	fieldTypeSet
@@ -120,24 +120,42 @@ func (conn *Mysql_Conn) Prepare(sql []byte) (*Database_mysql_stmt, error) {
 	b[3] = 0
 	b[4] = 22 //StmtPrepare
 	copy(b[5:], sql)
-
 	_, err = conn.conn.Write(b)
 	if err != nil {
 		return nil, err
 	}
 
-	msglen, err = conn.readOneMsg()
+	buffer, err := conn.readOneMsg()
 	if err != nil {
 		return nil, err
 	}
-	buffer := conn.readBuffer.Next(msglen)
 	switch buffer[0] {
 	case 0: //ok报文
 		stmt.id = binary.LittleEndian.Uint32(buffer[1:5])
-		//columnCount := binary.LittleEndian.Uint16(buffer[5:7])
+		columnCount := binary.LittleEndian.Uint16(buffer[5:7])
 		stmt.numInput = int(binary.LittleEndian.Uint16(buffer[7:9]))
-
-		conn.readBuffer.Reset()
+		if stmt.numInput > 0 {
+			for {
+				buffer, err = conn.readOneMsg()
+				if err != nil {
+					return nil, err
+				}
+				if len(buffer) == 5 && buffer[0] == 0xfe {
+					break
+				}
+			}
+		}
+		if columnCount > 0 {
+			for {
+				buffer, err = conn.readOneMsg()
+				if err != nil {
+					return nil, err
+				}
+				if len(buffer) == 5 && buffer[0] == 0xfe {
+					break
+				}
+			}
+		}
 
 	case 255: //err报文
 
@@ -204,11 +222,7 @@ func (stmt *Database_mysql_stmt) Query(args []interface{}, row *MysqlRows) (colu
 
 			return nil, err
 		}
-		if stmt.conn.readBuffer.Len() > 0 {
-			panic("长度错误")
-		}
 		_, _, row.field_len, errmsg, err = stmt.conn.readmsg()
-
 		if errmsg != "" {
 			err = errors.New(errmsg)
 		}
@@ -268,25 +282,25 @@ func (stmt *Database_mysql_stmt) Execute(args []interface{}) error {
 
 			// cache types and values
 			switch v := arg.(type) {
-			case int, int8, int16, int32:
+			case int8, int16, int32:
 				paramTypes[i+i] = byte(fieldTypeLong)
 				paramTypes[i+i+1] = 0x00
 
 				b := argbuf.Make(4)
 				uint32ToBytes(touint32(v), b)
-			case int64:
+			case int, int64:
 				paramTypes[i+i] = byte(fieldTypeLongLong)
 				paramTypes[i+i+1] = 0x00
 
 				b := argbuf.Make(8)
 				uint64ToBytes(touint64(v), b)
-			case uint, uint8, uint16, uint32:
+			case uint8, uint16, uint32:
 				paramTypes[i+i] = byte(fieldTypeLongLong)
-				paramTypes[i+i+1] = 0x00
+				paramTypes[i+i+1] = 0x80
 
 				b := argbuf.Make(4)
 				uint32ToBytes(touint32(v), b)
-			case uint64:
+			case uint, uint64:
 				paramTypes[i+i] = byte(fieldTypeLongLong)
 				paramTypes[i+i+1] = 0x80 // type is unsigned
 				b := argbuf.Make(8)

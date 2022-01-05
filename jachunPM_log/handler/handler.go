@@ -26,6 +26,8 @@ func Handler(in *protocol.Msg) {
 		out.Put()
 	case *protocol.MSG_LOG_Action_AddHistory:
 		action_AddHistory(data, in)
+	case *protocol.MSG_LOG_Action_set_read:
+		action_read(data, in)
 	default:
 		libraries.ReleaseLog("未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 	}

@@ -26,7 +26,6 @@ type MSG_LOG_History struct {
 	FieldLabel string
 }
 type MSG_LOG_Action_Create struct {
-	QueryID    uint32
 	ObjectType string
 	ObjectID   int32
 	ActionType string //操作类型
@@ -37,35 +36,29 @@ type MSG_LOG_Action_Create struct {
 	Projects   []int32
 }
 type MSG_LOG_Action_Create_result struct {
-	QueryResultID uint32
-	ActionId      int64
+	ActionId int64
 }
 type MSG_LOG_Action_GetByWhereMap struct {
-	QueryID uint32
-	Where   map[string]interface{}
-	Order   string
+	Star  time.Time
+	Where map[string]interface{}
+	Order string
 }
 type MSG_LOG_Action_GetByID struct {
-	QueryID uint32
-	Id      int64
+	Id int64
 }
 type MSG_LOG_Action_GetByID_result struct {
-	QueryResultID uint32
-	Info          *MSG_LOG_Action
+	Info *MSG_LOG_Action
 }
 
 type MSG_LOG_Action_GetByWhereMap_result struct {
-	QueryResultID uint32
-	List          []*MSG_LOG_Action
+	List []*MSG_LOG_Action
 }
 type MSG_LOG_Action_transformActions struct {
-	QueryID uint32
-	Where   map[string]interface{}
-	Order   string
+	Where map[string]interface{}
+	Order string
 }
 type MSG_LOG_Action_transformActions_result struct {
-	QueryResultID uint32
-	List          []*MSG_LOG_transformActions_info
+	List []*MSG_LOG_transformActions_info
 }
 type MSG_LOG_transformActions_info struct {
 	Id         int64
@@ -89,7 +82,11 @@ type MSG_LOG_transformActions_info struct {
 	Major        bool   `db:"-"`
 }
 type MSG_LOG_Action_AddHistory struct {
-	QueryID uint32
 	Id      int64
 	History []*MSG_LOG_History
+}
+
+type MSG_LOG_Action_set_read struct {
+	ObjectType string
+	ObjectID   int32
 }

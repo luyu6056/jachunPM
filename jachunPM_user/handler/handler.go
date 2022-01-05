@@ -116,6 +116,12 @@ func Handler(in *protocol.Msg) {
 		team_getByTypeUid(data, in)
 	case *protocol.MSG_USER_user_getUserqueryByWhere:
 		user_getUserqueryByWhere(data, in)
+	case *protocol.MSG_USER_team_getByIds:
+		team_getByIds(data, in)
+	case *protocol.MSG_USER_team_updateByWhere:
+		team_updateByWhere(data, in)
+	case *protocol.MSG_USER_config_save:
+		config_save(data,in)
 	default:
 		libraries.ReleaseLog("未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 	}

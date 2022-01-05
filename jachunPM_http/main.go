@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"io/ioutil"
 	"jachunPM_http/config"
+	"jachunPM_http/db"
 	"jachunPM_http/handler"
 	"libraries"
 	"log"
@@ -12,9 +13,10 @@ import (
 	_ "net/http/pprof"
 	"protocol"
 	"runtime"
-	"server"
 	"strconv"
 	"time"
+
+	"codec"
 
 	"github.com/luyu6056/cache"
 	"github.com/luyu6056/gnet"
@@ -33,9 +35,10 @@ func main() {
 	if err != nil {
 		libraries.ReleaseLog("服务启动失败%v", err)
 	} else {
-		//db.Init()
+		db.Init()
 		handler.HostConn.SetTickHand(handler.HandleTick)
 		handler.HostConn.HandleMsg = handler.Handler
+		handler.HostConn.DB = db.DB
 		go handler.HostConn.Start()
 	}
 
@@ -97,7 +100,7 @@ func main() {
 		}()
 	}
 
-	log.Fatal(gnet.Serve(svr, svr.addr, gnet.WithLoopNum(runtime.NumCPU()), gnet.WithTCPKeepAlive(time.Second*600), gnet.WithCodec(&server.Tlscodec{}), gnet.WithReusePort(true), gnet.WithOutbuf(1024), gnet.WithTls(tlsconfig), gnet.WithMultiOut(false)))
+	log.Fatal(gnet.Serve(svr, svr.addr, gnet.WithLoopNum(runtime.NumCPU()), gnet.WithTCPKeepAlive(time.Second*600), gnet.WithCodec(&codec.Tlscodec{}), gnet.WithReusePort(true), gnet.WithOutbuf(128), gnet.WithTls(tlsconfig), gnet.WithMultiOut(false)), gnet.WithTCPNoDelay(true))
 }
 func (hs *httpServer) OnInitComplete(srv gnet.Server) (action gnet.Action) {
 	libraries.DebugLog("httpserver started on %s (loops: %d)", hs.addr, srv.NumEventLoop)
@@ -106,21 +109,23 @@ func (hs *httpServer) OnInitComplete(srv gnet.Server) (action gnet.Action) {
 
 func (hs *httpServer) OnOpened(c gnet.Conn) (out []byte, action gnet.Action) {
 	time.AfterFunc(time.Second*10, func() {
-		if c.Context() == nil {
-			c.Close()
-		}
+		time.AfterFunc(time.Second*10, func() {
+			if ctx, ok := c.Context().(*codec.WSconn); !ok || ctx.Conn == nil || ctx.Conn.Session == nil {
+				c.Close()
+			}
+		})
 	})
 	return
 }
 
 func (hs *httpServer) OnClosed(c gnet.Conn, err error) (action gnet.Action) {
 	switch svr := c.Context().(type) {
-	case *server.WSconn:
+	case *codec.WSconn:
 
-	case *server.Httpserver:
+	case *codec.Httpserver:
 		svr.Close()
-		server.Httppool.Put(svr)
-	case *server.Http2server:
+		codec.Httppool.Put(svr)
+	case *codec.Http2server:
 		if err == gnet.ErrServerShutdown {
 			svr.Close()
 		} else {
@@ -137,7 +142,7 @@ func (hs *httpServer) OnClosed(c gnet.Conn, err error) (action gnet.Action) {
 func (hs *httpServer) React(data []byte, c gnet.Conn) (action gnet.Action) {
 
 	switch svr := c.Context().(type) {
-	case *server.Httpserver:
+	case *codec.Httpserver:
 		action = handler.HttpHandler(svr)
 		if svr.Request.Connection == "close" {
 			action = gnet.Close
@@ -145,9 +150,9 @@ func (hs *httpServer) React(data []byte, c gnet.Conn) (action gnet.Action) {
 		c.AsyncWrite(svr.Out.Bytes())
 		svr.Recovery()
 		return
-	case *server.WSconn:
+	case *codec.WSconn:
 
-	case *server.Http2server:
+	case *codec.Http2server:
 		//svr.SendPool.Invoke(svr.WorkStream)
 
 	}

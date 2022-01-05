@@ -34,13 +34,15 @@ func get_product_index(data *TemplateData) (err error) {
 	}
 	//if($this->app->getViewType() != 'mhtml') unset($this->lang->product->menu->index);
 	id, _ := strconv.Atoi(data.ws.Query("productID"))
+
 	productID, branch, err := product_saveState(data, int32(id))
 	if err != nil {
-		return
+		return err
 	}
 	if err = product_setMenu(data, productID, branch, ""); err != nil {
-		return
+		return err
 	}
+
 	templateOut("product.index.html", data)
 	return
 }
@@ -1019,39 +1021,14 @@ func post_product_edit(data *TemplateData) (err error) {
 
 		}
 	}
-	m, _ := libraries.Preg_match_result(`<img src="/file/tmpimg\?fileID=(\d+)&amp;t=([^"]+)" alt="" \/>`, product.Desc, -1)
+
 	var uploaderr error
 	var newimgids []int64
-	for _, match := range m {
-		b, ok := file_getTempFile(match[1])
-		if ok {
-			upload := protocol.GET_MSG_FILE_upload()
-			upload.AddBy = data.User.Id
-			upload.Data = b
-			upload.Name = time.Now().Format("20060102") + "_" + match[1] + "." + match[2]
-			var res *protocol.MSG_FILE_upload_result
-			uploaderr = msg.SendMsgWaitResult(0, upload, &res)
-			if uploaderr == nil {
-				newimgids = append(newimgids, res.FileID)
-				product.Desc = strings.ReplaceAll(product.Desc, match[0], `<img src="/file/read?fileID=`+strconv.FormatInt(res.FileID, 10)+` alt="" />`)
-			}
-			res.Put()
-			if uploaderr != nil {
-				deleteimg := protocol.GET_MSG_FILE_DeleteByID()
-				for _, id := range newimgids {
-					deleteimg.FileID = id
-					msg.SendMsg(0, deleteimg)
-				}
-				deleteimg.Put()
-				data.ajaxResult(false, map[string]string{"desc": fmt.Sprintf(data.Lang["file"]["imguploadFail"].(string), uploaderr)})
-				return
-			}
-		} else {
-			product.Desc = strings.ReplaceAll(product.Desc, match[0], "")
-		}
-
+	product.Desc, newimgids, uploaderr = file_descProcessImgURLAnd2Bbcode(data, product.Desc)
+	if uploaderr != nil {
+		data.ajaxResult(false, uploaderr.Error(), "")
+		return
 	}
-	product.Desc = libraries.Html2bbcode(product.Desc)
 	defer func() {
 		if err != nil { //以下使用err来判断图片删除
 			deleteimg := protocol.GET_MSG_FILE_DeleteByID()

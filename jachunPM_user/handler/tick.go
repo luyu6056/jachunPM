@@ -21,6 +21,7 @@ func HandleTick(t time.Time) {
 		HostConn.Status -= protocol.RpcTickStatusFirst
 		//检查是否缺少默认admin
 		err := HostConn.DB.Table(db.TABLE_USER).Limit(0).Select(&users)
+
 		if err != nil {
 			panic("检查用户数量失败" + err.Error())
 		}

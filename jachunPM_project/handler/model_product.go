@@ -164,13 +164,13 @@ func product_getStories(data *protocol.MSG_PROJECT_product_getStories, in *proto
 			unclosedStatus = append(unclosedStatus, kv.Key)
 		}
 
-		list, err = story_getProductStories(data.ProductID, data.Branch, modules, unclosedStatus, data.Sort, data.Page, data.PerPage, &data.Total)
+		list, err = story_getProductStories([]int32{data.ProductID}, []int32{data.Branch}, modules, unclosedStatus, data.Sort, data.Page, data.PerPage, &data.Total)
 	case "unplan":
 		list, err = story_getByPlan(data.ProductID, data.Branch, modules, "", data.Sort, data.Page, data.PerPage, &data.Total)
 	case "allstory":
-		list, err = story_getProductStories(data.ProductID, data.Branch, modules, []string{"all"}, data.Sort, data.Page, data.PerPage, &data.Total)
+		list, err = story_getProductStories([]int32{data.ProductID}, []int32{data.Branch}, modules, []string{"all"}, data.Sort, data.Page, data.PerPage, &data.Total)
 	case "bymodule":
-		list, err = story_getProductStories(data.ProductID, data.Branch, modules, []string{"all"}, data.Sort, data.Page, data.PerPage, &data.Total)
+		list, err = story_getProductStories([]int32{data.ProductID}, []int32{data.Branch}, modules, []string{"all"}, data.Sort, data.Page, data.PerPage, &data.Total)
 	case "bysearch":
 		list, err = story_getBySearch(data.ProductID, data.Branch, 0, data.Where, data.Sort, data.Page, data.PerPage, &data.Total)
 	case "assignedtome":

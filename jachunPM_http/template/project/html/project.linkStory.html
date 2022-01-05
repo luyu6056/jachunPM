@@ -1,0 +1,81 @@
+{{template "header.html" .}}
+{{template "tablesorter.html" .}}
+<style>
+.search-form .form-actions {padding-bottom: 10px!important;}
+</style>
+<div id="mainMenu" class="clearfix">
+  <div class="btn-toolbar pull-left">
+    <span class='btn btn-link btn-active-text'><span class='text'>{{.Lang.project.linkStory}}</span></span>
+  </div>
+  <div class='btn-toolbar pull-right'>
+     <a href="javascript:history.go(-1)" class="btn btn-link"><i class="icon icon-back icon-sm"></i> {{.Lang.common.goback}}</a>
+  </div>
+</div>
+<div id="mainContent">
+  <div class="cell space-sm">
+    <div id='queryBox' class='show no-margin'></div>
+  </div>
+  <form class='main-table table-story' method='post' data-ride='table' id='linkStoryForm'>
+    <table class='table table-fixed tablesorter' id='linkStoryList'> 
+      <thead>
+        <tr>
+          <th class='c-id'>
+            {{if $.Data.allStories}}
+            <div class="checkbox-primary check-all" title="{{.Lang.common.selectAll}}">
+              <label></label>
+            </div>
+            {{end}}
+            {{.Lang.common.idAB}}
+          </th>
+          <th class='w-pri'>{{.Lang.common.priAB}}</th>
+          <th class='w-150px'>{{.Lang.story.product}}</th>
+          <th class='w-150px'>{{.Lang.story.module}}</th>
+          <th>{{.Lang.story.title}}</th>
+          <th class='w-120px'>{{.Lang.story.plan}}</th>
+          <th class='w-80px'>{{.Lang.story.stage}}</th>
+          {{if ne $.Data.productType "normal"}}
+          <th class='w-80px'>{{getValue .Lang.product.branchName $.Data.productType}}</th>
+          {{end}}
+          <th class='w-user'>{{.Lang.common.openedByAB}}</th>
+          <th class='w-80px text-center'>{{.Lang.story.estimateAB}}</th>
+        </tr>
+      </thead>
+      <tbody>
+      {{range $story:= $.Data.allStories}}
+      <tr>
+        <td class='cell-id'>
+          {{html_checkbox "stories"  (appendKeyValueStr $story.Id (sprintf "%03d" $story.Id))}}
+          {{html_hidden (strAdd "products[" $story.Id "]")  $story.Product}}
+        </td>
+        <td><span class='label-pri label-pri-{{$story.Pri}}' title='{{getValue $.Lang.story.priList $story.Pri}}'>{{getValue $.Lang.story.priList $story.Pri}}</span></td>
+        {{$product:=(getValue $.Data.products $story.Product)}}
+        <td class='text-left' title='{{$product.Name}}'>{{html_a (helper_createLink "product" "browse"  "productID=" $story.Product "&branch=" $story.Branch)  $product.Name "_blank"}}</td>
+        <td class='text-left' title='{{getValue $.Data.modules $story.Module}}'>{{getValue $.Data.modules $story.Module}}</td>
+        <td class='text-left nobr' title="{{$story.Title}}">{{html_a (helper_createLink "story" "view" "storyID=" $story.Id)  $story.Title}}</td>
+        <td title='{{$story.PlanTitle}}'>{{$story.PlanTitle}}</td>
+        <td>{{getValue $.Lang.story.stageList $story.Stage}}</td>
+        {{if ne $.Data.productType "normal"}}
+        <td>{{getValue $.Data.branchGroupsName $story.Id}}</td>
+        {{end}}
+        <td>{{getValue $.Data.users $story.OpenedBy}}</td>
+        <td class='text-center'>{{$story.Estimate}}</td>
+      </tr>
+      {{end}}
+      </tbody>
+    </table>
+    {{if .Data.allStories}}
+    <div class='table-footer'>
+      <div class="checkbox-primary check-all"><label>{{.Lang.common.selectAll}}</label></div>
+      <div class='table-actions btn-toolbar show-always'>
+        {{html_submitButton "" "" "btn btn-secondary"}}
+      </div>
+      {{pager_show . "right" "pagerjs"}}
+    </div>
+    {{else}}
+    <div class="table-empty-tip">
+      <p><span class="text-muted">{{.Lang.project.whyNoStories}}</p>
+    </div>
+    {{end}}
+  </form>
+</div>
+{{template "footer.html" .}}

@@ -3,12 +3,13 @@ package handler
 import (
 	"jachunPM_project/db"
 	"libraries"
+	"mysql"
 	"protocol"
 	"strconv"
 	"time"
 )
 
-func story_getProductStories(productID int32, branch int32, modules []int32, status []string, sort string, page int, perpage int, total *int) (list []*protocol.MSG_PROJECT_story, err error) {
+func story_getProductStories(productID []int32, branch []int32, modules []int32, status []string, sort string, page int, perpage int, total *int) (list []*protocol.MSG_PROJECT_story, err error) {
 	var where = map[string]interface{}{"product": productID, "deleted": false}
 	if len(modules) > 0 {
 		where["module"] = modules
@@ -16,7 +17,9 @@ func story_getProductStories(productID int32, branch int32, modules []int32, sta
 	if len(status) > 0 && status[0] != "all" {
 		where["status"] = status
 	}
-	if branch > 0 {
+	protocol.Order_ascInt32(branch)
+	if len(branch) > 0 && branch[0]!=0{
+		branch = append([]int32{0}, branch...)
 		where["branch"] = branch
 	}
 	err = HostConn.DB.Table(db.TABLE_STORY).Where(where).Order(sort).Limit((page-1)*perpage, perpage).Select(&list)
@@ -186,7 +189,9 @@ func story_create(data *protocol.MSG_PROJECT_stroy_create, in *protocol.Msg) {
 				return
 			}
 		}
-		story_setStage(int32(insertId), in)
+		if err = story_setStage(int32(insertId), in); err != nil {
+			return
+		}
 		out.Result = int32(insertId)
 		/* Callback the callable method to process the related data for object that is transfered to story. */
 		//if($from && is_callable(array($this, $this->config->story->fromObjects[$from]['callback']))) call_user_func(array($this, $this->config->story->fromObjects[$from]['callback']), $storyID);
@@ -229,7 +234,13 @@ func story_setStage(storyId int32, in *protocol.Msg) (err error) {
 	if e != nil {
 		return e
 	}
-	defer session.Rollback()
+	defer func() {
+		if err != nil {
+			session.Rollback()
+		} else {
+			session.Commit()
+		}
+	}()
 	_, err = session.Table(db.TABLE_STORYSTAGE).Where("story = ?", storyId).Delete()
 	if err != nil {
 		return
@@ -446,7 +457,7 @@ func story_setStage(storyId int32, in *protocol.Msg) (err error) {
 			break
 		}
 	}
-	session.Commit()
+
 	return
 }
 func story_batchGetStoryStage(data *protocol.MSG_PROJECT_story_batchGetStoryStage, in *protocol.Msg) {
@@ -557,7 +568,7 @@ func story_get2BeClosed(productID int32, branch int32, modules []int32, orderBy 
 	return
 }
 func story_getById(id int32, version int16) (story *protocol.MSG_PROJECT_story, err error) {
-	if err = HostConn.DB.Table(db.TABLE_STORY).Where("Id = ?", id).Find(&story); err != nil {
+	if err = HostConn.DB.Table(db.TABLE_STORY).Where("Id = ?", id).Find(&story); err != nil || story == nil {
 		return
 	}
 	if version == 0 {
@@ -584,7 +595,7 @@ func story_getById(id int32, version int16) (story *protocol.MSG_PROJECT_story, 
 		return
 	}
 	var projects []*db.Project
-	if err = HostConn.DB.Table(db.TABLE_PROJECT).Field("Id").Where("Story=?", story.Id).Order("order desc").Select(&projects); err != nil {
+	if err = HostConn.DB.Table(db.TABLE_PROJECT).Field("Id").Where(map[string]interface{}{"Storys": []interface{}{mysql.WhereOperatorJSONCONTAINS, story.Id}}).Order("order desc").Select(&projects); err != nil {
 		return
 	}
 	for _, p := range projects {
@@ -642,3 +653,32 @@ func story_getPairsByIds(data *protocol.MSG_PROJECT_story_getPairsByIds, in *pro
 	in.SendResult(out)
 	out.Put()
 }
+func story_getProjectStoryPairs(data *protocol.MSG_PROJECT_story_getProjectStoryPairs, in *protocol.Msg) {
+	out := protocol.GET_MSG_PROJECT_story_getProjectStoryPairs_result()
+	if data.ProjectID == 0 {
+		in.SendResult(out)
+		out.Put()
+		return
+	}
+	where := map[string]interface{}{
+		"Project": data.ProjectID,
+		"Deleted": false,
+	}
+	if data.ProductID > 0 {
+		where["Product"] = data.ProductID
+	}
+	if data.Branch > 0 {
+		where["Branch"] = []int32{0, data.Branch}
+	}
+	if len(data.ModuleIdList) > 0 {
+		where["Module"] = data.ModuleIdList
+	}
+	err := HostConn.DB.Table(db.TABLE_STORY).Where(where).Select(&out.List)
+	if err != nil {
+		in.WriteErr(err)
+		return
+	}
+	in.SendResult(out)
+	out.Put()
+}
+

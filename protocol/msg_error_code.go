@@ -30,11 +30,17 @@ const (
 	Err_ProjectBranchCanNotDelete_BUILD       ErrCode = -20
 	Err_ProjectProductPlanNotFound            ErrCode = -21
 	Err_ProjectProductPlanParentNotFound      ErrCode = -22
-	Err_FileNotFount                          ErrCode = -23
+	Err_FileNotFound                          ErrCode = -23
 	Err_ProjectStoryTitleExists               ErrCode = -24
 	Err_ProjectNotFound                       ErrCode = -25
 	Err_ProjectNameIsExist                    ErrCode = -26
-	Err_ProjectStoryNotFount                  ErrCode = -27
+	Err_ProjectStoryNotFound                  ErrCode = -27
+	Err_FileDownLoadStartEnd                  ErrCode = -29
+	Err_TaskIsexist                           ErrCode = -30
+	Err_TaskNotFound                          ErrCode = -31
+	Err_taskHasAncestors                      ErrCode = -32
+	Err_taskleftnotempty                      ErrCode = -33
+	Err_taskconsumedSmall                     ErrCode = -34
 )
 
 var errCodeMap = map[ErrCode]string{
@@ -56,10 +62,16 @@ var errCodeMap = map[ErrCode]string{
 	Err_ProjectBranchCanNotDelete_BUILD:       "BranchCanNotDeleteBUILDHasData",
 	Err_ProjectProductPlanNotFound:            "NotFoundProductPlanInfo",
 	Err_ProjectProductPlanParentNotFound:      "NotFoundProductPlanParent",
-	Err_FileNotFount:                          "FileNotFount",
-	Err_ProjectNotFound:                       "NotFountProject",
+	Err_FileNotFound:                          "FileNotFound",
+	Err_ProjectNotFound:                       "ProjectNotFound",
 	Err_ProjectNameIsExist:                    "ProjectNameIsExist",
-	Err_ProjectStoryNotFount:                  "StoryNotFount",
+	Err_ProjectStoryNotFound:                  "StoryNotFound",
+	Err_FileDownLoadStartEnd:                  "Download End lt Start",
+	Err_TaskNotFound:                          "TaskNotFound",
+	Err_TaskIsexist:                           "TaskIsexist",
+	Err_taskHasAncestors:                      "taskHasAncestors",
+	Err_taskleftnotempty:                      "taskleftnotempty",
+	Err_taskconsumedSmall:                     "consumedSmall",
 }
 
 func (err ErrCode) String() string {

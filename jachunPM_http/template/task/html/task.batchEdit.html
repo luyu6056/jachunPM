@@ -1,0 +1,85 @@
+{{template "header.html" .}}
+{{template "datepicker.html" .}}
+<script type="text/javascript">var dittoNotice={{.Lang.task.dittoNotice}}</script>
+<div id='mainContent' class='main-content fade'>
+  <div class='main-header'>
+    <h2>
+      {{.Lang.task.common}}{{.Lang.common.colon}}{{.Lang.task.batchEdit}}
+      {{if $.Data.projectName}}
+      <small class='text-muted'>{{html_icon (strAdd .Lang.icons.project " "  .Lang.task.project  .Lang.common.colon  " " $.Data.projectName)}}</small>
+      {{end}}
+    </h2>
+    <div class='pull-right btn-toolbar'>
+      {{template "customfield.html" .}}
+    </div>
+  </div>
+
+  <form id='batchEditForm' class='main-form' method='post' target='hiddenwin' action="{{helper_createLink "task" "batchEdit" "projectID=" $.Data.projectID}}">
+    <div class="table-responsive">
+      <table class='table table-form table-fixed with-border'>
+        <thead>
+          <tr>
+            <th class='w-50px'>{{.Lang.common.idAB}}</th>
+            <th class='required{{if lt (len $.Data.visibleFields)  10}} w-150px{{end}}'>{{.Lang.task.name}}</th>
+            {{if getValue $.Data.visibleFields "module"}}<th class='w-150px{{getValue $.Data.requiredFields "module"}}'>{{.Lang.task.module}}</th>{{end}}
+            {{if getValue $.Data.visibleFields "assignedTo"}}<th class='w-150px{{getValue $.Data.requiredFields "assignedTo"}}'>{{.Lang.task.assignedTo}}</th>{{end}}
+            <th class='w-80px required'>{{.Lang.common.typeAB}}</th>
+            {{if getValue $.Data.visibleFields "status"}}<th class='w-100px{{getValue $.Data.requiredFields "status"}}'>{{.Lang.task.status}}</th>{{end}}
+            {{if getValue $.Data.visibleFields "pri"}}<th class='w-70px{{getValue $.Data.requiredFields "pri"}}'>{{.Lang.task.pri}}</th>{{end}}
+            {{if getValue $.Data.visibleFields "estimate"}}<th class='w-70px{{getValue $.Data.requiredFields "estimate"}}'>{{.Lang.task.estimateAB}}</th>{{end}}
+            {{if getValue $.Data.visibleFields "record"}}<th class='w-70px{{getValue $.Data.requiredFields "record"}}'>{{.Lang.task.consumedThisTime}}</th>{{end}}
+            {{if getValue $.Data.visibleFields "left"}}<th class='w-70px{{getValue $.Data.requiredFields "left"}}'>{{.Lang.task.leftAB}}</th>{{end}}
+            {{if getValue $.Data.visibleFields "estStarted"}}<th class='w-90px{{getValue $.Data.requiredFields "estStarted"}}'>{{.Lang.task.estStarted}}</th>{{end}}
+            {{if getValue $.Data.visibleFields "deadline"}}<th class='w-90px{{getValue $.Data.requiredFields "deadline"}}'>{{.Lang.task.deadline}}</th>{{end}}
+            {{if getValue $.Data.visibleFields "finishedBy"}}<th class='w-100px{{getValue $.Data.requiredFields "finishedBy"}}'>{{.Lang.task.finishedBy}}</th>{{end}}
+            {{if getValue $.Data.visibleFields "canceledBy"}}<th class='w-100px{{getValue $.Data.requiredFields "canceledBy"}}'>{{.Lang.task.canceledBy}}</th>{{end}}
+            {{if getValue $.Data.visibleFields "closedBy"}}<th class='w-100px{{getValue $.Data.requiredFields "closedBy"}}'>{{.Lang.task.closedBy}}</th>{{end}}
+            {{if getValue $.Data.visibleFields "closedReason"}}<th class='w-100px{{getValue $.Data.requiredFields "closedReason"}}'>{{.Lang.task.closedReason}}</th>{{end}}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            {{- range $task := $.Data.tasks}}
+            <td>{{$task.Id}}{{html_hidden (strAdd "taskIDList[" $task.Id "]")   $task.Id}}</td>
+            <td style='overflow:visible' title='{{$task.Name}}'>
+              <div class="input-control has-icon-right">
+                {{html_input (strAdd "names[" $task.Id "]")   $task.Name  "class='form-control' autocomplete='off'"}}
+                <div class="colorpicker">
+                  <button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown"><span class="cp-title"></span><span class="color-bar"></span><i class="ic"></i></button>
+                  <ul class="dropdown-menu clearfix">
+                    <li class="heading">{{$.Lang.story.colorTag}}<i class="icon icon-close"></i></li>
+                  </ul>
+                  {{html_hidden (strAdd "colors[" $task.Id "]")   $task.Color  (strAdd "data-provide='colorpicker' data-wrapper='input-control-icon-right' data-icon='color' data-btn-tip='" $.Lang.task.colorTag "' data-update-text='#names\\[" $task.Id "\\]'")}}
+                </div>
+              </div>
+            </td>
+            {{if getValue $.Data.visibleFields "module"}}<td class='text-left' style='overflow:visible'>{{html_select (strAdd "modules[" $task.Id "]") $.Data.modules  $task.Module  "class='form-control chosen'"}}</td>{{end}}
+            {{if getValue $.Data.visibleFields "assignedTo"}}<td class='text-left' style='overflow:visible'>{{html_select (strAdd "assignedTos[" $task.Id "]") $.Data.members  $task.AssignedTo  "class='form-control chosen'"}}</td>{{end}}
+            <td>{{html_select (strAdd "types[" $task.Id "]") $.Data.typeList  $task.Type  "class='form-control'"}}</td>
+            {{if getValue $.Data.visibleFields "status"}}<td >{{html_select (strAdd "statuses[" $task.Id "]")   $.Data.statusList  $task.Status  "class='form-control'"}}</td>{{end}}
+            {{if getValue $.Data.visibleFields "pri"}}<td >{{html_select (strAdd "pris[" $task.Id "]") $.Data.priList  $task.Pri  "class='form-control'"}}</td>{{end}}
+            {{if getValue $.Data.visibleFields "estimate"}}<td >{{html_input (strAdd "estimates[" $task.Id "]") $task.Estimate (strAdd "class='form-control text-center' autocomplete='off' " (getValue $.Data.disableHour $task.Id) )}}</td>{{end}}
+            {{if getValue $.Data.visibleFields "record"}}<td >{{html_input (strAdd "consumeds[" $task.Id "]")  ""  (strAdd "class='form-control text-center' autocomplete='off' " (getValue $.Data.disableHour $task.Id))}}</td>{{end}}
+            {{if getValue $.Data.visibleFields "left"}}<td >{{html_input (strAdd "lefts[" $task.Id "]")       $task.Left  (strAdd "class='form-control text-center' autocomplete='off' " (getValue $.Data.disableHour $task.Id))}}</td>{{end}}
+            {{if getValue $.Data.visibleFields "estStarted"}}<td>{{html_input (strAdd "estStarteds[" $task.Id "]")   $task.EstStarted  "class='form-control text-center form-date'"}}</td>{{end}}
+            {{if getValue $.Data.visibleFields "deadline"}}<td>{{html_input (strAdd "deadlines[" $task.Id "]")       $task.Deadline  "class='form-control text-center form-date'"}}</td>{{end}}
+            {{if getValue $.Data.visibleFields "finishedBy"}}<td class='text-left' style='overflow:visible'>{{html_select (strAdd "finishedBys[" $task.Id "]")   $.Data.members  $task.FinishedBy  "class='form-control chosen'"}}</td>{{end}}
+            {{if getValue $.Data.visibleFields "canceledBy"}}<td class='text-left' style='overflow:visible'>{{html_select (strAdd "canceledBys[" $task.Id "]")   $.Data.members  $task.CanceledBy  "class='form-control chosen'"}}</td>{{end}}
+            {{if getValue $.Data.visibleFields "closedBy"}}<td class='text-left' style='overflow:visible'>{{html_select (strAdd "closedBys[" $task.Id "]")     $.Data.members  $task.ClosedBy  "class='form-control chosen'"}}</td>{{end}}
+            {{if getValue $.Data.visibleFields "closedReason"}}<td>{{html_select (strAdd "closedReasons[" $task.Id "]")   $.Lang.task.reasonList  $task.ClosedReason "class=form-control"}}</td>{{end}}
+          </tr>
+          {{- end}}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan='{{intsum (len $.Data.visibleFields) 3}}' class='text-center form-actions'>
+              {{html_submitButton .}}
+              {{html_backButton .}}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </form>
+</div>
+{{template "footer.html" .}}

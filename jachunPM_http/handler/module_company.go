@@ -13,7 +13,7 @@ func init() {
 }
 func get_company_browse(data *TemplateData) (err error) {
 	ws := data.ws
-	param := ws.Query("param")
+	param, _ := strconv.Atoi(ws.Query("param"))
 	TYPE := ws.Query("type")
 
 	deptID := 0
@@ -22,8 +22,8 @@ func get_company_browse(data *TemplateData) (err error) {
 	}
 	if TYPE == "bydept" {
 		deptID, _ = strconv.Atoi(ws.Query("dept"))
-		if deptID == 0 && param != "0" {
-			deptID, _ = strconv.Atoi(param)
+		if deptID == 0 && param != 0 {
+			deptID = param
 		}
 	}
 	if deptID > 0 {
@@ -32,7 +32,7 @@ func get_company_browse(data *TemplateData) (err error) {
 			return err
 		}
 		data.Data["dept"] = deptinfo
-		param = strconv.Itoa(deptID)
+		param = deptID
 	}
 	/*msg, err := HostConn.GetMsg()
 	if err != nil {
@@ -55,7 +55,7 @@ func get_company_browse(data *TemplateData) (err error) {
 	getCompanyUser.DeptID = int32(deptID)
 	getCompanyUser.Total = data.Page.Total
 	if TYPE == "bysearch" {
-		if getCompanyUser.Where, err = post_search_buildQuery(data); err != nil {
+		if getCompanyUser.Where, err = post_search_buildQuery(data, param); err != nil {
 			return
 		}
 	}
@@ -69,12 +69,12 @@ func get_company_browse(data *TemplateData) (err error) {
 	if res.Total > 0 {
 		data.Page.Total = res.Total
 	}
-	data.Data["queryID"], _ = strconv.Atoi(param)
+	data.Data["queryID"] = param
 	if TYPE == "bydept" {
 		data.Data["queryID"] = 0
 	}
 
-	data.Data["vars"] = "param=" + param + "&type=" + TYPE + "&orderBy=%s" + "&recTotal=" + strconv.Itoa(data.Page.Total) + "&recPerPage=" + strconv.Itoa(data.Page.PerPage)
+	data.Data["vars"] = "param=" + strconv.Itoa(param) + "&type=" + TYPE + "&orderBy=%s" + "&recTotal=" + strconv.Itoa(data.Page.Total) + "&recPerPage=" + strconv.Itoa(data.Page.PerPage)
 	templateOut("company.browse.html", data)
 	return
 }
@@ -88,16 +88,19 @@ func getCompanyInfo() protocol.MSG_USER_Company_cache {
 	return c
 }
 func init() {
-	searchParamsFunc["company/browse"] = func(data *TemplateData) map[string]interface{} {
-		search := data.Config["company"]["browse"]["search"].(map[string]interface{})
-		search["actionURL"] = createLink("company", "browse", "param=myQueryID&type=bysearch")
-		dept := search["params"].(map[string]config.ConfigSearchParams)["dept"]
+	searchParamsFunc["company/browse"] = func(data *TemplateData) (*searchParam, error) {
+		search := &searchParam{
+			ConfigSearch: data.Config["company"]["browse"]["search"].(*config.ConfigSearch),
+		}
+
+		search.ActionURL = createLink("company", "browse", "param=myQueryID&type=bysearch")
+		dept := search.Params["dept"]
 		dept.Values = dept.Values[:0]
 		dept.Values = append(dept.Values, protocol.HtmlKeyValueStr{"", ""})
 		list, _ := dept_getOptionMenu(0)
 		dept.Values = append(dept.Values, list...)
-		search["params"].(map[string]config.ConfigSearchParams)["dept"] = dept
+		search.Params["dept"] = dept
 		data.ws.Session().Store("company/browse", search)
-		return search
+		return search, nil
 	}
 }

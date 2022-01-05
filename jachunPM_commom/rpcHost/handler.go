@@ -1,21 +1,24 @@
 package rpcHost
 
 import (
+	"archive/tar"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"jachunPM_commom/db"
 	"libraries"
 	"os"
+	"os/exec"
 	"protocol"
 	"reflect"
+	"runtime"
 	"runtime/debug"
-	"server"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
 
 	"github.com/luyu6056/cache"
 	"github.com/luyu6056/gnet"
@@ -40,24 +43,62 @@ var (
 	errTransactionNotFoundErrChan  = errors.New("TransactionNotFoundErrChan")
 	hostGoPool, _                  = ants.NewPool(10000)
 	rpcHostMsgInChan               = make(chan *protocol.Msg, protocol.Rpcmsgnum)
+	tmpFileId                      int64
+	fileLock                       sync.Mutex
 )
 
 func init() {
+	//删除所有缓存上的事务，如果common重启，事务将变得不可信
+	cache.Hdel_all(TransactionCacheKey)
 	var err error
 	filepath, err = libraries.GetBaseRootPath()
 	if err != nil {
 		panic("获取运行根目录失败" + err.Error())
 	}
-	fileTmpPath = filepath + "/tmp/"
-	filepath += "/upload/"
+
+	if runtime.GOOS == "windows" {
+		fileTmpPath = filepath + `\tmp\`
+		filepath += `\upload\`
+	} else {
+		fileTmpPath = filepath + "/tmp/"
+		filepath += "/upload/"
+	}
 	if ok, _ := libraries.PathExists(filepath); !ok {
 		os.Mkdir(filepath, 0777)
 	}
 	if ok, _ := libraries.PathExists(fileTmpPath); !ok {
 		os.Mkdir(fileTmpPath, 0777)
 	}
+	go deleteTempFile()
 }
-func SendMsgToRemote(ctx *server.Context, c gnet.Conn) error {
+func deleteTempFile() {
+	defer func() {
+		if err := recover(); err != nil {
+			libraries.ReleaseLog("deleteTempFile 发生错误 %v", err)
+		}
+		time.Sleep(time.Second)
+		go deleteTempFile()
+	}()
+	for {
+		list, err := libraries.ListDirAll(fileTmpPath, "")
+		if err != nil {
+			libraries.ReleaseLog("deleteTempFile 获取目录内容错误 %v", err)
+		}
+		now := time.Now()
+		for _, file := range list {
+			s, err := os.Stat(file)
+			if err != nil {
+				libraries.ReleaseLog("deleteTempFile 获取文件%s错误 %v", file, err)
+			}
+			//临时文件保存7天
+			if now.Unix()-s.ModTime().Unix() > 86400*7 {
+				os.Remove(file)
+			}
+		}
+		time.Sleep(time.Minute)
+	}
+}
+func HandlerMsg(data []byte, c gnet.Conn) error {
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Println(err)
@@ -68,42 +109,63 @@ func SendMsgToRemote(ctx *server.Context, c gnet.Conn) error {
 
 		}
 	}()
-	b := ctx.In.Next(1)
-	msgnum := b[0]
+
+	msgnum := data[0]
+	index := 1
 	var n int
-	for ctx.In.Len() > 0 {
+	for index < len(data) {
 		n++
-		in, err := protocol.ReadOneMsg(ctx.In)
+		in, l, err := protocol.ReadOneMsgFromBytes(data[index:])
+
+		index += l
+		in.Addr = c.RemoteAddr().String()
 		if err != nil {
 			return errors.New("读消息出错" + err.Error())
 		} else {
-			if c.Context() == nil {
-				in.ReadData()
-				i := in.Data
-				switch data := i.(type) {
-				case *protocol.MSG_COMMON_regServer:
-					svr := NewRpcServer(c)
-					svr.Start(data.No, data.IpPort, data.Window)
-					c.SetContext(svr)
-				case nil:
-					libraries.ReleaseLog("未注册服务，消息读取失败nil,请检查协议")
-				default:
-					libraries.ReleaseLog("未注册服务，host未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
+
+			switch context := c.Context().(type) {
+			case *RpcServer:
+				if in.Local != uint16(context.ServerNo)|uint16(context.Id)<<8 { //检查local
+					return errors.New(fmt.Sprintf("消息的local来源不对,in.Local%d,local%d", in.Local, uint16(context.ServerNo)|uint16(context.Id)<<8))
 				}
-				continue
-			}
+				in.SetServer(context)
+				rpcHostMsgInChan <- in
+			case chan *protocol.Msg:
+				if in.Cmd == protocol.CMD_MSG_HOST_regServer {
+					in.ReadData()
+					data, ok := in.Data.(*protocol.MSG_HOST_regServer)
+					if ok {
+						go func() {
+							newSvr := NewRpcServer(c)
+							newSvr.Start(data.No, data.IpPort, data.Window, in.QueryID)
+							c.SetContext(newSvr)
+							//拉取注册前的消息，推入队列
+							for i := len(context); i > 0; i-- {
+								in:=<-context
+								in.SetServer(newSvr)
+								rpcHostMsgInChan <-in
+							}
+						}()
 
-			svr, ok := c.Context().(*RpcServer)
-			if !ok {
-				return errors.New("收到非rpcserver消息")
-			} else if in.Local != uint16(svr.ServerNo)|uint16(svr.Id)<<8 { //检查local
-				fmt.Println(in.Cmd)
-				return errors.New(fmt.Sprintf("消息的local来源不对,in.Local%d,local%d", in.Local, uint16(svr.ServerNo)|uint16(svr.Id)<<8))
-			}
+					} else {
+						libraries.ReleaseLog("协议错误，MSG_HOST_regServer读取错误")
+					}
 
-			buf := protocol.BufPoolGet()
-			in.NextWithSetInBuf(buf)
-			rpcHostMsgInChan <- in
+				} else {
+					//消息推入chan，等注册后再执行
+					select {
+					case context <- in:
+					default:
+						c.Close()
+						libraries.ReleaseLog("%s服务未注册，缓存已满", c.RemoteAddr().String())
+						return nil
+					}
+				}
+			default:
+				libraries.ReleaseLog("进入未知分支，理论上不可能跑到这里来")
+				c.Close()
+				return nil
+			}
 		}
 	}
 	if int(msgnum) != n {
@@ -132,6 +194,7 @@ func HostServerHandlerOutChan() {
 			libraries.ReleaseLog("hostOutChan读消息出错" + err.Error())
 			continue
 		}
+
 		rpcHostMsgInChan <- in
 	}
 
@@ -149,8 +212,15 @@ func HostServerHandlerMsgIn() {
 	}
 	for in := range rpcHostMsgInChan {
 		buf := in.Buf()
+		in.DB.DB = db.DB
 		cmdSvrNo := byte(in.Cmd)
-		if cmdSvrNo != protocol.HostServerNo || cmdSvrNo == protocol.HostServerNo && in.Remote != 0 {
+
+		if byte(in.GetRemoteID()) == protocol.HostServerNo || (in.GetRemoteID() == 0 && cmdSvrNo == protocol.HostServerNo) {
+			in.ReadData()
+			hostAsyncHand.Invoke(in)
+			//hostAsyncHand是异步执行，如果有需要同步的需要在这里进行处理
+			protocol.BufPoolPut(buf)
+		} else {
 			//检查msgno
 			b := buf.Bytes()
 			if in.Msgno == 0 {
@@ -162,54 +232,60 @@ func HostServerHandlerMsgIn() {
 				b[3] = byte(in.Msgno >> 24)
 				ttl := int32(0)
 				msgnoTtl.Store(in.Msgno, &ttl)
+				db.WriteMsgLog(in)
 				time.AfterFunc(protocol.MsgTimeOut*time.Second, func() { msgnoTtl.Delete(msgno) })
 			} else {
 				if v, ok := msgnoTtl.Load(in.Msgno); ok {
-					ttl := v.(*int32)
-					newTtl := atomic.AddInt32(ttl, 1)
-					if newTtl >= protocol.MaxMsgTtl {
-						//抛弃消息，记录log
+					if _, ttlNoCheck := protocol.CMD_NO_CHECK_TTL[in.Cmd]; !ttlNoCheck {
+						ttl := v.(*int32)
+						newTtl := atomic.AddInt32(ttl, 1)
+						in.Ttl = uint16(newTtl)
 						db.WriteMsgLog(in)
-						protocol.BufPoolPut(buf)
-						continue
+						if newTtl >= protocol.MaxMsgTtl {
+							libraries.ReleaseLog("ttl过大,local %d remoted %d cmd %s msgno %d", in.Local, in.GetRemoteID(), protocol.CmdToName[in.Cmd], in.Msgno)
+							//抛弃消息
+
+							protocol.BufPoolPut(buf)
+							continue
+						}
 					}
-					in.Ttl = uint8(newTtl)
+
 				} else {
-					libraries.DebugLog("无效的msgno %d", in.Msgno)
+					libraries.DebugLog("无效的msgno %d,%s %+v", in.Msgno,protocol.CmdToName[in.Cmd], in)
 					protocol.BufPoolPut(buf)
 					continue //抛弃消息
 				}
 			}
-			db.WriteMsgLog(in)
-			b[4] = in.Ttl
+
+			b[4] = uint8(in.Ttl)
+			b[5] = uint8(in.Ttl >> 8)
 			//检查事务
-			transactionNo := int(b[9]) | int(b[10])<<8 | int(b[11])<<16 | int(b[12])<<24
-			if _, has := cache.Has(strconv.Itoa(transactionNo), TransactionCacheKey); !has {
-				b[9], b[10], b[11], b[12] = 0, 0, 0, 0
+			if transactionNo := int(b[10]) | int(b[11])<<8 | int(b[12])<<16 | int(b[13])<<24;transactionNo>0{
+				if _, has := cache.Has(strconv.Itoa(transactionNo), TransactionCacheKey); !has {
+					b[10], b[11], b[12], b[13] = 0, 0, 0, 0
+				}
 			}
-			if in.Remote == 0 {
-				libraries.DebugLog("cmd%s ,No%d", protocol.CmdToName[in.Cmd], cmdSvrNo)
+
+
+			if in.GetRemoteID() == 0 {
+				//libraries.DebugLog("from %d cmd %s ,to %d", in.Local, protocol.CmdToName[in.Cmd], cmdSvrNo)
 				rpcServerOutChan[cmdSvrNo] <- buf
 			} else {
-				svrNo := byte(in.Remote)
-				id := byte(in.Remote >> 8)
+				svrNo := byte(in.GetRemoteID())
+				id := byte(in.GetRemoteID() >> 8)
 				rpcLock.RLock()
-				if remoteSvr := rpcServerIdList[svrNo][id]; remoteSvr != nil {
-					remoteSvr.outChan <- buf
-				} else {
-					//服务挂壁了，转发到公共消息
-					rpcServerOutChan[svrNo] <- buf
+				if v, ok := rpcServerIdList[svrNo]; ok {
+					if remoteSvr := v[id]; remoteSvr != nil {
+						remoteSvr.outChan <- buf
+					} else {
+						rpcServerOutChan[svrNo] <- buf
+					}
 				}
 				rpcLock.RUnlock()
 			}
-			continue
+
 		}
 
-		in.ReadData()
-		//hostAsyncHand是异步执行，如果有需要同步的需要在这里进行处理
-		hostAsyncHand.Invoke(in)
-		buf.Reset()
-		protocol.BufPoolPut(buf)
 	}
 
 }
@@ -219,20 +295,18 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 	if !ok {
 		return
 	}
-	rpcLock.RLock()
-	defer rpcLock.RUnlock()
-	svr := rpcServerIdList[uint8(in.Local)][uint8(in.Local>>8)]
-	if svr == nil {
-		//可能服务掉线了,暂不处理
-		libraries.DebugLog("host收到不存在的svr,No%d,Id%d", uint8(in.Local), uint8(in.Local>>8))
-		return
+	 var svr *RpcServer
+	if in.Local == protocol.HostServerNo {
+		in.SetServer(Host)
+	}else{
+		svr,_=in.Svr.(*RpcServer)
 	}
-	in.SetServer(svr)
+
 	i := in.Data
 	//defer i.Put()  SetMsgQuery里面不能回收，所以不能defer回收
 
 	switch data := i.(type) {
-	case *protocol.MSG_COMMON_WINDOW_UPDATE:
+	case *protocol.MSG_HOST_WINDOW_UPDATE:
 		if svr != nil {
 			atomic.AddInt32(&svr.window, data.Add)
 			//尝试把半开的服务恢复正常
@@ -243,7 +317,7 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 			}
 		}
 
-	case *protocol.MSG_COMMON_PONG:
+	case *protocol.MSG_HOST_PONG:
 		if svr != nil {
 			//libraries.DebugLog("服务%d,ID%d,收到pong,%d", svr.ServerNo, svr.Id, data.Rand)
 			svr.pongTime = time.Now().Unix()
@@ -255,20 +329,23 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 				}
 			}
 		}
-	case *protocol.MSG_COMMON_CACHE_DEL:
+	case *protocol.MSG_HOST_CACHE_DEL:
 		cache.Hdel(data.Name, data.Path)
-	case *protocol.MSG_COMMON_CACHE_DelPath:
+	case *protocol.MSG_HOST_CACHE_DelPath:
 		cache.Hdel_all(data.Path)
-	case *protocol.MSG_COMMON_CACHE_SET:
+	case *protocol.MSG_HOST_CACHE_SET:
+		//libraries.DebugLog("Path:%s Name:%s Value:%s", data.Path, data.Name, libraries.MD5_B(data.Value))
 		cache.Hset(data.Name, map[string][]byte{"value": data.Value}, data.Path, data.Expire)
-	case *protocol.MSG_COMMON_CACHE_GET:
+	case *protocol.MSG_HOST_CACHE_GET:
+
 		r := cache.Hget(data.Name, data.Path)
-		out := protocol.GET_MSG_COMMON_CACHE_GET_result()
+		out := protocol.GET_MSG_HOST_CACHE_GET_result()
 		r.Get("value", &out.Value)
+		//libraries.DebugLog("Path:%s Name:%s Value:%s",data.Path,data.Name,libraries.MD5_B(out.Value))
 		in.SendResult(out)
 		out.Put()
-	case *protocol.MSG_COMMON_CACHE_GETPATH:
-		out := protocol.GET_MSG_COMMON_CACHE_GETPATH_result()
+	case *protocol.MSG_HOST_CACHE_GETPATH:
+		out := protocol.GET_MSG_HOST_CACHE_GETPATH_result()
 		cache.RangePath(data.Path, func(key string, v *cache.Hashvalue) bool {
 			var value []byte
 			if v.Get("value", &value) {
@@ -276,14 +353,11 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 			}
 			return true
 		})
-		out.QueryResultID = data.QueryID
 		in.SendResult(out)
 		out.Put()
-	case *protocol.MSG_COMMON_CACHE_GET_result:
-		protocol.HandleCache(in)
-	case *protocol.MSG_COMMON_GET_Msgno:
+	case *protocol.MSG_HOST_GET_Msgno:
 		if svr != nil {
-			out := protocol.GET_MSG_COMMON_GET_Msgno_result()
+			out := protocol.GET_MSG_HOST_GET_Msgno_result()
 			msgno := atomic.AddUint32(&globalMsgno, 1)
 			out.Msgno = msgno
 			ttl := int32(0)
@@ -296,16 +370,16 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 			value[3] = byte(data.Uid >> 24)
 			cache.Hset("Uid", map[string]interface{}{"value": value}, "Msg:"+strconv.Itoa(int(msgno)), protocol.MsgTimeOut)
 			time.AfterFunc(protocol.MsgTimeOut*time.Second, func() { msgnoTtl.Delete(msgno) })
-			out.QueryResultID = data.QueryID
 			in.SendResult(out)
 			out.Put()
 		}
-	case *protocol.MSG_COMMON_regServer:
+	case *protocol.MSG_HOST_regServer:
 		//common掉线可能会导致其他服务反复发送reg
 		if data.No != svr.ServerNo {
 			libraries.DebugLog("注册的serverNo不对，注册%d,实际%d", data.No, svr.ServerNo)
 		}
-	case *protocol.MSG_COMMON_ResetWindow:
+	case *protocol.MSG_HOST_ResetWindow:
+		libraries.DebugLog("%d 重置 %d",svr.ServerNo,data.Window)
 		svr.window = data.Window
 	case *protocol.MSG_FILE_upload:
 		var dir string
@@ -341,19 +415,15 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 		if err != nil {
 			return
 		}
-		adduser, _ := Host.GetUserCacheById(data.AddBy)
-		var addedby string
-		if adduser != nil {
-			addedby = adduser.Account
-		}
+
 		var file = &db.File{
 			Pathname:   dir + data.Name,
 			Title:      data.Name,
 			Extension:  data.Name[strings.LastIndex(data.Name, ".")+1:],
-			Size:       len(data.Data),
+			Size:       int64(len(data.Data)),
 			ObjectType: data.ObjectType,
 			ObjectID:   data.ObjectID,
-			AddedBy:    addedby,
+			AddedBy:    data.AddBy,
 			AddedDate:  now,
 			Type:       data.Type,
 		}
@@ -369,72 +439,130 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 		out.Put()
 	case *protocol.MSG_FILE_DeleteByID:
 		var file *db.File
-		err := db.DB.Table(db.TABLE_FILE).Prepare().Where("Id=?", data.FileID).Find(&file)
+		err := in.DB.Table(db.TABLE_FILE).Prepare().Where("Id=?", data.FileID).Find(&file)
 		if err != nil {
 			in.WriteErr(err)
 			return
 		}
 		os.Remove(filepath + file.Pathname)
-		db.DB.Table(db.TABLE_FILE).Where("Id=?", data.FileID).Delete()
+		_, err = in.DB.Table(db.TABLE_FILE).Where("Id=?", data.FileID).Delete()
+		in.WriteErr(err)
 	case *protocol.MSG_FILE_getByID:
-		var file *db.File
-		err := db.DB.Table(db.TABLE_FILE).Prepare().Where("Id=?", data.FileID).Find(&file)
-		if file == nil && err == nil {
-			err = errors.New(protocol.Err_FileNotFount.String())
-		}
-		if err != nil {
-			in.WriteErr(err)
-			return
-		}
-		b, err := ioutil.ReadFile(filepath + file.Pathname)
-		if err != nil {
-			err = errors.New(protocol.Err_FileNotFount.String() + " err:" + err.Error())
-			in.WriteErr(err)
-			return
-		}
+
 		out := protocol.GET_MSG_FILE_getByID_result()
-		out.Data = b
-		out.Ext = file.Extension
-		out.Name = file.Title
-		out.Type = file.Type
-		out.FileID = file.Id
+		if data.FileID > 0 {
+			var file *db.File
+			err := in.DB.Table(db.TABLE_FILE).Prepare().Where("Id=?", data.FileID).Find(&file)
+			if file == nil && err == nil {
+				err = errors.New(protocol.Err_FileNotFound.String())
+			}
+			if err != nil {
+				in.WriteErr(err)
+				return
+			}
+			out.Ext = file.Extension
+			out.Name = file.Title
+			out.Type = file.Type
+			out.Size = file.Size
+			out.FileID = file.Id
+			out.AddedDate = file.AddedDate
+			out.ObjectType = file.ObjectType
+			out.ObjectID = file.ObjectID
+		} else {
+			name := strconv.FormatInt(data.FileID, 10) + ".tar"
+			f, err := os.Stat(fileTmpPath + name)
+			if err != nil {
+				in.WriteErr(errors.New(protocol.Err_FileNotFound.String()))
+				return
+			}
+			out.FileID = data.FileID
+			out.Size = f.Size()
+			out.Name = name
+		}
 		in.SendResult(out)
 		out.Put()
 	case *protocol.MSG_FILE_getByObject:
 		var files []*db.File
-		err := db.DB.Table(db.TABLE_FILE).Prepare().Where("ObjectType=? and ObjectID=?", data.ObjectType, data.ObjectID).Limit(0).Select(&files)
+		err := in.DB.Table(db.TABLE_FILE).Prepare().Where("ObjectType=? and ObjectID=?", data.ObjectType, data.ObjectID).Limit(0).Select(&files)
 		if err != nil {
 			in.WriteErr(err)
 			return
 		}
 		out := protocol.GET_MSG_FILE_getByObject_result()
 		for _, file := range files {
-			b, err := ioutil.ReadFile(filepath + file.Pathname)
+			/*b, err := ioutil.ReadFile(filepath + file.Pathname)
 			if err != nil {
-				err = errors.New(protocol.Err_FileNotFount.String() + " err:" + err.Error())
+				err = errors.New(protocol.Err_FileNotFound.String() + " err:" + err.Error())
 				in.WriteErr(err)
 				return
-			}
+			}*/
 			tmp := protocol.GET_MSG_FILE_getByID_result()
-			tmp.Data = b
+			//tmp.Data = b
 			tmp.Ext = file.Extension
 			tmp.Name = file.Title
 			tmp.Type = file.Type
 			tmp.FileID = file.Id
+			tmp.Size = file.Size
+			tmp.AddedDate = file.AddedDate
+			tmp.ObjectType = file.ObjectType
+			tmp.ObjectID = file.ObjectID
 			out.List = append(out.List, tmp)
 		}
+		in.SendResult(out)
+		out.Put()
+	case *protocol.MSG_FILE_RangeDown:
+		if data.End <= data.Start {
+			in.WriteErr(errors.New(protocol.Err_FileDownLoadStartEnd.String()))
+			return
+		}
+		var f *os.File
+		var err error
+		if data.FileID > 0 {
+			var file *db.File
+			err = in.DB.Table(db.TABLE_FILE).Prepare().Where("Id=?", data.FileID).Find(&file)
+			if file == nil && err == nil {
+				err = errors.New(protocol.Err_FileNotFound.String())
+			}
+			if err != nil {
+				in.WriteErr(err)
+				return
+			}
+			f, err = getFile(file)
+			if err != nil {
+				in.WriteErr(err)
+				return
+			}
+		} else {
+			name := strconv.FormatInt(data.FileID, 10) + ".tar"
+			f, err = os.Open(fileTmpPath + name)
+			if err != nil {
+				in.WriteErr(err)
+				return
+			}
+		}
+
+		defer f.Close()
+		f.Seek(data.Start, 0)
+		out := protocol.GET_MSG_FILE_RangeDown_result()
+		out.Byte = make([]byte, data.End-data.Start)
+		i, err := f.Read(out.Byte)
+		if err != nil {
+			in.WriteErr(err)
+			return
+		}
+		out.Byte = out.Byte[:i]
 		in.SendResult(out)
 		out.Put()
 	case *protocol.MSG_FILE_updateMapByWhere:
 		_, err := in.DB.Table(db.TABLE_FILE).Where(data.Where).Update(data.Update)
 		in.WriteErr(err)
-	case *protocol.MSG_COMMON_BeginTransaction:
+	case *protocol.MSG_HOST_BeginTransaction:
 		//发起事务的服务器
 		startSvr := data.TransactionNo == 0
 		for data.TransactionNo == 0 {
 			data.TransactionNo = uint32(transactionNoCache.INCRBY("NO", 1))
 		}
-		out := protocol.GET_MSG_COMMON_BeginTransaction_result()
+		out := protocol.GET_MSG_HOST_BeginTransaction_result()
 		out.TransactionNo = data.TransactionNo
 
 		if startSvr {
@@ -453,10 +581,15 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 					return err
 				}
 				cache.Hdel(strconv.Itoa(int(transactionno)), TransactionCacheKey) //删掉以避免后续func带上事务
-				out := protocol.GET_MSG_COMMON_Transaction_Commit()
+				out := protocol.GET_MSG_HOST_Transaction_Commit()
 				out.No = transactionno
 				for _, svr := range svrList {
-					svr.SendMsg(svr.local, 0, 0, 0, out)
+					if svr.local == protocol.HostServerNo {
+						protocol.MsgTransactionCommit(out)
+					} else {
+						svr.SendMsg(svr.local, 0, 0, 0, in.QueryID, out)
+					}
+
 				}
 				return nil
 			}
@@ -466,10 +599,15 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 					return err
 				}
 				cache.Hdel(strconv.Itoa(int(transactionno)), TransactionCacheKey) //删掉以避免后续func带上事务
-				out := protocol.GET_MSG_COMMON_Transaction_RollBack()
+				out := protocol.GET_MSG_HOST_Transaction_RollBack()
 				out.No = transactionno
 				for _, svr := range svrList {
-					svr.SendMsg(svr.local, 0, 0, 0, out)
+					if svr.local == protocol.HostServerNo {
+						protocol.MsgTransactionRollBack(out)
+					} else {
+						svr.SendMsg(svr.local, 0, 0, 0, in.QueryID, out)
+					}
+
 				}
 				return nil
 			}
@@ -491,7 +629,7 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 		}
 		in.SendResult(out)
 		out.Put()
-	case *protocol.MSG_COMMON_Transaction_Commit:
+	case *protocol.MSG_HOST_Transaction_Commit:
 		transactionCache, ok := cache.Has(strconv.Itoa(int(data.No)), TransactionCacheKey)
 		if !ok {
 			in.WriteErr(errTransactionNo)
@@ -517,24 +655,34 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 			in.WriteErr(err)
 			return
 		}
-		out := protocol.GET_MSG_COMMON_Transaction_Check()
+		out := protocol.GET_MSG_HOST_Transaction_Check()
 		out.No = data.No
 		for _, svr := range svrList {
 			if svr.local == in.Local {
 				continue
 			}
-			err := svr.SendMsgWaitResult(svr.local, 0, 0, 0, out, nil)
+			var err error
+
+			if svr.local == protocol.HostServerNo {
+				err = protocol.MsgTransactionCheck(out)
+			} else {
+				err = svr.SendMsgWaitResult(svr.local, 0, 0, 0, out, nil)
+			}
+
 			if err != nil {
+				libraries.DebugLog("%d,%+v,%+v", svr.local, svr, err)
 				waitChan <- TransactionOptionRollback
 				in.WriteErr(err)
 				return
 			}
 		}
 		out.Put()
+
 		waitChan <- TransactionOptionCommit
 		err = <-errChan
 		in.WriteErr(err)
-	case *protocol.MSG_COMMON_Transaction_RollBack:
+	case *protocol.MSG_HOST_Transaction_RollBack:
+
 		transactionCache, ok := cache.Has(strconv.Itoa(int(data.No)), TransactionCacheKey)
 		if !ok {
 			in.WriteErr(errTransactionNo)
@@ -551,6 +699,7 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 			in.WriteErr(errTransactionNotFoundErrChan)
 			return
 		}
+
 		waitChan <- TransactionOptionRollback
 		err := <-errChan
 		in.WriteErr(err)
@@ -576,15 +725,141 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 			f.Close()
 		}
 		in.WriteErr(err)
-	default:
-		if protocol.SetMsgQuery(i) {
-			return //return掉，避免i.Put被回收
-		} else {
-			libraries.ReleaseLog("host未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
+	case *protocol.MSG_FILE_updateTmp:
+		var insertList []*db.File
+		now := time.Now()
+		for _, file := range data.Files {
+			insert := &db.File{
+				Title:      file.Title,
+				ObjectType: file.ObjectType,
+				ObjectID:   file.ObjectID,
+				AddedBy:    file.AddBy,
+				AddedDate:  now,
+				Type:       file.Type,
+			}
+			if stat, err := os.Stat(fileTmpPath + file.Name); err != nil {
+				in.WriteErr(err)
+				return
+			} else {
+				insert.Size = stat.Size()
+			}
+			insert.Pathname = file.Code + "/" + file.Type + now.Format("/2006/01/02/") + file.Name
+
+			if err := os.Rename(fileTmpPath+file.Name, filepath+file.Name); err != nil {
+				in.WriteErr(err)
+				for _, i := range insertList {
+					os.Remove(filepath + i.Pathname)
+				}
+				return
+			}
+			insertList = append(insertList, insert)
+		}
+		var err error
+		if len(insertList) > 0 {
+			_, err = in.DB.Table(db.TABLE_FILE).InsertAll(insertList)
+			if err != nil {
+				for _, i := range insertList {
+					os.Remove(filepath + i.Pathname)
+				}
+			}
+		}
+		in.WriteErr(err)
+	case *protocol.MSG_FILE_edit:
+		var file *db.File
+		if err := in.DB.Table(db.TABLE_FILE).Prepare().Where("Id=?", data.FileID).Find(&file); err != nil {
+			in.WriteErr(err)
+			return
+		}
+		if file.Title != data.Name {
+			if _, err := in.DB.Table(db.TABLE_FILE).Prepare().Where("Id=?", data.FileID).Update("Title=?", data.Name); err != nil {
+				in.WriteErr(err)
+				return
+			}
+			actionID, _ := in.ActionCreate(file.ObjectType, file.ObjectID, "editfile", "", data.Name, nil, nil)
+			if actionID > 0 {
+				var change protocol.ChangeHistory = []*protocol.MSG_LOG_History{&protocol.MSG_LOG_History{
+					Field: "fileName",
+					Old:   file.Title,
+					New:   data.Name,
+				}}
+				change.Add(actionID, in)
+			}
+		}
+		in.WriteErr(nil)
+	case *protocol.MSG_FILE_getByWhere:
+		out := protocol.GET_MSG_FILE_getByWhere_result()
+		var files []*db.File
+		var err error
+		if err = in.DB.Table(db.TABLE_FILE).Where(data.Where).Limit((data.Page-1)*data.PerPage, data.PerPage).Select(&files); err != nil {
+			in.WriteErr(err)
+			return
+		}
+		if data.Total == 0 {
+			if out.Total, err = in.DB.Table(db.TABLE_FILE).Where(data.Where).Count(); err != nil {
+				in.WriteErr(err)
+				return
+			}
+		}
+		for _, file := range files {
+			tmp := protocol.GET_MSG_FILE_getByID_result()
+			tmp.FileID = file.Id
+			tmp.Size = file.Size
+			tmp.Type = file.Type
+			tmp.Name = file.Title
+			tmp.ObjectID = file.ObjectID
+			tmp.ObjectType = file.ObjectType
+			tmp.AddedDate = file.AddedDate
+			tmp.Ext = file.Extension
+			out.List = append(out.List, tmp)
+		}
+		in.SendResult(out)
+		out.Put()
+	case *protocol.MSG_FILE_download_byIds:
+		var files []*db.File
+		var err error
+		if err = in.DB.Table(db.TABLE_FILE).Where(map[string]interface{}{"Id": data.Ids}).Limit(0).Select(&files); err != nil {
+			in.WriteErr(err)
+			return
+		}
+		//生成一个临时id
+		var id int64
+		for {
+			id = atomic.AddInt64(&tmpFileId, -1)
+			if id > 0 {
+				id = -1
+				tmpFileId = -1
+			}
+			break
+		}
+		d, _ := os.Create(fileTmpPath + strconv.FormatInt(id, 10) + ".tar")
+		defer d.Close()
+		tw := tar.NewWriter(d)
+		defer tw.Close()
+
+		for _, file := range files {
+			f, err := getFile(file)
+			if err != nil {
+				in.WriteErr(err)
+				return
+			}
+			err = compress(f, tw)
+			if err != nil {
+				in.WriteErr(err)
+				return
+			}
 		}
 
+		out := protocol.GET_MSG_FILE_download_byIds_result()
+		out.FileID = id
+		in.SendResult(out)
+		out.Put()
+
+	default:
+		if protocol.SetMsgQuery(in) {
+			return
+		}
+		libraries.ReleaseLog("host未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 	}
-	i.Put()
 })
 
 func getTransactionsvrList(transactionCache *cache.Hashvalue) (svrList []*RpcServer, err error) {
@@ -598,6 +873,11 @@ func getTransactionsvrList(transactionCache *cache.Hashvalue) (svrList []*RpcSer
 			err = errors.New("commit出现错误，缓存id不是数字" + key)
 			return false
 		}
+		if int(uint8(id)) >= len(rpcServerIdList) || int(uint8(id>>8)) >= len(rpcServerIdList[uint8(id)]) {
+			libraries.DebugLog("commit找不到id为" + key + "的服务器")
+			err = errTransactionNotFoundSvr
+			return false
+		}
 		if svr := rpcServerIdList[uint8(id)][uint8(id>>8)]; svr == nil {
 			libraries.DebugLog("commit找不到id为" + key + "的服务器")
 			err = errTransactionNotFoundSvr
@@ -608,4 +888,87 @@ func getTransactionsvrList(transactionCache *cache.Hashvalue) (svrList []*RpcSer
 		return true
 	})
 	return
+}
+func getFile(file *db.File) (*os.File, error) {
+	path := filepath + file.Pathname[:strings.LastIndex(file.Pathname, "/")]
+	f, err := os.Open(path + string(os.PathSeparator) + file.Title)
+	if err != nil {
+		e, ok := func() (error, bool) {
+			if runtime.GOOS == "windows" {
+				//尝试从svn远程拉文件
+				path = strings.Replace(path, "/", `\`, -1)
+
+				isExist, e := libraries.PathExists(path)
+				if e != nil {
+					return e, false
+				}
+				if !isExist {
+					c := "d: && cd " + strings.Replace(filepath, "/", `\`, -1) + " && svn co --depth=empty http://192.168.6.99/svn/project/upload/1/" + file.Pathname[:strings.LastIndex(file.Pathname, "/")] + " " + file.Pathname[:strings.LastIndex(file.Pathname, "/")]
+					cmd := exec.Command("cmd.exe", "/c", c)
+					cmd.Start()
+					cmd.Wait()
+				}
+				c := "d: && cd " + path + "\\ && svn up " + file.Title
+				cmd := exec.Command("cmd.exe", "/c", c)
+				cmd.Start()
+				cmd.Wait()
+				return nil, true
+			}
+			return nil, false
+		}()
+		if !ok {
+			if e != nil {
+				err = errors.New(err.Error() + " & " + e.Error())
+			}
+			err = errors.New(protocol.Err_FileNotFound.String() + " err:" + err.Error())
+			return nil, err
+		}
+		f, err = os.Open(path + string(os.PathSeparator) + file.Title)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return f, nil
+
+}
+
+func compress(file *os.File, tw *tar.Writer) error {
+
+	info, err := file.Stat()
+	if err != nil {
+		return err
+	}
+	if info.IsDir() {
+
+		fileInfos, err := file.Readdir(-1)
+		if err != nil {
+			return err
+		}
+		for _, fi := range fileInfos {
+			f, err := os.Open(file.Name() + "/" + fi.Name())
+			if err != nil {
+				return err
+			}
+			err = compress(f, tw)
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		header, err := tar.FileInfoHeader(info, "")
+		header.Name =  header.Name
+		if err != nil {
+			return err
+		}
+		err = tw.WriteHeader(header)
+		if err != nil {
+			return err
+		}
+		_, err = io.Copy(tw, file)
+		file.Close()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

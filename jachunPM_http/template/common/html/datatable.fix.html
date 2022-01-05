@@ -12,8 +12,8 @@ $(function()
         {{- $mode := or (and (index .Config.datatable $datatableId) (index (index .Config.datatable $datatableId) "mode")) "table"}}
         var $dropdown = $('<div class="dropdown"><button id="tableCustomBtn" type="button" class="btn btn-link" data-toggle="dropdown"><i class="icon-cog"></i></button></div>');
         var $dropmenu = $('<ul class="dropdown-menu pull-right"></ul>');
-        $dropmenu.append("<li><a href='{{helper_createLink "datatable" "ajaxCustom" "id="  .App.moduleName  "&method="  .App.methodName}}' data-toggle='modal' data-type='ajax'>{{.Lang.datatable.custom}}</a></li>");
-        $dropmenu.append("<li><a href='javascript:saveDatatableConfig(\"mode\", \"{{if eq $mode "table"}}datatable{{else}}table{{end}}\", true);' id='switchToDatatable'>{{if eq $mode "table"}}{{.Lang.datatable.switchToDatatable}}{{else}}{{.Lang.datatable.switchToTable}}{{end}}</a></li>");
+        $dropmenu.append("<li><a href='{{helper_createLink "datatable" "ajaxCustom" "module="  .App.moduleName  "&method="  .App.methodName}}' data-toggle='modal' data-type='ajax'>{{.Lang.datatable.custom}}</a></li>");
+        $dropmenu.append("<li><a href='javascript:saveDatatableConfig(\"mode\", \"{{if eq $.Data.mode "table"}}datatable{{else}}table{{end}}\", true);' id='switchToDatatable'>{{if eq $.Data.mode "table"}}{{.Lang.datatable.switchToDatatable}}{{else}}{{.Lang.datatable.switchToTable}}{{end}}</a></li>");
         $dropdown.append($dropmenu).appendTo($btnToolbar);
     }
 
@@ -52,7 +52,7 @@ $(function()
             success:function(e){if(reload) window.location.reload();},
             url: '{{helper_createLink "datatable" "ajaxSave"}}'
         });
-        $.get(createLink('score', 'ajax', "method=switchToDataTable"));
+        //$.get(createLink('score', 'ajax', "method=switchToDataTable"));
     };
 });
 </script>

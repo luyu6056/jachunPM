@@ -2,6 +2,7 @@ package handler
 
 //封装一个用于common fetch里面用的ws服务
 import (
+	"codec"
 	"libraries"
 	"sync"
 
@@ -112,4 +113,10 @@ func (f *CommonFetch) OutBuffer() []byte {
 }
 func (f *CommonFetch) Close() {
 	f.oldws.Close()
+}
+func (f *CommonFetch) RangeDownload(r codec.HttpIoReader, size int64, name string) {
+	f.oldws.RangeDownload(r, size, name)
+}
+func (f *CommonFetch) URI() string{
+	return f.oldws.URI()
 }

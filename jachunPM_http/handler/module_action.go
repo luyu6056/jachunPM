@@ -7,7 +7,6 @@ import (
 	"libraries"
 	"mysql"
 	"protocol"
-	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -16,13 +15,6 @@ import (
 func actionModelFuncs() {
 
 	global_Funcs["action_printAction"] = func(data *TemplateData, action *protocol.MSG_LOG_Action, descExt ...string) template.HTML {
-		defer func() {
-			if err := recover(); err != nil {
-				debug.PrintStack()
-				libraries.DebugLog("%+v", err)
-				panic(err)
-			}
-		}()
 		var desc interface{}
 		if action.ObjectType == "" || action.Action == "" {
 			return template.HTML("")
@@ -85,6 +77,7 @@ func actionModelFuncs() {
 	}
 
 	global_Funcs["action_printChanges"] = func(data *TemplateData, objectType string, histories []*protocol.MSG_LOG_History, canChangeTagExt ...bool) template.HTML {
+
 		if len(histories) == 0 {
 			return template.HTML("")
 		}
@@ -92,7 +85,11 @@ func actionModelFuncs() {
 		if len(canChangeTagExt) == 1 {
 			canChangeTag = canChangeTagExt[0]
 		}
-
+		var users []protocol.HtmlKeyValueStr
+		var ok bool
+		if users, ok = data.Data["users"].([]protocol.HtmlKeyValueStr); !ok {
+			users, _ = user_getPairs(data, "")
+		}
 		maxLength := 0
 		historiesWithDiff := make([]*protocol.MSG_LOG_History, 0, len(histories))
 		historiesWithoutDiff := make([]*protocol.MSG_LOG_History, 0, len(histories))
@@ -114,10 +111,12 @@ func actionModelFuncs() {
 			}
 
 		}
-
+		buf := bufpool.Get().(*libraries.MsgBuffer)
 		for _, history := range append(historiesWithoutDiff, historiesWithDiff...) {
+			if c := len(history.FieldLabel) - maxLength; c > 0 {
+				history.FieldLabel += strings.Repeat(data.Lang["action"]["label"].(map[string]interface{})["space"].(string), c)
+			}
 
-			history.FieldLabel += strings.Repeat(data.Lang["action"]["label"].(map[string]interface{})["space"].(string), len(history.FieldLabel)-maxLength)
 			if history.Diff != "" {
 				history.Diff = history_Diff_srp.Replace(history.Diff)
 				if history.Field != "subversion" && history.Field != "git" {
@@ -130,12 +129,50 @@ func actionModelFuncs() {
 				if canChangeTag {
 					noTagDiff, _ = libraries.Preg_replace(`/&lt;\/?([a-z][a-z0-9]*)[^\/]*\/?&gt;/Ui`, "", history.Diff)
 				}
-				return template.HTML(fmt.Sprintf(data.Lang["action"]["desc"].(map[string]string)["diff2"], history.FieldLabel, noTagDiff, history.Diff))
+				buf.WriteString(fmt.Sprintf(data.Lang["action"]["desc"].(map[string]string)["diff2"], history.FieldLabel, noTagDiff, history.Diff))
 			} else {
-				return template.HTML(fmt.Sprintf(data.Lang["action"]["desc"].(map[string]string)["diff1"], history.FieldLabel, history.Old, history.New))
+				if objtypeValue, ok := data.Lang["action"]["descValue"].(map[string]map[string]interface{})[objectType]; ok {
+					if value, ok := objtypeValue[strings.ToLower(history.Field)]; ok {
+						history.Old = fmt.Sprint(common_getValue(value, history.Old))
+						history.New = fmt.Sprint(common_getValue(value, history.New))
+					}
+				}
+				switch strings.ToLower(history.Field) {
+				case "mailto":
+					var ids []int
+					err := libraries.JsonUnmarshalStr(history.Old, &ids)
+					if err == nil && len(users) > 0 {
+						var names []string
+						for _, id := range ids {
+							for _, kv := range users {
+								if strconv.Itoa(id) == kv.Key {
+									names = append(names, kv.Value)
+								}
+							}
+						}
+						history.Old = strings.Join(names, ",")
+					}
+					ids = nil
+					err = libraries.JsonUnmarshalStr(history.New, &ids)
+					if err == nil && len(users) > 0 {
+						var names []string
+						for _, id := range ids {
+							for _, kv := range users {
+								if strconv.Itoa(id) == kv.Key {
+									names = append(names, kv.Value)
+								}
+							}
+						}
+						history.New = strings.Join(names, ",")
+					}
+				}
+				buf.WriteString(fmt.Sprintf(data.Lang["action"]["desc"].(map[string]string)["diff1"], history.FieldLabel, history.Old, history.New))
 			}
 		}
-		return template.HTML("")
+		res := buf.String()
+		buf.Reset()
+		bufpool.Put(buf)
+		return template.HTML(res)
 	}
 }
 
@@ -161,7 +198,6 @@ func action_getList(data *TemplateData, objectType string, objectID int32) (acti
 	if err = data.SendMsgWaitResultToDefault(out, &result); err != nil {
 		return
 	}
-
 	if objectType == "project" {
 
 		/*if err = action_processProjectActions(result.List); err != nil {

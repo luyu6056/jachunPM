@@ -1,0 +1,16 @@
+{{template "header.lite.html" .}}
+<form target='hiddenwin' method='post' style='padding: 15px 70px 15px 15px'>
+  <div class='input-group'>
+    <input name='title' id='title' class="form-control" autocomplete="off" type="text">
+    {{if eq $.Data.onMenuBar "yes"}}
+    <span class='input-group-addon'>
+      <div class="checkbox-primary">
+        <input type="checkbox" name="onMenuBar" value="1" id="onMenuBar" />
+        <label for="onMenuBar">{{.Lang.search.onMenuBar}}</label>
+      </div>
+    </span>
+    {{end}}
+    <span class='input-group-btn'>{{html_submitButton . .Lang.common.save "btn btn-primary"}}{{html_hidden "module"  $.Data.module}}</span>
+  </div>
+</form>
+{{template "footer.lite.html" .}}

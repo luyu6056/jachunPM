@@ -21,13 +21,14 @@ func init() {
 	httpHandlerMap["POST"]["/tree/edit"] = post_tree_edit
 	httpHandlerMap["GET"]["/tree/delete"] = get_tree_delete
 	httpHandlerMap["GET"]["/tree/ajaxGetOptionMenu"] = get_tree_ajaxGetOptionMenu
+	httpHandlerMap["GET"]["/tree/browseTask"] = get_tree_browseTask
 }
 func get_tree_browse(data *TemplateData) (err error) {
 	rootID, _ := strconv.Atoi(data.ws.Query("rootID"))
 	if rootID == 0 {
 		rootID, _ = strconv.Atoi(data.ws.Query("productID"))
 	}
-	currentModuleID, _ := strconv.Atoi(data.ws.Query("currentModuleID"))
+	currentModuleID, _ := strconv.Atoi(data.ws.Query("moduleID"))
 	branch, _ := strconv.Atoi(data.ws.Query("branch"))
 
 	viewType := data.ws.Query("view")
@@ -275,9 +276,9 @@ func tree_getOptionMenu(data *TemplateData, rootID int32, typ string, startModul
 	}
 	var lastMenu []protocol.HtmlKeyValueStr
 	if typ == "bug" || typ == "story" {
-		lastMenu = []protocol.HtmlKeyValueStr{{"", ""}}
+		lastMenu = []protocol.HtmlKeyValueStr{{"0", ""}}
 	} else {
-		lastMenu = []protocol.HtmlKeyValueStr{{"", "/"}}
+		lastMenu = []protocol.HtmlKeyValueStr{{"0", "/"}}
 	}
 	for _, str := range topMenu {
 		menu := strings.Split(str, "|")
@@ -410,13 +411,12 @@ func tree_getProductStructure(data *TemplateData, rootID int32, viewType string)
 			}
 		}
 	}
-	if len(branches) > 0 {
-		list, err := tree_buildMenuQuery(data, rootID, viewType, 0, -1)
-		if err != nil {
-			return nil, err
-		}
-		fullTrees = tree_getDataStructure(data, list, viewType, nil)
+
+	list, err := tree_buildMenuQuery(data, rootID, viewType, 0, -1)
+	if err != nil {
+		return nil, err
 	}
+	fullTrees = tree_getDataStructure(data, list, viewType, nil)
 
 	if len(branches) > 0 {
 		var branchTrees []map[string]interface{}
@@ -451,13 +451,21 @@ func tree_getProductStructure(data *TemplateData, rootID int32, viewType string)
 }
 func tree_getDataStructure(data *TemplateData, list []*protocol.MSG_PROJECT_tree_cache, viewType string, keepModules []int32) []map[string]interface{} {
 	parent := map[int32]map[string]interface{}{}
-out:
+
 	for _, tree := range list {
-		for _, id := range keepModules {
-			if id == tree.Id {
-				continue out
+		if len(keepModules) > 0 {
+			var find bool
+			for _, id := range keepModules {
+				if id == tree.Id {
+					find = true
+					break
+				}
+			}
+			if !find {
+				continue
 			}
 		}
+
 		module := map[string]interface{}{
 			"id":     tree.Id,
 			"name":   tree.Name,
@@ -548,9 +556,13 @@ func post_tree_manageChild(data *TemplateData) (e error) {
 			b, _ := strconv.Atoi(branchs[k])
 			tmp.Branch = int32(b)
 		}
+		libraries.DebugLog("%+v", tmp)
 		out.Modules = append(out.Modules, tmp)
 	}
-
+	if len(out.Modules) == 0 {
+		data.ajaxResult(true, "", "reload")
+		return
+	}
 	var result *protocol.MSG_PROJECT_tree_manageChild_result
 	err := data.SendMsgWaitResultToDefault(out, &result)
 	if err != nil {
@@ -873,7 +885,7 @@ func get_tree_edit(data *TemplateData) (e error) {
 	}
 	var err error
 	if viewType == "task" {
-		data.Data["optionMenu"], err = tree_getTaskOptionMenu(module.Root, 0, 0)
+		data.Data["optionMenu"], err = tree_getTaskOptionMenu(data, module.Root, 0, 0)
 	} else {
 		data.Data["optionMenu"], err = tree_getOptionMenu(data, module.Root, module.Type, 0, int32(branch))
 	}
@@ -910,8 +922,8 @@ func get_tree_edit(data *TemplateData) (e error) {
 	templateOut("tree.edit.html", data)
 	return
 }
-func tree_getTaskOptionMenu(rootID int32, productID int32, startModule int32) ([]protocol.HtmlKeyValueStr, error) {
-	/* If createdVersion <= 4.1, go to getOptionMenu(). */
+func tree_getTaskOptionMenu(data *TemplateData, rootID int32, productID int32, startModule int32) ([]protocol.HtmlKeyValueStr, error) {
+	return tree_getOptionMenu(data, rootID, "task", startModule, 0)
 	/*products       = $this->loadModel('product')->getProductsByProject($rootID);
 	  $branchGroups   = $this->loadModel('branch')->getByProducts(array_keys($products));
 
@@ -1082,7 +1094,7 @@ func get_tree_ajaxGetOptionMenu(data *TemplateData) (err error) {
 	needManage := data.ws.Query("needManage") == "true"
 	var optionMenu []protocol.HtmlKeyValueStr
 	if viewType == "task" {
-		optionMenu, err = tree_getTaskOptionMenu(int32(rootID), 0, 0)
+		optionMenu, err = tree_getTaskOptionMenu(data, int32(rootID), 0, 0)
 	} else {
 		optionMenu, err = tree_getOptionMenu(data, int32(rootID), viewType, int32(rootModuleID), int32(branch))
 	}
@@ -1209,7 +1221,7 @@ func tree_getTaskTreeMenu(data *TemplateData, rootID, productID, startModule int
 		for _, kv := range branchGroups[product.Id] {
 			branch, _ := strconv.Atoi(kv.Key)
 
-			list := tree_getTaskTreeMenu_getTaskStructure_getlist(data, rootID, product.Id, startModule, int32(branch))
+			list := tree_getTaskTreeMenu_getlist(data, rootID, product.Id, startModule, int32(branch))
 			if !manage {
 				for i := len(list) - 1; i >= 0; i-- {
 					if _, ok := projectModules[list[i].Id]; !ok {
@@ -1282,7 +1294,7 @@ func tree_getTaskTreeMenu(data *TemplateData, rootID, productID, startModule int
 	return template.HTML(res), nil
 
 }
-func tree_getTaskTreeMenu_getTaskStructure_getlist(data *TemplateData, rootID, productID, startModule, branch int32) []*protocol.MSG_PROJECT_tree_cache {
+func tree_getTaskTreeMenu_getlist(data *TemplateData, rootID, productID, startModule, branch int32) []*protocol.MSG_PROJECT_tree_cache {
 	cache, _ := tree_getAllcache(data)
 	var list []*protocol.MSG_PROJECT_tree_cache
 	for _, m := range cache {
@@ -1401,4 +1413,244 @@ func tree_getModulePairs(data *TemplateData, rootID int32, viewType string, show
 }
 func tree_isMergeModule(viewType string) bool {
 	return viewType == "bug" || viewType == "case" || viewType == "task"
+}
+func get_tree_browseTask(data *TemplateData) (err error) {
+	rootID, _ := strconv.Atoi(data.ws.Query("rootID"))
+	currentModuleID, _ := strconv.Atoi(data.ws.Query("moduleID"))
+	if err = project_setMenu(data, int32(rootID), 0, ""); err != nil {
+		return
+	}
+	project := HostConn.GetProjectById(int32(rootID))
+
+	data.Data["root"] = project
+
+	products := project_getProducts(data, int32(rootID))
+	data.Data["products"] = products
+
+	projects, err := project_getPairs(data, "")
+	if err != nil {
+		return
+	}
+	for k, v := range projects {
+		if v.Key == strconv.Itoa(rootID) {
+			projects = append(projects[:k], projects[k+1:]...)
+		}
+	}
+
+	var currentProject int
+	if len(projects) > 0 {
+		currentProject, _ = strconv.Atoi(projects[0].Key)
+	}
+	if data.Data["parentModules"], err = tree_getParents(data, int32(currentModuleID)); err != nil {
+		return
+	}
+
+	data.Data["title"] = data.Lang["tree"]["manageProject"]
+
+	data.Data["rootID"] = rootID
+	productID, _ := strconv.Atoi(data.ws.Query("productID"))
+	data.Data["productID"] = productID
+	data.Data["allProject"] = projects
+
+	data.Data["currentProject"] = currentProject
+	if data.Data["projectModules"], err = tree_getTaskOptionMenu(data, int32(currentProject), int32(productID), 0); err != nil {
+		return
+	}
+	if data.Data["modules"], err = tree_getTaskTreeMenu(data, int32(rootID), int32(productID), 0, tree_createTaskManageLink); err != nil {
+		return
+	}
+	if data.Data["sons"], err = tree_getTaskSons(data, int32(rootID), int32(productID), int32(currentModuleID)); err != nil {
+		return
+	}
+
+	data.Data["currentModuleID"] = currentModuleID
+	if data.Data["tree"], err = tree_getTaskStructure(data, int32(rootID)); err != nil {
+		return
+	}
+	templateOut("tree.browseTask.html", data)
+	return
+}
+func tree_getParents(data *TemplateData, moduleID int32) ([]*protocol.MSG_PROJECT_tree_cache, error) {
+	cache, err := tree_getAllcache(data)
+	if err != nil {
+		return nil, err
+	}
+	var module *protocol.MSG_PROJECT_tree_cache
+	for _, v := range cache {
+		if v.Id == moduleID {
+			module = v
+			break
+		}
+	}
+	if module == nil || len(module.Path) == 0 {
+		return nil, nil
+	}
+	var parents []*protocol.MSG_PROJECT_tree_cache
+	for _, v := range cache {
+		for _, id := range module.Path {
+			if id == v.Id {
+				parents = append(parents, v)
+				break
+			}
+		}
+	}
+	protocol.Order_tree(parents, nil)
+	return parents, nil
+}
+func tree_getTaskSons(data *TemplateData, rootID, productID, moduleID int32) ([]*protocol.MSG_PROJECT_tree_cache, error) {
+	cache, err := tree_getAllcache(data)
+	if err != nil {
+		return nil, err
+	}
+	var sons []*protocol.MSG_PROJECT_tree_cache
+	for _, v := range cache {
+		if moduleID > 0 {
+			if v.Root == rootID && v.Parent == moduleID && (v.Type == "task" || v.Type == "story") && !v.Deleted {
+				sons = append(sons, v)
+			}
+		} else {
+			if v.Parent == 0 && !v.Deleted && ((v.Root == rootID && v.Type == "task") || (v.Root == productID && v.Type == "story")) {
+				sons = append(sons, v)
+			}
+		}
+	}
+	protocol.Order_tree(sons, func(a, b *protocol.MSG_PROJECT_tree_cache) bool {
+		if a.Grade == b.Grade {
+			if a.Type == b.Type {
+				return a.Order < b.Order
+			}
+			return a.Type < b.Type
+		}
+		return a.Grade > b.Grade
+	})
+	return sons, nil
+}
+func tree_getTaskStructure(data *TemplateData, rootID int32) (fullTrees []map[string]interface{}, err error) {
+	cache, err := tree_getAllcache(data)
+	if err != nil {
+		return
+	}
+	var projectModules []int32
+	out := protocol.GET_MSG_PROJECT_tree_getTaskTreeModules()
+	out.ProjectID = rootID
+	out.Parent = true
+	var result *protocol.MSG_PROJECT_tree_getTaskTreeModules_result
+	if err = data.SendMsgWaitResultToDefault(out, &result); err != nil {
+		return
+	}
+	for _, v := range result.ProjectModules {
+		projectModules = append(projectModules, v)
+	}
+	out.Put()
+	result.Put()
+	project := HostConn.GetProjectById(rootID)
+	if project == nil {
+		return
+	}
+	branchGroups, err := branch_getByProducts(data, project.Products, "", nil)
+	if err != nil {
+		return
+	}
+
+	for _, id := range project.Products {
+
+		productInfo := HostConn.GetProductById(id)
+
+		var productTree []map[string]interface{}
+		var branchTrees []map[string]interface{}
+		if _, ok := branchGroups[id]; !ok {
+			branchGroups[id] = []protocol.HtmlKeyValueStr{{"0", ""}}
+		}
+
+		for _, kv := range branchGroups[id] {
+			branch, _ := strconv.Atoi(kv.Key)
+			var modules []*protocol.MSG_PROJECT_tree_cache
+			for _, m := range cache {
+				if (m.Root == rootID && m.Type == "task" && m.Parent != 0) || (m.Root == id && m.Type == "story" && m.Branch == int32(branch)) {
+					if !m.Deleted {
+						modules = append(modules, m)
+					}
+				}
+			}
+			protocol.Order_tree(modules, func(a, b *protocol.MSG_PROJECT_tree_cache) bool {
+				if a.Grade == b.Grade {
+					if a.Type == b.Type {
+						return a.Order < b.Order
+					}
+					return a.Type < b.Type
+				}
+				return a.Grade > b.Grade
+			})
+			if branch == 0 {
+				productTree = tree_getDataStructure(data, modules, "task", projectModules)
+			} else {
+				children := tree_getDataStructure(data, modules, "task", projectModules)
+				if len(children) != 0 {
+					branchTrees = append(branchTrees, map[string]interface{}{
+						"name":     kv.Value,
+						"root":     id,
+						"type":     "branch",
+						"actions":  false,
+						"children": children,
+					})
+				}
+			}
+		}
+		if len(branchTrees) != 0 {
+			productTree = append(productTree, map[string]interface{}{
+				"name":     common_getValue(data.Lang["product"]["branchName"], productInfo.Type).(string),
+				"root":     id,
+				"type":     "branch",
+				"actions":  false,
+				"children": branchTrees,
+			})
+		}
+		fullTrees = append(fullTrees, map[string]interface{}{
+			"name":     productInfo.Name,
+			"root":     id,
+			"type":     "product",
+			"actions":  false,
+			"children": productTree,
+		})
+	}
+	var modules []*protocol.MSG_PROJECT_tree_cache
+	/* Get project module. */
+	for _, m := range cache {
+		if m.Root == rootID && m.Type == "task" && !m.Deleted {
+			modules = append(modules, m)
+		}
+	}
+	protocol.Order_tree(modules, func(a, b *protocol.MSG_PROJECT_tree_cache) bool {
+		if a.Grade == b.Grade {
+			if a.Type == b.Type {
+				return a.Order < b.Order
+			}
+			return a.Type < b.Type
+		}
+		return a.Grade > b.Grade
+	})
+
+	for _, taskModule := range tree_getDataStructure(data, modules, "task", projectModules) {
+		fullTrees = append(fullTrees, taskModule)
+	}
+	return
+}
+func tree_getStoryModule(data *TemplateData, id int32) (int32, error) {
+	if id == 0 {
+		return 0, nil
+	}
+	cache, err := tree_getAllcache(data)
+	if err != nil {
+		return 0, err
+	}
+	for _, v := range cache {
+		if v.Id == id {
+			if v.Type == "story" {
+				return v.Id, nil
+			} else {
+				return tree_getStoryModule(data, v.Parent)
+			}
+		}
+	}
+	return 0, nil
 }

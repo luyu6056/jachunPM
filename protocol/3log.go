@@ -19,6 +19,7 @@ const (
 	CMD_MSG_LOG_Action_transformActions_result = -1642266109
 	CMD_MSG_LOG_transformActions_info = 1937124355
 	CMD_MSG_LOG_Action_AddHistory = 882194947
+	CMD_MSG_LOG_Action_set_read = -576769789
 )
 
 type MSG_LOG_Action struct {
@@ -57,7 +58,7 @@ func (data *MSG_LOG_Action) Put() {
 	data.ActorId = 0
 	data.Actor = ``
 	data.Action = ``
-	data.Date = time.Unix(0,0)
+	data.Date = time.UnixMicro(0)
 	data.Comment = ``
 	data.Extra = ``
 	data.Read = false
@@ -82,11 +83,11 @@ func WRITE_MSG_LOG_Action(data *MSG_LOG_Action, buf *libraries.MsgBuffer) {
 	WRITE_int32(data.ActorId, buf)
 	WRITE_string(data.Actor, buf)
 	WRITE_string(data.Action, buf)
-	WRITE_int64(data.Date.UnixNano(), buf)
+	WRITE_int64(data.Date.UnixMicro(), buf)
 	WRITE_string(data.Comment, buf)
 	WRITE_string(data.Extra, buf)
 	WRITE_bool(data.Read, buf)
-	WRITE_int32(int32(len(data.Historys)), buf)
+	WRITE_int(len(data.Historys), buf)
 	for _, v := range data.Historys{
 		WRITE_MSG_LOG_History(v, buf)
 	}
@@ -108,11 +109,11 @@ func (data *MSG_LOG_Action) read(buf *libraries.MsgBuffer) {
 	data.ActorId = READ_int32(buf)
 	data.Actor = READ_string(buf)
 	data.Action = READ_string(buf)
-	data.Date = time.Unix(0, READ_int64(buf))
+	data.Date = time.UnixMicro(READ_int64(buf))
 	data.Comment = READ_string(buf)
 	data.Extra = READ_string(buf)
 	data.Read = READ_bool(buf)
-	Historys_len := int(READ_int32(buf))
+	Historys_len := READ_int(buf)
 	if Historys_len>cap(data.Historys){
 		data.Historys= make([]*MSG_LOG_History, Historys_len)
 	}else{
@@ -180,7 +181,6 @@ func (data *MSG_LOG_History) read(buf *libraries.MsgBuffer) {
 }
 
 type MSG_LOG_Action_Create struct {
-	QueryID uint32
 	ObjectType string
 	ObjectID int32
 	ActionType string
@@ -202,7 +202,6 @@ func (data *MSG_LOG_Action_Create) cmd() int32 {
 }
 
 func (data *MSG_LOG_Action_Create) Put() {
-	data.QueryID = 0
 	data.ObjectType = ``
 	data.ObjectID = 0
 	data.ActionType = ``
@@ -219,18 +218,17 @@ func (data *MSG_LOG_Action_Create) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_LOG_Action_Create(data *MSG_LOG_Action_Create, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 	WRITE_string(data.ObjectType, buf)
 	WRITE_int32(data.ObjectID, buf)
 	WRITE_string(data.ActionType, buf)
 	WRITE_string(data.Comment, buf)
 	WRITE_string(data.Extra, buf)
 	WRITE_int32(data.ActorId, buf)
-	WRITE_int32(int32(len(data.Products)), buf)
+	WRITE_int(len(data.Products), buf)
 	for _, v := range data.Products{
 		WRITE_int32(v, buf)
 	}
-	WRITE_int32(int32(len(data.Projects)), buf)
+	WRITE_int(len(data.Projects), buf)
 	for _, v := range data.Projects{
 		WRITE_int32(v, buf)
 	}
@@ -243,14 +241,13 @@ func READ_MSG_LOG_Action_Create(buf *libraries.MsgBuffer) *MSG_LOG_Action_Create
 }
 
 func (data *MSG_LOG_Action_Create) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 	data.ObjectType = READ_string(buf)
 	data.ObjectID = READ_int32(buf)
 	data.ActionType = READ_string(buf)
 	data.Comment = READ_string(buf)
 	data.Extra = READ_string(buf)
 	data.ActorId = READ_int32(buf)
-	Products_len := int(READ_int32(buf))
+	Products_len := READ_int(buf)
 	if Products_len>cap(data.Products){
 		data.Products= make([]int32, Products_len)
 	}else{
@@ -259,7 +256,7 @@ func (data *MSG_LOG_Action_Create) read(buf *libraries.MsgBuffer) {
 	for i := 0; i < Products_len; i++ {
 		data.Products[i] = READ_int32(buf)
 	}
-	Projects_len := int(READ_int32(buf))
+	Projects_len := READ_int(buf)
 	if Projects_len>cap(data.Projects){
 		data.Projects= make([]int32, Projects_len)
 	}else{
@@ -270,15 +267,8 @@ func (data *MSG_LOG_Action_Create) read(buf *libraries.MsgBuffer) {
 	}
 
 }
-func (data *MSG_LOG_Action_Create) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_LOG_Action_Create) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_LOG_Action_Create_result struct {
-	QueryResultID uint32
 	ActionId int64
 }
 
@@ -293,7 +283,6 @@ func (data *MSG_LOG_Action_Create_result) cmd() int32 {
 }
 
 func (data *MSG_LOG_Action_Create_result) Put() {
-	data.QueryResultID = 0
 	data.ActionId = 0
 	pool_MSG_LOG_Action_Create_result.Put(data)
 }
@@ -303,7 +292,6 @@ func (data *MSG_LOG_Action_Create_result) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_LOG_Action_Create_result(data *MSG_LOG_Action_Create_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
 	WRITE_int64(data.ActionId, buf)
 }
 
@@ -314,19 +302,12 @@ func READ_MSG_LOG_Action_Create_result(buf *libraries.MsgBuffer) *MSG_LOG_Action
 }
 
 func (data *MSG_LOG_Action_Create_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
 	data.ActionId = READ_int64(buf)
 
 }
-func (data *MSG_LOG_Action_Create_result) getQueryResultID() uint32 {
-	return data.QueryResultID
-}
-func (data *MSG_LOG_Action_Create_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
-}
 
 type MSG_LOG_Action_GetByWhereMap struct {
-	QueryID uint32
+	Star time.Time
 	Where map[string]interface{}
 	Order string
 }
@@ -342,7 +323,7 @@ func (data *MSG_LOG_Action_GetByWhereMap) cmd() int32 {
 }
 
 func (data *MSG_LOG_Action_GetByWhereMap) Put() {
-	data.QueryID = 0
+	data.Star = time.UnixMicro(0)
 	data.Where = nil
 	data.Order = ``
 	pool_MSG_LOG_Action_GetByWhereMap.Put(data)
@@ -353,7 +334,7 @@ func (data *MSG_LOG_Action_GetByWhereMap) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_LOG_Action_GetByWhereMap(data *MSG_LOG_Action_GetByWhereMap, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
+	WRITE_int64(data.Star.UnixMicro(), buf)
 	WRITE_map(data.Where,buf)
 	WRITE_string(data.Order, buf)
 }
@@ -365,20 +346,13 @@ func READ_MSG_LOG_Action_GetByWhereMap(buf *libraries.MsgBuffer) *MSG_LOG_Action
 }
 
 func (data *MSG_LOG_Action_GetByWhereMap) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
+	data.Star = time.UnixMicro(READ_int64(buf))
 	READ_map(&data.Where,buf)
 	data.Order = READ_string(buf)
 
 }
-func (data *MSG_LOG_Action_GetByWhereMap) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_LOG_Action_GetByWhereMap) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_LOG_Action_GetByID struct {
-	QueryID uint32
 	Id int64
 }
 
@@ -393,7 +367,6 @@ func (data *MSG_LOG_Action_GetByID) cmd() int32 {
 }
 
 func (data *MSG_LOG_Action_GetByID) Put() {
-	data.QueryID = 0
 	data.Id = 0
 	pool_MSG_LOG_Action_GetByID.Put(data)
 }
@@ -403,7 +376,6 @@ func (data *MSG_LOG_Action_GetByID) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_LOG_Action_GetByID(data *MSG_LOG_Action_GetByID, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 	WRITE_int64(data.Id, buf)
 }
 
@@ -414,19 +386,11 @@ func READ_MSG_LOG_Action_GetByID(buf *libraries.MsgBuffer) *MSG_LOG_Action_GetBy
 }
 
 func (data *MSG_LOG_Action_GetByID) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 	data.Id = READ_int64(buf)
 
 }
-func (data *MSG_LOG_Action_GetByID) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_LOG_Action_GetByID) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_LOG_Action_GetByID_result struct {
-	QueryResultID uint32
 	Info *MSG_LOG_Action
 }
 
@@ -441,7 +405,6 @@ func (data *MSG_LOG_Action_GetByID_result) cmd() int32 {
 }
 
 func (data *MSG_LOG_Action_GetByID_result) Put() {
-	data.QueryResultID = 0
 	if data.Info != nil {
 		data.Info.Put()
 		data.Info = nil
@@ -454,7 +417,6 @@ func (data *MSG_LOG_Action_GetByID_result) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_LOG_Action_GetByID_result(data *MSG_LOG_Action_GetByID_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
 	if data.Info == nil {
 		WRITE_int8(0, buf)
 	} else {
@@ -470,7 +432,6 @@ func READ_MSG_LOG_Action_GetByID_result(buf *libraries.MsgBuffer) *MSG_LOG_Actio
 }
 
 func (data *MSG_LOG_Action_GetByID_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
 	Info_len := int(READ_int8(buf))
 	if Info_len == 1 {
 		data.Info = READ_MSG_LOG_Action(buf)
@@ -479,15 +440,8 @@ func (data *MSG_LOG_Action_GetByID_result) read(buf *libraries.MsgBuffer) {
 	}
 
 }
-func (data *MSG_LOG_Action_GetByID_result) getQueryResultID() uint32 {
-	return data.QueryResultID
-}
-func (data *MSG_LOG_Action_GetByID_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
-}
 
 type MSG_LOG_Action_GetByWhereMap_result struct {
-	QueryResultID uint32
 	List []*MSG_LOG_Action
 }
 
@@ -502,7 +456,6 @@ func (data *MSG_LOG_Action_GetByWhereMap_result) cmd() int32 {
 }
 
 func (data *MSG_LOG_Action_GetByWhereMap_result) Put() {
-	data.QueryResultID = 0
 	for _,v := range data.List {
 		v.Put()
 	}
@@ -515,8 +468,7 @@ func (data *MSG_LOG_Action_GetByWhereMap_result) write(buf *libraries.MsgBuffer)
 }
 
 func WRITE_MSG_LOG_Action_GetByWhereMap_result(data *MSG_LOG_Action_GetByWhereMap_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
-	WRITE_int32(int32(len(data.List)), buf)
+	WRITE_int(len(data.List), buf)
 	for _, v := range data.List{
 		WRITE_MSG_LOG_Action(v, buf)
 	}
@@ -529,8 +481,7 @@ func READ_MSG_LOG_Action_GetByWhereMap_result(buf *libraries.MsgBuffer) *MSG_LOG
 }
 
 func (data *MSG_LOG_Action_GetByWhereMap_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
-	List_len := int(READ_int32(buf))
+	List_len := READ_int(buf)
 	if List_len>cap(data.List){
 		data.List= make([]*MSG_LOG_Action, List_len)
 	}else{
@@ -541,15 +492,8 @@ func (data *MSG_LOG_Action_GetByWhereMap_result) read(buf *libraries.MsgBuffer) 
 	}
 
 }
-func (data *MSG_LOG_Action_GetByWhereMap_result) getQueryResultID() uint32 {
-	return data.QueryResultID
-}
-func (data *MSG_LOG_Action_GetByWhereMap_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
-}
 
 type MSG_LOG_Action_transformActions struct {
-	QueryID uint32
 	Where map[string]interface{}
 	Order string
 }
@@ -565,7 +509,6 @@ func (data *MSG_LOG_Action_transformActions) cmd() int32 {
 }
 
 func (data *MSG_LOG_Action_transformActions) Put() {
-	data.QueryID = 0
 	data.Where = nil
 	data.Order = ``
 	pool_MSG_LOG_Action_transformActions.Put(data)
@@ -576,7 +519,6 @@ func (data *MSG_LOG_Action_transformActions) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_LOG_Action_transformActions(data *MSG_LOG_Action_transformActions, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 	WRITE_map(data.Where,buf)
 	WRITE_string(data.Order, buf)
 }
@@ -588,20 +530,12 @@ func READ_MSG_LOG_Action_transformActions(buf *libraries.MsgBuffer) *MSG_LOG_Act
 }
 
 func (data *MSG_LOG_Action_transformActions) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 	READ_map(&data.Where,buf)
 	data.Order = READ_string(buf)
 
 }
-func (data *MSG_LOG_Action_transformActions) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_LOG_Action_transformActions) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_LOG_Action_transformActions_result struct {
-	QueryResultID uint32
 	List []*MSG_LOG_transformActions_info
 }
 
@@ -616,7 +550,6 @@ func (data *MSG_LOG_Action_transformActions_result) cmd() int32 {
 }
 
 func (data *MSG_LOG_Action_transformActions_result) Put() {
-	data.QueryResultID = 0
 	for _,v := range data.List {
 		v.Put()
 	}
@@ -629,8 +562,7 @@ func (data *MSG_LOG_Action_transformActions_result) write(buf *libraries.MsgBuff
 }
 
 func WRITE_MSG_LOG_Action_transformActions_result(data *MSG_LOG_Action_transformActions_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
-	WRITE_int32(int32(len(data.List)), buf)
+	WRITE_int(len(data.List), buf)
 	for _, v := range data.List{
 		WRITE_MSG_LOG_transformActions_info(v, buf)
 	}
@@ -643,8 +575,7 @@ func READ_MSG_LOG_Action_transformActions_result(buf *libraries.MsgBuffer) *MSG_
 }
 
 func (data *MSG_LOG_Action_transformActions_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
-	List_len := int(READ_int32(buf))
+	List_len := READ_int(buf)
 	if List_len>cap(data.List){
 		data.List= make([]*MSG_LOG_transformActions_info, List_len)
 	}else{
@@ -654,12 +585,6 @@ func (data *MSG_LOG_Action_transformActions_result) read(buf *libraries.MsgBuffe
 		data.List[i] = READ_MSG_LOG_transformActions_info(buf)
 	}
 
-}
-func (data *MSG_LOG_Action_transformActions_result) getQueryResultID() uint32 {
-	return data.QueryResultID
-}
-func (data *MSG_LOG_Action_transformActions_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
 }
 
 type MSG_LOG_transformActions_info struct {
@@ -702,7 +627,7 @@ func (data *MSG_LOG_transformActions_info) Put() {
 	data.ActorId = 0
 	data.Actor = ``
 	data.Action = ``
-	data.Date = time.Unix(0,0)
+	data.Date = time.UnixMicro(0)
 	data.Comment = ``
 	data.Extra = ``
 	data.Read = false
@@ -728,7 +653,7 @@ func WRITE_MSG_LOG_transformActions_info(data *MSG_LOG_transformActions_info, bu
 	WRITE_int32(data.ActorId, buf)
 	WRITE_string(data.Actor, buf)
 	WRITE_string(data.Action, buf)
-	WRITE_int64(data.Date.UnixNano(), buf)
+	WRITE_int64(data.Date.UnixMicro(), buf)
 	WRITE_string(data.Comment, buf)
 	WRITE_string(data.Extra, buf)
 	WRITE_bool(data.Read, buf)
@@ -755,7 +680,7 @@ func (data *MSG_LOG_transformActions_info) read(buf *libraries.MsgBuffer) {
 	data.ActorId = READ_int32(buf)
 	data.Actor = READ_string(buf)
 	data.Action = READ_string(buf)
-	data.Date = time.Unix(0, READ_int64(buf))
+	data.Date = time.UnixMicro(READ_int64(buf))
 	data.Comment = READ_string(buf)
 	data.Extra = READ_string(buf)
 	data.Read = READ_bool(buf)
@@ -769,7 +694,6 @@ func (data *MSG_LOG_transformActions_info) read(buf *libraries.MsgBuffer) {
 }
 
 type MSG_LOG_Action_AddHistory struct {
-	QueryID uint32
 	Id int64
 	History []*MSG_LOG_History
 }
@@ -785,7 +709,6 @@ func (data *MSG_LOG_Action_AddHistory) cmd() int32 {
 }
 
 func (data *MSG_LOG_Action_AddHistory) Put() {
-	data.QueryID = 0
 	data.Id = 0
 	for _,v := range data.History {
 		v.Put()
@@ -799,9 +722,8 @@ func (data *MSG_LOG_Action_AddHistory) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_LOG_Action_AddHistory(data *MSG_LOG_Action_AddHistory, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 	WRITE_int64(data.Id, buf)
-	WRITE_int32(int32(len(data.History)), buf)
+	WRITE_int(len(data.History), buf)
 	for _, v := range data.History{
 		WRITE_MSG_LOG_History(v, buf)
 	}
@@ -814,9 +736,8 @@ func READ_MSG_LOG_Action_AddHistory(buf *libraries.MsgBuffer) *MSG_LOG_Action_Ad
 }
 
 func (data *MSG_LOG_Action_AddHistory) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 	data.Id = READ_int64(buf)
-	History_len := int(READ_int32(buf))
+	History_len := READ_int(buf)
 	if History_len>cap(data.History){
 		data.History= make([]*MSG_LOG_History, History_len)
 	}else{
@@ -827,10 +748,46 @@ func (data *MSG_LOG_Action_AddHistory) read(buf *libraries.MsgBuffer) {
 	}
 
 }
-func (data *MSG_LOG_Action_AddHistory) getQueryID() uint32 {
-	return data.QueryID
+
+type MSG_LOG_Action_set_read struct {
+	ObjectType string
+	ObjectID int32
 }
-func (data *MSG_LOG_Action_AddHistory) setQueryID(id uint32) {
-	data.QueryID = id
+
+var pool_MSG_LOG_Action_set_read = sync.Pool{New: func() interface{} { return &MSG_LOG_Action_set_read{} }}
+
+func GET_MSG_LOG_Action_set_read() *MSG_LOG_Action_set_read {
+	return pool_MSG_LOG_Action_set_read.Get().(*MSG_LOG_Action_set_read)
+}
+
+func (data *MSG_LOG_Action_set_read) cmd() int32 {
+	return CMD_MSG_LOG_Action_set_read
+}
+
+func (data *MSG_LOG_Action_set_read) Put() {
+	data.ObjectType = ``
+	data.ObjectID = 0
+	pool_MSG_LOG_Action_set_read.Put(data)
+}
+func (data *MSG_LOG_Action_set_read) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_LOG_Action_set_read,buf)
+	WRITE_MSG_LOG_Action_set_read(data, buf)
+}
+
+func WRITE_MSG_LOG_Action_set_read(data *MSG_LOG_Action_set_read, buf *libraries.MsgBuffer) {
+	WRITE_string(data.ObjectType, buf)
+	WRITE_int32(data.ObjectID, buf)
+}
+
+func READ_MSG_LOG_Action_set_read(buf *libraries.MsgBuffer) *MSG_LOG_Action_set_read {
+	data := pool_MSG_LOG_Action_set_read.Get().(*MSG_LOG_Action_set_read)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_LOG_Action_set_read) read(buf *libraries.MsgBuffer) {
+	data.ObjectType = READ_string(buf)
+	data.ObjectID = READ_int32(buf)
+
 }
 

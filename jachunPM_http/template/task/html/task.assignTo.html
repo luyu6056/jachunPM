@@ -1,0 +1,51 @@
+{{template "header.html" .}}
+{{template "kindeditor.html" .}}
+<div id='mainContent' class='main-content'>
+  <div class='center-block'>
+    {{if and (gt (len $.Data.task.Team) 0) (ne $.Data.task.AssignedTo .User.Id)}}
+    <div class="alert with-icon">
+      <i class="icon-exclamation-sign"></i>
+      <div class="content">
+        <p>{{printf .Lang.task.deniedNotice (strAdd "<strong>"  $.Data.AssignedToRealName "</strong>") .Lang.task.transfer}}</p>
+      </div>
+    </div>
+    {{else}}
+    <div class='main-header'>
+      <h2>
+        <span class='label label-id'>{{$.Data.task.Id}}</span>
+        {{if $.App.onlybody}}<span title='$.Data.task.Name'>{{$.Data.task.Name}}</span>{{else}}{{html_a (helper_createLink "task" "view"  "task=" $.Data.task.Id)  $.Data.task.Name}}{{end}}
+        {{if not $.App.onlybody}}
+        <small>{{.Lang.common.arrow}}{{if $.Data.task.Team}}{[.Lang.task.transfer)}}{{else}}{{.Lang.task.assign}}{{end}}</small>
+        {{end}}
+      </h2>
+    </div>
+    <form method='post' target='hiddenwin'>
+      <table class='table table-form'>
+        <tr>
+          <th class='w-80px'>{{if $.Data.task.Team}}{{.Lang.task.transferTo}}{{else}}{{.Lang.task.assign}}{{end}}</th>
+          <td class='w-p25-f'>{{html_select "assignedTo"  .Data.members $.Data.task.AssignedTo  "class='form-control chosen'"}}</td><td></td>
+        </tr>  
+        {{if and (ne $.Data.task.Status "done") (ne $.Data.task.Status "closed")}}
+        <tr>
+          <th>{{.Lang.task.left}}</th>
+          <td><div class='input-group'>{{html_input "left"  $.Data.task.Left  "class='form-control' autocomplete='off'"}} <span class='input-group-addon'>{{.Lang.task.hour}}</span></div></td><td></td>
+        </tr>  
+        {{end}}
+        <tr>
+          <th>{{.Lang.common.comment}}</th>
+          <td colspan='2'>{{html_textarea "comment" ""  "rows='6' class='form-control w-p98'"}}</td>
+        </tr>
+        <tr>
+          <td colspan='3' class='text-center form-actions'>
+            {{html_submitButton .}}
+            {{html_linkButton . .Lang.common.goback  (session . "taskList")}}
+          </td>
+        </tr>
+      </table>
+    </form>
+    <hr class='small' />
+    {{template "action.html" .}}
+    {{end}}
+  </div>
+</div>
+{{template "footer.html" .}}

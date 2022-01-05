@@ -1,0 +1,150 @@
+{{template "header.html" .}}
+{{template "datepicker.html" .}}
+{{template "kindeditor.html" .}}
+<script type="text/javascript">
+  projectType={{$.Data.project.Type}},
+  storyTasks={{$.Data.storyTasks}},
+  mainField="name",
+  ditto={{.Lang.task.ditto}},
+  storyID={{$.Data.storyID}};
+</script> 
+<div id="mainContent" class="main-content fade">
+  <div class="main-header clearfix">
+    <h2 class="pull-left">
+      {{if $.Data.parent}}
+      <span class='pull-left'>{{$.Data.parentTitle}}</span> 
+      {{.Lang.task.batchCreateChildren}}
+      {{else}}
+      {{.Lang.task.batchCreate}}
+      {{end}}
+    </h2>
+    {{if ne $.Data.project.Type "ops"}}
+    <a class="checkbox-primary pull-left" id='zeroTaskStory' href='javascript:toggleZeroTaskStory();'>
+      <label>{{.Lang.story.zeroTask}}</label>
+    </a>
+    {{end}}
+    <div class="pull-right btn-toolbar">
+      <button type='button' data-toggle='modal' data-target="#importLinesModal" class="btn btn-primary">{{.Lang.common.pasteText}}</button>
+      
+      {{template "customfield.html" .}}
+    </div>
+  </div>
+
+  <form method='post' class='load-indicator batch-actions-form form-ajax' enctype='multipart/form-data' id="batchCreateForm">
+    <div class="table-responsive">
+      <table class="table table-form" id="tableBody">
+        <thead>
+          <tr>
+            <th class='w-30px'>{{.Lang.common.idAB}}</th>
+            {{if getValue $.Data.visibleFields "module"}}<th class='w-150px{{getValue $.Data.requiredFields "module"}}'>{{.Lang.task.module}}</th>{{end}}
+            {{if ne $.Data.project.Type "ops"}}
+            {{if getValue $.Data.visibleFields "story"}}<th class='w-200px{{getValue $.Data.requiredFields "story"}}'>{{.Lang.task.story}}</th>{{end}}
+            {{end}}
+            <th class='c-name required has-btn'>{{.Lang.task.name}}</span></th>
+            <th class='w-80px required'>{{.Lang.common.typeAB}}</span></th>
+            {{if getValue $.Data.visibleFields "assignedTo"}}<th class='w-130px{{getValue $.Data.requiredFields "assignedTo"}}'>{{.Lang.task.assignedTo}}</th>{{end}}
+            {{if getValue $.Data.visibleFields "estimate"}}<th class='w-60px{{getValue $.Data.requiredFields "estimate"}}'>{{.Lang.task.estimateAB}}</th>{{end}}
+            {{if getValue $.Data.visibleFields "estStarted"}}<th class='w-100px{{getValue $.Data.requiredFields "estStarted"}}'>{{.Lang.task.estStarted}}</th>{{end}}
+            {{if getValue $.Data.visibleFields "deadline"}}<th class='w-100px{{getValue $.Data.requiredFields "deadline"}}'>{{.Lang.task.deadline}}</th>{{end}}
+            {{if getValue $.Data.visibleFields "desc"}}<th class='w-400px{{getValue $.Data.requiredFields "desc"}}'>{{.Lang.task.desc}}</th>{{end}}
+            {{if getValue $.Data.visibleFields "pri"}}<th class='w-80px{{getValue $.Data.requiredFields "pri"}}'>{{.Lang.task.pri}}</th>{{end}}
+          </tr>
+        </thead>
+        <tbody>
+          {{range $i := genlist 0 .Config.task.common.batchCreate}}
+          {{$pri := 3}}{{$currentStory := $.Data.storyID}}{{$type:=""}}{{$member:=""}}{{$module:=$.Data.module}}
+          {{if ne $i 0}}{{$currentStory = "ditto"}}{{$type = "ditto"}}{{$member = "ditto"}}{{$module = "ditto"}}{{end}}
+          <tr>
+            <td class='text-center'>{{intsum $i 1}}</td>
+            {{if getValue $.Data.visibleFields "module"}}<td style='overflow:visible'>
+              {{html_select (strAdd "module[" $i "]")  $.Data.modules  $module  (strAdd "class='form-control chosen' onchange='setStories(this.value, " $.Data.project.Id ", " $i ")'")}}
+              {{html_hidden (strAdd "parent[" $i "]")  $.Data.parent}}
+            </td>{{end}}
+            {{- if ne $.Data.project.Type "ops"}}
+            {{- if getValue $.Data.visibleFields "story"}}<td style='overflow: visible'>
+              <div class='input-group'>
+                  {{html_select (strAdd "story[" $i "]")  $.Data.stories  $currentStory  (strAdd "class='form-control chosen' onchange='setStoryRelated(" $i ")'")}}
+                <span class='input-group-btn'>
+                  <a id='preview{{$i}}' href='#' class='btn iframe btn-link btn-icon btn-copy' disabled='disabled' title='{{$.Lang.common.preview}}'><i class='icon-search'></i></a>
+                  <a href='javascript:copyStoryTitle({{$i}})' class='btn btn-link btn-icon btn-copy' title='{{$.Lang.task.copyStoryTitle}}'><i class='icon-arrow-right'></i></a>
+                </span>
+              </div>
+            </td>{{end}}
+            {{end}}
+            <td style='overflow:visible'>
+              <div class="input-control has-icon-right">
+                {{html_input (strAdd "name[" $i "]") ""  "class='form-control title-import' autocomplete='off'"}}
+                <div class="colorpicker">
+                  <button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown"><span class="cp-title"></span><span class="color-bar"></span><i class="ic"></i></button>
+                  <ul class="dropdown-menu clearfix pull-right">
+                    <li class="heading">{{$.Lang.task.colorTag}}<i class="icon icon-close"></i></li>
+                  </ul>
+                  {{html_hidden (strAdd "color[" $i "]") ""  "data-provide='colorpicker' data-icon='color' data-wrapper='input-control-icon-right'  data-update-color='#name\\[$i\\]'"}}
+                </div>
+              </div>
+            </td>
+            <td>{{html_select (strAdd "type[" $i "]")  $.Lang.task.typeList  $type "class=form-control"}}</td>
+            {{if getValue $.Data.visibleFields "assignedTo"}}<td style='overflow:visible'>{{html_select (strAdd "assignedTo[" $i "]")  $.Data.members  $member  "class='form-control chosen'"}}</td>{{end}}
+            {{if getValue $.Data.visibleFields "estimate"}}<td>{{html_input (strAdd "estimate[" $i "]") ""  "class='form-control text-center' autocomplete='off'"}}</td>{{end}}
+            {{if getValue $.Data.visibleFields "estStarted"}}<td>{{html_input (strAdd "estStarted[" $i "]") ""  "class='form-control text-center form-date'"}}</td>{{end}}
+            {{if getValue $.Data.visibleFields "deadline"}}<td>{{html_input (strAdd "deadline[" $i "]") ""  "class='form-control text-center form-date'"}}</td>{{end}}
+            {{if getValue $.Data.visibleFields "desc"}}<td><textarea name="desc[{{$i}}]" id="desc{{$i}}" rows="1" class="form-control autosize" style="height: 32px;"></textarea></td>{{end}}
+            {{if getValue $.Data.visibleFields "pri"}}<td>{{html_select (strAdd "pri[" $i "]")  $.Lang.task.priList  $pri "class=form-control"}}</td>{{end}}
+          </tr>
+          {{end}}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan='{{$.Data.colspan}}' class='text-center form-actions'>
+              {{html_submitButton .}}
+              {{html_backButton .}}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </form>
+</div>
+<table class='template' id='trTemp'>
+  <tbody>
+    <tr>
+      <td class='text-center'>%s</td>
+      {{if getValue $.Data.visibleFields "module"}}<td style='overflow:visible'>
+        {{html_select "module[%s]"  $.Data.modules  "ditto"  (strAdd "class='form-control chosen' onchange='setStories(this.value, " $.Data.project.Id ", \"%s\")'")}}
+        {{html_hidden "parent[%s]"  $.Data.parent}}
+      </td>{{end}}
+      {{if getValue $.Data.visibleFields "module"}}<td style='overflow: visible'>
+        <div class='input-group'>
+          {{html_select "story[%s]"  $.Data.stories  "ditto"  "class='form-control chosen' onchange='setStoryRelated(\"%s\")'"}}
+          <span class='input-group-btn'>
+            <a id="preview%s" href='#' class='btn iframe btn-link btn-icon btn-copy' disabled='disabled' title='{{.Lang.common.preview}}'><i class='icon-search'></i></a>
+            <a href='javascript:copyStoryTitle("%s")' class='btn btn-link btn-icon btn-copy' title='{{.Lang.task.copyStoryTitle}}'><i class='icon-arrow-right'></i></a>
+          </span>
+        </div>
+      </td>{{end}}
+      <td style='overflow:visible'>
+        <div class="input-control has-icon-right">
+          {{html_input "name[%s]" ""  "class='form-control title-import' autocomplete='off'"}}
+          <div class="colorpicker">
+            <button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown"><span class="cp-title"></span><span class="color-bar"></span><i class="ic"></i></button>
+            <ul class="dropdown-menu clearfix pull-right">
+              <li class="heading">{{.Lang.task.colorTag}}<i class="icon icon-close"></i></li>
+            </ul>
+            {{html_hidden "color[%s]" ""  "data-provide='colorpicker-later' data-icon='color' data-wrapper='input-control-icon-right'  data-update-color='#name\\[%s\\]'"}}
+          </div>
+        </div>
+        </div>
+      </td>
+      <td>{{html_select "type[%s]"  .Lang.task.typeList "ditto" "class='form-control'"}}</td>
+      {{if getValue $.Data.visibleFields "module"}}<td style='overflow:visible'>{{html_select "assignedTo[%s]"  $.Data.members  "ditto"  "class='form-control chosen'"}}</td>{{end}}
+      {{if getValue $.Data.visibleFields "module"}}<td>{{html_input "estimate[%s]" ""  "class='form-control text-center' autocomplete='off'"}}</td>{{end}}
+      {{if getValue $.Data.visibleFields "module"}}<td>{{html_input "estStarted[%s]" ""  "class='form-control text-center form-date'"}}</td>{{end}}
+      {{if getValue $.Data.visibleFields "module"}}<td>{{html_input "deadline[%s]" ""  "class='form-control text-center form-date'"}}</td>{{end}}
+      {{if getValue $.Data.visibleFields "module"}}<td>{{html_textarea "desc[%s]" ""  "rows='1' class='form-control autosize'"}}</td>{{end}}
+      {{if getValue $.Data.visibleFields "module"}}<td>{{html_select "pri[%s]"  .Lang.task.priList  3 "class=form-control"}}</td>{{end}}
+    </tr>
+  </tbody>
+</table>
+
+{{template "pastetext.html" .}}
+{{template "footer.html" .}}

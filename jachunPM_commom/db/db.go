@@ -26,7 +26,7 @@ func Init() {
 	if err = DB.Ping(); err != nil {
 		log.Fatalf("数据库启动失败 %v", err)
 	}
-	errs := DB.StoreEngine("TokuDB").Sync2(
+	errs := DB.StoreEngine("MyRocks").Sync2(
 		new(Log_msg),
 	)
 	errs = append(errs, DB.StoreEngine("Innodb").Sync2(
@@ -40,7 +40,7 @@ func Init() {
 
 type Log_msg struct {
 	Msgno     uint32 `db:"not null;pk"`
-	Ttl       uint8  `db:"not null;pk"`
+	Ttl       uint16  `db:"not null;pk"`
 	LocalNo   uint8
 	LocalId   uint8
 	RemoteNo  uint8
@@ -56,14 +56,14 @@ func (*Log_msg) TableName() string {
 }
 
 type File struct {
-	Id         int64     `db:"auto_increment;pk"`
-	Pathname   string    `db:"type:varchar(255)"`
-	Title      string    `db:"type:varchar(255)"`
-	Extension  string    `db:"type:varchar(30)"`
-	Size       int       `db:"default(0)"`
-	ObjectType string    `db:"type:varchar(30)"`
-	ObjectID   int32     `db:"not null"`
-	AddedBy    string    `db:"type:varchar(30)"`
+	Id         int64  `db:"auto_increment;pk"`
+	Pathname   string `db:"type:varchar(255)"`
+	Title      string `db:"type:varchar(255)"`
+	Extension  string `db:"type:varchar(30)"`
+	Size       int64  `db:"default(0)"`
+	ObjectType string `db:"type:varchar(30);index"`
+	ObjectID   int32  `db:"not null;index"`
+	AddedBy    int32
 	AddedDate  time.Time `db:"not null"`
 	Deleted    bool      `db:"default(0)"` // 0=0,1=1,
 	Type       string    `db:"type:varchar(50)"`

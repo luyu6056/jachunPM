@@ -48,18 +48,20 @@
         <table class='table table-form table-fixed'>
           <tbody>
             {{- range $fieldNO:=(genlist 1 .Data.groupItems)}}
-                <tr id='searchbox{{$fieldNO}}'{{if ne $fieldNO "1"}} class='hidden'{{end}}>        
+                <tr id='searchbox{{$fieldNO}}'{{if ne $fieldNO 1}} class='hidden'{{end}}>        
                 {{- $param := getValue $.Data.fieldParams (getValue $.Data.formSession (strAdd "field" $fieldNO))}}
                 <td class='text-right w-80px'>
-                {{- if eq $fieldNO "1"}}<span id='searchgroup1'><strong>{{$.Lang.search.group1}}</strong></span>{{html_hidden (strAdd "andOr" $fieldNO) "and"}}{{end -}}
-                {{- if ne $fieldNO "1"}}{{html_select (strAdd "andOr" $fieldNO) $.Lang.search.andor (getValue $.Data.formSession (strAdd "andOr" $fieldNO)) "class='form-control'"}}{{end -}}</td>
+                {{- if eq $fieldNO 1}}<span id='searchgroup1'><strong>{{$.Lang.search.group1}}</strong></span>{{html_hidden (strAdd "andOr" $fieldNO) "and"}}{{end -}}
+                {{- if ne $fieldNO 1}}{{html_select (strAdd "andOr" $fieldNO) $.Lang.search.andor (getValue $.Data.formSession (strAdd "andOr" $fieldNO)) "class='form-control'"}}{{end -}}</td>
                 <td class='w-110px' style='overflow: visible'>{{html_select (strAdd "field" $fieldNO) $.Data.searchFields (getValue $.Data.formSession (strAdd "field" $fieldNO)) (strAdd "onchange='setField(this, " $fieldNO ", " $.Data.module "params)' class='form-control chosen'")}}</td>
                 <td class='w-90px'>{{html_select (strAdd "operator" $fieldNO) $.Lang.search.operators (getValue $.Data.formSession (strAdd "operator" $fieldNO)) "class='form-control'"}}</td>
                 <td id='valueBox{{$fieldNO}}' style='overflow:visible'>
+                {{if $param}}
                 {{if eq $param.Control "select"}}{{html_select (strAdd "value" $fieldNO) $param.Values (getValue $.Data.formSession (strAdd "value" $fieldNO)) "class='form-control searchSelect chosen'"}}{{end -}}
                 {{- if eq $param.Control  "input" -}}
                     {{html_input (strAdd "value" $fieldNO) (getValue $.Data.formSession (strAdd "value" $fieldNO)) (strAdd "class='form-control " $param.Class " searchInput' autocomplete='off'")}}
                 {{- end -}}
+                {{end}}
                 </td>
                 </tr>
             {{end}}
@@ -71,11 +73,11 @@
         <table class='table table-form'>
           <tbody>
             {{- range $fieldNO:=(genlist .Data.groupItems2 .Data.groupItems)}}
-                <tr id='searchbox{{$fieldNO}}'{{if ne $fieldNO (string $.Data.groupItems2)}} class='hidden'{{end}}>        
+                <tr id='searchbox{{$fieldNO}}'{{if ne (string $fieldNO) (string $.Data.groupItems2)}} class='hidden'{{end}}>        
                 {{- $param := getValue $.Data.fieldParams (getValue $.Data.formSession (strAdd "field" $fieldNO))}}
                 <td class='text-right w-80px'>
-                {{- if eq $fieldNO (string $.Data.groupItems2)}}<span id='searchgroup2'><strong>{{$.Lang.search.group2}}</strong></span>{{html_hidden (strAdd "andOr" $fieldNO) "and"}}{{end -}}
-                {{- if ne $fieldNO (string $.Data.groupItems2)}}{{html_select (strAdd "andOr" $fieldNO) $.Lang.search.andor (getValue $.Data.formSession (strAdd "andOr" $fieldNO)) "class='form-control'"}}{{end -}}
+                {{- if eq (string $fieldNO) (string $.Data.groupItems2)}}<span id='searchgroup2'><strong>{{$.Lang.search.group2}}</strong></span>{{html_hidden (strAdd "andOr" $fieldNO) "and"}}{{end -}}
+                {{- if ne (string $fieldNO) (string $.Data.groupItems2)}}{{html_select (strAdd "andOr" $fieldNO) $.Lang.search.andor (getValue $.Data.formSession (strAdd "andOr" $fieldNO)) "class='form-control'"}}{{end -}}
                 </td>
                 <td class='w-110px' style='overflow: visible'>{{html_select (strAdd "field" $fieldNO) $.Data.searchFields (getValue $.Data.formSession (strAdd "field" $fieldNO)) (strAdd "onchange='setField(this, " $fieldNO ", " $.Data.module "params)' class='form-control chosen'")}}</td>
                 <td class='w-90px'>{{html_select (strAdd "operator" $fieldNO) $.Lang.search.operators (getValue $.Data.formSession (strAdd "operator" $fieldNO)) "class='form-control'"}}</td>
@@ -94,10 +96,8 @@
       <td class='w-160px' rowspan='2' id='userQueries'>
         <h4>{{.Lang.search.savedQuery}}</h4>
         <ul>
-          {{range $queryID , $queryName := .Data.queries}}
-          {{if $queryID}}
-          <li>{{html_a "javascript:executeQuery($queryID)" (strAdd $queryName (and (common_hasPriv "search" "deleteQuery") "<i class='icon icon-close'></i>")) "" (strAdd "class='label user-query' data-query-id='" $queryID "' title='" $queryName "'")}}</li>
-          {{end}}
+          {{range $query  := .Data.queries}}
+          <li>{{html_a (strAdd "javascript:executeQuery(" $query.Id ")") (strAdd $query.Title (and (common_hasPriv $ "search" "deleteQuery") "<i class='icon icon-close'></i>")) "" (strAdd "class='label user-query' data-query-id='" $query.Id "' title='" $query.Title "'")}}</li>
           {{end}}
         </ul>
       </td>

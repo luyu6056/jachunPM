@@ -1,0 +1,91 @@
+{{template "header.lite.html" .}}
+{{template "datepicker.html" .}}
+<style>
+{{if and (not $.Data.estimates) (gt (strpos "wait,pause,doing" $.Data.task.Status) -1)}}
+#recordForm {margin-top:60px;}
+{{end}}
+{{if and (eq (len $.Data.estimates) 1) (gt (strpos "wait,pause,doing" $.Data.task.Status) -1)}}
+#recordForm {margin-top:20px;}
+{{end}}
+#recordForm table .form-actions{padding:25px;}
+</style>
+<script type="text/javascript">
+  confirmRecord={{.Data.confirmRecord}};
+  noticeSaveRecord={{.Lang.task.noticeSaveRecord}};
+</script>
+<div id='mainContent' class='main-content'>
+  <div class='center-block'>
+    <div class='main-header'>
+      <h2>
+        <span class='label label-id'>{{$.Data.task.Id}}</span>
+        {{if .App.isonlybody}}<span title='$.Data.task.Name'>{{$.Data.task.Name}}</span>{{else}}{{html_a (helper_createLink "task" "view"  "task="  $.Data.task.Id)  $.Data.task.Name}}{{end}}
+        {{if not $.App.onlybody}}
+        <small>{{.Lang.common.arrow}}{{.Lang.task.logEfforts}}</small>
+        {{end}}
+      </div>
+    </div>
+    <form id="recordForm" method='post' target='hiddenwin'>
+      <table class='table table-form table-fixed'>
+        <thead>
+          <tr class='text-center'>
+            <th class="w-id">{{.Lang.common.idAB}}</th>
+            <th class="w-120px">{{.Lang.task.date}}</th>
+            <th class="w-60px">{{.Lang.task.consumedThisTime}}</th>
+            <th class="w-60px">{{.Lang.task.leftThisTime}}</th>
+            <th>{{.Lang.common.comment}}</th>
+            <th class='c-actions-2'>{{if or (not $.Data.task.Team) (eq $.Data.task.AssignedTo $.User.Id)}}{{.Lang.common.actions}}{{end}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{if len $.Data.estimates}}
+          {{range $estimate := $.Data.estimates}}
+          <tr class="text-center">
+            <td>{{$estimate.Id}}</td>
+            <td>{{$estimate.Date}}</td>
+            <td>{{$estimate.Consumed}}</td>
+            <td>{{$estimate.Left}}</td>
+            <td class="text-left">{{$estimate.Work}}</td>
+            {{if or (not $.Data.task.Team) (eq $.Data.task.AssignedTo $.User.Id)}}
+            <td align='center' class='c-actions'>
+              {{if or (eq $.Data.task.Status "wait") (eq $.Data.task.Status "pause") (eq $.Data.task.Status "doing")}}
+                  {{common_printIcon $ "task" "editEstimate"  (strAdd "estimateID=" $estimate.Id)  "" "list" "pencil" "" "showinonlybody" "true"}}
+                  {{common_printIcon $ "task" "deleteEstimate"  (strAdd "estimateID=" $estimate.Id) "" "list" "close" "hiddenwin" "showinonlybody"}}
+              {{end}}
+            </td>
+            {{end}}
+          </tr>
+          {{end}}
+          {{end}}
+      {{if and $.Data.task.Team (ne $.Data.task.AssignedTo $.User.Id)}}
+        </tbody>
+      </table>
+    </form>
+    <div class="alert with-icon">
+      <i class="icon-exclamation-sign"></i>
+      <div class="content">
+        <p>{{printf .Lang.task.deniedNotice (strAdd "<strong>"  $.Data.task.AssignedToRealName "</strong>") .Lang.task.logEfforts}}</p>
+      </div>
+    </div>
+    {{else}}
+          {{if gt (strpos "wait,pause,doing" $.Data.task.Status) -1}}
+          {{range $i:=genlist 1 3}}
+          <tr class="text-center">
+            <td>{{$i}}{{html_hidden (strAdd "id[" $i "]")  $i}}</td>
+            <td>{{html_input (strAdd "dates[" $i "]")  (date "" "2006-01-02")  "class='form-control text-center form-date'"}}</td>
+            <td>{{html_input (strAdd "consumed[" $i "]") ""  "class='form-control text-center' autocomplete='off'"}}</td>
+            <td>{{html_input (strAdd "left[" $i "]") ""  "class='form-control text-center left' autocomplete='off'"}}</td>
+            <td class="text-left">{{html_textarea (strAdd "work[" $i "]") "" "class='form-control' style='height:50px;'"}}</td>
+            <td></td>
+          </tr>
+          {{end}}
+          <tr>
+            <td colspan='6' class='text-center form-actions'>{{html_submitButton .}}{{html_backButton . "" "" "btn btn-wide"}}</td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </form>
+    {{end}}
+  </div>
+</div>
+{{template "footer.lite.html" .}}

@@ -1,7 +1,6 @@
 package rpcHost
 
 import (
-	"errors"
 	"io"
 	"jachunPM_commom/db"
 	"libraries"
@@ -45,6 +44,28 @@ func init() {
 	for i := uint8(0); i < protocol.MaxServerNoNum; i++ {
 		rpcServerOutChan[i] = make(chan *libraries.MsgBuffer, protocol.Rpcmsgnum)
 	}
+	rpcServerIdList[protocol.HostServerNo] = make([]*RpcServer, 1)
+	rpcServerIdList[protocol.HostServerNo][0] = &RpcServer{ //common服务器
+		ServerNo:          protocol.HostServerNo,
+		Id:                0,
+		ServerConn:        nil,
+		zstdDecoder:       nil,
+		zstdDecodeBuf1:    nil,
+		zstdDecodeBuf2:    nil,
+		setStatusOpenChan: nil,
+		closeChan:         nil,
+		outChan:           rpcServerOutChan[protocol.HostServerNo],
+		startTime:         0,
+		busyTime:          0,
+		ErrNum:            0,
+		Ip:                "",
+		pongTime:          0,
+		status:            0,
+		isCenter:          false,
+		window:            0,
+		local:             protocol.HostServerNo,
+		CacheServer:       nil,
+	}
 }
 
 func MsgnoInit() {
@@ -82,13 +103,13 @@ func NewRpcServer(c gnet.Conn) *RpcServer {
 	s := &RpcServer{ServerConn: c, Id: -1}
 	return s
 }
-func (svr *RpcServer) SendMsg(remote uint16, msgno uint32, ttl uint8, transactionNo uint32, out protocol.MSG_DATA) {
-	protocol.SendMsg(0, remote, msgno, ttl, transactionNo, out, rpcServerOutChan[protocol.HostServerNo])
+func (svr *RpcServer) SendMsg(remote uint16, msgno uint32, ttl uint16, transactionNo, queryID uint32, out protocol.MSG_DATA) {
+	protocol.SendMsg(protocol.HostServerNo, remote, msgno, ttl, transactionNo, queryID, out, rpcServerOutChan[protocol.HostServerNo])
 }
-func (svr *RpcServer) SendMsgWaitResult(remote uint16, msgno uint32, ttl uint8, transactionNo uint32, out protocol.MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
-	return protocol.SendMsgWaitResult(0, remote, msgno, ttl, transactionNo, out, result, rpcServerOutChan[protocol.HostServerNo], timeout...)
+func (svr *RpcServer) SendMsgWaitResult(remote uint16, msgno uint32, ttl uint16, transactionNo uint32, out protocol.MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
+	return protocol.SendMsgWaitResult(protocol.HostServerNo, remote, msgno, ttl, transactionNo, out, result, rpcServerOutChan[protocol.HostServerNo], timeout...)
 }
-func (svr *RpcServer) Start(no uint8, ipport string, window int32) {
+func (svr *RpcServer) Start(no uint8, ipport string, window int32, queryID uint32) {
 	svr.ServerNo = no
 	svr.Ip = ipport
 	svr.zstdDecodeBuf1 = &libraries.MsgBuffer{}
@@ -127,9 +148,9 @@ func (svr *RpcServer) Start(no uint8, ipport string, window int32) {
 
 	libraries.DebugLog("服务%v，ID%v,启动", svr.ServerNo, svr.Id)
 
-	data := protocol.GET_MSG_COMMON_regServer_result()
+	data := protocol.GET_MSG_HOST_regServer_result()
 	data.Id = uint8(svr.Id)
-	svr.SendMsg(svr.local, 0, 0, 0, data)
+	svr.SendMsg(svr.local, 0, 0, 0, queryID, data)
 	data.Put()
 }
 
@@ -170,9 +191,9 @@ func (svr *RpcServer) tick(now time.Time) {
 }
 func (svr *RpcServer) setCenter() {
 	rpcServerCenterId[svr.ServerNo] = uint8(svr.Id)
-	data := protocol.GET_MSG_COMMON_StartTicker()
+	data := protocol.GET_MSG_HOST_StartTicker()
 	svr.isCenter = true
-	svr.SendMsg(svr.local, 0, 0, 0, data)
+	svr.SendMsg(svr.local, 0, 0, 0, 0, data)
 	data.Put()
 }
 
@@ -199,7 +220,7 @@ func (svr *RpcServer) handlerMsgOut(outChan chan *libraries.MsgBuffer) {
 		if compress {
 			zstdWriter.Write(o.Bytes())
 		} else {
-			if msgNum > protocol.CompressMinNum || out.Len()+o.Len() > protocol.CompressMinLen {
+			if msgNum > protocol.CompressMinNum {
 				compress = true
 				zstdWriter.Reset(zstdbuf)
 				zstdWriter.Write(out.Bytes())
@@ -211,6 +232,7 @@ func (svr *RpcServer) handlerMsgOut(outChan chan *libraries.MsgBuffer) {
 		}
 	}
 	write := func(o *libraries.MsgBuffer, c chan *libraries.MsgBuffer) {
+
 		compress = false
 		out.Reset()
 		msgbuf.Reset()
@@ -275,7 +297,9 @@ func (svr *RpcServer) handlerMsgOut(outChan chan *libraries.MsgBuffer) {
 			b[4] = byte(msgNum)
 			copy(b[5:], out.Bytes())
 		}
+
 		svr.ServerConn.AsyncWrite(msgbuf.Bytes())
+
 	}
 	ping := func(now time.Time) {
 		checktime := now.Add(rpcPingHalfOpenTime * -1)
@@ -284,8 +308,8 @@ func (svr *RpcServer) handlerMsgOut(outChan chan *libraries.MsgBuffer) {
 			libraries.DebugLog("服务%v，ID%v，cache%v,ping响应超时，进入半开状态", svr.ServerNo, svr.Id, svr.CacheServer)
 			svr.status = rpcStatusHalfOpen
 		}
-		data := protocol.GET_MSG_COMMON_PING()
-		svr.SendMsg(svr.local, 0, 0, 0, data)
+		data := protocol.GET_MSG_HOST_PING()
+		svr.SendMsg(svr.local, 0, 0, 0, 0, data)
 		data.Put()
 		svr.tick(now)
 	}
@@ -324,40 +348,12 @@ func (svr *RpcServer) handlerMsgOut(outChan chan *libraries.MsgBuffer) {
 
 	}
 }
-
-type RpcCodec struct {
-}
-
-var errRpcContext = errors.New("错误的rpcContext")
-
-func (code RpcCodec) Encode(c gnet.Conn, buf []byte) ([]byte, error) {
-	return buf, nil
-}
-
-func (code RpcCodec) Decode(c gnet.Conn) (data []byte, err error) {
-	if c.BufferLength() > 5 {
-		data = c.Read()
-		msglen := int(data[0]) | int(data[1])<<8 | int(data[2])<<16 | int(data[3])<<24
-		if len(data) < msglen+5 { //消息长度不够
-			return nil, nil
-		}
-		c.ShiftN(msglen + 5)
-		//解压缩
-		if data[4]>>7 == 1 {
-			if ctx, ok := c.Context().(*RpcServer); ok {
-				if decoder := ctx.zstdDecoder; decoder != nil {
-					ctx.zstdDecodeBuf1.Reset()
-					ctx.zstdDecodeBuf1.Write(data[5 : msglen+5])
-					ctx.zstdDecodeBuf2.Reset()
-					ctx.zstdDecodeBuf2.WriteByte(data[4] - 128)
-					decoder.Reset(ctx.zstdDecodeBuf1)
-					io.Copy(ctx.zstdDecodeBuf2, decoder)
-					return ctx.zstdDecodeBuf2.Bytes(), nil
-				}
-			}
-			return nil, errRpcContext
-		}
-		return data[4 : msglen+5], nil
-	}
-	return nil, nil
+func (svr *RpcServer) Decompress(in []byte) (out []byte) {
+	svr.zstdDecodeBuf2.Reset()
+	svr.zstdDecodeBuf2.WriteByte(in[0] - 128)
+	svr.zstdDecodeBuf1.Reset()
+	svr.zstdDecodeBuf1.Write(in[1:])
+	svr.zstdDecoder.Reset(svr.zstdDecodeBuf1)
+	io.Copy(svr.zstdDecodeBuf2, svr.zstdDecoder)
+	return svr.zstdDecodeBuf2.Bytes()
 }

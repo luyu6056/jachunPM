@@ -18,6 +18,7 @@ func init() {
 	httpHandlerMap["GET"]["/story/create"] = get_story_create
 	httpHandlerMap["POST"]["/story/create"] = post_story_create
 	httpHandlerMap["GET"]["/story/view"] = get_story_view
+	httpHandlerMap["GET"]["/story/ajaxGetProjectStories"] = get_story_ajaxGetProjectStories
 }
 func get_story_create(data *TemplateData) (err error) {
 	/*var fromObjectIDKey,fromObjectID,fromObjectName,fromObjectAction string
@@ -238,7 +239,7 @@ func post_story_create(data *TemplateData) (e error) {
 	if projectID > 0 {
 		project := HostConn.GetProjectById(int32(projectID))
 		if project == nil {
-			err = errors.New(data.Lang["project"]["error"].(map[string]string)["NotFount"])
+			err = errors.New(data.Lang["project"]["error"].(map[string]string)["NotFound"])
 			return
 		}
 	}
@@ -710,5 +711,87 @@ func get_story_view(data *TemplateData) (err error) {
 	data.Data["param"] = param
 	data.Data["actionFormLink"] = createLink("action", "comment", []interface{}{"objectType=story&objectID=", result.Story.Id})
 	templateOut("story.view.html", data)
+	return
+}
+func story_getProjectStoryPairs(data *TemplateData, projectID, productID, branch int32, moduleIdList []int32, Type string) (list []protocol.HtmlKeyValueStr, err error) {
+	out := protocol.GET_MSG_PROJECT_story_getProjectStoryPairs()
+	out.ProductID = productID
+	out.ProjectID = projectID
+	out.Branch = branch
+	out.ModuleIdList = moduleIdList
+
+	var result *protocol.MSG_PROJECT_story_getProjectStoryPairs_result
+	if err = data.SendMsgWaitResultToDefault(out, &result); err != nil {
+		return
+	}
+
+	out.Put()
+	result.Put()
+	return
+}
+func story_formatStories(data *TemplateData, stories []*protocol.MSG_PROJECT_TASK, Type string, limit int) (list []protocol.HtmlKeyValueStr) {
+	i := 0
+	buf := bufpool.Get().(*libraries.MsgBuffer)
+	for _, story := range stories {
+		i++
+		buf.WriteString(strconv.Itoa(int(story.Id)))
+		buf.WriteByte(':')
+		buf.WriteString(story.StoryTitle)
+		buf.WriteByte(' ')
+		if Type == "short" {
+			buf.WriteString("[p")
+			buf.WriteString(common_getValue(data.Lang["story"]["priList"], story.Pri).(string))
+			buf.WriteString(", ")
+			buf.WriteString(fmt.Sprintf("%.2f", story.Estimate))
+			buf.WriteString("h]")
+
+		} else {
+			buf.WriteString("(")
+			buf.WriteString(data.Lang["story"]["pri"].(string))
+			buf.WriteByte(':')
+			buf.WriteString(common_getValue(data.Lang["story"]["priList"], story.Pri).(string))
+			buf.WriteByte(',')
+			buf.WriteString(data.Lang["story"]["estimate"].(string))
+			buf.WriteString(fmt.Sprintf("%.2f", story.Estimate))
+			buf.WriteByte(')')
+
+		}
+		list = append(list, protocol.HtmlKeyValueStr{strconv.Itoa(int(story.Id)), buf.String()})
+		buf.Reset()
+		if limit > 0 && i > limit {
+			list = append(list, protocol.HtmlKeyValueStr{"showmore", data.Lang["common"]["more"].(string) + data.Lang["common"]["ellipsis"].(string)})
+
+			break
+		}
+	}
+	return
+}
+func get_story_ajaxGetProjectStories(data *TemplateData) (err error) {
+
+	id, _ := strconv.Atoi(data.ws.Query("moduleID"))
+	projectID, _ := strconv.Atoi(data.ws.Query("projectID"))
+	productID, _ := strconv.Atoi(data.ws.Query("productID"))
+	branch, _ := strconv.Atoi(data.ws.Query("branch"))
+	Type := data.ws.Query("type")
+	if Type == "" {
+		Type = "full"
+	}
+	var moduleIdList []int32
+	if id > 0 {
+		moduleID, err := tree_getStoryModule(data, int32(id))
+		if err != nil {
+			return err
+		}
+		moduleIdList = tree_getAllChildId(data, moduleID)
+	}
+	stories, err := story_getProjectStoryPairs(data, int32(projectID), int32(productID), int32(branch), moduleIdList, Type)
+	if err != nil {
+		return
+	}
+	storyName := "story"
+	if data.ws.Query("number") != "" {
+		storyName += "[" + data.ws.Query("number") + "]"
+	}
+	data.ws.WriteString(html_select(storyName, stories, data.ws.Query("storyID"), "class=form-control onchange=setStoryRelated("+data.ws.Query("number")+");"))
 	return
 }

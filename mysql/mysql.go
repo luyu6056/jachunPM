@@ -330,10 +330,10 @@ Retry:
 	if row.result_len == 0 {
 		return nil
 	}
-	if row.field_m[type_struct.Name()] == nil {
-		row.field_m[type_struct.Name()] = make(map[string]*Field_struct)
+
+	if field_m = db.StructKeyColumn[type_struct.Name()]; field_m == nil {
+		return errors.New("query未初始化的struct 名称 " + type_struct.Name())
 	}
-	field_m = row.field_m[type_struct.Name()]
 
 	var field_struct *Field_struct
 	var uint_ptr, offset uintptr
@@ -387,27 +387,17 @@ Retry:
 				}
 
 				if v, ok := field_m[*(*string)(unsafe.Pointer(&column.name))]; ok {
-					if v.Kind == reflect.Invalid {
+					if v.Field_t == nil {
 						continue
 					}
 					field_struct = v
 				} else {
-					real_key := string(column.name)
-
-					field, ok := type_struct.FieldByName(real_key)
-					if !ok {
-						field_m[real_key] = &Field_struct{Kind: reflect.Invalid}
-						continue
-					}
-					field_struct = &Field_struct{Offset: field.Offset, Kind: field.Type.Kind(), Field_t: field.Type}
-					if err := checkKind(field.Type.Kind()); err != nil {
-						return errors.New("不支持的类型，字段名称" + string(column.name) + "预计类型" + field_struct.Kind.String())
-					}
-					field_m[real_key] = field_struct
+					//DEBUG(type_struct.Name() + "未注册的字段" + string(column.name))
+					continue
 
 				}
 
-				switch field_struct.Kind {
+				switch field_struct.Field_t.Kind() {
 				case reflect.Int:
 					ii, _ := strconv.Atoi(*(*string)(unsafe.Pointer(&row.buffer)))
 					*((*int)(unsafe.Pointer(uint_ptr + field_struct.Offset))) = ii
@@ -507,27 +497,22 @@ Retry:
 				if ((nullMask[(i+2)>>3] >> uint((i+2)&7)) & 1) == 1 {
 					continue
 				}
-				if v, ok := field_m[*(*string)(unsafe.Pointer(&column.name))]; ok {
-					if v.Kind == reflect.Invalid {
+				if v, ok := field_m[string(column.name)]; ok {
+					if v.Field_t == nil {
 						binaryToStr(column, data, &pos, row) //跳过这段pos
 						continue
 					}
 					field_struct = v
 				} else {
-					real_key := string(column.name)
-					field, ok := type_struct.FieldByName(real_key)
-					if !ok {
-						field_m[real_key] = &Field_struct{Kind: reflect.Invalid}
-						binaryToStr(column, data, &pos, row) //跳过这段pos
-						continue
-					}
-					field_struct = &Field_struct{Offset: field.Offset, Kind: field.Type.Kind(), Field_t: field.Type}
-					if err := checkKind(field.Type.Kind()); err != nil {
-						return err
-					}
-					field_m[real_key] = field_struct
+					field_m[string(column.name)] = &Field_struct{}
+					binaryToStr(column, data, &pos, row) //跳过这段pos
+					continue
 				}
-				switch field_struct.Kind {
+				kind := field_struct.Field_t.Kind()
+				if err := checkKind(kind); err != nil {
+					return err
+				}
+				switch kind {
 				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Bool:
 					var u64 uint64
 					switch column.fieldtype {
@@ -594,7 +579,7 @@ Retry:
 					default:
 						return fmt.Errorf("unknown field type %d", columns[i].fieldtype)
 					}
-					switch field_struct.Kind {
+					switch kind {
 					case reflect.Int:
 						*((*int)(unsafe.Pointer(uint_ptr + field_struct.Offset))) = int(u64)
 					case reflect.Int8:
@@ -689,12 +674,12 @@ Retry:
 					default:
 						return fmt.Errorf("unknown field type %d", columns[i].fieldtype)
 					}
-					if field_struct.Kind == reflect.Float32 {
+					if kind == reflect.Float32 {
 						*((*float32)(unsafe.Pointer(uint_ptr + field_struct.Offset))) = float32(f)
 					} else {
 						*((*float64)(unsafe.Pointer(uint_ptr + field_struct.Offset))) = f
 					}
-				case reflect.String, reflect.Struct, reflect.Slice, reflect.Map:
+				case reflect.String, reflect.Struct, reflect.Slice, reflect.Map, reflect.Ptr:
 					str, err := binaryToStr(column, data, &pos, row)
 					if err != nil {
 						return errors.New("字段" + string(column.name) + "读取错误1" + err.Error())
@@ -702,24 +687,22 @@ Retry:
 					if str == "" || str == "NULL" {
 						continue
 					}
-					if field_struct.Kind == reflect.String {
+					if kind == reflect.String {
 						*((*string)(unsafe.Pointer(uint_ptr + field_struct.Offset))) = str
 						continue
 					}
 					switch {
-					case field_struct.Kind == reflect.Struct && field_struct.Field_t.String() == "time.Time":
+					case kind == reflect.Struct && field_struct.Field_t.String() == "time.Time":
 						var e error
 						*((*time.Time)(unsafe.Pointer(uint_ptr + field_struct.Offset))), e = time.ParseInLocation("2006-01-02 15:04:05", str, row.conn.loc)
 						if e != nil {
 							*((*time.Time)(unsafe.Pointer(uint_ptr + field_struct.Offset))), e = time.ParseInLocation("2006-01-02", str, row.conn.loc)
 						}
-					case field_struct.Kind == reflect.Ptr:
-						if *(*string)(unsafe.Pointer(&row.buffer)) != "NULL" {
-							if len(row.buffer) == 0 || (len(row.buffer) == 1 && row.buffer[0] == 0xC0) {
-								continue
-							}
+					case kind == reflect.Ptr:
+						if str != "NULL" {
+
 							field := reflect.New(field_struct.Field_t.Elem())
-							err = jsoniter.Unmarshal(row.buffer, field.Interface())
+							err = jsoniter.Unmarshal([]byte(str), field.Interface())
 							if err == nil {
 								*((*uintptr)(unsafe.Pointer(uint_ptr + field_struct.Offset))) = field.Pointer()
 							}
@@ -731,6 +714,9 @@ Retry:
 					if err != nil {
 						return errors.New("字段" + string(column.name) + ",原始值:" + str + "   json解析错误:" + err.Error())
 					}
+
+				default:
+					return errors.New("二进制 字段" + string(column.name) + "类型" + kind.String() + "无法处理")
 				}
 
 			}
@@ -906,7 +892,6 @@ func (this *Mysql) ShowColumns(table string, master string) map[string]Mysql_col
 var mysqlLoc = time.UTC
 
 func Open(dsn string) (*MysqlDB, error) {
-	db := &MysqlDB{}
 	var str [][]string
 	if str, _ = Preg_match_result(`([^:]+):([^@]*)@(tcp)?(unix)?\(([^)]*)\)\/([^?]+)(\?[^?]+)`, dsn, 1); len(str) == 0 {
 		log.Fatal("mysql初始化失败，解析连接字串错误" + dsn)
@@ -929,7 +914,8 @@ func Open(dsn string) (*MysqlDB, error) {
 			}
 		}
 	}
-	db = mysql_open(str[0][1], str[0][2], str[0][5], str[0][6], charset, mysqlLoc, nil)
+	db := mysql_open(str[0][1], str[0][2], str[0][5], str[0][6], charset, mysqlLoc, nil)
+	db.StructKeyColumn = make(map[string]map[string]*Field_struct)
 	return db, nil
 
 }
@@ -937,12 +923,37 @@ func (db *MysqlDB) StoreEngine(storeEngine string) *MysqlDB {
 	db.storeEngine.name = storeEngine
 	return db
 }
+func (db *MysqlDB) Regsiter(i ...interface{}) {
+	for _, v := range i {
+		r := reflect.TypeOf(v).Elem()
+		db.StructKeyColumn[r.Name()] = make(map[string]*Field_struct)
+		for i := 0; i < r.NumField(); i++ {
+			field := r.Field(i)
+			tag := field.Tag.Get("db")
+			if tag == "-" {
+				continue
+			}
+
+			ColumnName := field.Name
+			KeyName := Getkey(field.Name)
+			db.StructKeyColumn[r.Name()][field.Name] = &Field_struct{
+				ColumnName: ColumnName,
+				KeyName:    KeyName,
+				Offset:     field.Offset,
+				Field_t:    field.Type,
+			}
+
+		}
+	}
+
+}
 func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 
 	var default_engine string
 	var support_tokudb bool
 	var support_Archive bool
 	var support_Aria bool
+	var support_myRocks bool
 	res, err := db.QueryString("show engines")
 	if err != nil {
 		return []error{err}
@@ -954,6 +965,8 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 		switch v["Engine"] {
 		case "TokuDB":
 			support_tokudb = (v["Support"] == "DEFAULT" || v["Support"] == "YES")
+		case "ROCKSDB":
+			support_myRocks = (v["Support"] == "DEFAULT" || v["Support"] == "YES")
 		case "Archive":
 			support_Archive = (v["Support"] == "DEFAULT" || v["Support"] == "YES")
 		case "Aria":
@@ -965,7 +978,7 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 		db.storeEngine.name = default_engine
 	}
 	switch db.storeEngine.name {
-	case "Archive":
+	case "Archive", "archive":
 		switch {
 		case support_Archive:
 			db.storeEngine.name = "Archive"
@@ -976,7 +989,7 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 		default:
 			db.storeEngine.name = "MyISAM"
 		}
-	case "TokuDB":
+	case "TokuDB", "tokudb":
 		if !support_tokudb {
 			switch {
 			case support_Aria:
@@ -985,7 +998,13 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 				db.storeEngine.name = "MyISAM"
 			}
 		}
-	case "Aria":
+	case "MyRocks", "myrocks", "ROCKSDB", "rocksdb":
+		if !support_myRocks {
+			db.storeEngine.name = "MyISAM"
+		} else {
+			db.storeEngine.name = "ROCKSDB"
+		}
+	case "Aria", "aria":
 		if !support_Aria {
 			db.storeEngine.name = "MyISAM"
 		}
@@ -993,6 +1012,7 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 	var wg sync.WaitGroup
 	wg.Add(len(i))
 	for _, v := range i {
+		db.Regsiter(v)
 		go func(v interface{}) {
 			defer wg.Done()
 			buf := bytes.NewBuffer(nil)
@@ -1895,11 +1915,16 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 	return errs
 }
 
-//暂不处理，将来用来替换Mysql 关键字及保留字 相关信息https://www.cnblogs.com/wuyifu/p/5949764.html
+//用来替换Mysql 关键字及保留字 相关信息https://www.cnblogs.com/wuyifu/p/5949764.html
 func Getkey(str_i interface{}) string {
-	switch str_i.(type) {
+	switch v := str_i.(type) {
 	case string:
-		return str_i.(string)
+		switch strings.ToLower(v) {
+		case "group", "join", "on", "key", "select", "update", "where", "limit", "order", "insert", "into", "set", "left", "desc", "read":
+			return "`" + v + "`"
+		default:
+			return v
+		}
 	default:
 		r := reflect.TypeOf(str_i)
 		for r.Kind() == reflect.Ptr {
@@ -2042,10 +2067,12 @@ func GetvaluefromPtr(ptr uintptr, field reflect.StructField) string {
 				return "NULL"
 			}
 		}
+
+		i := reflect.NewAt(t, unsafe.Pointer(ptr+field.Offset))
 		for t.Kind() == reflect.Ptr {
 			t = t.Elem()
 		}
-		i := reflect.NewAt(t, unsafe.Pointer(ptr+field.Offset))
+
 		switch t.Kind() {
 		case reflect.Map:
 			if i.Elem().Len() == 0 {

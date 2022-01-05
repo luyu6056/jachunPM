@@ -22,7 +22,7 @@ func Init() *mysql.MysqlDB {
 	if err = db.Ping(); err != nil {
 		log.Fatalf("数据库启动失败 %v", err)
 	}
-	errs := db.StoreEngine("TokuDB").Sync2(
+	errs := db.StoreEngine("MyRocks").Sync2(
 		new(Log_msg),
 	)
 	if errs != nil {

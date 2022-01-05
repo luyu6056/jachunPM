@@ -1,0 +1,69 @@
+{{template "header.html" .}}
+{{template "kindeditor.html" .}}
+{{template "datepicker.html" .}}
+<script type="text/javascript">
+  confirmFinish={{.Lang.task.confirmFinish}};
+</script> 
+<div id='mainContent' class='main-content'>
+  
+  {{if and ($.Data.task.Team) (ne $.Data.task.AssignedTo $.User.Id)}}
+  
+  <div class="alert with-icon">
+    <i class="icon-exclamation-sign"></i>
+    <div class="content">
+      <p>{{printf .Lang.task.deniedNotice (strAdd "<strong>"  $.Data.task.AssignedToRealName  "</strong>") .Lang.task.start}}</p>
+    </div>
+  </div>
+  {{else}}
+  <div class='center-block'>
+    <div class='main-header'>
+      <h2>
+        <span class='label label-id'>{{$.Data.task.Id}}</span>
+        {{if $.App.onlybody}}<span title='$.Data.task.Name'>{{$.Data.task.Name}}</span>{{else}}{{html_a (helper_createLink "task" "view"  "task=" $.Data.task.Id)  $.Data.task.Name}}{{end}}
+        {{if not $.App.onlybody}}
+        <small>{{.Lang.common.arrow}}{{.Lang.task.start}}</small>
+        {{end}}
+      </div>
+    </div>
+    <form method='post' target='hiddenwin' onsubmit='return checkLeft();'>
+      <table class='table table-form'>
+        <tr>
+          <th class='w-80px'>{{.Lang.task.realStarted}}</th>
+          <td class='w-p25-f'><div class='datepicker-wrapper datepicker-date'>{{html_input "realStarted" .Data.RealStarted "class='form-control form-date' data-picker-position='bottom-right'"}}</div></td>
+          <td></td>
+        </tr>  
+        <tr>
+          <th>{{.Lang.task.consumed}}</th>
+          <td>
+            <div class='input-group'>
+              
+              {{html_input "consumed"  $.Data.Consumed  "class='form-control' autocomplete='off'"}} <span class='input-group-addon'>{{.Lang.task.hour}}</span>
+            </div>
+          </td>
+        </tr>  
+        <tr>
+          <th>{{.Lang.task.left}}</th>
+          <td>
+            <div class='input-group'>
+              {{html_input "left"  $.Data.Left  "class='form-control' autocomplete='off'"}} <span class='input-group-addon'>{{.Lang.task.hour}}</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <th>{{.Lang.common.comment}}</th>
+          <td colspan='2'>{{html_textarea "comment" ""  "rows='6' class='form-control'"}}</td>
+        </tr>
+        <tr>
+          <td colspan='3' class='text-center form-actions'>
+            {{html_submitButton . .Lang.task.start}}
+            {{html_linkButton . .Lang.common.goback  (session . "taskList") "self" "" "btn btn-wide"}}
+          </td>
+        </tr>
+      </table>
+    </form>
+    <hr class='small' />
+    <div class='main'>{{template "action.html" .}}</div>
+  </div>
+  {{end}}
+</div>
+{{template "footer.html" .}}

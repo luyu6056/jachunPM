@@ -46,6 +46,8 @@ const (
 	CMD_MSG_USER_getGlobalContacts_result = -1400001276
 	CMD_MSG_USER_team_getByTypeRoot = -1425965820
 	CMD_MSG_USER_team_getByTypeRoot_result = -446270460
+	CMD_MSG_USER_team_getByIds = 905195012
+	CMD_MSG_USER_team_getByIds_result = -1549135356
 	CMD_MSG_USER_team_info = 362981380
 	CMD_MSG_USER_team_addByList = 870918148
 	CMD_MSG_USER_Group_getPairs = 1806051844
@@ -55,10 +57,13 @@ const (
 	CMD_MSG_USER_Userquery_info = 775618820
 	CMD_MSG_USER_user_getUserqueryByWhere = -1330589692
 	CMD_MSG_USER_user_getUserqueryByWhere_result = 1709400580
+	CMD_MSG_USER_team_getMemberPairsByTypeRoot = -261057276
+	CMD_MSG_USER_team_getMemberPairsByTypeRoot_result = 341559300
+	CMD_MSG_USER_team_updateByWhere = 134391300
+	CMD_MSG_USER_config_save = -942650620
 )
 
 type MSG_USER_GET_LoginSalt struct {
-	QueryID uint32
 	Name string
 }
 
@@ -73,7 +78,6 @@ func (data *MSG_USER_GET_LoginSalt) cmd() int32 {
 }
 
 func (data *MSG_USER_GET_LoginSalt) Put() {
-	data.QueryID = 0
 	data.Name = ``
 	pool_MSG_USER_GET_LoginSalt.Put(data)
 }
@@ -83,7 +87,6 @@ func (data *MSG_USER_GET_LoginSalt) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_GET_LoginSalt(data *MSG_USER_GET_LoginSalt, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 	WRITE_string(data.Name, buf)
 }
 
@@ -94,19 +97,11 @@ func READ_MSG_USER_GET_LoginSalt(buf *libraries.MsgBuffer) *MSG_USER_GET_LoginSa
 }
 
 func (data *MSG_USER_GET_LoginSalt) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 	data.Name = READ_string(buf)
 
 }
-func (data *MSG_USER_GET_LoginSalt) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_GET_LoginSalt) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_USER_GET_LoginSalt_result struct {
-	QueryResultID uint32
 	Salt string
 }
 
@@ -121,7 +116,6 @@ func (data *MSG_USER_GET_LoginSalt_result) cmd() int32 {
 }
 
 func (data *MSG_USER_GET_LoginSalt_result) Put() {
-	data.QueryResultID = 0
 	data.Salt = ``
 	pool_MSG_USER_GET_LoginSalt_result.Put(data)
 }
@@ -131,7 +125,6 @@ func (data *MSG_USER_GET_LoginSalt_result) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_GET_LoginSalt_result(data *MSG_USER_GET_LoginSalt_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
 	WRITE_string(data.Salt, buf)
 }
 
@@ -142,15 +135,8 @@ func READ_MSG_USER_GET_LoginSalt_result(buf *libraries.MsgBuffer) *MSG_USER_GET_
 }
 
 func (data *MSG_USER_GET_LoginSalt_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
 	data.Salt = READ_string(buf)
 
-}
-func (data *MSG_USER_GET_LoginSalt_result) getQueryResultID() uint32 {
-	return data.QueryResultID
-}
-func (data *MSG_USER_GET_LoginSalt_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
 }
 
 type MSG_USER_INFO_cache struct {
@@ -179,6 +165,7 @@ type MSG_USER_INFO_cache struct {
 	AclProducts map[int32]bool
 	AclProjects map[int32]bool
 	IsAdmin bool `db:"-"`
+	Config map[string]map[string]map[string]string `db:"-"`
 }
 
 var pool_MSG_USER_INFO_cache = sync.Pool{New: func() interface{} { return &MSG_USER_INFO_cache{} }}
@@ -217,6 +204,7 @@ func (data *MSG_USER_INFO_cache) Put() {
 	data.AclProducts = nil
 	data.AclProjects = nil
 	data.IsAdmin = false
+	data.Config = nil
 	pool_MSG_USER_INFO_cache.Put(data)
 }
 func (data *MSG_USER_INFO_cache) write(buf *libraries.MsgBuffer) {
@@ -230,7 +218,7 @@ func WRITE_MSG_USER_INFO_cache(data *MSG_USER_INFO_cache, buf *libraries.MsgBuff
 	WRITE_string(data.Account, buf)
 	WRITE_string(data.Role, buf)
 	WRITE_string(data.Realname, buf)
-	WRITE_int32(int32(len(data.Group)), buf)
+	WRITE_int(len(data.Group), buf)
 	for _, v := range data.Group{
 		WRITE_int32(v, buf)
 	}
@@ -253,6 +241,7 @@ func WRITE_MSG_USER_INFO_cache(data *MSG_USER_INFO_cache, buf *libraries.MsgBuff
 	WRITE_map(data.AclProducts,buf)
 	WRITE_map(data.AclProjects,buf)
 	WRITE_bool(data.IsAdmin, buf)
+	WRITE_map(data.Config,buf)
 }
 
 func READ_MSG_USER_INFO_cache(buf *libraries.MsgBuffer) *MSG_USER_INFO_cache {
@@ -267,7 +256,7 @@ func (data *MSG_USER_INFO_cache) read(buf *libraries.MsgBuffer) {
 	data.Account = READ_string(buf)
 	data.Role = READ_string(buf)
 	data.Realname = READ_string(buf)
-	Group_len := int(READ_int32(buf))
+	Group_len := READ_int(buf)
 	if Group_len>cap(data.Group){
 		data.Group= make([]int32, Group_len)
 	}else{
@@ -295,11 +284,11 @@ func (data *MSG_USER_INFO_cache) read(buf *libraries.MsgBuffer) {
 	READ_map(&data.AclProducts,buf)
 	READ_map(&data.AclProjects,buf)
 	data.IsAdmin = READ_bool(buf)
+	READ_map(&data.Config,buf)
 
 }
 
 type MSG_USER_CheckPasswd struct {
-	QueryID uint32
 	UserId int32
 	Name string
 	Rand int64
@@ -317,7 +306,6 @@ func (data *MSG_USER_CheckPasswd) cmd() int32 {
 }
 
 func (data *MSG_USER_CheckPasswd) Put() {
-	data.QueryID = 0
 	data.UserId = 0
 	data.Name = ``
 	data.Rand = 0
@@ -330,7 +318,6 @@ func (data *MSG_USER_CheckPasswd) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_CheckPasswd(data *MSG_USER_CheckPasswd, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 	WRITE_int32(data.UserId, buf)
 	WRITE_string(data.Name, buf)
 	WRITE_int64(data.Rand, buf)
@@ -344,22 +331,14 @@ func READ_MSG_USER_CheckPasswd(buf *libraries.MsgBuffer) *MSG_USER_CheckPasswd {
 }
 
 func (data *MSG_USER_CheckPasswd) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 	data.UserId = READ_int32(buf)
 	data.Name = READ_string(buf)
 	data.Rand = READ_int64(buf)
 	data.Passwd = READ_string(buf)
 
 }
-func (data *MSG_USER_CheckPasswd) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_CheckPasswd) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_USER_CheckPasswd_result struct {
-	QueryResultID uint32
 	UserId int32
 	Result ErrCode
 }
@@ -375,7 +354,6 @@ func (data *MSG_USER_CheckPasswd_result) cmd() int32 {
 }
 
 func (data *MSG_USER_CheckPasswd_result) Put() {
-	data.QueryResultID = 0
 	data.UserId = 0
 	data.Result = 0
 	pool_MSG_USER_CheckPasswd_result.Put(data)
@@ -386,7 +364,6 @@ func (data *MSG_USER_CheckPasswd_result) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_CheckPasswd_result(data *MSG_USER_CheckPasswd_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
 	WRITE_int32(data.UserId, buf)
 	WRITE_ErrCode(data.Result, buf)
 }
@@ -398,16 +375,9 @@ func READ_MSG_USER_CheckPasswd_result(buf *libraries.MsgBuffer) *MSG_USER_CheckP
 }
 
 func (data *MSG_USER_CheckPasswd_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
 	data.UserId = READ_int32(buf)
 	data.Result = READ_ErrCode(buf)
 
-}
-func (data *MSG_USER_CheckPasswd_result) getQueryResultID() uint32 {
-	return data.QueryResultID
-}
-func (data *MSG_USER_CheckPasswd_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
 }
 
 type MSG_USER_Company_cache struct {
@@ -460,7 +430,7 @@ func WRITE_MSG_USER_Company_cache(data *MSG_USER_Company_cache, buf *libraries.M
 	WRITE_string(data.Zipcode, buf)
 	WRITE_string(data.Website, buf)
 	WRITE_string(data.Backyard, buf)
-	WRITE_int32(int32(len(data.Admins)), buf)
+	WRITE_int(len(data.Admins), buf)
 	for _, v := range data.Admins{
 		WRITE_string(v, buf)
 	}
@@ -482,7 +452,7 @@ func (data *MSG_USER_Company_cache) read(buf *libraries.MsgBuffer) {
 	data.Zipcode = READ_string(buf)
 	data.Website = READ_string(buf)
 	data.Backyard = READ_string(buf)
-	Admins_len := int(READ_int32(buf))
+	Admins_len := READ_int(buf)
 	if Admins_len>cap(data.Admins){
 		data.Admins= make([]string, Admins_len)
 	}else{
@@ -541,7 +511,7 @@ func WRITE_MSG_USER_Dept_cache(data *MSG_USER_Dept_cache, buf *libraries.MsgBuff
 	WRITE_int32(data.Id, buf)
 	WRITE_string(data.Name, buf)
 	WRITE_int32(data.Parent, buf)
-	WRITE_int32(int32(len(data.Path)), buf)
+	WRITE_int(len(data.Path), buf)
 	for _, v := range data.Path{
 		WRITE_int32(v, buf)
 	}
@@ -549,7 +519,7 @@ func WRITE_MSG_USER_Dept_cache(data *MSG_USER_Dept_cache, buf *libraries.MsgBuff
 	WRITE_int8(data.Order, buf)
 	WRITE_int32(data.Manager, buf)
 	WRITE_string(data.ManagerName, buf)
-	WRITE_int32(int32(len(data.Children)), buf)
+	WRITE_int(len(data.Children), buf)
 	for _, v := range data.Children{
 		WRITE_MSG_USER_Dept_cache(v, buf)
 	}
@@ -565,7 +535,7 @@ func (data *MSG_USER_Dept_cache) read(buf *libraries.MsgBuffer) {
 	data.Id = READ_int32(buf)
 	data.Name = READ_string(buf)
 	data.Parent = READ_int32(buf)
-	Path_len := int(READ_int32(buf))
+	Path_len := READ_int(buf)
 	if Path_len>cap(data.Path){
 		data.Path= make([]int32, Path_len)
 	}else{
@@ -578,7 +548,7 @@ func (data *MSG_USER_Dept_cache) read(buf *libraries.MsgBuffer) {
 	data.Order = READ_int8(buf)
 	data.Manager = READ_int32(buf)
 	data.ManagerName = READ_string(buf)
-	Children_len := int(READ_int32(buf))
+	Children_len := READ_int(buf)
 	if Children_len>cap(data.Children){
 		data.Children= make([]*MSG_USER_Dept_cache, Children_len)
 	}else{
@@ -591,7 +561,6 @@ func (data *MSG_USER_Dept_cache) read(buf *libraries.MsgBuffer) {
 }
 
 type MSG_USER_Dept_getParents struct {
-	QueryID uint32
 	Id int32
 }
 
@@ -606,7 +575,6 @@ func (data *MSG_USER_Dept_getParents) cmd() int32 {
 }
 
 func (data *MSG_USER_Dept_getParents) Put() {
-	data.QueryID = 0
 	data.Id = 0
 	pool_MSG_USER_Dept_getParents.Put(data)
 }
@@ -616,7 +584,6 @@ func (data *MSG_USER_Dept_getParents) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_Dept_getParents(data *MSG_USER_Dept_getParents, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 	WRITE_int32(data.Id, buf)
 }
 
@@ -627,19 +594,11 @@ func READ_MSG_USER_Dept_getParents(buf *libraries.MsgBuffer) *MSG_USER_Dept_getP
 }
 
 func (data *MSG_USER_Dept_getParents) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 	data.Id = READ_int32(buf)
 
 }
-func (data *MSG_USER_Dept_getParents) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_Dept_getParents) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_USER_Dept_getParents_result struct {
-	QueryResultID uint32
 	List []*MSG_USER_Dept_cache
 }
 
@@ -654,7 +613,6 @@ func (data *MSG_USER_Dept_getParents_result) cmd() int32 {
 }
 
 func (data *MSG_USER_Dept_getParents_result) Put() {
-	data.QueryResultID = 0
 	for _,v := range data.List {
 		v.Put()
 	}
@@ -667,8 +625,7 @@ func (data *MSG_USER_Dept_getParents_result) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_Dept_getParents_result(data *MSG_USER_Dept_getParents_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
-	WRITE_int32(int32(len(data.List)), buf)
+	WRITE_int(len(data.List), buf)
 	for _, v := range data.List{
 		WRITE_MSG_USER_Dept_cache(v, buf)
 	}
@@ -681,8 +638,7 @@ func READ_MSG_USER_Dept_getParents_result(buf *libraries.MsgBuffer) *MSG_USER_De
 }
 
 func (data *MSG_USER_Dept_getParents_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
-	List_len := int(READ_int32(buf))
+	List_len := READ_int(buf)
 	if List_len>cap(data.List){
 		data.List= make([]*MSG_USER_Dept_cache, List_len)
 	}else{
@@ -693,15 +649,8 @@ func (data *MSG_USER_Dept_getParents_result) read(buf *libraries.MsgBuffer) {
 	}
 
 }
-func (data *MSG_USER_Dept_getParents_result) getQueryResultID() uint32 {
-	return data.QueryResultID
-}
-func (data *MSG_USER_Dept_getParents_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
-}
 
 type MSG_USER_Dept_getDataStructure struct {
-	QueryID uint32
 	RootDeptID int32
 }
 
@@ -716,7 +665,6 @@ func (data *MSG_USER_Dept_getDataStructure) cmd() int32 {
 }
 
 func (data *MSG_USER_Dept_getDataStructure) Put() {
-	data.QueryID = 0
 	data.RootDeptID = 0
 	pool_MSG_USER_Dept_getDataStructure.Put(data)
 }
@@ -726,7 +674,6 @@ func (data *MSG_USER_Dept_getDataStructure) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_Dept_getDataStructure(data *MSG_USER_Dept_getDataStructure, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 	WRITE_int32(data.RootDeptID, buf)
 }
 
@@ -737,19 +684,11 @@ func READ_MSG_USER_Dept_getDataStructure(buf *libraries.MsgBuffer) *MSG_USER_Dep
 }
 
 func (data *MSG_USER_Dept_getDataStructure) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 	data.RootDeptID = READ_int32(buf)
 
 }
-func (data *MSG_USER_Dept_getDataStructure) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_Dept_getDataStructure) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_USER_Dept_getDataStructure_result struct {
-	QueryResultID uint32
 	List []*MSG_USER_Dept_cache
 }
 
@@ -764,7 +703,6 @@ func (data *MSG_USER_Dept_getDataStructure_result) cmd() int32 {
 }
 
 func (data *MSG_USER_Dept_getDataStructure_result) Put() {
-	data.QueryResultID = 0
 	for _,v := range data.List {
 		v.Put()
 	}
@@ -777,8 +715,7 @@ func (data *MSG_USER_Dept_getDataStructure_result) write(buf *libraries.MsgBuffe
 }
 
 func WRITE_MSG_USER_Dept_getDataStructure_result(data *MSG_USER_Dept_getDataStructure_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
-	WRITE_int32(int32(len(data.List)), buf)
+	WRITE_int(len(data.List), buf)
 	for _, v := range data.List{
 		WRITE_MSG_USER_Dept_cache(v, buf)
 	}
@@ -791,8 +728,7 @@ func READ_MSG_USER_Dept_getDataStructure_result(buf *libraries.MsgBuffer) *MSG_U
 }
 
 func (data *MSG_USER_Dept_getDataStructure_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
-	List_len := int(READ_int32(buf))
+	List_len := READ_int(buf)
 	if List_len>cap(data.List){
 		data.List= make([]*MSG_USER_Dept_cache, List_len)
 	}else{
@@ -803,15 +739,8 @@ func (data *MSG_USER_Dept_getDataStructure_result) read(buf *libraries.MsgBuffer
 	}
 
 }
-func (data *MSG_USER_Dept_getDataStructure_result) getQueryResultID() uint32 {
-	return data.QueryResultID
-}
-func (data *MSG_USER_Dept_getDataStructure_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
-}
 
 type MSG_USER_Dept_update struct {
-	QueryID uint32
 	List []*MSG_USER_Dept_cache
 }
 
@@ -826,7 +755,6 @@ func (data *MSG_USER_Dept_update) cmd() int32 {
 }
 
 func (data *MSG_USER_Dept_update) Put() {
-	data.QueryID = 0
 	for _,v := range data.List {
 		v.Put()
 	}
@@ -839,8 +767,7 @@ func (data *MSG_USER_Dept_update) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_Dept_update(data *MSG_USER_Dept_update, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
-	WRITE_int32(int32(len(data.List)), buf)
+	WRITE_int(len(data.List), buf)
 	for _, v := range data.List{
 		WRITE_MSG_USER_Dept_cache(v, buf)
 	}
@@ -853,8 +780,7 @@ func READ_MSG_USER_Dept_update(buf *libraries.MsgBuffer) *MSG_USER_Dept_update {
 }
 
 func (data *MSG_USER_Dept_update) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
-	List_len := int(READ_int32(buf))
+	List_len := READ_int(buf)
 	if List_len>cap(data.List){
 		data.List= make([]*MSG_USER_Dept_cache, List_len)
 	}else{
@@ -865,15 +791,8 @@ func (data *MSG_USER_Dept_update) read(buf *libraries.MsgBuffer) {
 	}
 
 }
-func (data *MSG_USER_Dept_update) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_Dept_update) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_USER_Dept_delete struct {
-	QueryID uint32
 	DeptId int32
 }
 
@@ -888,7 +807,6 @@ func (data *MSG_USER_Dept_delete) cmd() int32 {
 }
 
 func (data *MSG_USER_Dept_delete) Put() {
-	data.QueryID = 0
 	data.DeptId = 0
 	pool_MSG_USER_Dept_delete.Put(data)
 }
@@ -898,7 +816,6 @@ func (data *MSG_USER_Dept_delete) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_Dept_delete(data *MSG_USER_Dept_delete, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 	WRITE_int32(data.DeptId, buf)
 }
 
@@ -909,19 +826,11 @@ func READ_MSG_USER_Dept_delete(buf *libraries.MsgBuffer) *MSG_USER_Dept_delete {
 }
 
 func (data *MSG_USER_Dept_delete) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 	data.DeptId = READ_int32(buf)
 
 }
-func (data *MSG_USER_Dept_delete) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_Dept_delete) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_USER_Dept_delete_result struct {
-	QueryResultID uint32
 	Result ErrCode
 }
 
@@ -936,7 +845,6 @@ func (data *MSG_USER_Dept_delete_result) cmd() int32 {
 }
 
 func (data *MSG_USER_Dept_delete_result) Put() {
-	data.QueryResultID = 0
 	data.Result = 0
 	pool_MSG_USER_Dept_delete_result.Put(data)
 }
@@ -946,7 +854,6 @@ func (data *MSG_USER_Dept_delete_result) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_Dept_delete_result(data *MSG_USER_Dept_delete_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
 	WRITE_ErrCode(data.Result, buf)
 }
 
@@ -957,15 +864,8 @@ func READ_MSG_USER_Dept_delete_result(buf *libraries.MsgBuffer) *MSG_USER_Dept_d
 }
 
 func (data *MSG_USER_Dept_delete_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
 	data.Result = READ_ErrCode(buf)
 
-}
-func (data *MSG_USER_Dept_delete_result) getQueryResultID() uint32 {
-	return data.QueryResultID
-}
-func (data *MSG_USER_Dept_delete_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
 }
 
 type MSG_USER_Pairs struct {
@@ -1015,7 +915,6 @@ func (data *MSG_USER_Pairs) read(buf *libraries.MsgBuffer) {
 }
 
 type MSG_USER_getDeptUserPairs struct {
-	QueryID uint32
 	DeptId int32
 }
 
@@ -1030,7 +929,6 @@ func (data *MSG_USER_getDeptUserPairs) cmd() int32 {
 }
 
 func (data *MSG_USER_getDeptUserPairs) Put() {
-	data.QueryID = 0
 	data.DeptId = 0
 	pool_MSG_USER_getDeptUserPairs.Put(data)
 }
@@ -1040,7 +938,6 @@ func (data *MSG_USER_getDeptUserPairs) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_getDeptUserPairs(data *MSG_USER_getDeptUserPairs, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 	WRITE_int32(data.DeptId, buf)
 }
 
@@ -1051,19 +948,11 @@ func READ_MSG_USER_getDeptUserPairs(buf *libraries.MsgBuffer) *MSG_USER_getDeptU
 }
 
 func (data *MSG_USER_getDeptUserPairs) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 	data.DeptId = READ_int32(buf)
 
 }
-func (data *MSG_USER_getDeptUserPairs) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_getDeptUserPairs) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_USER_getDeptUserPairs_result struct {
-	QueryResultID uint32
 	List []*MSG_USER_Pairs
 }
 
@@ -1078,7 +967,6 @@ func (data *MSG_USER_getDeptUserPairs_result) cmd() int32 {
 }
 
 func (data *MSG_USER_getDeptUserPairs_result) Put() {
-	data.QueryResultID = 0
 	for _,v := range data.List {
 		v.Put()
 	}
@@ -1091,8 +979,7 @@ func (data *MSG_USER_getDeptUserPairs_result) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_getDeptUserPairs_result(data *MSG_USER_getDeptUserPairs_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
-	WRITE_int32(int32(len(data.List)), buf)
+	WRITE_int(len(data.List), buf)
 	for _, v := range data.List{
 		WRITE_MSG_USER_Pairs(v, buf)
 	}
@@ -1105,8 +992,7 @@ func READ_MSG_USER_getDeptUserPairs_result(buf *libraries.MsgBuffer) *MSG_USER_g
 }
 
 func (data *MSG_USER_getDeptUserPairs_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
-	List_len := int(READ_int32(buf))
+	List_len := READ_int(buf)
 	if List_len>cap(data.List){
 		data.List= make([]*MSG_USER_Pairs, List_len)
 	}else{
@@ -1117,15 +1003,8 @@ func (data *MSG_USER_getDeptUserPairs_result) read(buf *libraries.MsgBuffer) {
 	}
 
 }
-func (data *MSG_USER_getDeptUserPairs_result) getQueryResultID() uint32 {
-	return data.QueryResultID
-}
-func (data *MSG_USER_getDeptUserPairs_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
-}
 
 type MSG_USER_getCompanyUsers struct {
-	QueryID uint32
 	Type string
 	Query string
 	DeptID int32
@@ -1147,7 +1026,6 @@ func (data *MSG_USER_getCompanyUsers) cmd() int32 {
 }
 
 func (data *MSG_USER_getCompanyUsers) Put() {
-	data.QueryID = 0
 	data.Type = ``
 	data.Query = ``
 	data.DeptID = 0
@@ -1164,7 +1042,6 @@ func (data *MSG_USER_getCompanyUsers) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_getCompanyUsers(data *MSG_USER_getCompanyUsers, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 	WRITE_string(data.Type, buf)
 	WRITE_string(data.Query, buf)
 	WRITE_int32(data.DeptID, buf)
@@ -1182,7 +1059,6 @@ func READ_MSG_USER_getCompanyUsers(buf *libraries.MsgBuffer) *MSG_USER_getCompan
 }
 
 func (data *MSG_USER_getCompanyUsers) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 	data.Type = READ_string(buf)
 	data.Query = READ_string(buf)
 	data.DeptID = READ_int32(buf)
@@ -1193,15 +1069,8 @@ func (data *MSG_USER_getCompanyUsers) read(buf *libraries.MsgBuffer) {
 	data.Total = READ_int(buf)
 
 }
-func (data *MSG_USER_getCompanyUsers) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_getCompanyUsers) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_USER_getCompanyUsers_result struct {
-	QueryResultID uint32
 	List []*MSG_USER_INFO_cache
 	Total int
 }
@@ -1217,7 +1086,6 @@ func (data *MSG_USER_getCompanyUsers_result) cmd() int32 {
 }
 
 func (data *MSG_USER_getCompanyUsers_result) Put() {
-	data.QueryResultID = 0
 	for _,v := range data.List {
 		v.Put()
 	}
@@ -1231,8 +1099,7 @@ func (data *MSG_USER_getCompanyUsers_result) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_getCompanyUsers_result(data *MSG_USER_getCompanyUsers_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
-	WRITE_int32(int32(len(data.List)), buf)
+	WRITE_int(len(data.List), buf)
 	for _, v := range data.List{
 		WRITE_MSG_USER_INFO_cache(v, buf)
 	}
@@ -1246,8 +1113,7 @@ func READ_MSG_USER_getCompanyUsers_result(buf *libraries.MsgBuffer) *MSG_USER_ge
 }
 
 func (data *MSG_USER_getCompanyUsers_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
-	List_len := int(READ_int32(buf))
+	List_len := READ_int(buf)
 	if List_len>cap(data.List){
 		data.List= make([]*MSG_USER_INFO_cache, List_len)
 	}else{
@@ -1258,12 +1124,6 @@ func (data *MSG_USER_getCompanyUsers_result) read(buf *libraries.MsgBuffer) {
 	}
 	data.Total = READ_int(buf)
 
-}
-func (data *MSG_USER_getCompanyUsers_result) getQueryResultID() uint32 {
-	return data.QueryResultID
-}
-func (data *MSG_USER_getCompanyUsers_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
 }
 
 type MSG_USER_Group_cache struct {
@@ -1310,15 +1170,15 @@ func WRITE_MSG_USER_Group_cache(data *MSG_USER_Group_cache, buf *libraries.MsgBu
 	WRITE_string(data.Name, buf)
 	WRITE_string(data.Role, buf)
 	WRITE_string(data.Desc, buf)
-	WRITE_int32(int32(len(data.Acl)), buf)
+	WRITE_int(len(data.Acl), buf)
 	for _, v := range data.Acl{
 		WRITE_string(v, buf)
 	}
-	WRITE_int32(int32(len(data.AclProducts)), buf)
+	WRITE_int(len(data.AclProducts), buf)
 	for _, v := range data.AclProducts{
 		WRITE_int32(v, buf)
 	}
-	WRITE_int32(int32(len(data.AclProjects)), buf)
+	WRITE_int(len(data.AclProjects), buf)
 	for _, v := range data.AclProjects{
 		WRITE_int32(v, buf)
 	}
@@ -1337,7 +1197,7 @@ func (data *MSG_USER_Group_cache) read(buf *libraries.MsgBuffer) {
 	data.Name = READ_string(buf)
 	data.Role = READ_string(buf)
 	data.Desc = READ_string(buf)
-	Acl_len := int(READ_int32(buf))
+	Acl_len := READ_int(buf)
 	if Acl_len>cap(data.Acl){
 		data.Acl= make([]string, Acl_len)
 	}else{
@@ -1346,7 +1206,7 @@ func (data *MSG_USER_Group_cache) read(buf *libraries.MsgBuffer) {
 	for i := 0; i < Acl_len; i++ {
 		data.Acl[i] = READ_string(buf)
 	}
-	AclProducts_len := int(READ_int32(buf))
+	AclProducts_len := READ_int(buf)
 	if AclProducts_len>cap(data.AclProducts){
 		data.AclProducts= make([]int32, AclProducts_len)
 	}else{
@@ -1355,7 +1215,7 @@ func (data *MSG_USER_Group_cache) read(buf *libraries.MsgBuffer) {
 	for i := 0; i < AclProducts_len; i++ {
 		data.AclProducts[i] = READ_int32(buf)
 	}
-	AclProjects_len := int(READ_int32(buf))
+	AclProjects_len := READ_int(buf)
 	if AclProjects_len>cap(data.AclProjects){
 		data.AclProjects= make([]int32, AclProjects_len)
 	}else{
@@ -1370,7 +1230,6 @@ func (data *MSG_USER_Group_cache) read(buf *libraries.MsgBuffer) {
 }
 
 type MSG_USER_INFO_updateByID struct {
-	QueryID uint32
 	UserID int32
 	Update map[string]string
 }
@@ -1386,7 +1245,6 @@ func (data *MSG_USER_INFO_updateByID) cmd() int32 {
 }
 
 func (data *MSG_USER_INFO_updateByID) Put() {
-	data.QueryID = 0
 	data.UserID = 0
 	data.Update = nil
 	pool_MSG_USER_INFO_updateByID.Put(data)
@@ -1397,7 +1255,6 @@ func (data *MSG_USER_INFO_updateByID) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_INFO_updateByID(data *MSG_USER_INFO_updateByID, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 	WRITE_int32(data.UserID, buf)
 	WRITE_map(data.Update,buf)
 }
@@ -1409,20 +1266,12 @@ func READ_MSG_USER_INFO_updateByID(buf *libraries.MsgBuffer) *MSG_USER_INFO_upda
 }
 
 func (data *MSG_USER_INFO_updateByID) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 	data.UserID = READ_int32(buf)
 	READ_map(&data.Update,buf)
 
 }
-func (data *MSG_USER_INFO_updateByID) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_INFO_updateByID) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_USER_CheckAccount struct {
-	QueryID uint32
 	Account string
 }
 
@@ -1437,7 +1286,6 @@ func (data *MSG_USER_CheckAccount) cmd() int32 {
 }
 
 func (data *MSG_USER_CheckAccount) Put() {
-	data.QueryID = 0
 	data.Account = ``
 	pool_MSG_USER_CheckAccount.Put(data)
 }
@@ -1447,7 +1295,6 @@ func (data *MSG_USER_CheckAccount) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_CheckAccount(data *MSG_USER_CheckAccount, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 	WRITE_string(data.Account, buf)
 }
 
@@ -1458,19 +1305,11 @@ func READ_MSG_USER_CheckAccount(buf *libraries.MsgBuffer) *MSG_USER_CheckAccount
 }
 
 func (data *MSG_USER_CheckAccount) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 	data.Account = READ_string(buf)
 
 }
-func (data *MSG_USER_CheckAccount) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_CheckAccount) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_USER_CheckAccount_result struct {
-	QueryResultID uint32
 	Result ErrCode
 }
 
@@ -1485,7 +1324,6 @@ func (data *MSG_USER_CheckAccount_result) cmd() int32 {
 }
 
 func (data *MSG_USER_CheckAccount_result) Put() {
-	data.QueryResultID = 0
 	data.Result = 0
 	pool_MSG_USER_CheckAccount_result.Put(data)
 }
@@ -1495,7 +1333,6 @@ func (data *MSG_USER_CheckAccount_result) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_CheckAccount_result(data *MSG_USER_CheckAccount_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
 	WRITE_ErrCode(data.Result, buf)
 }
 
@@ -1506,19 +1343,11 @@ func READ_MSG_USER_CheckAccount_result(buf *libraries.MsgBuffer) *MSG_USER_Check
 }
 
 func (data *MSG_USER_CheckAccount_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
 	data.Result = READ_ErrCode(buf)
 
 }
-func (data *MSG_USER_CheckAccount_result) getQueryResultID() uint32 {
-	return data.QueryResultID
-}
-func (data *MSG_USER_CheckAccount_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
-}
 
 type MSG_USER_getPairs struct {
-	QueryID uint32
 	Params string
 	UsersToAppended int32
 }
@@ -1534,7 +1363,6 @@ func (data *MSG_USER_getPairs) cmd() int32 {
 }
 
 func (data *MSG_USER_getPairs) Put() {
-	data.QueryID = 0
 	data.Params = ``
 	data.UsersToAppended = 0
 	pool_MSG_USER_getPairs.Put(data)
@@ -1545,7 +1373,6 @@ func (data *MSG_USER_getPairs) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_getPairs(data *MSG_USER_getPairs, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 	WRITE_string(data.Params, buf)
 	WRITE_int32(data.UsersToAppended, buf)
 }
@@ -1557,20 +1384,12 @@ func READ_MSG_USER_getPairs(buf *libraries.MsgBuffer) *MSG_USER_getPairs {
 }
 
 func (data *MSG_USER_getPairs) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 	data.Params = READ_string(buf)
 	data.UsersToAppended = READ_int32(buf)
 
 }
-func (data *MSG_USER_getPairs) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_getPairs) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_USER_getPairs_result struct {
-	QueryResultID uint32
 	List []HtmlKeyValueStr
 }
 
@@ -1585,7 +1404,6 @@ func (data *MSG_USER_getPairs_result) cmd() int32 {
 }
 
 func (data *MSG_USER_getPairs_result) Put() {
-	data.QueryResultID = 0
 	data.List = data.List[:0]
 	pool_MSG_USER_getPairs_result.Put(data)
 }
@@ -1595,8 +1413,7 @@ func (data *MSG_USER_getPairs_result) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_getPairs_result(data *MSG_USER_getPairs_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
-	WRITE_int32(int32(len(data.List)), buf)
+	WRITE_int(len(data.List), buf)
 	for _, v := range data.List{
 		WRITE_HtmlKeyValueStr(v, buf)
 	}
@@ -1609,8 +1426,7 @@ func READ_MSG_USER_getPairs_result(buf *libraries.MsgBuffer) *MSG_USER_getPairs_
 }
 
 func (data *MSG_USER_getPairs_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
-	List_len := int(READ_int32(buf))
+	List_len := READ_int(buf)
 	if List_len>cap(data.List){
 		data.List= make([]HtmlKeyValueStr, List_len)
 	}else{
@@ -1621,15 +1437,8 @@ func (data *MSG_USER_getPairs_result) read(buf *libraries.MsgBuffer) {
 	}
 
 }
-func (data *MSG_USER_getPairs_result) getQueryResultID() uint32 {
-	return data.QueryResultID
-}
-func (data *MSG_USER_getPairs_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
-}
 
 type MSG_USER_updateUserView struct {
-	QueryID uint32
 	ProjectIds []int32
 	ProductIds []int32
 	UserIds []int32
@@ -1647,7 +1456,6 @@ func (data *MSG_USER_updateUserView) cmd() int32 {
 }
 
 func (data *MSG_USER_updateUserView) Put() {
-	data.QueryID = 0
 	data.ProjectIds = data.ProjectIds[:0]
 	data.ProductIds = data.ProductIds[:0]
 	data.UserIds = data.UserIds[:0]
@@ -1660,20 +1468,19 @@ func (data *MSG_USER_updateUserView) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_updateUserView(data *MSG_USER_updateUserView, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
-	WRITE_int32(int32(len(data.ProjectIds)), buf)
+	WRITE_int(len(data.ProjectIds), buf)
 	for _, v := range data.ProjectIds{
 		WRITE_int32(v, buf)
 	}
-	WRITE_int32(int32(len(data.ProductIds)), buf)
+	WRITE_int(len(data.ProductIds), buf)
 	for _, v := range data.ProductIds{
 		WRITE_int32(v, buf)
 	}
-	WRITE_int32(int32(len(data.UserIds)), buf)
+	WRITE_int(len(data.UserIds), buf)
 	for _, v := range data.UserIds{
 		WRITE_int32(v, buf)
 	}
-	WRITE_int32(int32(len(data.GroupIds)), buf)
+	WRITE_int(len(data.GroupIds), buf)
 	for _, v := range data.GroupIds{
 		WRITE_int32(v, buf)
 	}
@@ -1686,8 +1493,7 @@ func READ_MSG_USER_updateUserView(buf *libraries.MsgBuffer) *MSG_USER_updateUser
 }
 
 func (data *MSG_USER_updateUserView) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
-	ProjectIds_len := int(READ_int32(buf))
+	ProjectIds_len := READ_int(buf)
 	if ProjectIds_len>cap(data.ProjectIds){
 		data.ProjectIds= make([]int32, ProjectIds_len)
 	}else{
@@ -1696,7 +1502,7 @@ func (data *MSG_USER_updateUserView) read(buf *libraries.MsgBuffer) {
 	for i := 0; i < ProjectIds_len; i++ {
 		data.ProjectIds[i] = READ_int32(buf)
 	}
-	ProductIds_len := int(READ_int32(buf))
+	ProductIds_len := READ_int(buf)
 	if ProductIds_len>cap(data.ProductIds){
 		data.ProductIds= make([]int32, ProductIds_len)
 	}else{
@@ -1705,7 +1511,7 @@ func (data *MSG_USER_updateUserView) read(buf *libraries.MsgBuffer) {
 	for i := 0; i < ProductIds_len; i++ {
 		data.ProductIds[i] = READ_int32(buf)
 	}
-	UserIds_len := int(READ_int32(buf))
+	UserIds_len := READ_int(buf)
 	if UserIds_len>cap(data.UserIds){
 		data.UserIds= make([]int32, UserIds_len)
 	}else{
@@ -1714,7 +1520,7 @@ func (data *MSG_USER_updateUserView) read(buf *libraries.MsgBuffer) {
 	for i := 0; i < UserIds_len; i++ {
 		data.UserIds[i] = READ_int32(buf)
 	}
-	GroupIds_len := int(READ_int32(buf))
+	GroupIds_len := READ_int(buf)
 	if GroupIds_len>cap(data.GroupIds){
 		data.GroupIds= make([]int32, GroupIds_len)
 	}else{
@@ -1725,15 +1531,8 @@ func (data *MSG_USER_updateUserView) read(buf *libraries.MsgBuffer) {
 	}
 
 }
-func (data *MSG_USER_updateUserView) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_updateUserView) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_USER_getContactLists struct {
-	QueryID uint32
 	Uid int32
 	Params string
 }
@@ -1749,7 +1548,6 @@ func (data *MSG_USER_getContactLists) cmd() int32 {
 }
 
 func (data *MSG_USER_getContactLists) Put() {
-	data.QueryID = 0
 	data.Uid = 0
 	data.Params = ``
 	pool_MSG_USER_getContactLists.Put(data)
@@ -1760,7 +1558,6 @@ func (data *MSG_USER_getContactLists) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_getContactLists(data *MSG_USER_getContactLists, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 	WRITE_int32(data.Uid, buf)
 	WRITE_string(data.Params, buf)
 }
@@ -1772,20 +1569,12 @@ func READ_MSG_USER_getContactLists(buf *libraries.MsgBuffer) *MSG_USER_getContac
 }
 
 func (data *MSG_USER_getContactLists) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 	data.Uid = READ_int32(buf)
 	data.Params = READ_string(buf)
 
 }
-func (data *MSG_USER_getContactLists) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_getContactLists) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_USER_getContactLists_result struct {
-	QueryResultID uint32
 	List []HtmlKeyValueStr
 }
 
@@ -1800,7 +1589,6 @@ func (data *MSG_USER_getContactLists_result) cmd() int32 {
 }
 
 func (data *MSG_USER_getContactLists_result) Put() {
-	data.QueryResultID = 0
 	data.List = data.List[:0]
 	pool_MSG_USER_getContactLists_result.Put(data)
 }
@@ -1810,8 +1598,7 @@ func (data *MSG_USER_getContactLists_result) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_getContactLists_result(data *MSG_USER_getContactLists_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
-	WRITE_int32(int32(len(data.List)), buf)
+	WRITE_int(len(data.List), buf)
 	for _, v := range data.List{
 		WRITE_HtmlKeyValueStr(v, buf)
 	}
@@ -1824,8 +1611,7 @@ func READ_MSG_USER_getContactLists_result(buf *libraries.MsgBuffer) *MSG_USER_ge
 }
 
 func (data *MSG_USER_getContactLists_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
-	List_len := int(READ_int32(buf))
+	List_len := READ_int(buf)
 	if List_len>cap(data.List){
 		data.List= make([]HtmlKeyValueStr, List_len)
 	}else{
@@ -1836,15 +1622,8 @@ func (data *MSG_USER_getContactLists_result) read(buf *libraries.MsgBuffer) {
 	}
 
 }
-func (data *MSG_USER_getContactLists_result) getQueryResultID() uint32 {
-	return data.QueryResultID
-}
-func (data *MSG_USER_getContactLists_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
-}
 
 type MSG_USER_getContactListByUid struct {
-	QueryID uint32
 	Uid int32
 }
 
@@ -1859,7 +1638,6 @@ func (data *MSG_USER_getContactListByUid) cmd() int32 {
 }
 
 func (data *MSG_USER_getContactListByUid) Put() {
-	data.QueryID = 0
 	data.Uid = 0
 	pool_MSG_USER_getContactListByUid.Put(data)
 }
@@ -1869,7 +1647,6 @@ func (data *MSG_USER_getContactListByUid) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_getContactListByUid(data *MSG_USER_getContactListByUid, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 	WRITE_int32(data.Uid, buf)
 }
 
@@ -1880,19 +1657,11 @@ func READ_MSG_USER_getContactListByUid(buf *libraries.MsgBuffer) *MSG_USER_getCo
 }
 
 func (data *MSG_USER_getContactListByUid) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 	data.Uid = READ_int32(buf)
 
 }
-func (data *MSG_USER_getContactListByUid) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_getContactListByUid) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_USER_getContactListByUid_result struct {
-	QueryResultID uint32
 	List []HtmlKeyValueStr
 }
 
@@ -1907,7 +1676,6 @@ func (data *MSG_USER_getContactListByUid_result) cmd() int32 {
 }
 
 func (data *MSG_USER_getContactListByUid_result) Put() {
-	data.QueryResultID = 0
 	data.List = data.List[:0]
 	pool_MSG_USER_getContactListByUid_result.Put(data)
 }
@@ -1917,8 +1685,7 @@ func (data *MSG_USER_getContactListByUid_result) write(buf *libraries.MsgBuffer)
 }
 
 func WRITE_MSG_USER_getContactListByUid_result(data *MSG_USER_getContactListByUid_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
-	WRITE_int32(int32(len(data.List)), buf)
+	WRITE_int(len(data.List), buf)
 	for _, v := range data.List{
 		WRITE_HtmlKeyValueStr(v, buf)
 	}
@@ -1931,8 +1698,7 @@ func READ_MSG_USER_getContactListByUid_result(buf *libraries.MsgBuffer) *MSG_USE
 }
 
 func (data *MSG_USER_getContactListByUid_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
-	List_len := int(READ_int32(buf))
+	List_len := READ_int(buf)
 	if List_len>cap(data.List){
 		data.List= make([]HtmlKeyValueStr, List_len)
 	}else{
@@ -1943,15 +1709,8 @@ func (data *MSG_USER_getContactListByUid_result) read(buf *libraries.MsgBuffer) 
 	}
 
 }
-func (data *MSG_USER_getContactListByUid_result) getQueryResultID() uint32 {
-	return data.QueryResultID
-}
-func (data *MSG_USER_getContactListByUid_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
-}
 
 type MSG_USER_getContactListById struct {
-	QueryID uint32
 	Id int32
 }
 
@@ -1966,7 +1725,6 @@ func (data *MSG_USER_getContactListById) cmd() int32 {
 }
 
 func (data *MSG_USER_getContactListById) Put() {
-	data.QueryID = 0
 	data.Id = 0
 	pool_MSG_USER_getContactListById.Put(data)
 }
@@ -1976,7 +1734,6 @@ func (data *MSG_USER_getContactListById) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_getContactListById(data *MSG_USER_getContactListById, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 	WRITE_int32(data.Id, buf)
 }
 
@@ -1987,19 +1744,11 @@ func READ_MSG_USER_getContactListById(buf *libraries.MsgBuffer) *MSG_USER_getCon
 }
 
 func (data *MSG_USER_getContactListById) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 	data.Id = READ_int32(buf)
 
 }
-func (data *MSG_USER_getContactListById) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_getContactListById) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_USER_getContactListById_result struct {
-	QueryResultID uint32
 	Result *MSG_USER_ContactList
 }
 
@@ -2014,7 +1763,6 @@ func (data *MSG_USER_getContactListById_result) cmd() int32 {
 }
 
 func (data *MSG_USER_getContactListById_result) Put() {
-	data.QueryResultID = 0
 	if data.Result != nil {
 		data.Result.Put()
 		data.Result = nil
@@ -2027,7 +1775,6 @@ func (data *MSG_USER_getContactListById_result) write(buf *libraries.MsgBuffer) 
 }
 
 func WRITE_MSG_USER_getContactListById_result(data *MSG_USER_getContactListById_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
 	if data.Result == nil {
 		WRITE_int8(0, buf)
 	} else {
@@ -2043,7 +1790,6 @@ func READ_MSG_USER_getContactListById_result(buf *libraries.MsgBuffer) *MSG_USER
 }
 
 func (data *MSG_USER_getContactListById_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
 	Result_len := int(READ_int8(buf))
 	if Result_len == 1 {
 		data.Result = READ_MSG_USER_ContactList(buf)
@@ -2051,12 +1797,6 @@ func (data *MSG_USER_getContactListById_result) read(buf *libraries.MsgBuffer) {
 		data.Result = nil
 	}
 
-}
-func (data *MSG_USER_getContactListById_result) getQueryResultID() uint32 {
-	return data.QueryResultID
-}
-func (data *MSG_USER_getContactListById_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
 }
 
 type MSG_USER_ContactList struct {
@@ -2094,7 +1834,7 @@ func WRITE_MSG_USER_ContactList(data *MSG_USER_ContactList, buf *libraries.MsgBu
 	WRITE_int32(data.Id, buf)
 	WRITE_int32(data.Uid, buf)
 	WRITE_string(data.ListName, buf)
-	WRITE_int32(int32(len(data.UserList)), buf)
+	WRITE_int(len(data.UserList), buf)
 	for _, v := range data.UserList{
 		WRITE_int32(v, buf)
 	}
@@ -2111,7 +1851,7 @@ func (data *MSG_USER_ContactList) read(buf *libraries.MsgBuffer) {
 	data.Id = READ_int32(buf)
 	data.Uid = READ_int32(buf)
 	data.ListName = READ_string(buf)
-	UserList_len := int(READ_int32(buf))
+	UserList_len := READ_int(buf)
 	if UserList_len>cap(data.UserList){
 		data.UserList= make([]int32, UserList_len)
 	}else{
@@ -2125,7 +1865,6 @@ func (data *MSG_USER_ContactList) read(buf *libraries.MsgBuffer) {
 }
 
 type MSG_USER_insertUpdateContactList struct {
-	QueryID uint32
 	Insert *MSG_USER_ContactList
 }
 
@@ -2140,7 +1879,6 @@ func (data *MSG_USER_insertUpdateContactList) cmd() int32 {
 }
 
 func (data *MSG_USER_insertUpdateContactList) Put() {
-	data.QueryID = 0
 	if data.Insert != nil {
 		data.Insert.Put()
 		data.Insert = nil
@@ -2153,7 +1891,6 @@ func (data *MSG_USER_insertUpdateContactList) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_insertUpdateContactList(data *MSG_USER_insertUpdateContactList, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 	if data.Insert == nil {
 		WRITE_int8(0, buf)
 	} else {
@@ -2169,7 +1906,6 @@ func READ_MSG_USER_insertUpdateContactList(buf *libraries.MsgBuffer) *MSG_USER_i
 }
 
 func (data *MSG_USER_insertUpdateContactList) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 	Insert_len := int(READ_int8(buf))
 	if Insert_len == 1 {
 		data.Insert = READ_MSG_USER_ContactList(buf)
@@ -2178,15 +1914,8 @@ func (data *MSG_USER_insertUpdateContactList) read(buf *libraries.MsgBuffer) {
 	}
 
 }
-func (data *MSG_USER_insertUpdateContactList) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_insertUpdateContactList) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_USER_insertUpdateContactList_result struct {
-	QueryResultID uint32
 	Id int32
 }
 
@@ -2201,7 +1930,6 @@ func (data *MSG_USER_insertUpdateContactList_result) cmd() int32 {
 }
 
 func (data *MSG_USER_insertUpdateContactList_result) Put() {
-	data.QueryResultID = 0
 	data.Id = 0
 	pool_MSG_USER_insertUpdateContactList_result.Put(data)
 }
@@ -2211,7 +1939,6 @@ func (data *MSG_USER_insertUpdateContactList_result) write(buf *libraries.MsgBuf
 }
 
 func WRITE_MSG_USER_insertUpdateContactList_result(data *MSG_USER_insertUpdateContactList_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
 	WRITE_int32(data.Id, buf)
 }
 
@@ -2222,19 +1949,11 @@ func READ_MSG_USER_insertUpdateContactList_result(buf *libraries.MsgBuffer) *MSG
 }
 
 func (data *MSG_USER_insertUpdateContactList_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
 	data.Id = READ_int32(buf)
 
 }
-func (data *MSG_USER_insertUpdateContactList_result) getQueryResultID() uint32 {
-	return data.QueryResultID
-}
-func (data *MSG_USER_insertUpdateContactList_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
-}
 
 type MSG_USER_getGlobalContacts struct {
-	QueryID uint32
 }
 
 var pool_MSG_USER_getGlobalContacts = sync.Pool{New: func() interface{} { return &MSG_USER_getGlobalContacts{} }}
@@ -2248,7 +1967,6 @@ func (data *MSG_USER_getGlobalContacts) cmd() int32 {
 }
 
 func (data *MSG_USER_getGlobalContacts) Put() {
-	data.QueryID = 0
 	pool_MSG_USER_getGlobalContacts.Put(data)
 }
 func (data *MSG_USER_getGlobalContacts) write(buf *libraries.MsgBuffer) {
@@ -2257,7 +1975,6 @@ func (data *MSG_USER_getGlobalContacts) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_getGlobalContacts(data *MSG_USER_getGlobalContacts, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 }
 
 func READ_MSG_USER_getGlobalContacts(buf *libraries.MsgBuffer) *MSG_USER_getGlobalContacts {
@@ -2267,18 +1984,10 @@ func READ_MSG_USER_getGlobalContacts(buf *libraries.MsgBuffer) *MSG_USER_getGlob
 }
 
 func (data *MSG_USER_getGlobalContacts) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 
-}
-func (data *MSG_USER_getGlobalContacts) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_getGlobalContacts) setQueryID(id uint32) {
-	data.QueryID = id
 }
 
 type MSG_USER_getGlobalContacts_result struct {
-	QueryResultID uint32
 	Result []*MSG_USER_ContactList
 }
 
@@ -2293,7 +2002,6 @@ func (data *MSG_USER_getGlobalContacts_result) cmd() int32 {
 }
 
 func (data *MSG_USER_getGlobalContacts_result) Put() {
-	data.QueryResultID = 0
 	for _,v := range data.Result {
 		v.Put()
 	}
@@ -2306,8 +2014,7 @@ func (data *MSG_USER_getGlobalContacts_result) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_getGlobalContacts_result(data *MSG_USER_getGlobalContacts_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
-	WRITE_int32(int32(len(data.Result)), buf)
+	WRITE_int(len(data.Result), buf)
 	for _, v := range data.Result{
 		WRITE_MSG_USER_ContactList(v, buf)
 	}
@@ -2320,8 +2027,7 @@ func READ_MSG_USER_getGlobalContacts_result(buf *libraries.MsgBuffer) *MSG_USER_
 }
 
 func (data *MSG_USER_getGlobalContacts_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
-	Result_len := int(READ_int32(buf))
+	Result_len := READ_int(buf)
 	if Result_len>cap(data.Result){
 		data.Result= make([]*MSG_USER_ContactList, Result_len)
 	}else{
@@ -2332,17 +2038,10 @@ func (data *MSG_USER_getGlobalContacts_result) read(buf *libraries.MsgBuffer) {
 	}
 
 }
-func (data *MSG_USER_getGlobalContacts_result) getQueryResultID() uint32 {
-	return data.QueryResultID
-}
-func (data *MSG_USER_getGlobalContacts_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
-}
 
 type MSG_USER_team_getByTypeRoot struct {
-	QueryID uint32
 	Type string
-	Root int32
+	Root []int32
 }
 
 var pool_MSG_USER_team_getByTypeRoot = sync.Pool{New: func() interface{} { return &MSG_USER_team_getByTypeRoot{} }}
@@ -2356,9 +2055,8 @@ func (data *MSG_USER_team_getByTypeRoot) cmd() int32 {
 }
 
 func (data *MSG_USER_team_getByTypeRoot) Put() {
-	data.QueryID = 0
 	data.Type = ``
-	data.Root = 0
+	data.Root = data.Root[:0]
 	pool_MSG_USER_team_getByTypeRoot.Put(data)
 }
 func (data *MSG_USER_team_getByTypeRoot) write(buf *libraries.MsgBuffer) {
@@ -2367,9 +2065,11 @@ func (data *MSG_USER_team_getByTypeRoot) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_team_getByTypeRoot(data *MSG_USER_team_getByTypeRoot, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 	WRITE_string(data.Type, buf)
-	WRITE_int32(data.Root, buf)
+	WRITE_int(len(data.Root), buf)
+	for _, v := range data.Root{
+		WRITE_int32(v, buf)
+	}
 }
 
 func READ_MSG_USER_team_getByTypeRoot(buf *libraries.MsgBuffer) *MSG_USER_team_getByTypeRoot {
@@ -2379,20 +2079,20 @@ func READ_MSG_USER_team_getByTypeRoot(buf *libraries.MsgBuffer) *MSG_USER_team_g
 }
 
 func (data *MSG_USER_team_getByTypeRoot) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 	data.Type = READ_string(buf)
-	data.Root = READ_int32(buf)
+	Root_len := READ_int(buf)
+	if Root_len>cap(data.Root){
+		data.Root= make([]int32, Root_len)
+	}else{
+		data.Root = data.Root[:Root_len]
+	}
+	for i := 0; i < Root_len; i++ {
+		data.Root[i] = READ_int32(buf)
+	}
 
-}
-func (data *MSG_USER_team_getByTypeRoot) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_team_getByTypeRoot) setQueryID(id uint32) {
-	data.QueryID = id
 }
 
 type MSG_USER_team_getByTypeRoot_result struct {
-	QueryResultID uint32
 	List []*MSG_USER_team_info
 }
 
@@ -2407,7 +2107,6 @@ func (data *MSG_USER_team_getByTypeRoot_result) cmd() int32 {
 }
 
 func (data *MSG_USER_team_getByTypeRoot_result) Put() {
-	data.QueryResultID = 0
 	for _,v := range data.List {
 		v.Put()
 	}
@@ -2420,8 +2119,7 @@ func (data *MSG_USER_team_getByTypeRoot_result) write(buf *libraries.MsgBuffer) 
 }
 
 func WRITE_MSG_USER_team_getByTypeRoot_result(data *MSG_USER_team_getByTypeRoot_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
-	WRITE_int32(int32(len(data.List)), buf)
+	WRITE_int(len(data.List), buf)
 	for _, v := range data.List{
 		WRITE_MSG_USER_team_info(v, buf)
 	}
@@ -2434,8 +2132,7 @@ func READ_MSG_USER_team_getByTypeRoot_result(buf *libraries.MsgBuffer) *MSG_USER
 }
 
 func (data *MSG_USER_team_getByTypeRoot_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
-	List_len := int(READ_int32(buf))
+	List_len := READ_int(buf)
 	if List_len>cap(data.List){
 		data.List= make([]*MSG_USER_team_info, List_len)
 	}else{
@@ -2446,11 +2143,106 @@ func (data *MSG_USER_team_getByTypeRoot_result) read(buf *libraries.MsgBuffer) {
 	}
 
 }
-func (data *MSG_USER_team_getByTypeRoot_result) getQueryResultID() uint32 {
-	return data.QueryResultID
+
+type MSG_USER_team_getByIds struct {
+	Ids []int32
 }
-func (data *MSG_USER_team_getByTypeRoot_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
+
+var pool_MSG_USER_team_getByIds = sync.Pool{New: func() interface{} { return &MSG_USER_team_getByIds{} }}
+
+func GET_MSG_USER_team_getByIds() *MSG_USER_team_getByIds {
+	return pool_MSG_USER_team_getByIds.Get().(*MSG_USER_team_getByIds)
+}
+
+func (data *MSG_USER_team_getByIds) cmd() int32 {
+	return CMD_MSG_USER_team_getByIds
+}
+
+func (data *MSG_USER_team_getByIds) Put() {
+	data.Ids = data.Ids[:0]
+	pool_MSG_USER_team_getByIds.Put(data)
+}
+func (data *MSG_USER_team_getByIds) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_team_getByIds,buf)
+	WRITE_MSG_USER_team_getByIds(data, buf)
+}
+
+func WRITE_MSG_USER_team_getByIds(data *MSG_USER_team_getByIds, buf *libraries.MsgBuffer) {
+	WRITE_int(len(data.Ids), buf)
+	for _, v := range data.Ids{
+		WRITE_int32(v, buf)
+	}
+}
+
+func READ_MSG_USER_team_getByIds(buf *libraries.MsgBuffer) *MSG_USER_team_getByIds {
+	data := pool_MSG_USER_team_getByIds.Get().(*MSG_USER_team_getByIds)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_team_getByIds) read(buf *libraries.MsgBuffer) {
+	Ids_len := READ_int(buf)
+	if Ids_len>cap(data.Ids){
+		data.Ids= make([]int32, Ids_len)
+	}else{
+		data.Ids = data.Ids[:Ids_len]
+	}
+	for i := 0; i < Ids_len; i++ {
+		data.Ids[i] = READ_int32(buf)
+	}
+
+}
+
+type MSG_USER_team_getByIds_result struct {
+	List []*MSG_USER_team_info
+}
+
+var pool_MSG_USER_team_getByIds_result = sync.Pool{New: func() interface{} { return &MSG_USER_team_getByIds_result{} }}
+
+func GET_MSG_USER_team_getByIds_result() *MSG_USER_team_getByIds_result {
+	return pool_MSG_USER_team_getByIds_result.Get().(*MSG_USER_team_getByIds_result)
+}
+
+func (data *MSG_USER_team_getByIds_result) cmd() int32 {
+	return CMD_MSG_USER_team_getByIds_result
+}
+
+func (data *MSG_USER_team_getByIds_result) Put() {
+	for _,v := range data.List {
+		v.Put()
+	}
+	data.List = data.List[:0]
+	pool_MSG_USER_team_getByIds_result.Put(data)
+}
+func (data *MSG_USER_team_getByIds_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_team_getByIds_result,buf)
+	WRITE_MSG_USER_team_getByIds_result(data, buf)
+}
+
+func WRITE_MSG_USER_team_getByIds_result(data *MSG_USER_team_getByIds_result, buf *libraries.MsgBuffer) {
+	WRITE_int(len(data.List), buf)
+	for _, v := range data.List{
+		WRITE_MSG_USER_team_info(v, buf)
+	}
+}
+
+func READ_MSG_USER_team_getByIds_result(buf *libraries.MsgBuffer) *MSG_USER_team_getByIds_result {
+	data := pool_MSG_USER_team_getByIds_result.Get().(*MSG_USER_team_getByIds_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_team_getByIds_result) read(buf *libraries.MsgBuffer) {
+	List_len := READ_int(buf)
+	if List_len>cap(data.List){
+		data.List= make([]*MSG_USER_team_info, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
+	for i := 0; i < List_len; i++ {
+		data.List[i] = READ_MSG_USER_team_info(buf)
+	}
+
 }
 
 type MSG_USER_team_info struct {
@@ -2468,6 +2260,7 @@ type MSG_USER_team_info struct {
 	Consumed float64
 	Left float64
 	Order int8
+	Deleted bool `db:"-"`
 	Realname string `db:"-"`
 }
 
@@ -2489,13 +2282,14 @@ func (data *MSG_USER_team_info) Put() {
 	data.Account = ``
 	data.Role = ``
 	data.Limited = ``
-	data.Join = time.Unix(0,0)
+	data.Join = time.UnixMicro(0)
 	data.Days = 0
 	data.Hours = 0
 	data.Estimate = 0
 	data.Consumed = 0
 	data.Left = 0
 	data.Order = 0
+	data.Deleted = false
 	data.Realname = ``
 	pool_MSG_USER_team_info.Put(data)
 }
@@ -2512,13 +2306,14 @@ func WRITE_MSG_USER_team_info(data *MSG_USER_team_info, buf *libraries.MsgBuffer
 	WRITE_string(data.Account, buf)
 	WRITE_string(data.Role, buf)
 	WRITE_string(data.Limited, buf)
-	WRITE_int64(data.Join.UnixNano(), buf)
+	WRITE_int64(data.Join.UnixMicro(), buf)
 	WRITE_int16(data.Days, buf)
 	WRITE_float64(data.Hours, buf)
 	WRITE_float64(data.Estimate, buf)
 	WRITE_float64(data.Consumed, buf)
 	WRITE_float64(data.Left, buf)
 	WRITE_int8(data.Order, buf)
+	WRITE_bool(data.Deleted, buf)
 	WRITE_string(data.Realname, buf)
 }
 
@@ -2536,19 +2331,19 @@ func (data *MSG_USER_team_info) read(buf *libraries.MsgBuffer) {
 	data.Account = READ_string(buf)
 	data.Role = READ_string(buf)
 	data.Limited = READ_string(buf)
-	data.Join = time.Unix(0, READ_int64(buf))
+	data.Join = time.UnixMicro(READ_int64(buf))
 	data.Days = READ_int16(buf)
 	data.Hours = READ_float64(buf)
 	data.Estimate = READ_float64(buf)
 	data.Consumed = READ_float64(buf)
 	data.Left = READ_float64(buf)
 	data.Order = READ_int8(buf)
+	data.Deleted = READ_bool(buf)
 	data.Realname = READ_string(buf)
 
 }
 
 type MSG_USER_team_addByList struct {
-	QueryID uint32
 	List []*MSG_USER_team_info
 }
 
@@ -2563,7 +2358,6 @@ func (data *MSG_USER_team_addByList) cmd() int32 {
 }
 
 func (data *MSG_USER_team_addByList) Put() {
-	data.QueryID = 0
 	for _,v := range data.List {
 		v.Put()
 	}
@@ -2576,8 +2370,7 @@ func (data *MSG_USER_team_addByList) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_team_addByList(data *MSG_USER_team_addByList, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
-	WRITE_int32(int32(len(data.List)), buf)
+	WRITE_int(len(data.List), buf)
 	for _, v := range data.List{
 		WRITE_MSG_USER_team_info(v, buf)
 	}
@@ -2590,8 +2383,7 @@ func READ_MSG_USER_team_addByList(buf *libraries.MsgBuffer) *MSG_USER_team_addBy
 }
 
 func (data *MSG_USER_team_addByList) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
-	List_len := int(READ_int32(buf))
+	List_len := READ_int(buf)
 	if List_len>cap(data.List){
 		data.List= make([]*MSG_USER_team_info, List_len)
 	}else{
@@ -2602,15 +2394,8 @@ func (data *MSG_USER_team_addByList) read(buf *libraries.MsgBuffer) {
 	}
 
 }
-func (data *MSG_USER_team_addByList) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_team_addByList) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_USER_Group_getPairs struct {
-	QueryID uint32
 }
 
 var pool_MSG_USER_Group_getPairs = sync.Pool{New: func() interface{} { return &MSG_USER_Group_getPairs{} }}
@@ -2624,7 +2409,6 @@ func (data *MSG_USER_Group_getPairs) cmd() int32 {
 }
 
 func (data *MSG_USER_Group_getPairs) Put() {
-	data.QueryID = 0
 	pool_MSG_USER_Group_getPairs.Put(data)
 }
 func (data *MSG_USER_Group_getPairs) write(buf *libraries.MsgBuffer) {
@@ -2633,7 +2417,6 @@ func (data *MSG_USER_Group_getPairs) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_Group_getPairs(data *MSG_USER_Group_getPairs, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 }
 
 func READ_MSG_USER_Group_getPairs(buf *libraries.MsgBuffer) *MSG_USER_Group_getPairs {
@@ -2643,18 +2426,10 @@ func READ_MSG_USER_Group_getPairs(buf *libraries.MsgBuffer) *MSG_USER_Group_getP
 }
 
 func (data *MSG_USER_Group_getPairs) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 
-}
-func (data *MSG_USER_Group_getPairs) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_Group_getPairs) setQueryID(id uint32) {
-	data.QueryID = id
 }
 
 type MSG_USER_Group_getPairs_result struct {
-	QueryResultID uint32
 	List []HtmlKeyValueStr
 }
 
@@ -2669,7 +2444,6 @@ func (data *MSG_USER_Group_getPairs_result) cmd() int32 {
 }
 
 func (data *MSG_USER_Group_getPairs_result) Put() {
-	data.QueryResultID = 0
 	data.List = data.List[:0]
 	pool_MSG_USER_Group_getPairs_result.Put(data)
 }
@@ -2679,8 +2453,7 @@ func (data *MSG_USER_Group_getPairs_result) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_Group_getPairs_result(data *MSG_USER_Group_getPairs_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
-	WRITE_int32(int32(len(data.List)), buf)
+	WRITE_int(len(data.List), buf)
 	for _, v := range data.List{
 		WRITE_HtmlKeyValueStr(v, buf)
 	}
@@ -2693,8 +2466,7 @@ func READ_MSG_USER_Group_getPairs_result(buf *libraries.MsgBuffer) *MSG_USER_Gro
 }
 
 func (data *MSG_USER_Group_getPairs_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
-	List_len := int(READ_int32(buf))
+	List_len := READ_int(buf)
 	if List_len>cap(data.List){
 		data.List= make([]HtmlKeyValueStr, List_len)
 	}else{
@@ -2705,15 +2477,8 @@ func (data *MSG_USER_Group_getPairs_result) read(buf *libraries.MsgBuffer) {
 	}
 
 }
-func (data *MSG_USER_Group_getPairs_result) getQueryResultID() uint32 {
-	return data.QueryResultID
-}
-func (data *MSG_USER_Group_getPairs_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
-}
 
 type MSG_USER_team_getByTypeUid struct {
-	QueryID uint32
 	Type string
 	Uid int32
 }
@@ -2729,7 +2494,6 @@ func (data *MSG_USER_team_getByTypeUid) cmd() int32 {
 }
 
 func (data *MSG_USER_team_getByTypeUid) Put() {
-	data.QueryID = 0
 	data.Type = ``
 	data.Uid = 0
 	pool_MSG_USER_team_getByTypeUid.Put(data)
@@ -2740,7 +2504,6 @@ func (data *MSG_USER_team_getByTypeUid) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_team_getByTypeUid(data *MSG_USER_team_getByTypeUid, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 	WRITE_string(data.Type, buf)
 	WRITE_int32(data.Uid, buf)
 }
@@ -2752,20 +2515,12 @@ func READ_MSG_USER_team_getByTypeUid(buf *libraries.MsgBuffer) *MSG_USER_team_ge
 }
 
 func (data *MSG_USER_team_getByTypeUid) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 	data.Type = READ_string(buf)
 	data.Uid = READ_int32(buf)
 
 }
-func (data *MSG_USER_team_getByTypeUid) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_team_getByTypeUid) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_USER_team_getByTypeUid_result struct {
-	QueryResultID uint32
 	List []*MSG_USER_team_info
 }
 
@@ -2780,7 +2535,6 @@ func (data *MSG_USER_team_getByTypeUid_result) cmd() int32 {
 }
 
 func (data *MSG_USER_team_getByTypeUid_result) Put() {
-	data.QueryResultID = 0
 	for _,v := range data.List {
 		v.Put()
 	}
@@ -2793,8 +2547,7 @@ func (data *MSG_USER_team_getByTypeUid_result) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_team_getByTypeUid_result(data *MSG_USER_team_getByTypeUid_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
-	WRITE_int32(int32(len(data.List)), buf)
+	WRITE_int(len(data.List), buf)
 	for _, v := range data.List{
 		WRITE_MSG_USER_team_info(v, buf)
 	}
@@ -2807,8 +2560,7 @@ func READ_MSG_USER_team_getByTypeUid_result(buf *libraries.MsgBuffer) *MSG_USER_
 }
 
 func (data *MSG_USER_team_getByTypeUid_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
-	List_len := int(READ_int32(buf))
+	List_len := READ_int(buf)
 	if List_len>cap(data.List){
 		data.List= make([]*MSG_USER_team_info, List_len)
 	}else{
@@ -2818,12 +2570,6 @@ func (data *MSG_USER_team_getByTypeUid_result) read(buf *libraries.MsgBuffer) {
 		data.List[i] = READ_MSG_USER_team_info(buf)
 	}
 
-}
-func (data *MSG_USER_team_getByTypeUid_result) getQueryResultID() uint32 {
-	return data.QueryResultID
-}
-func (data *MSG_USER_team_getByTypeUid_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
 }
 
 type MSG_USER_Userquery_info struct {
@@ -2889,7 +2635,6 @@ func (data *MSG_USER_Userquery_info) read(buf *libraries.MsgBuffer) {
 }
 
 type MSG_USER_user_getUserqueryByWhere struct {
-	QueryID uint32
 	Where map[string]interface{}
 }
 
@@ -2904,7 +2649,6 @@ func (data *MSG_USER_user_getUserqueryByWhere) cmd() int32 {
 }
 
 func (data *MSG_USER_user_getUserqueryByWhere) Put() {
-	data.QueryID = 0
 	data.Where = nil
 	pool_MSG_USER_user_getUserqueryByWhere.Put(data)
 }
@@ -2914,7 +2658,6 @@ func (data *MSG_USER_user_getUserqueryByWhere) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_USER_user_getUserqueryByWhere(data *MSG_USER_user_getUserqueryByWhere, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryID, buf)
 	WRITE_map(data.Where,buf)
 }
 
@@ -2925,19 +2668,11 @@ func READ_MSG_USER_user_getUserqueryByWhere(buf *libraries.MsgBuffer) *MSG_USER_
 }
 
 func (data *MSG_USER_user_getUserqueryByWhere) read(buf *libraries.MsgBuffer) {
-	data.QueryID = READ_uint32(buf)
 	READ_map(&data.Where,buf)
 
 }
-func (data *MSG_USER_user_getUserqueryByWhere) getQueryID() uint32 {
-	return data.QueryID
-}
-func (data *MSG_USER_user_getUserqueryByWhere) setQueryID(id uint32) {
-	data.QueryID = id
-}
 
 type MSG_USER_user_getUserqueryByWhere_result struct {
-	QueryResultID uint32
 	List []*MSG_USER_Userquery_info
 }
 
@@ -2952,7 +2687,6 @@ func (data *MSG_USER_user_getUserqueryByWhere_result) cmd() int32 {
 }
 
 func (data *MSG_USER_user_getUserqueryByWhere_result) Put() {
-	data.QueryResultID = 0
 	for _,v := range data.List {
 		v.Put()
 	}
@@ -2965,8 +2699,7 @@ func (data *MSG_USER_user_getUserqueryByWhere_result) write(buf *libraries.MsgBu
 }
 
 func WRITE_MSG_USER_user_getUserqueryByWhere_result(data *MSG_USER_user_getUserqueryByWhere_result, buf *libraries.MsgBuffer) {
-	WRITE_uint32(data.QueryResultID, buf)
-	WRITE_int32(int32(len(data.List)), buf)
+	WRITE_int(len(data.List), buf)
 	for _, v := range data.List{
 		WRITE_MSG_USER_Userquery_info(v, buf)
 	}
@@ -2979,8 +2712,7 @@ func READ_MSG_USER_user_getUserqueryByWhere_result(buf *libraries.MsgBuffer) *MS
 }
 
 func (data *MSG_USER_user_getUserqueryByWhere_result) read(buf *libraries.MsgBuffer) {
-	data.QueryResultID = READ_uint32(buf)
-	List_len := int(READ_int32(buf))
+	List_len := READ_int(buf)
 	if List_len>cap(data.List){
 		data.List= make([]*MSG_USER_Userquery_info, List_len)
 	}else{
@@ -2991,10 +2723,195 @@ func (data *MSG_USER_user_getUserqueryByWhere_result) read(buf *libraries.MsgBuf
 	}
 
 }
-func (data *MSG_USER_user_getUserqueryByWhere_result) getQueryResultID() uint32 {
-	return data.QueryResultID
+
+type MSG_USER_team_getMemberPairsByTypeRoot struct {
+	Type string
+	Root int32
 }
-func (data *MSG_USER_user_getUserqueryByWhere_result) setQueryResultID(id uint32) {
-	data.QueryResultID = id
+
+var pool_MSG_USER_team_getMemberPairsByTypeRoot = sync.Pool{New: func() interface{} { return &MSG_USER_team_getMemberPairsByTypeRoot{} }}
+
+func GET_MSG_USER_team_getMemberPairsByTypeRoot() *MSG_USER_team_getMemberPairsByTypeRoot {
+	return pool_MSG_USER_team_getMemberPairsByTypeRoot.Get().(*MSG_USER_team_getMemberPairsByTypeRoot)
+}
+
+func (data *MSG_USER_team_getMemberPairsByTypeRoot) cmd() int32 {
+	return CMD_MSG_USER_team_getMemberPairsByTypeRoot
+}
+
+func (data *MSG_USER_team_getMemberPairsByTypeRoot) Put() {
+	data.Type = ``
+	data.Root = 0
+	pool_MSG_USER_team_getMemberPairsByTypeRoot.Put(data)
+}
+func (data *MSG_USER_team_getMemberPairsByTypeRoot) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_team_getMemberPairsByTypeRoot,buf)
+	WRITE_MSG_USER_team_getMemberPairsByTypeRoot(data, buf)
+}
+
+func WRITE_MSG_USER_team_getMemberPairsByTypeRoot(data *MSG_USER_team_getMemberPairsByTypeRoot, buf *libraries.MsgBuffer) {
+	WRITE_string(data.Type, buf)
+	WRITE_int32(data.Root, buf)
+}
+
+func READ_MSG_USER_team_getMemberPairsByTypeRoot(buf *libraries.MsgBuffer) *MSG_USER_team_getMemberPairsByTypeRoot {
+	data := pool_MSG_USER_team_getMemberPairsByTypeRoot.Get().(*MSG_USER_team_getMemberPairsByTypeRoot)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_team_getMemberPairsByTypeRoot) read(buf *libraries.MsgBuffer) {
+	data.Type = READ_string(buf)
+	data.Root = READ_int32(buf)
+
+}
+
+type MSG_USER_team_getMemberPairsByTypeRoot_result struct {
+	List []HtmlKeyValueStr
+}
+
+var pool_MSG_USER_team_getMemberPairsByTypeRoot_result = sync.Pool{New: func() interface{} { return &MSG_USER_team_getMemberPairsByTypeRoot_result{} }}
+
+func GET_MSG_USER_team_getMemberPairsByTypeRoot_result() *MSG_USER_team_getMemberPairsByTypeRoot_result {
+	return pool_MSG_USER_team_getMemberPairsByTypeRoot_result.Get().(*MSG_USER_team_getMemberPairsByTypeRoot_result)
+}
+
+func (data *MSG_USER_team_getMemberPairsByTypeRoot_result) cmd() int32 {
+	return CMD_MSG_USER_team_getMemberPairsByTypeRoot_result
+}
+
+func (data *MSG_USER_team_getMemberPairsByTypeRoot_result) Put() {
+	data.List = data.List[:0]
+	pool_MSG_USER_team_getMemberPairsByTypeRoot_result.Put(data)
+}
+func (data *MSG_USER_team_getMemberPairsByTypeRoot_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_team_getMemberPairsByTypeRoot_result,buf)
+	WRITE_MSG_USER_team_getMemberPairsByTypeRoot_result(data, buf)
+}
+
+func WRITE_MSG_USER_team_getMemberPairsByTypeRoot_result(data *MSG_USER_team_getMemberPairsByTypeRoot_result, buf *libraries.MsgBuffer) {
+	WRITE_int(len(data.List), buf)
+	for _, v := range data.List{
+		WRITE_HtmlKeyValueStr(v, buf)
+	}
+}
+
+func READ_MSG_USER_team_getMemberPairsByTypeRoot_result(buf *libraries.MsgBuffer) *MSG_USER_team_getMemberPairsByTypeRoot_result {
+	data := pool_MSG_USER_team_getMemberPairsByTypeRoot_result.Get().(*MSG_USER_team_getMemberPairsByTypeRoot_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_team_getMemberPairsByTypeRoot_result) read(buf *libraries.MsgBuffer) {
+	List_len := READ_int(buf)
+	if List_len>cap(data.List){
+		data.List= make([]HtmlKeyValueStr, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
+	for i := 0; i < List_len; i++ {
+		data.List[i] = READ_HtmlKeyValueStr(buf)
+	}
+
+}
+
+type MSG_USER_team_updateByWhere struct {
+	Where map[string]interface{}
+	Update map[string]interface{}
+}
+
+var pool_MSG_USER_team_updateByWhere = sync.Pool{New: func() interface{} { return &MSG_USER_team_updateByWhere{} }}
+
+func GET_MSG_USER_team_updateByWhere() *MSG_USER_team_updateByWhere {
+	return pool_MSG_USER_team_updateByWhere.Get().(*MSG_USER_team_updateByWhere)
+}
+
+func (data *MSG_USER_team_updateByWhere) cmd() int32 {
+	return CMD_MSG_USER_team_updateByWhere
+}
+
+func (data *MSG_USER_team_updateByWhere) Put() {
+	data.Where = nil
+	data.Update = nil
+	pool_MSG_USER_team_updateByWhere.Put(data)
+}
+func (data *MSG_USER_team_updateByWhere) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_team_updateByWhere,buf)
+	WRITE_MSG_USER_team_updateByWhere(data, buf)
+}
+
+func WRITE_MSG_USER_team_updateByWhere(data *MSG_USER_team_updateByWhere, buf *libraries.MsgBuffer) {
+	WRITE_map(data.Where,buf)
+	WRITE_map(data.Update,buf)
+}
+
+func READ_MSG_USER_team_updateByWhere(buf *libraries.MsgBuffer) *MSG_USER_team_updateByWhere {
+	data := pool_MSG_USER_team_updateByWhere.Get().(*MSG_USER_team_updateByWhere)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_team_updateByWhere) read(buf *libraries.MsgBuffer) {
+	READ_map(&data.Where,buf)
+	READ_map(&data.Update,buf)
+
+}
+
+type MSG_USER_config_save struct {
+	Uid int32
+	Module string
+	Section string
+	Key string
+	Value string
+	Type string
+}
+
+var pool_MSG_USER_config_save = sync.Pool{New: func() interface{} { return &MSG_USER_config_save{} }}
+
+func GET_MSG_USER_config_save() *MSG_USER_config_save {
+	return pool_MSG_USER_config_save.Get().(*MSG_USER_config_save)
+}
+
+func (data *MSG_USER_config_save) cmd() int32 {
+	return CMD_MSG_USER_config_save
+}
+
+func (data *MSG_USER_config_save) Put() {
+	data.Uid = 0
+	data.Module = ``
+	data.Section = ``
+	data.Key = ``
+	data.Value = ``
+	data.Type = ``
+	pool_MSG_USER_config_save.Put(data)
+}
+func (data *MSG_USER_config_save) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_config_save,buf)
+	WRITE_MSG_USER_config_save(data, buf)
+}
+
+func WRITE_MSG_USER_config_save(data *MSG_USER_config_save, buf *libraries.MsgBuffer) {
+	WRITE_int32(data.Uid, buf)
+	WRITE_string(data.Module, buf)
+	WRITE_string(data.Section, buf)
+	WRITE_string(data.Key, buf)
+	WRITE_string(data.Value, buf)
+	WRITE_string(data.Type, buf)
+}
+
+func READ_MSG_USER_config_save(buf *libraries.MsgBuffer) *MSG_USER_config_save {
+	data := pool_MSG_USER_config_save.Get().(*MSG_USER_config_save)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_config_save) read(buf *libraries.MsgBuffer) {
+	data.Uid = READ_int32(buf)
+	data.Module = READ_string(buf)
+	data.Section = READ_string(buf)
+	data.Key = READ_string(buf)
+	data.Value = READ_string(buf)
+	data.Type = READ_string(buf)
+
 }
 

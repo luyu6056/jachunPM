@@ -12,9 +12,9 @@ var rows_pool = sync.Pool{New: func() interface{} {
 }}
 
 type Field_struct struct {
-	Offset  uintptr
-	Kind    reflect.Kind
-	Field_t reflect.Type
+	Offset              uintptr
+	ColumnName, KeyName string
+	Field_t             reflect.Type
 }
 type MysqlRows struct {
 	Buffer, Buffer2 *MsgBuffer
@@ -44,26 +44,19 @@ func (row *MysqlRows) Columns(mysql *Mysql_Conn) (columns []MysqlColumn, err err
 	columns = row.fields[:row.field_len]
 	var index uint32
 	var msglen, pos, field_index int
-
-	for msglen, err = mysql.readOneMsg(); err == nil; msglen, err = mysql.readOneMsg() {
-		data := mysql.readBuffer.Next(msglen)
-
-		if msglen == 5 && data[0] == 0xfe { //EOF
-			break
-		}
+	var data []byte
+	for data, err = mysql.readOneMsg(); err == nil && !(len(data) == 5 && data[0] == 0xfe); data, err = mysql.readOneMsg() {
 		pos = 0
 		msglen, err = ReadLength_Coded_Slice(data, &pos)
 		if err != nil {
 			return
 		}
 		pos += msglen
-
 		// Database [len coded string]
 		msglen, err = ReadLength_Coded_Slice(data[pos:], &pos)
 		if err != nil {
 			return
 		}
-
 		pos += msglen
 		// Table [len coded string]
 		msglen, err = ReadLength_Coded_Slice(data[pos:], &pos)
@@ -101,24 +94,19 @@ func (row *MysqlRows) Columns(mysql *Mysql_Conn) (columns []MysqlColumn, err err
 			columns[index].decimals = data[pos+3]
 		}
 		index++
-
 	}
+
 	//libraries.DEBUG(row.Buffer.Bytes())
 	if err != nil {
 		return
 	}
 	row.Buffer.Reset()
 	row.msg_len = row.msg_len[:0]
-	for msglen, err := mysql.readOneMsg(); err == nil; msglen, err = mysql.readOneMsg() {
-		data := mysql.readBuffer.Next(msglen)
-		if msglen == 5 && data[0] == 0xfe { //EOF
-			return columns, nil
-		}
+	for data, err = mysql.readOneMsg(); err == nil && !(len(data) == 5 && data[0] == 0xfe); data, err = mysql.readOneMsg() {
 		row.Buffer.Write(data)
 		row.result_len++
-		row.msg_len = append(row.msg_len, msglen)
+		row.msg_len = append(row.msg_len, len(data))
 	}
-
 	return columns, err
 }
 

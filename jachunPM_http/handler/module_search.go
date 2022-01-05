@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"jachunPM_http/config"
+	"jachunPM_http/db"
 	"jachunPM_http/js"
 	"libraries"
 	"math/rand"
@@ -17,19 +18,34 @@ import (
 
 func init() {
 	httpHandlerMap["GET"]["/search/buildForm"] = get_search_buildForm
+	httpHandlerMap["GET"]["/search/saveQuery"] = get_search_saveQuery
+	httpHandlerMap["POST"]["/search/saveQuery"] = post_search_saveQuery
+	httpHandlerMap["GET"]["/search/deleteQuery"] = get_search_deleteQuery
 }
 
-var searchParamsFunc = map[string]func(*TemplateData) map[string]interface{}{}
-
+//原代码setSearchParams,相关config[module]["search"]
+var searchParamsFunc = map[string]func(*TemplateData) (*searchParam, error){}
 var searchFormId = uint32(rand.NewSource(time.Now().Unix()).Int63())
+
+type searchParam struct {
+	//额外的参数
+	QueryID              int
+	ActionURL            string
+	Style                string
+	OnMenuBar            string
+	*config.ConfigSearch //必须包含的
+}
 
 func get_search_buildForm(data *TemplateData) (err error) {
 	//$module = '', $fields = '', $params = '', $actionURL = '', $queryID = 0)
-	var param map[string]interface{}
+	var param *searchParam
 	module := data.ws.Query("module")
 	method := data.ws.Query("method")
 	if f, ok := searchParamsFunc[module+"/"+method]; ok {
-		param = f(data)
+		param, err = f(data)
+	}
+	if err != nil {
+		return
 	}
 	if param == nil {
 		data.ws.WriteString(js.Alert(data.Lang["search"]["error"].(map[string]string)["notFoundParamsFunc"], module, method))
@@ -41,33 +57,38 @@ func get_search_buildForm(data *TemplateData) (err error) {
 	data.Data["onMenuBar"] = "no"
 
 	if module == "" && queryID == 0 {
-		queryID, _ = param["queryID"].(int)
+		queryID = param.QueryID
 	}
 	if module == "" {
-		module, _ = param["module"].(string)
+		module = param.Module
 	}
 
 	if data.Data["actionURL"] == "" {
-		data.Data["actionURL"], _ = param["actionURL"].(string)
+		data.Data["actionURL"] = param.ActionURL
 	}
-	data.Data["style"], _ = param["style"].(string)
-	data.Data["onMenuBar"], _ = param["onMenuBar"].(string)
-	data.Data["searchFields"] = param["fields"].([]protocol.HtmlKeyValueStr)
-	data.Data["fieldParams"] = search_setDefaultParams(data, param["fields"].([]protocol.HtmlKeyValueStr), param["params"].(map[string]config.ConfigSearchParams))
-
+	data.Data["style"] = param.Style
+	data.Data["onMenuBar"] = param.OnMenuBar
+	data.Data["searchFields"] = param.Fields
+	fieldParams := search_setDefaultParams(data, param.Fields, param.Params)
+	data.Data["fieldParams"] = fieldParams
+	data.ws.Session().Set(module+"/"+method+"/fieldParams", fieldParams)
 	data.Data["module"] = module
 	data.Data["method"] = method
 	data.Data["groupItems"] = data.Config["search"]["common"]["groupItems"].(int)
 	data.Data["groupItems2"] = data.Config["search"]["common"]["groupItems"].(int) + 1
 	data.Data["queryID"] = queryID
-	// $this->view->queries      = $this->search->getQueryPairs($module);
+	var querys []*db.SearchQuery
+	if err = HostConn.DB.Table(db.TABLE_SearchQuery).Where("Uid=? and Module=?", data.User.Id, module).Prepare().Select(&querys); err != nil {
+		return
+	}
+	data.Data["queries"] = querys
 
 	data.Data["formId"] = "searchForm-" + strconv.Itoa(int(atomic.AddUint32(&searchFormId, 1)))
-	search_initSession(data, module, param["fields"].([]protocol.HtmlKeyValueStr), param["params"].(map[string]config.ConfigSearchParams))
+	search_initSession(data, module, param.Fields, param.Params)
 	templateOut("search.buildForm.html", data)
 	return
 }
-func search_initSession(data *TemplateData, module string, fields []protocol.HtmlKeyValueStr, fieldParams map[string]config.ConfigSearchParams) {
+func search_initSession(data *TemplateData, module string, fields []protocol.HtmlKeyValueStr, fieldParams map[string]*config.ConfigSearchParams) {
 	formSessionName := module + "Form"
 	var queryForm map[string]string
 	if ok := data.ws.Session().Get(formSessionName, &queryForm); !ok {
@@ -88,28 +109,58 @@ func search_initSession(data *TemplateData, module string, fields []protocol.Htm
 		queryForm["groupAndOr"] = "and"
 		data.ws.Session().Set(formSessionName, queryForm)
 	}
+
 	data.Data["formSession"] = queryForm
 }
-func search_setDefaultParams(data *TemplateData, fields []protocol.HtmlKeyValueStr, params map[string]config.ConfigSearchParams) map[string]config.ConfigSearchParams {
-
+func search_setDefaultParams(data *TemplateData, fields []protocol.HtmlKeyValueStr, params map[string]*config.ConfigSearchParams) map[string]*config.ConfigSearchParams {
+	var users []protocol.HtmlKeyValueStr
 	for _, field := range fields {
 		if v, ok := params[field.Key]; ok {
 			if len(v.Values) > 0 && v.Values[0].Key != "" && v.Values[len(v.Values)-1].Key != "null" {
 				v.Values = append(v.Values, protocol.HtmlKeyValueStr{"null", data.Lang["search"]["null"].(string)})
+			}
+			if v.ValueExt == "users" {
+				if users == nil {
+					users, _ = user_getPairs(data, "realname|noclosed")
+				}
+				v.Values = users
+			}
+		} else {
+			params[field.Key] = &config.ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
 			}
 		}
 	}
 
 	return params
 }
-func post_search_buildQuery(data *TemplateData) (querystr string, err error) {
+func post_search_buildQuery(data *TemplateData, queryId int) (querystr string, err error) {
+	if queryId > 0 {
+		var query *db.SearchQuery
+		err = HostConn.DB.Table(db.TABLE_SearchQuery).Where("Id=?", queryId).Prepare().Find(&query)
+		if err != nil {
+			return "", err
+		} else if query != nil {
+			return query.Where, err
+		}
 
-	var param map[string]interface{}
+	}
+
+	var fieldParams map[string]config.ConfigSearchParams
 	module := data.ws.Post("module")
 	method := data.ws.Post("method")
-	if ok := data.ws.Session().Get(module+"/"+method, &param); !ok || param == nil {
-		return "", errors.New(fmt.Sprintf(data.Lang["search"]["error"].(map[string]string)["notFoundParamsFunc"], module, method))
+	if ok := data.ws.Session().Get(module+"/"+method+"/fieldParams", &fieldParams); !ok {
+		//尝试从app获取
+		module = data.App["moduleName"].(string)
+		method = data.App["methodName"].(string)
+		if ok = data.ws.Session().Get(module+"/"+method+"/fieldParams", &fieldParams); !ok || fieldParams == nil {
+			return "", errors.New(fmt.Sprintf(data.Lang["search"]["error"].(map[string]string)["notFoundParamsFunc"], module, method))
+		}
 	}
+
+	//
+	formSessionName := module + "_whereStr"
 	where := bufpool.Get().(*libraries.MsgBuffer)
 	condition := bufpool.Get().(*libraries.MsgBuffer)
 	defer func() {
@@ -120,7 +171,7 @@ func post_search_buildQuery(data *TemplateData) (querystr string, err error) {
 	}()
 	groupItems := data.Config["search"]["common"]["groupItems"].(int)
 	groupAndOr := data.ws.Post("groupAndOr")
-	fieldParams := param["params"].(map[string]config.ConfigSearchParams)
+
 	if groupAndOr != "and" && groupAndOr != "or" {
 		groupAndOr = "and"
 	}
@@ -282,5 +333,34 @@ func post_search_buildQuery(data *TemplateData) (querystr string, err error) {
 		}
 	}
 	where.WriteString(" ))")
+	data.ws.Session().Set("post_search_buildQuery_"+formSessionName, where.String())
 	return where.String(), nil
+}
+func get_search_saveQuery(data *TemplateData) (err error) {
+	data.Data["module"] = data.ws.Query("module")
+	data.Data["onMenuBar"] = data.ws.Query("onMenuBar")
+	templateOut("search.saveQuery.html", data)
+	return nil
+}
+func post_search_saveQuery(data *TemplateData) (err error) {
+
+	formSessionName := data.ws.Post("module") + "_whereStr"
+	where := data.ws.Session().Load_str("post_search_buildQuery_" + formSessionName)
+	insert := &db.SearchQuery{
+		Uid:    data.User.Id,
+		Title:  data.ws.Post("title"),
+		Where:  where,
+		Module: data.ws.Post("module"),
+	}
+	id, err := HostConn.DB.Table(db.TABLE_SearchQuery).Insert(insert)
+	if err != nil {
+		return
+	}
+	data.ws.WriteString(js.CloseModal("parent.parent", "", "function(){parent.parent.loadQueries("+strconv.Itoa(int(id))+", 0, '"+data.ws.Post("title")+"')}"))
+	return nil
+}
+func get_search_deleteQuery(data *TemplateData) (err error) {
+	HostConn.DB.Table(db.TABLE_SearchQuery).Where("Id=?", data.ws.Query("queryID")).Delete()
+	data.ws.WriteString("success")
+	return nil
 }

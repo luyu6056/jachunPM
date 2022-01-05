@@ -12,6 +12,7 @@ import (
 )
 
 func main() {
+
 	var err error
 	handler.HostConn, err = protocol.NewClient(protocol.LogServerNo, config.Config.HostIP, config.Config.TokenKey)
 	go func() {

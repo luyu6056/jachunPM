@@ -21,18 +21,19 @@ type MSG_DATA interface {
 }
 type Msg struct {
 	Msgno              uint32
-	Ttl                uint8
-	Local              uint16
-	Remote             uint16
+	Ttl                uint16
+	Local, remoteID    uint16
 	Cmd                int32
 	Data               MSG_DATA
 	buf                *libraries.MsgBuffer
 	datalen            int
-	svr                MsgServer
+	Svr                MsgServer
 	cache              RpcCache
 	transactionTimeOut time.Duration
 	DB                 *MsgDB
 	lang               CountryNo
+	QueryID            uint32
+	Addr               string
 }
 type MsgDB struct {
 	msg           *Msg
@@ -55,27 +56,57 @@ var (
 )
 
 func ReadOneMsg(buf *libraries.MsgBuffer) (msg *Msg, err error) {
-
 	data := buf.Bytes()
 	if len(data) < MsgHeadLen {
 		return nil, errMsgLen
 	}
-	msg = &Msg{DB: &MsgDB{}}
-	msg.Msgno = uint32(data[0]) | uint32(data[1])<<8 | uint32(data[2])<<16 | uint32(data[3])<<24
-	msg.Ttl = data[4] & 127
-	msg.Local = uint16(data[5]) | uint16(data[6])<<8
-	msg.Remote = uint16(data[7]) | uint16(data[8])<<8
-	msg.DB.transactionNo = uint32(data[9]) | uint32(data[10])<<8 | uint32(data[11])<<16 | uint32(data[12])<<24
-	msg.DB.msg = msg
-	msg.datalen = int(data[13]) | int(data[14])<<8 | int(data[15])<<16
-	if len(data) < MsgHeadLen+msg.datalen {
+
+	datalen := int(data[MsgHeadLen-3]) | int(data[MsgHeadLen-2])<<8 | int(data[MsgHeadLen-1])<<16
+	if len(data) < MsgHeadLen+datalen {
 		return nil, errMsgDataLen
 	}
-	msg.Cmd = int32(data[16]) | int32(data[17])<<8 | int32(data[18])<<16 | int32(data[19])<<24
-	//msg.Data = data[MsgHeadLen : MsgHeadLen+datalen]
-	msg.buf = buf
+	msg = &Msg{DB: &MsgDB{}}
+	msg.datalen = datalen
+	msg.Msgno = uint32(data[0]) | uint32(data[1])<<8 | uint32(data[2])<<16 | uint32(data[3])<<24
+	msg.Ttl = uint16(data[4]) | uint16(data[5])<<8
+	msg.Local = uint16(data[6]) | uint16(data[7])<<8
+	msg.remoteID = uint16(data[8]) | uint16(data[9])<<8
+	msg.DB.transactionNo = uint32(data[10]) | uint32(data[11])<<8 | uint32(data[12])<<16 | uint32(data[13])<<24
+	msg.QueryID = uint32(data[14]) | uint32(data[15])<<8 | uint32(data[16])<<16 | uint32(data[17])<<24
+	msg.DB.msg = msg
+	msg.Cmd = int32(data[MsgHeadLen]) | int32(data[MsgHeadLen+1])<<8 | int32(data[MsgHeadLen+2])<<16 | int32(data[MsgHeadLen+3])<<24
 	msg.lang = DefaultLang //暂时默认语言
+	msg.buf = buf
 	return msg, nil
+}
+func ReadOneMsgFromBytes(data []byte) (msg *Msg, length int, err error) {
+	if len(data) < MsgHeadLen {
+		return nil, 0, errMsgLen
+	}
+
+	datalen := int(data[MsgHeadLen-3]) | int(data[MsgHeadLen-2])<<8 | int(data[MsgHeadLen-1])<<16
+	if len(data) < MsgHeadLen+datalen {
+		return nil, 0, errMsgDataLen
+	}
+	msg = &Msg{DB: &MsgDB{}}
+	msg.datalen = datalen
+	msg.Msgno = uint32(data[0]) | uint32(data[1])<<8 | uint32(data[2])<<16 | uint32(data[3])<<24
+	msg.Ttl = uint16(data[4]) | uint16(data[5])<<8
+	msg.Local = uint16(data[6]) | uint16(data[7])<<8
+	msg.remoteID = uint16(data[8]) | uint16(data[9])<<8
+	msg.DB.transactionNo = uint32(data[10]) | uint32(data[11])<<8 | uint32(data[12])<<16 | uint32(data[13])<<24
+	msg.QueryID = uint32(data[14]) | uint32(data[15])<<8 | uint32(data[16])<<16 | uint32(data[17])<<24
+	msg.DB.msg = msg
+	msg.Cmd = int32(data[MsgHeadLen]) | int32(data[MsgHeadLen+1])<<8 | int32(data[MsgHeadLen+2])<<16 | int32(data[MsgHeadLen+3])<<24
+	msg.lang = DefaultLang //暂时默认语言
+	//msg.Data = data[MsgHeadLen : MsgHeadLen+datalen]
+	msg.buf = BufPoolGet()
+	msg.buf.Write(data[:MsgHeadLen+msg.datalen])
+	return msg, MsgHeadLen + msg.datalen, nil
+}
+
+func (m *Msg) GetRemoteID() uint16 {
+	return m.remoteID
 }
 func (m *Msg) ReadData() {
 	if f, ok := cmdMapFunc[m.Cmd]; ok {
@@ -102,22 +133,18 @@ func (m *Msg) ReadDataWithCopy() {
 		BufPoolPut(buf)
 	}
 }
-func (m *Msg) NextWithSetInBuf(buf *libraries.MsgBuffer) {
-	buf.Write(m.buf.Next(MsgHeadLen + m.datalen))
-	m.buf = buf
-}
 func (m *Msg) Buf() *libraries.MsgBuffer {
 	return m.buf
 }
 
 type MsgServer interface {
-	SendMsg(remote uint16, msgno uint32, ttl uint8, transactionNo uint32, out MSG_DATA)
-	SendMsgWaitResult(remote uint16, msgno uint32, ttl uint8, transactionNo uint32, out MSG_DATA, result interface{}, timeout ...time.Duration) (err error)
+	SendMsg(remote uint16, msgno uint32, ttl uint16, transactionNo uint32, queryID uint32, out MSG_DATA)
+	SendMsgWaitResult(remote uint16, msgno uint32, ttl uint16, transactionNo uint32, out MSG_DATA, result interface{}, timeout ...time.Duration) (err error)
 }
 
 //实现msg读写,由msg发出的消息，继承msgno和ttl
 func (m *Msg) SetServer(svr MsgServer) {
-	m.svr = svr
+	m.Svr = svr
 	m.cache.Svr = svr
 }
 
@@ -127,7 +154,7 @@ func (m *Msg) SendMsg(remote uint16, out MSG_DATA) {
 	if transactionNo == 0 && m.DB.transaction != nil {
 		transactionNo = m.DB.transaction.newTransactionNo
 	}
-	m.svr.SendMsg(remote, m.Msgno, m.Ttl, transactionNo, out)
+	m.Svr.SendMsg(remote, m.Msgno, m.Ttl, transactionNo, 0, out)
 }
 func (m *Msg) SendMsgWaitResult(remote uint16, out MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
 	if m.DB.transaction != nil && timeout != nil && timeout[0] > MsgTimeOut*time.Second { //事务有默认超时，不允许timeout大于事务超时
@@ -137,31 +164,24 @@ func (m *Msg) SendMsgWaitResult(remote uint16, out MSG_DATA, result interface{},
 	if transactionNo == 0 && m.DB.transaction != nil {
 		transactionNo = m.DB.transaction.newTransactionNo
 	}
-	return m.svr.SendMsgWaitResult(remote, m.Msgno, m.Ttl, transactionNo, out, result, timeout...)
+	return m.Svr.SendMsgWaitResult(remote, m.Msgno, m.Ttl, transactionNo, out, result, timeout...)
 }
 
 //原路返回
 func (m *Msg) SendResult(out MSG_DATA) {
-	if in, ok := m.Data.(RpcQuery); ok {
-		if outQuery, ok1 := out.(RpcQueryResult); ok1 {
-			outQuery.setQueryResultID(in.getQueryID())
-		}
-	}
 	transactionNo := m.DB.transactionNo
 	if transactionNo == 0 && m.DB.transaction != nil {
 		transactionNo = m.DB.transaction.newTransactionNo
 	}
-	m.svr.SendMsg(m.Local, m.Msgno, m.Ttl, transactionNo, out)
+	m.Svr.SendMsg(m.Local, m.Msgno, m.Ttl, transactionNo, m.QueryID, out)
 }
 
 //原路返回err
 func (m *Msg) WriteErr(err error) {
-	data := GET_MSG_COMMON_QueryErr()
-	if in, ok := m.Data.(RpcQuery); ok {
-		data.QueryResultID = in.getQueryID()
-	}
-	if data.QueryResultID == 0 && err != nil {
-		libraries.DebugLog("返回queryID=0的err%v", err)
+	data := GET_MSG_HOST_QueryErr()
+	if m.QueryID == 0 {
+		//libraries.DebugLog("返回queryID=0的err%v", err)
+		return
 	}
 	if err != nil {
 		data.Err = err.Error()
@@ -171,8 +191,13 @@ func (m *Msg) WriteErr(err error) {
 	if transactionNo == 0 && m.DB.transaction != nil {
 		transactionNo = m.DB.transaction.newTransactionNo
 	}
-	m.svr.SendMsg(m.Local, m.Msgno, m.Ttl, transactionNo, data)
+	m.Svr.SendMsg(m.Local, m.Msgno, m.Ttl, transactionNo, m.QueryID, data)
 	data.Put()
+	if err != nil {
+		fmt.Println(err)
+		debug.PrintStack()
+	}
+
 }
 
 func (m *Msg) Cache_Get(key string, value MSG_DATA) (err error) {
@@ -249,20 +274,21 @@ func MSG_DATA_Write(data MSG_DATA, buf *libraries.MsgBuffer) {
 	data.write(buf)
 }
 
-//result可以传入nil，但是返回非MSG_COMMON_QueryErr就会报错
-func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint8, transactionNo uint32, out MSG_DATA, result interface{}, outchan chan *libraries.MsgBuffer, timeout ...time.Duration) (err error) {
-	query, ok := out.(RpcQuery)
-	if !ok {
-		return errors.New(fmt.Sprintf("out结构体%s不含QueryID无法使用Result模式", reflect.TypeOf(out).Elem().Name()))
-	}
-	id := uint32(rpcClientQueryId.INCRBY("id", 1))
-	if id == 0 { //不允许为0
-		id = uint32(rpcClientQueryId.INCRBY("id", 1))
-	}
-	query.setQueryID(id)
+//result可以传入nil，但是返回非MSG_HOST_QueryErr就会报错
+func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint16, transactionNo uint32, out MSG_DATA, result interface{}, outchan chan *libraries.MsgBuffer, timeout ...time.Duration) (err error) {
 	resultchan := make(chan RpcQueryResult, 1)
 	rpcClientQueryLock.Lock()
-	rpcClientQueryMap[id] = resultchan
+	var queryId uint32
+	for {
+		queryId = uint32(rpcClientQueryId.INCRBY("id", 1))
+		if queryId == 0 { //不允许为0
+			queryId = uint32(rpcClientQueryId.INCRBY("id", 1))
+		}
+		if _, ok := rpcClientQueryMap[queryId]; !ok {
+			break
+		}
+	}
+	rpcClientQueryMap[queryId] = resultchan
 	rpcClientQueryLock.Unlock()
 	buf := BufPoolGet()
 	b := buf.Make(MsgHeadLen)
@@ -270,25 +296,34 @@ func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint8, transactio
 	b[1] = byte(msgno >> 8)
 	b[2] = byte(msgno >> 16)
 	b[3] = byte(msgno >> 24)
-	b[4] = ttl
-	b[5] = byte(local)
-	b[6] = byte(local >> 8)
-	b[7] = byte(remote)
-	b[8] = byte(remote >> 8)
-	b[9] = byte(transactionNo)
-	b[10] = byte(transactionNo >> 8)
-	b[11] = byte(transactionNo >> 16)
-	b[12] = byte(transactionNo >> 24)
+	b[4] = byte(ttl)
+	b[5] = byte(ttl >> 8)
+	b[6] = byte(local)
+	b[7] = byte(local >> 8)
+	b[8] = byte(remote)
+	b[9] = byte(remote >> 8)
+	b[10] = byte(transactionNo)
+	b[11] = byte(transactionNo >> 8)
+	b[12] = byte(transactionNo >> 16)
+	b[13] = byte(transactionNo >> 24)
+
+	b[14] = byte(queryId)
+	b[15] = byte(queryId >> 8)
+	b[16] = byte(queryId >> 16)
+	b[17] = byte(queryId >> 24)
 	out.write(buf)
 	if buf.Len() > MaxMsgLen {
 		libraries.ReleaseLog("消息发送失败，包体超过限制" + string(debug.Stack()))
+		rpcClientQueryLock.Lock()
+		delete(rpcClientQueryMap, queryId)
+		rpcClientQueryLock.Unlock()
 		return errors.New("消息发送失败，包体超过限制" + string(debug.Stack()))
 	} else {
 		b = buf.Bytes()
 		msglen := buf.Len() - MsgHeadLen
-		b[13] = byte(msglen)
-		b[14] = byte(msglen >> 8)
-		b[15] = byte(msglen >> 16)
+		b[MsgHeadLen-3] = byte(msglen)
+		b[MsgHeadLen-2] = byte(msglen >> 8)
+		b[MsgHeadLen-1] = byte(msglen >> 16)
 		outchan <- buf
 	}
 	_timeout := MsgTimeOut * time.Second
@@ -313,32 +348,35 @@ func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint8, transactio
 	}
 	select {
 	case r := <-resultchan:
-		if err, ok := r.(*MSG_COMMON_QueryErr); ok {
+		rpcClientQueryLock.Lock()
+		defer rpcClientQueryLock.Unlock()
+		delete(rpcClientQueryMap, queryId)
+		if err, ok := r.(*MSG_HOST_QueryErr); ok {
 			if err.Err != "" {
 				return errors.New(err.Err)
 			} else if result == nil {
 				return nil
 			} else {
 				r1 := reflect.ValueOf(result)
-				return errors.New(fmt.Sprintf("实际返回的结果为MSG_COMMON_QueryErr,与请求的%s不相符", r1.Type().Elem().Elem().Name()))
+				return errors.New(fmt.Sprintf("实际返回的结果为MSG_HOST_QueryErr,与请求的%s不相符", r1.Type().Elem().Elem().Name()))
 			}
 		}
 		return checkAndSetResult(r)
 	case <-time.After(_timeout):
 		rpcClientQueryLock.Lock()
 		defer rpcClientQueryLock.Unlock()
-		delete(rpcClientQueryMap, id)
+		delete(rpcClientQueryMap, queryId)
 		select {
 		case r := <-resultchan:
 			defer r.(MSG_DATA).Put()
-			if err, ok := r.(*MSG_COMMON_QueryErr); ok {
+			if err, ok := r.(*MSG_HOST_QueryErr); ok {
 				if err.Err != "" {
 					return errors.New(err.Err)
 				} else if result == nil {
 					return nil
 				} else {
 					r1 := reflect.ValueOf(result)
-					return errors.New(fmt.Sprintf("实际返回的结果为MSG_COMMON_QueryErr,与请求的%s不相符", r1.Elem().Elem().Type().Name()))
+					return errors.New(fmt.Sprintf("实际返回的结果为MSG_HOST_QueryErr,与请求的%s不相符", r1.Elem().Elem().Type().Name()))
 				}
 			}
 			return checkAndSetResult(r)
@@ -348,75 +386,105 @@ func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint8, transactio
 	return RpcClientQueryTimeOutErr
 
 }
-func SetMsgQuery(i interface{}) bool {
-	if rpcResult, ok := i.(RpcQueryResult); ok {
-		rpcClientQueryLock.Lock()
-		if v, ok := rpcClientQueryMap[rpcResult.getQueryResultID()]; ok {
-			v <- rpcResult
+func SetMsgQuery(in *Msg) bool {
+	queryID := in.QueryID
+	rpcClientQueryLock.RLock()
+	defer rpcClientQueryLock.RUnlock()
+	if v, ok := rpcClientQueryMap[queryID]; ok {
+		if in.Data == nil {
+			in.ReadData()
 		}
-		rpcClientQueryLock.Unlock()
-		return true
+		v <- in.Data.(RpcQueryResult)
+	} else {
+		return false
 	}
-	return false
+
+	return true
+
 }
-func SendMsg(local, remote uint16, msgno uint32, ttl uint8, transactionNo uint32, out MSG_DATA, outchan chan *libraries.MsgBuffer) {
+func SendMsg(local, remote uint16, msgno uint32, ttl uint16, transactionNo uint32, queryId uint32, out MSG_DATA, outchan chan *libraries.MsgBuffer) {
 	buf := BufPoolGet()
 	b := buf.Make(MsgHeadLen)
 	b[0] = byte(msgno)
 	b[1] = byte(msgno >> 8)
 	b[2] = byte(msgno >> 16)
 	b[3] = byte(msgno >> 24)
-	b[4] = ttl
-	b[5] = byte(local)
-	b[6] = byte(local >> 8)
-	b[7] = byte(remote)
-	b[8] = byte(remote >> 8)
-	b[9] = byte(transactionNo)
-	b[10] = byte(transactionNo >> 8)
-	b[11] = byte(transactionNo >> 16)
-	b[12] = byte(transactionNo >> 24)
+	b[4] = byte(ttl)
+	b[5] = byte(ttl >> 8)
+	b[6] = byte(local)
+	b[7] = byte(local >> 8)
+	b[8] = byte(remote)
+	b[9] = byte(remote >> 8)
+	b[10] = byte(transactionNo)
+	b[11] = byte(transactionNo >> 8)
+	b[12] = byte(transactionNo >> 16)
+	b[13] = byte(transactionNo >> 24)
 
+	b[14] = byte(queryId)
+	b[15] = byte(queryId >> 8)
+	b[16] = byte(queryId >> 16)
+	b[17] = byte(queryId >> 24)
 	out.write(buf)
 	if buf.Len() > MaxMsgLen {
 		libraries.ReleaseLog("消息发送失败，包体超过限制" + string(debug.Stack()))
 	} else {
 		b = buf.Bytes()
 		msglen := buf.Len() - MsgHeadLen
-		b[13] = byte(msglen)
-		b[14] = byte(msglen >> 8)
-		b[15] = byte(msglen >> 16)
+		b[MsgHeadLen-3] = byte(msglen)
+		b[MsgHeadLen-2] = byte(msglen >> 8)
+		b[MsgHeadLen-1] = byte(msglen >> 16)
 		outchan <- buf
 	}
 }
+
+var msgTransactionLock sync.Mutex
+
 func (msg *Msg) BeginTransaction() (*MsgDBTransaction, error) {
 	if msg.DB.transaction == nil {
-		result := GET_MSG_COMMON_BeginTransaction_result()
-		out := GET_MSG_COMMON_BeginTransaction()
+		msgTransactionLock.Lock()
+		defer func() {
+			msgTransactionLock.Unlock()
+		}()
+
+		if v, ok := transactionMap.Load(msg.DB.transactionNo); ok {
+			msg.DB.transaction = &MsgDBTransaction{t: v.(*mysql.Transaction), msg: msg, newTransactionNo: msg.DB.transactionNo}
+			return msg.DB.transaction, nil
+		}
+		result := GET_MSG_HOST_BeginTransaction_result()
+		out := GET_MSG_HOST_BeginTransaction()
 		out.TransactionNo = msg.DB.transactionNo
 		err := msg.SendMsgWaitResult(0, out, &result)
 		if err != nil {
 			return nil, err
 		}
+		no := result.TransactionNo
+		msg.DB.transaction = &MsgDBTransaction{t: nil, msg: msg, newTransactionNo: no}
 		if msg.DB.DB != nil {
 			transaction, err := msg.DB.DB.BeginTransaction()
 			if err != nil {
 				return nil, err
 			}
-			no := result.TransactionNo
+
+			msg.DB.transaction.t = transaction
 			transactionMap.Store(no, transaction)
-			msg.DB.transaction = &MsgDBTransaction{t: transaction, msg: msg, newTransactionNo: no}
-			time.AfterFunc(MsgTimeOut*10*time.Second, func() {
-				if _, ok := transactionMap.LoadAndDelete(no); ok {
-					out := GET_MSG_COMMON_Transaction_RollBack()
-					out.No = no
-					msg.SendMsgWaitResult(0, out, nil)
-					out.Put()
-					transaction.Rollback()
-					transaction.EndTransaction()
+		} else {
+			transactionMap.Store(no, nil)
+		}
+
+		time.AfterFunc(MsgTimeOut*10*time.Second, func() {
+			if _, ok := transactionMap.LoadAndDelete(no); ok {
+				out := GET_MSG_HOST_Transaction_RollBack()
+				out.No = no
+				msg.SendMsgWaitResult(0, out, nil)
+				out.Put()
+				if msg.DB.transaction.t != nil {
+					msg.DB.transaction.t.Rollback()
+					msg.DB.transaction.t.EndTransaction()
 				}
 
-			})
-		}
+			}
+
+		})
 		result.Put()
 		out.Put()
 		return msg.DB.transaction, nil
@@ -426,12 +494,12 @@ func (msg *Msg) BeginTransaction() (*MsgDBTransaction, error) {
 		Msgno:              msg.Msgno,
 		Ttl:                msg.Ttl,
 		Local:              msg.Local,
-		Remote:             msg.Remote,
+		remoteID:           msg.remoteID,
 		Cmd:                msg.Cmd,
 		Data:               msg.Data,
 		buf:                msg.buf,
 		datalen:            msg.datalen,
-		svr:                msg.svr,
+		Svr:                msg.Svr,
 		cache:              msg.cache,
 		transactionTimeOut: msg.transactionTimeOut,
 		DB:                 &MsgDB{transactionNo: msg.DB.transaction.newTransactionNo},
@@ -472,32 +540,35 @@ func (t *MsgDBTransaction) Raw(sql string, arg ...interface{}) *mysql.Mysql_RawB
 	return t.msg.DB.Raw(sql, arg...)
 }
 func (t *MsgDBTransaction) Commit() error {
+
 	//拦截住no不为0的commit
 	if t.msg.DB.transactionNo > 0 {
+
 		return nil
 	}
-	if v, ok := transactionMap.LoadAndDelete(t.newTransactionNo); ok {
-		out := GET_MSG_COMMON_Transaction_Commit()
+
+	if _, ok := transactionMap.Load(t.newTransactionNo); ok {
+		out := GET_MSG_HOST_Transaction_Commit()
 		out.No = t.newTransactionNo
 		err := t.msg.SendMsgWaitResult(0, out, nil)
 		out.Put()
-		if err == nil {
-			v.(*mysql.Transaction).Commit()
-			v.(*mysql.Transaction).EndTransaction()
-		}
 		return err
 	}
 	return nil
 }
 func (t *MsgDBTransaction) Rollback() error {
+
 	if v, ok := transactionMap.LoadAndDelete(t.newTransactionNo); ok {
 		//允许任意节点发出rollback
-		out := GET_MSG_COMMON_Transaction_RollBack()
+		out := GET_MSG_HOST_Transaction_RollBack()
 		out.No = t.newTransactionNo
 		err := t.msg.SendMsgWaitResult(0, out, nil)
 		out.Put()
-		v.(*mysql.Transaction).Rollback()
-		v.(*mysql.Transaction).EndTransaction()
+		if t, ok := v.(*mysql.Transaction); ok {
+			t.Rollback()
+			t.EndTransaction()
+		}
+
 		return err
 	}
 	return nil
@@ -509,25 +580,29 @@ func (t *MsgDBTransaction) CommitCallback(f func()) {
 func (t *MsgDBTransaction) RollbackCallback(f func()) {
 	t.t.RollbackCallback(f)
 }
-func msgTransactionCheck(data *MSG_COMMON_Transaction_Check, in *Msg) {
-	if _, ok := transactionMap.Load(data.No); ok {
-		in.WriteErr(nil)
-	} else {
-		in.WriteErr(errTransactionNotFound)
+func MsgTransactionCheck(data *MSG_HOST_Transaction_Check) error {
+
+	if _, ok := transactionMap.Load(data.No); !ok {
+		return errTransactionNotFound
+	}
+	return nil
+}
+
+func MsgTransactionCommit(data *MSG_HOST_Transaction_Commit) {
+	if v, ok := transactionMap.LoadAndDelete(data.No); ok {
+		if t, ok := v.(*mysql.Transaction); ok {
+			t.Commit()
+			t.EndTransaction()
+		}
 	}
 }
 
-func msgTransactionCommit(data *MSG_COMMON_Transaction_Commit, in *Msg) {
+func MsgTransactionRollBack(data *MSG_HOST_Transaction_RollBack) {
 	if v, ok := transactionMap.LoadAndDelete(data.No); ok {
-		v.(*mysql.Transaction).Commit()
-		v.(*mysql.Transaction).EndTransaction()
-	}
-}
-
-func msgTransactionRollBack(data *MSG_COMMON_Transaction_RollBack, in *Msg) {
-	if v, ok := transactionMap.LoadAndDelete(data.No); ok {
-		v.(*mysql.Transaction).Rollback()
-		v.(*mysql.Transaction).EndTransaction()
+		if t, ok := v.(*mysql.Transaction); ok {
+			t.Rollback()
+			t.EndTransaction()
+		}
 	}
 }
 func (m *Msg) ActionCreate(objectType string, objectID int32, actionType, comment, extra string, products, projects []int32) (actionID int64, err error) {
@@ -541,6 +616,7 @@ func (m *Msg) ActionCreate(objectType string, objectID int32, actionType, commen
 	out.Products = products
 	out.Projects = projects
 	var result *MSG_LOG_Action_Create_result
+
 	if err = m.SendMsgWaitResult(0, out, &result); err != nil {
 		return
 	}
@@ -564,7 +640,42 @@ type diff struct {
 	value string
 }
 
-func (m *Msg) ActionLogHistory(actionID int64, oldObj, newObj interface{}) {
+func (m *Msg) ActionLogHistory(actionID int64, oldObj, newObj interface{}) ([]*MSG_LOG_History, error) {
+	change, err := GetDiffChange(oldObj, newObj)
+	if len(change) > 0 {
+		out := GET_MSG_LOG_Action_AddHistory()
+		out.History = change
+		out.Id = actionID
+		m.SendMsg(0, out)
+	}
+	return change, err
+}
+
+type ChangeHistory []*MSG_LOG_History
+
+func (change ChangeHistory) Add(actionID int64, m *Msg) {
+	if len(change) > 0 {
+		out := GET_MSG_LOG_Action_AddHistory()
+		out.History = change
+		out.Id = actionID
+		m.SendMsg(0, out)
+	}
+}
+func WRITE_ChangeHistory(change ChangeHistory, buf *libraries.MsgBuffer) {
+	WRITE_int(len(change), buf)
+	for _, c := range change {
+		WRITE_MSG_LOG_History(c, buf)
+	}
+}
+func READ_ChangeHistory(buf *libraries.MsgBuffer) ChangeHistory {
+	var change ChangeHistory
+	l := READ_int(buf)
+	for i := 0; i < l; i++ {
+		change = append(change, READ_MSG_LOG_History(buf))
+	}
+	return change
+}
+func GetDiffChange(oldObj, newObj interface{}) (change ChangeHistory, err error) {
 	r_o := reflect.ValueOf(oldObj)
 	r_n := reflect.ValueOf(newObj)
 	for r_o.Kind() == reflect.Ptr {
@@ -574,15 +685,12 @@ func (m *Msg) ActionLogHistory(actionID int64, oldObj, newObj interface{}) {
 		r_n = r_n.Elem()
 	}
 	if r_o.Kind() != reflect.Struct && r_o.Kind() != reflect.Map && r_o.Kind() != r_n.Kind() {
-		libraries.DebugLog("ActionLogHistory传入不接受的格式 old %v,new %v", r_o.Kind(), r_n.Kind())
-		return
+		return nil, errors.New(fmt.Sprintf("ActionLogHistory传入不接受的格式 old %v,new %v", r_o.Kind(), r_n.Kind()))
 	}
-	var change []*MSG_LOG_History
 	switch r_o.Kind() {
 	case reflect.Struct:
 		if r_o.Type().String() != r_n.Type().String() {
-			libraries.DebugLog("ActionLogHistory传入不一样的结构体 old %v,new %v", r_o.Type().String(), r_n.Type().String())
-			return
+			return nil, errors.New(fmt.Sprintf("ActionLogHistory传入不一样的结构体 old %v,new %v", r_o.Type().String(), r_n.Type().String()))
 		}
 		for i := 0; i < r_o.NumField(); i++ {
 			field := r_n.Field(i)
@@ -593,6 +701,7 @@ func (m *Msg) ActionLogHistory(actionID int64, oldObj, newObj interface{}) {
 			lowerKey := strings.ToLower(t.Name)
 			value := libraries.I2S(field.Interface())
 			oldValue := libraries.I2S(r_o.Field(i).Interface())
+
 			if t.Type.String() == "time.Time" {
 				if time, _ := field.Interface().(time.Time); time.Unix() > 946656000 { //随便定个时间，暂时定做2000年1月1日的时间戳
 					value = time.Format("2006-01-02 16:04:05")
@@ -601,6 +710,9 @@ func (m *Msg) ActionLogHistory(actionID int64, oldObj, newObj interface{}) {
 				}
 			}
 			if lowerKey == "lastediteddate" || lowerKey == "lasteditedby" || lowerKey == "assigneddate" || lowerKey == "editedby" || lowerKey == "editeddate" || lowerKey == "uid" || (lowerKey == "finisheddate" && value == "") || (lowerKey == "canceleddate" && value == "") || (lowerKey == "closeddate" && value == "") {
+				continue
+			}
+			if oldValue == value {
 				continue
 			}
 			var diffString []string
@@ -637,17 +749,19 @@ func (m *Msg) ActionLogHistory(actionID int64, oldObj, newObj interface{}) {
 					New:   value,
 					Diff:  strings.Join(diffString, "\n"),
 				})
+			} else {
+				change = append(change, &MSG_LOG_History{
+					Field: lowerKey,
+					Old:   oldValue,
+					New:   value,
+				})
 			}
 
 		}
 	}
-	if len(change) > 0 {
-		out := GET_MSG_LOG_Action_AddHistory()
-		out.History = change
-		out.Id = actionID
-		m.SendMsg(0, out)
-	}
+	return
 }
+
 func string_array_diff_assoc(a, b []string) []string {
 	for i := len(a) - 1; i >= 0; i-- {
 		v1 := a[i]
@@ -659,4 +773,37 @@ func string_array_diff_assoc(a, b []string) []string {
 		}
 	}
 	return a
+}
+func CopyObj(oldobj interface{}, newobj interface{}) (err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = errors.New(fmt.Sprint(e))
+		}
+	}()
+	r_o := reflect.ValueOf(oldobj)
+	r_n := reflect.ValueOf(newobj)
+	r_nt := reflect.TypeOf(newobj)
+	for r_o.Kind() == reflect.Ptr {
+		r_o = r_o.Elem()
+
+	}
+	for r_n.Kind() == reflect.Ptr {
+		if r_n.Elem().Kind() == reflect.Invalid {
+			r_n.Set(reflect.New(r_nt.Elem()))
+		}
+		r_n = r_n.Elem()
+		r_nt = r_nt.Elem()
+	}
+
+	if r_o.Kind() != reflect.Struct && r_o.Kind() != reflect.Map && r_o.Kind() != r_n.Kind() {
+		return errors.New(fmt.Sprintf("CopyObj传入不接受的格式 old %v,new %v", r_o.Kind(), r_n.Kind()))
+	}
+	if r_o.Type().String() != r_nt.String() {
+		return errors.New(fmt.Sprintf("CopyObj传入不一样的结构体 old %v,new %v", r_o.Type().String(), r_n.Type().String()))
+	}
+	for i := 0; i < r_o.NumField(); i++ {
+		field := r_n.Field(i)
+		field.Set(reflect.ValueOf(r_o.Field(i).Interface()))
+	}
+	return nil
 }

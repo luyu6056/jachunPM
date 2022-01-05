@@ -4,6 +4,7 @@ import (
 	"jachunPM_log/config"
 	"log"
 	"mysql"
+	"protocol"
 	"time"
 )
 
@@ -22,19 +23,20 @@ func Init() *mysql.MysqlDB {
 	if err = db.Ping(); err != nil {
 		log.Fatalf("数据库启动失败 %v", err)
 	}
-	errs := db.StoreEngine("TokuDB").Sync2(
+	errs := db.StoreEngine("MyRocks").Sync2(
 		new(Action),
 	)
 	if errs != nil {
 		log.Fatalf("数据库启动失败%v", errs)
 	}
+	db.Regsiter(&protocol.MSG_LOG_Action{}, &protocol.MSG_LOG_transformActions_info{})
 	return db
 }
 
 type Action struct {
 	Id         int64   `db:"auto_increment;pk"`
-	ObjectType string  `db:"type:varchar(30)"`
-	ObjectID   int32   `db:"default(0)"`
+	ObjectType string  `db:"type:varchar(30);index"`
+	ObjectID   int32   `db:"default(0);index"`
 	Products   []int32 `db:"type:json"`
 	Projects   []int32 `db:"type:json"`
 	ActorId    int32

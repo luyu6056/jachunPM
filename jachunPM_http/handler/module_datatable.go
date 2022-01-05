@@ -3,11 +3,19 @@ package handler
 import (
 	"html/template"
 	"jachunPM_http/config"
+	"jachunPM_http/js"
 	"libraries"
+	"protocol"
 	"strconv"
 	"strings"
 )
 
+func init() {
+	httpHandlerMap["GET"]["/datatable/ajaxCustom"] = datatable_ajaxCustom
+	httpHandlerMap["POST"]["/datatable/ajaxSave"] = datatable_ajaxSave
+	httpHandlerMap["GET"]["/datatable/ajaxReset"] = datatable_ajaxReset
+
+}
 func datatable_getSetting(data *TemplateData, module string, method string) (setting []*config.ConfigDatatable) {
 
 	datatableId := module + strings.ToUpper(method[:1]) + method[1:]
@@ -31,6 +39,7 @@ func datatable_getSetting(data *TemplateData, module string, method string) (set
 	if v1, ok := data.Config["datatable"][datatableId]; ok {
 		if v2, ok := v1[key].(string); ok {
 			libraries.JsonUnmarshalStr(v2, &setting)
+
 		}
 	}
 	fieldList := datatable_getFieldList(data, module)
@@ -60,7 +69,7 @@ func datatable_getSetting(data *TemplateData, module string, method string) (set
 		}
 
 	} else {
-		for i := len(setting) - 1; i >= 0; i++ {
+		for i := len(setting) - 1; i >= 0; i-- {
 			set := setting[i]
 
 			if data.ws.Session().Load_str("currentProductType") == "normal" && set.Id == "branch" {
@@ -76,6 +85,7 @@ func datatable_getSetting(data *TemplateData, module string, method string) (set
 			}
 		}
 	}
+	data.Data["mode"] = mode
 	return setting
 }
 func datatable_sortCols(list []*config.ConfigDatatable) {
@@ -152,43 +162,7 @@ func datatable_sortCols(list []*config.ConfigDatatable) {
 	}
 
 }
-func datatable_getFieldList(data *TemplateData, module string) (fieldList map[string]map[string]string) {
-	if v1, ok := data.Config[module]["datatable"]; ok {
-		if v2, ok := v1["fieldList"].(map[string]map[string]string); ok {
-			fieldList = make(map[string]map[string]string, len(v2))
-			for k1, v1 := range v2 {
-				fieldList[k1] = make(map[string]string)
-				for k2, v2 := range v1 {
-					fieldList[k1][k2] = v2
-				}
-			}
-		}
-	}
-	if data.ws.Session().Load_str("currentProductType") == "normal" {
-		delete(fieldList, "branch")
-	}
-	for field, items := range fieldList {
-		if field == "branch" {
-			if data.ws.Session().Load_str("currentProductType") == "branch" {
-				fieldList[field]["title"] = data.Lang["datatable"]["branch"].(string)
-			}
-			if data.ws.Session().Load_str("currentProductType") == "platform" {
-				fieldList[field]["title"] = data.Lang["datatable"]["platform"].(string)
-			}
-			continue
-		}
 
-		if v, ok := data.Lang[module][items["title"]].(string); ok {
-			items["title"] = v
-		} else {
-			if v, ok := data.Lang["common"][items["title"]].(string); ok {
-				items["title"] = v
-			}
-		}
-		fieldList[field] = items
-	}
-	return
-}
 func datatable_setFixedFieldWidth(setting []*config.ConfigDatatable) map[string]int {
 	widths := make(map[string]int)
 	widths["leftWidth"] = 30
@@ -288,4 +262,139 @@ func datatableFuncs() {
 		bufpool.Put(buf)
 		return template.HTML(res)
 	}
+}
+func datatable_ajaxCustom(data *TemplateData) (err error) {
+	module := data.ws.Query("module")
+	method := data.ws.Query("method")
+	target := module + strings.ToUpper(method[0:1]) + method[1:]
+	mode := "table"
+	if v, ok := data.Config["datatable"][target]; ok {
+		if m, ok := v["mode"].(string); ok {
+			mode = m
+		}
+	}
+
+	key := "tablecols"
+	if mode == "datatable" {
+		key = "cols"
+	}
+
+	if module == "testtask" {
+
+		data.Config["testcase"]["datatable"]["defaultField"] = data.Config["testtask"]["datatable"]["defaultField"]
+		data.Config["testcase"]["datatable"]["fieldList"] = map[string]map[string]string{
+			"actions": map[string]string{
+				"width": "100",
+			},
+		}
+	}
+	if module == "testcase" {
+		delete(data.Config["testcase"]["datatable"]["fieldList"].(map[string]map[string]string), "assignedTo")
+
+	}
+
+	data.Data["module"] = module
+	data.Data["method"] = method
+	data.Data["mode"] = mode
+	if v, ok := data.Config["datatable"]["moduleAlias"][module+"-"+method].(string); ok {
+		module = v
+	}
+
+	setting, _ := data.Config["datatable"][target][key].(string)
+	if setting == "" {
+		setting = libraries.JsonMarshalToString(data.Config[module]["datatable"]["defaultField"])
+	}
+
+	data.Data["cols"] = datatable_getFieldList(data, module)
+	data.Data["setting"] = setting
+	templateOut("datatable.ajaxcustom.html", data)
+	return nil
+}
+func datatable_getFieldList(data *TemplateData, module string) map[string]map[string]string {
+	if fieldList, ok := data.Config[module]["datatable"]["fieldList"].(map[string]map[string]string); ok {
+		if data.ws.Session().Load_str("currentProductType") == "normal" {
+			delete(fieldList, "branch")
+		}
+		for field, items := range fieldList {
+			if field == "branch" {
+				if data.ws.Session().Load_str("currentProductType") == "branch" {
+					items["title"] = data.Lang["datatable"]["branch"].(string)
+				}
+				if data.ws.Session().Load_str("currentProductType") == "platform" {
+					items["title"] = data.Lang["datatable"]["platform"].(string)
+				}
+			}
+			var title string
+
+			if v, ok := data.Lang[module]; ok {
+				title, _ = v[items["title"]].(string)
+			}
+			if title == "" {
+				title, _ = data.Lang["common"][items["title"]].(string)
+			}
+			items["title"] = title
+			fieldList[field] = items
+		}
+		return fieldList
+	}
+	return nil
+
+}
+func datatable_ajaxSave(data *TemplateData) (err error) {
+	if data.User.Id == 0 {
+		data.ajaxResult(true, nil)
+		return nil
+	}
+	out := protocol.GET_MSG_USER_config_save()
+	out.Uid = data.User.Id
+	out.Module = "datatable"
+	out.Key = data.ws.Post("name")
+	target := data.ws.Post("target")
+	if i := strings.Index(target, "/"); i > 0 {
+		target = target[:i] + strings.ToUpper(target[i+1:i+2]) + target[i+2:]
+	}
+	out.Section = target
+	out.Type = "add"
+	if data.ws.Post("global") == "1" {
+		out.Uid = 0
+
+	}
+	out.Value = data.ws.Post("value")
+	if err = data.SendMsgWaitResultToDefault(out, nil); err != nil {
+		return
+	}
+	data.ajaxResult(true, nil)
+	return nil
+}
+func datatable_ajaxReset(data *TemplateData) (err error) {
+	if data.ws.Query("confirm") != "yes" {
+		data.ws.WriteString(js.Confirm(data.Lang["datatable"]["confirmReset"].(string), createLink("datatable", "ajaxReset", []interface{}{"module=", data.ws.Query("module"), "&method=", data.ws.Query("method"), "&system=", data.ws.Query("system"), "&confirm=yes"}), ""))
+		return
+	}
+	if data.User.Id == 0 {
+		data.ws.WriteString(js.Reload("parent"))
+		return nil
+	}
+	out := protocol.GET_MSG_USER_config_save()
+	out.Uid = data.User.Id
+	out.Module = "datatable"
+	out.Key = "tablecols"
+	target := data.ws.Query("method")
+	target = data.ws.Query("module") + strings.ToUpper(target[0:1]) + target[1:]
+	if v, ok := data.Config["datatable"][target]; ok {
+		if m, ok := v["mode"].(string); ok {
+			out.Key = m
+		}
+	}
+	out.Section = target
+	out.Type = "delete"
+	if data.ws.Query("system") == "1" {
+		out.Uid = 0
+
+	}
+	if err = data.SendMsgWaitResultToDefault(out, nil); err != nil {
+		return
+	}
+	data.ws.WriteString(js.Reload("parent"))
+	return nil
 }

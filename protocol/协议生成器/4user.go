@@ -3,12 +3,10 @@ package main
 import "time"
 
 type MSG_USER_GET_LoginSalt struct {
-	QueryID uint32
-	Name    string
+	Name string
 }
 type MSG_USER_GET_LoginSalt_result struct {
-	QueryResultID uint32
-	Salt          string
+	Salt string
 }
 type MSG_USER_INFO_cache struct {
 	Id          int32
@@ -33,23 +31,22 @@ type MSG_USER_INFO_cache struct {
 	Deleted     bool
 	Weixin      string
 	Address     string
-	AclProducts map[int32]bool //允许访问的产品
-	AclProjects map[int32]bool //允许访问的项目
-	IsAdmin     bool           `db:"-"` //暂定id为1是admin
+	AclProducts map[int32]bool                          //允许访问的产品
+	AclProjects map[int32]bool                          //允许访问的项目
+	IsAdmin     bool                                    `db:"-"` //暂定id为1是admin
+	Config      map[string]map[string]map[string]string `db:"-"`
 }
 
 //检查密码是否正确，有Id优先查询Id，Id为0，Name查询account，realname，Mobile
 type MSG_USER_CheckPasswd struct {
-	QueryID uint32
-	UserId  int32
-	Name    string
-	Rand    int64
-	Passwd  string
+	UserId int32
+	Name   string
+	Rand   int64
+	Passwd string
 }
 type MSG_USER_CheckPasswd_result struct {
-	QueryResultID uint32
-	UserId        int32
-	Result        ErrCode
+	UserId int32
+	Result ErrCode
 }
 type MSG_USER_Company_cache struct {
 	Id       int32
@@ -75,34 +72,27 @@ type MSG_USER_Dept_cache struct {
 	Children    []*MSG_USER_Dept_cache `json:"children"` //部门管理前端的js需要小写
 }
 type MSG_USER_Dept_getParents struct {
-	QueryID uint32
-	Id      int32
+	Id int32
 }
 type MSG_USER_Dept_getParents_result struct {
-	QueryResultID uint32
-	List          []*MSG_USER_Dept_cache
+	List []*MSG_USER_Dept_cache
 }
 
 type MSG_USER_Dept_getDataStructure struct {
-	QueryID    uint32
 	RootDeptID int32
 }
 type MSG_USER_Dept_getDataStructure_result struct {
-	QueryResultID uint32
-	List          []*MSG_USER_Dept_cache
+	List []*MSG_USER_Dept_cache
 }
 
 type MSG_USER_Dept_update struct {
-	QueryID uint32
-	List    []*MSG_USER_Dept_cache
+	List []*MSG_USER_Dept_cache
 }
 type MSG_USER_Dept_delete struct {
-	QueryID uint32
-	DeptId  int32
+	DeptId int32
 }
 type MSG_USER_Dept_delete_result struct {
-	QueryResultID uint32
-	Result        ErrCode
+	Result ErrCode
 }
 type MSG_USER_Pairs struct {
 	Id       int32
@@ -110,15 +100,12 @@ type MSG_USER_Pairs struct {
 	Realname string
 }
 type MSG_USER_getDeptUserPairs struct {
-	QueryID uint32
-	DeptId  int32
+	DeptId int32
 }
 type MSG_USER_getDeptUserPairs_result struct {
-	QueryResultID uint32
-	List          []*MSG_USER_Pairs
+	List []*MSG_USER_Pairs
 }
 type MSG_USER_getCompanyUsers struct {
-	QueryID uint32
 	Type    string
 	Query   string
 	DeptID  int32
@@ -130,9 +117,8 @@ type MSG_USER_getCompanyUsers struct {
 }
 
 type MSG_USER_getCompanyUsers_result struct {
-	QueryResultID uint32
-	List          []*MSG_USER_INFO_cache
-	Total         int
+	List  []*MSG_USER_INFO_cache
+	Total int
 }
 type MSG_USER_Group_cache struct {
 	Id          int32
@@ -146,58 +132,46 @@ type MSG_USER_Group_cache struct {
 	Priv        map[string]map[string]bool
 }
 type MSG_USER_INFO_updateByID struct {
-	QueryID uint32
-	UserID  int32
-	Update  map[string]string
+	UserID int32
+	Update map[string]string
 }
 type MSG_USER_CheckAccount struct {
-	QueryID uint32
 	Account string
 }
 type MSG_USER_CheckAccount_result struct {
-	QueryResultID uint32
-	Result        ErrCode
+	Result ErrCode
 }
 type MSG_USER_getPairs struct {
-	QueryID         uint32
 	Params          string
 	UsersToAppended int32
 }
 type MSG_USER_getPairs_result struct {
-	QueryResultID uint32
-	List          []HtmlKeyValueStr
+	List []HtmlKeyValueStr
 }
 type MSG_USER_updateUserView struct {
-	QueryID    uint32
 	ProjectIds []int32
 	ProductIds []int32
 	UserIds    []int32
 	GroupIds   []int32
 }
 type MSG_USER_getContactLists struct {
-	QueryID uint32
-	Uid     int32
-	Params  string
+	Uid    int32
+	Params string
 }
 type MSG_USER_getContactLists_result struct {
-	QueryResultID uint32
-	List          []HtmlKeyValueStr
+	List []HtmlKeyValueStr
 }
 type MSG_USER_getContactListByUid struct {
-	QueryID uint32
-	Uid     int32
+	Uid int32
 }
 type MSG_USER_getContactListByUid_result struct {
-	QueryResultID uint32
-	List          []HtmlKeyValueStr
+	List []HtmlKeyValueStr
 }
 type MSG_USER_getContactListById struct {
-	QueryID uint32
-	Id      int32
+	Id int32
 }
 type MSG_USER_getContactListById_result struct {
-	QueryResultID uint32
-	Result        *MSG_USER_ContactList
+	Result *MSG_USER_ContactList
 }
 type MSG_USER_ContactList struct {
 	Id       int32
@@ -207,28 +181,28 @@ type MSG_USER_ContactList struct {
 	Share    bool
 }
 type MSG_USER_insertUpdateContactList struct {
-	QueryID uint32
-	Insert  *MSG_USER_ContactList
+	Insert *MSG_USER_ContactList
 }
 type MSG_USER_insertUpdateContactList_result struct {
-	QueryResultID uint32
-	Id            int32
+	Id int32
 }
 type MSG_USER_getGlobalContacts struct {
-	QueryID uint32
 }
 type MSG_USER_getGlobalContacts_result struct {
-	QueryResultID uint32
-	Result        []*MSG_USER_ContactList
+	Result []*MSG_USER_ContactList
 }
 type MSG_USER_team_getByTypeRoot struct {
-	QueryID uint32
-	Type    string
-	Root    int32
+	Type string
+	Root []int32
 }
 type MSG_USER_team_getByTypeRoot_result struct {
-	QueryResultID uint32
-	List          []*MSG_USER_team_info
+	List []*MSG_USER_team_info
+}
+type MSG_USER_team_getByIds struct {
+	Ids []int32
+}
+type MSG_USER_team_getByIds_result struct {
+	List []*MSG_USER_team_info
 }
 type MSG_USER_team_info struct {
 	Id       int32
@@ -245,27 +219,23 @@ type MSG_USER_team_info struct {
 	Consumed float64
 	Left     float64
 	Order    int8
+	Deleted  bool   `db:"-"`
 	Realname string `db:"-"`
 }
 type MSG_USER_team_addByList struct {
-	QueryID uint32
-	List    []*MSG_USER_team_info
+	List []*MSG_USER_team_info
 }
 type MSG_USER_Group_getPairs struct {
-	QueryID uint32
 }
 type MSG_USER_Group_getPairs_result struct {
-	QueryResultID uint32
-	List          []HtmlKeyValueStr
+	List []HtmlKeyValueStr
 }
 type MSG_USER_team_getByTypeUid struct {
-	QueryID uint32
-	Type    string
-	Uid     int32
+	Type string
+	Uid  int32
 }
 type MSG_USER_team_getByTypeUid_result struct {
-	QueryResultID uint32
-	List          []*MSG_USER_team_info
+	List []*MSG_USER_team_info
 }
 type MSG_USER_Userquery_info struct {
 	Id       int32
@@ -277,10 +247,29 @@ type MSG_USER_Userquery_info struct {
 	Shortcut bool
 }
 type MSG_USER_user_getUserqueryByWhere struct {
-	QueryID uint32
-	Where   map[string]interface{}
+	Where map[string]interface{}
 }
 type MSG_USER_user_getUserqueryByWhere_result struct {
-	QueryResultID uint32
-	List          []*MSG_USER_Userquery_info
+	List []*MSG_USER_Userquery_info
+}
+type MSG_USER_team_getMemberPairsByTypeRoot struct {
+	Type string
+	Root int32
+}
+type MSG_USER_team_getMemberPairsByTypeRoot_result struct {
+	List []HtmlKeyValueStr
+}
+type MSG_USER_team_updateByWhere struct {
+	Where  map[string]interface{}
+	Update map[string]interface{}
+}
+
+type MSG_USER_config_save struct {
+	Uid     int32
+	Module  string
+	Section string
+	Key     string
+	Value   string
+	Type    string //add deleted
+
 }

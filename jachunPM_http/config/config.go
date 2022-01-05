@@ -11,10 +11,15 @@ type ConfigSearchParams struct {
 	ValueExt string
 	Class    string
 }
+type ConfigSearch struct {
+	Module string
+	Fields []protocol.HtmlKeyValueStr
+	Params map[string]*ConfigSearchParams
+}
 
 /*\['([A-z]+)']\s*= array\('operator' => '([^']+)',\s*'control' => '([^']+)',\s*'values' =>(.+?)(,\s*'class' => '([^']+)')?\);
 
-"$1": ConfigSearchParams{
+"$1": &ConfigSearchParams{
 	Operator: "$2",
 	Control:  "$3",
 	Values:   $4,
@@ -53,9 +58,9 @@ func configInit(local protocol.CountryNo) {
 
 	Config[local]["company"] = make(map[string]map[string]interface{})
 	Config[local]["company"]["browse"] = map[string]interface{}{
-		"search": map[string]interface{}{
-			"module": "user",
-			"fields": []protocol.HtmlKeyValueStr{
+		"search": &ConfigSearch{
+			Module: "user",
+			Fields: []protocol.HtmlKeyValueStr{
 				{"realname", Lang[local]["user"]["realname"].(string)},
 				{"email", Lang[local]["user"]["email"].(string)},
 				{"dept", Lang[local]["user"]["dept"].(string)},
@@ -73,100 +78,107 @@ func configInit(local protocol.CountryNo) {
 				//{"wangwang", Lang[local]["user"]["wangwang"].(string)},
 				{"address", Lang[local]["user"]["address"].(string)},
 				{"zipcode", Lang[local]["user"]["zipcode"].(string)},
+				{"attendNo", Lang[local]["user"]["attendNo"].(string)},
 			},
-			"params": map[string]ConfigSearchParams{
-				"realname": ConfigSearchParams{
+			Params: map[string]*ConfigSearchParams{
+				"realname": &ConfigSearchParams{
 					Operator: "include",
 					Control:  "input",
 				},
-				"email": ConfigSearchParams{
+				"email": &ConfigSearchParams{
 					Operator: "include",
 					Control:  "input",
 					Class:    "",
 				},
-				"dept": ConfigSearchParams{
+				"dept": &ConfigSearchParams{
 					Operator: "belong",
 					Control:  "select",
 					Class:    "",
 				},
-				"account": ConfigSearchParams{
+				"account": &ConfigSearchParams{
 					Operator: "include",
 					Control:  "input",
 					Class:    "",
 				},
-				"role": ConfigSearchParams{
+				"role": &ConfigSearchParams{
 					Operator: "=",
 					Control:  "select",
 					Values:   Lang[local]["user"]["roleList"].([]protocol.HtmlKeyValueStr),
 					Class:    "",
 				},
-				"phone": ConfigSearchParams{
+				"phone": &ConfigSearchParams{
 					Operator: "include",
 					Control:  "input",
 
 					Class: "",
 				},
-				"join": ConfigSearchParams{
+				"join": &ConfigSearchParams{
 					Operator: "=",
 					Control:  "input",
 
 					Class: "date",
 				},
-				"id": ConfigSearchParams{
+				"id": &ConfigSearchParams{
 					Operator: "=",
 					Control:  "input",
 
 					Class: "",
 				},
-				"commiter": ConfigSearchParams{
+				"commiter": &ConfigSearchParams{
 					Operator: "include",
 					Control:  "select",
 
 					Class: "",
 				},
-				"gender": ConfigSearchParams{
+				"gender": &ConfigSearchParams{
 					Operator: "=",
 					Control:  "select",
 					Values:   Lang[local]["user"]["genderList"].([]protocol.HtmlKeyValueStr),
 					Class:    "",
 				},
-				"qq": ConfigSearchParams{
+				"qq": &ConfigSearchParams{
 					Operator: "=",
 					Control:  "input",
 
 					Class: "",
 				},
-				"skype": ConfigSearchParams{
+				"skype": &ConfigSearchParams{
 					Operator: "=",
 					Control:  "input",
 
 					Class: "",
 				},
-				"yahoo": ConfigSearchParams{
+				"yahoo": &ConfigSearchParams{
 					Operator: "=",
 					Control:  "input",
 
 					Class: "",
 				},
-				"gtalk": ConfigSearchParams{
+				"gtalk": &ConfigSearchParams{
 					Operator: "=",
 					Control:  "input",
 
 					Class: "",
 				},
-				"wangwang": ConfigSearchParams{
+				"wangwang": &ConfigSearchParams{
 					Operator: "=",
 					Control:  "input",
 
 					Class: "",
 				},
-				"address": ConfigSearchParams{
+				"address": &ConfigSearchParams{
 					Operator: "include",
 					Control:  "input",
 
 					Class: "",
 				},
-				"zipcode": ConfigSearchParams{
+				"zipcode": &ConfigSearchParams{
+					Operator: "=",
+					Control:  "input",
+
+					Class: "",
+				},
+				"attendNo": &ConfigSearchParams{
 					Operator: "=",
 					Control:  "input",
 
@@ -191,163 +203,163 @@ func configInit(local protocol.CountryNo) {
 		"exportFields": "id,name,line,activeStories,changedStories,draftStories,closedStories,plans,releases,bugs,unResolvedBugs,assignToNullBugs",
 	}
 
-	Config[local]["product"]["search"] = map[string]interface{}{
-		"module": "story",
-		"fields": map[string]interface{}{
-			"title":    Lang[local]["story"]["title"].(string),
-			"id":       Lang[local]["story"]["id"].(string),
-			"keywords": Lang[local]["story"]["keywords"].(string),
-			"stage":    Lang[local]["story"]["stage"].(string),
-			"status":   Lang[local]["story"]["status"].(string),
-			"pri":      Lang[local]["story"]["pri"].(string),
+	Config[local]["product"]["common"]["search"] = &ConfigSearch{
+		Module: "story",
+		Fields: []protocol.HtmlKeyValueStr{
+			{"title", Lang[local]["story"]["title"].(string)},
+			{"id", Lang[local]["story"]["id"].(string)},
+			{"keywords", Lang[local]["story"]["keywords"].(string)},
+			{"stage", Lang[local]["story"]["stage"].(string)},
+			{"status", Lang[local]["story"]["status"].(string)},
+			{"pri", Lang[local]["story"]["pri"].(string)},
 
-			"product":  Lang[local]["story"]["product"].(string),
-			"branch":   "",
-			"module":   Lang[local]["story"]["module"].(string),
-			"plan":     Lang[local]["story"]["plan"].(string),
-			"estimate": Lang[local]["story"]["estimate"].(string),
+			{"product", Lang[local]["story"]["product"].(string)},
+			{"branch", ""},
+			{"module", Lang[local]["story"]["module"].(string)},
+			{"plan", Lang[local]["story"]["plan"].(string)},
+			{"estimate", Lang[local]["story"]["estimate"].(string)},
 
-			"source":     Lang[local]["story"]["source"].(string),
-			"sourceNote": Lang[local]["story"]["sourceNote"].(string),
-			"fromBug":    Lang[local]["story"]["fromBug"].(string),
+			{"source", Lang[local]["story"]["source"].(string)},
+			{"sourceNote", Lang[local]["story"]["sourceNote"].(string)},
+			{"fromBug", Lang[local]["story"]["fromBug"].(string)},
 
-			"openedBy":     Lang[local]["story"]["openedBy"].(string),
-			"reviewedBy":   Lang[local]["story"]["reviewedBy"].(string),
-			"assignedTo":   Lang[local]["story"]["assignedTo"].(string),
-			"closedBy":     Lang[local]["story"]["closedBy"].(string),
-			"lastEditedBy": Lang[local]["story"]["lastEditedBy"].(string),
+			{"openedBy", Lang[local]["story"]["openedBy"].(string)},
+			{"reviewedBy", Lang[local]["story"]["reviewedBy"].(string)},
+			{"assignedTo", Lang[local]["story"]["assignedTo"].(string)},
+			{"closedBy", Lang[local]["story"]["closedBy"].(string)},
+			{"lastEditedBy", Lang[local]["story"]["lastEditedBy"].(string)},
 
-			"mailto": Lang[local]["story"]["mailto"].(string),
+			{"mailto", Lang[local]["story"]["mailto"].(string)},
 
-			"closedReason": Lang[local]["story"]["closedReason"].(string),
-			"version":      Lang[local]["story"]["version"].(string),
+			{"closedReason", Lang[local]["story"]["closedReason"].(string)},
+			{"version", Lang[local]["story"]["version"].(string)},
 
-			"openedDate":     Lang[local]["story"]["openedDate"].(string),
-			"reviewedDate":   Lang[local]["story"]["reviewedDate"].(string),
-			"assignedDate":   Lang[local]["story"]["assignedDate"].(string),
-			"closedDate":     Lang[local]["story"]["closedDate"].(string),
-			"lastEditedDate": Lang[local]["story"]["lastEditedDate"].(string),
-			"params": map[string]ConfigSearchParams{
-				"title": ConfigSearchParams{
-					Operator: "include",
-					Control:  "input",
-				},
-				"keywords": ConfigSearchParams{
-					Operator: "include",
-					Control:  "input",
-				},
-				"status": ConfigSearchParams{
-					Operator: "=",
-					Control:  "select",
-					Values:   Lang[local]["story"]["statusList"].([]protocol.HtmlKeyValueStr),
-				},
-				"stage": ConfigSearchParams{
-					Operator: "=",
-					Control:  "select",
-					Values:   Lang[local]["story"]["stageList"].([]protocol.HtmlKeyValueStr),
-				},
-				"pri": ConfigSearchParams{
-					Operator: "=",
-					Control:  "select",
-					Values:   Lang[local]["story"]["priList"].([]protocol.HtmlKeyValueStr),
-				},
-				"product": ConfigSearchParams{
-					Operator: "=",
-					Control:  "select",
-				},
-				"branch": ConfigSearchParams{
-					Operator: "=",
-					Control:  "select",
-				},
-				"module": ConfigSearchParams{
-					Operator: "belong",
-					Control:  "select",
-				},
-				"plan": ConfigSearchParams{
-					Operator: "=",
-					Control:  "select",
-				},
-				"estimate": ConfigSearchParams{
-					Operator: "=",
-					Control:  "input",
-				},
+			{"openedDate", Lang[local]["story"]["openedDate"].(string)},
+			{"reviewedDate", Lang[local]["story"]["reviewedDate"].(string)},
+			{"assignedDate", Lang[local]["story"]["assignedDate"].(string)},
+			{"closedDate", Lang[local]["story"]["closedDate"].(string)},
+			{"lastEditedDate", Lang[local]["story"]["lastEditedDate"].(string)},
+		},
+		Params: map[string]*ConfigSearchParams{
+			"title": &ConfigSearchParams{
+				Operator: "include",
+				Control:  "input",
+			},
+			"keywords": &ConfigSearchParams{
+				Operator: "include",
+				Control:  "input",
+			},
+			"status": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+				Values:   Lang[local]["story"]["statusList"].([]protocol.HtmlKeyValueStr),
+			},
+			"stage": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+				Values:   Lang[local]["story"]["stageList"].([]protocol.HtmlKeyValueStr),
+			},
+			"pri": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+				Values:   Lang[local]["story"]["priList"].([]protocol.HtmlKeyValueStr),
+			},
+			"product": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+			},
+			"branch": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+			},
+			"module": &ConfigSearchParams{
+				Operator: "belong",
+				Control:  "select",
+			},
+			"plan": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+			},
+			"estimate": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+			},
 
-				"source": ConfigSearchParams{
-					Operator: "=",
-					Control:  "select",
-					Values:   Lang[local]["story"]["sourceList"].([]protocol.HtmlKeyValueStr),
-				},
-				"sourceNote": ConfigSearchParams{
-					Operator: "include",
-					Control:  "input",
-				},
-				"fromBug": ConfigSearchParams{
-					Operator: "=",
-					Control:  "input",
-				},
+			"source": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+				Values:   Lang[local]["story"]["sourceList"].([]protocol.HtmlKeyValueStr),
+			},
+			"sourceNote": &ConfigSearchParams{
+				Operator: "include",
+				Control:  "input",
+			},
+			"fromBug": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+			},
 
-				"openedBy": ConfigSearchParams{
-					Operator: "=",
-					Control:  "select",
-					ValueExt: "users",
-				},
-				"reviewedBy": ConfigSearchParams{
-					Operator: "include",
-					Control:  "select",
-					ValueExt: "users",
-				},
-				"assignedTo": ConfigSearchParams{
-					Operator: "=",
-					Control:  "select",
-					ValueExt: "users",
-				},
-				"closedBy": ConfigSearchParams{
-					Operator: "=",
-					Control:  "select",
-					ValueExt: "users",
-				},
-				"lastEditedBy": ConfigSearchParams{
-					Operator: "=",
-					Control:  "select",
-					ValueExt: "users",
-				},
+			"openedBy": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+				ValueExt: "users",
+			},
+			"reviewedBy": &ConfigSearchParams{
+				Operator: "include",
+				Control:  "select",
+				ValueExt: "users",
+			},
+			"assignedTo": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+				ValueExt: "users",
+			},
+			"closedBy": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+				ValueExt: "users",
+			},
+			"lastEditedBy": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+				ValueExt: "users",
+			},
 
-				"mailto": ConfigSearchParams{
-					Operator: "include",
-					Control:  "select",
-					ValueExt: "users",
-				},
+			"mailto": &ConfigSearchParams{
+				Operator: "include",
+				Control:  "select",
+				ValueExt: "users",
+			},
 
-				"closedReason": ConfigSearchParams{
-					Operator: "=",
-					Control:  "select",
-					Values:   Lang[local]["story"]["reasonList"].([]protocol.HtmlKeyValueStr),
-				},
-				"version": ConfigSearchParams{
-					Operator: ">=",
-					Control:  "input",
-				},
+			"closedReason": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+				Values:   Lang[local]["story"]["reasonList"].([]protocol.HtmlKeyValueStr),
+			},
+			"version": &ConfigSearchParams{
+				Operator: ">=",
+				Control:  "input",
+			},
 
-				"openedDate": ConfigSearchParams{
-					Operator: "=",
-					Control:  "input",
-				},
-				"reviewedDate": ConfigSearchParams{
-					Operator: "=",
-					Control:  "input",
-				},
-				"assignedDate": ConfigSearchParams{
-					Operator: "=",
-					Control:  "input",
-				},
-				"closedDate": ConfigSearchParams{
-					Operator: "=",
-					Control:  "input",
-				},
-				"lastEditedDate": ConfigSearchParams{
-					Operator: "=",
-					Control:  "input",
-				},
+			"openedDate": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+			},
+			"reviewedDate": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+			},
+			"assignedDate": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+			},
+			"closedDate": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+			},
+			"lastEditedDate": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
 			},
 		},
 	}
@@ -431,7 +443,7 @@ func configInit(local protocol.CountryNo) {
     closedBy, closedDate, closedReason,
     lastEditedBy, lastEditedDate,
     childStories, linkStories, duplicateStory, files`,
-		"customCreateFields":      []string{"source", "verify", "pri", "estimate", "mailto", "keywords"},
+		"customCreateFields":      "source,verify,pri,estimate,mailto,keywords",
 		"customBatchCreateFields": "plan,spec,source,verify,pri,estimate,review,keywords",
 		"customBatchEditFields":   "branch,plan,estimate,pri,assignedTo,source,stage,closedBy,closedReason,keywords",
 	}
@@ -645,8 +657,8 @@ func configInit(local protocol.CountryNo) {
 	Config[local]["project"]["create"] = make(map[string]interface{})
 	Config[local]["project"]["edit"] = make(map[string]interface{})
 
-	Config[local]["project"]["create"]["requiredFields"] = []string{"name", "code", "begin", "end"}
-	Config[local]["project"]["edit"]["requiredFields"] = []string{"name", "code", "begin", "end"}
+	Config[local]["project"]["create"]["requiredFields"] = "name,code,begin,end"
+	Config[local]["project"]["edit"]["requiredFields"] = "name,code,begin,end"
 
 	Config[local]["project"]["common"]["customBatchEditFields"] = "days,type,teamname,status,desc,PO,QD,PM,RD"
 	Config[local]["project"]["custom"] = make(map[string]interface{})
@@ -662,84 +674,214 @@ func configInit(local protocol.CountryNo) {
 	Config[local]["project"]["editor"]["suspend"] = map[string]string{"id": "comment", "tools": "simpleTools"}
 	Config[local]["project"]["editor"]["tree"] = map[string]string{"id": "comment", "tools": "simpleTools"}
 
-	Config[local]["project"]["search"] = make(map[string]interface{})
-	Config[local]["project"]["search"]["module"] = "task"
+	Config[local]["project"]["common"]["search"] = &ConfigSearch{
+		Module: "task",
+		Fields: []protocol.HtmlKeyValueStr{
+			{"name", Lang[local]["task"]["name"].(string)},
+			{"id", Lang[local]["task"]["id"].(string)},
+			{"status", Lang[local]["task"]["status"].(string)},
+			{"desc", Lang[local]["task"]["desc"].(string)},
+			{"assignedTo", Lang[local]["task"]["assignedTo"].(string)},
+			{"pri", Lang[local]["task"]["pri"].(string)},
+			{"project", Lang[local]["task"]["project"].(string)},
+			{"module", Lang[local]["task"]["module"].(string)},
+			{"estimate", Lang[local]["task"]["estimate"].(string)},
+			{"left", Lang[local]["task"]["left"].(string)},
+			{"consumed", Lang[local]["task"]["consumed"].(string)},
+			{"type", Lang[local]["task"]["type"].(string)},
+			{"fromBug", Lang[local]["task"]["fromBug"].(string)},
+			{"closedReason", Lang[local]["task"]["closedReason"].(string)},
+			{"openedBy", Lang[local]["task"]["openedBy"].(string)},
+			{"finishedBy", Lang[local]["task"]["finishedBy"].(string)},
+			{"closedBy", Lang[local]["task"]["closedBy"].(string)},
+			{"canceledBy", Lang[local]["task"]["canceledBy"].(string)},
+			{"lastEditedBy", Lang[local]["task"]["lastEditedBy"].(string)},
+			{"parent", Lang[local]["task"]["parent"].(string)},
+			{"proofreading", Lang[local]["task"]["proofreading"].(string)},
+			{"examine", Lang[local]["task"]["examine"].(string)},
+			{"mailto", Lang[local]["task"]["mailto"].(string)},
+			{"finishedList", Lang[local]["task"]["finishedList"].(string)},
+			{"openedDate", Lang[local]["task"]["openedDate"].(string)},
+			{"deadline", Lang[local]["task"]["deadline"].(string)},
+			{"estStarted", Lang[local]["task"]["estStarted"].(string)},
+			{"realStarted", Lang[local]["task"]["realStarted"].(string)},
+			{"placeOrder", Lang[local]["task"]["placeOrder"].(string)},
+			{"assignedDate", Lang[local]["task"]["assignedDate"].(string)},
+			{"finishedDate", Lang[local]["task"]["finishedDate"].(string)},
+			{"closedDate", Lang[local]["task"]["closedDate"].(string)},
+			{"canceledDate", Lang[local]["task"]["canceledDate"].(string)},
+			{"lastEditedDate", Lang[local]["task"]["lastEditedDate"].(string)},
+		},
+		Params: map[string]*ConfigSearchParams{
+			"name": &ConfigSearchParams{
+				Operator: "include",
+				Control:  "input",
+				Values:   nil,
+			},
+			"status": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+				Values:   Lang[local]["task"]["statusList"].([]protocol.HtmlKeyValueStr),
+			},
+			"desc": &ConfigSearchParams{
+				Operator: "include",
+				Control:  "input",
+				Values:   nil,
+			},
+			"assignedTo": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+				ValueExt: "users",
+			},
+			"pri": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+				Values:   append([]protocol.HtmlKeyValueStr{{}}, Lang[local]["task"]["priList"].([]protocol.HtmlKeyValueStr)...),
+			},
 
-	Config[local]["project"]["search"]["fields"] = map[string]string{
-		"name":           Lang[local]["task"]["name"].(string),
-		"id":             Lang[local]["task"]["id"].(string),
-		"status":         Lang[local]["task"]["status"].(string),
-		"desc":           Lang[local]["task"]["desc"].(string),
-		"assignedTo":     Lang[local]["task"]["assignedTo"].(string),
-		"pri":            Lang[local]["task"]["pri"].(string),
-		"project":        Lang[local]["task"]["project"].(string),
-		"module":         Lang[local]["task"]["module"].(string),
-		"estimate":       Lang[local]["task"]["estimate"].(string),
-		"left":           Lang[local]["task"]["left"].(string),
-		"consumed":       Lang[local]["task"]["consumed"].(string),
-		"type":           Lang[local]["task"]["type"].(string),
-		"fromBug":        Lang[local]["task"]["fromBug"].(string),
-		"closedReason":   Lang[local]["task"]["closedReason"].(string),
-		"openedBy":       Lang[local]["task"]["openedBy"].(string),
-		"finishedBy":     Lang[local]["task"]["finishedBy"].(string),
-		"closedBy":       Lang[local]["task"]["closedBy"].(string),
-		"canceledBy":     Lang[local]["task"]["canceledBy"].(string),
-		"lastEditedBy":   Lang[local]["task"]["lastEditedBy"].(string),
-		"parent":         Lang[local]["task"]["parent"].(string),
-		"proofreading":   Lang[local]["task"]["proofreading"].(string),
-		"examine":        Lang[local]["task"]["examine"].(string),
-		"mailto":         Lang[local]["task"]["mailto"].(string),
-		"finishedList":   Lang[local]["task"]["finishedList"].(string),
-		"openedDate":     Lang[local]["task"]["openedDate"].(string),
-		"deadline":       Lang[local]["task"]["deadline"].(string),
-		"estStarted":     Lang[local]["task"]["estStarted"].(string),
-		"realStarted":    Lang[local]["task"]["realStarted"].(string),
-		"placeOrder":     Lang[local]["task"]["placeOrder"].(string),
-		"assignedDate":   Lang[local]["task"]["assignedDate"].(string),
-		"finishedDate":   Lang[local]["task"]["finishedDate"].(string),
-		"closedDate":     Lang[local]["task"]["closedDate"].(string),
-		"canceledDate":   Lang[local]["task"]["canceledDate"].(string),
-		"lastEditedDate": Lang[local]["task"]["lastEditedDate"].(string),
-	}
+			"project": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+				Values:   nil,
+			},
+			"module": &ConfigSearchParams{
+				Operator: "belong",
+				Control:  "select",
+				Values:   nil,
+			},
+			"estimate": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+				Values:   nil,
+			},
+			"left": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+				Values:   nil,
+			},
+			"consumed": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+				Values:   nil,
+			},
+			"type": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+				Values:   Lang[local]["task"]["typeList"].([]protocol.HtmlKeyValueStr),
+			},
+			"fromBug": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+				Values:   Lang[local]["task"]["typeList"].([]protocol.HtmlKeyValueStr),
+			},
+			"closedReason": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+				Values:   Lang[local]["task"]["reasonList"].([]protocol.HtmlKeyValueStr),
+			},
+			"openedBy": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+				ValueExt: "users",
+			},
+			"finishedBy": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+				ValueExt: "users",
+			},
+			"closedBy": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+				ValueExt: "users",
+			},
+			"cancelBy": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+				ValueExt: "users",
+			},
+			"lastEditedBy": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "select",
+				ValueExt: "users",
+			},
 
-	Config[local]["project"]["search"]["params"] = map[string]interface{}{
-		"name":       map[string]string{"operator": "include", "control": "input", "values": ""},
-		"status":     map[string]interface{}{"operator": "=", "control": "select", "values": Lang[local]["task"]["statusList"]},
-		"desc":       map[string]string{"operator": "include", "control": "input", "values": ""},
-		"assignedTo": map[string]string{"operator": "=", "control": "select", "values": "users"},
-		"pri":        map[string]interface{}{"operator": "=", "control": "select", "values": append([]string{""}, Lang[local]["task"]["priList"].([]string)...)},
+			"mailto": &ConfigSearchParams{
+				Operator: "include",
+				Control:  "select",
+				ValueExt: "users",
+			},
+			"finishedList": &ConfigSearchParams{
+				Operator: "include",
+				Control:  "select",
+				ValueExt: "users",
+			},
 
-		"project":      map[string]string{"operator": "=", "control": "select", "values": ""},
-		"module":       map[string]string{"operator": "belong", "control": "select", "values": ""},
-		"estimate":     map[string]string{"operator": "=", "control": "input", "values": ""},
-		"left":         map[string]string{"operator": "=", "control": "input", "values": ""},
-		"consumed":     map[string]string{"operator": "=", "control": "input", "values": ""},
-		"type":         map[string]interface{}{"operator": "=", "control": "select", "values": Lang[local]["task"]["typeList"]},
-		"fromBug":      map[string]interface{}{"operator": "=", "control": "input", "values": Lang[local]["task"]["typeList"]},
-		"closedReason": map[string]interface{}{"operator": "=", "control": "select", "values": Lang[local]["task"]["reasonList"]},
-
-		"openedBy":     map[string]string{"operator": "=", "control": "select", "values": "users"},
-		"finishedBy":   map[string]string{"operator": "=", "control": "select", "values": "users"},
-		"closedBy":     map[string]string{"operator": "=", "control": "select", "values": "users"},
-		"cancelBy":     map[string]string{"operator": "=", "control": "select", "values": "users"},
-		"lastEditedBy": map[string]string{"operator": "=", "control": "select", "values": "users"},
-
-		"mailto":       map[string]string{"operator": "include", "control": "select", "values": "users"},
-		"finishedList": map[string]string{"operator": "include", "control": "select", "values": "users"},
-
-		"openedDate":     map[string]string{"operator": "=", "control": "input", "values": "", "class": "date"},
-		"deadline":       map[string]string{"operator": "=", "control": "input", "values": "", "class": "date"},
-		"estStarted":     map[string]string{"operator": "=", "control": "input", "values": "", "class": "date"},
-		"realStarted":    map[string]string{"operator": "=", "control": "input", "values": "", "class": "date"},
-		"assignedDate":   map[string]string{"operator": "=", "control": "input", "values": "", "class": "date"},
-		"finishedDate":   map[string]string{"operator": "=", "control": "input", "values": "", "class": "date"},
-		"closedDate":     map[string]string{"operator": "=", "control": "input", "values": "", "class": "date"},
-		"canceledDate":   map[string]string{"operator": "=", "control": "input", "values": "", "class": "date"},
-		"lastEditedDate": map[string]string{"operator": "=", "control": "input", "values": "", "class": "date"},
-		"proofreading":   map[string]string{"operator": "=", "control": "input", "values": ""},
-		"activatedCount": map[string]string{"operator": "=", "control": "input", "values": ""},
-		"examine":        map[string]string{"operator": "=", "control": "input", "values": ""},
-		"placeOrder":     map[string]string{"operator": "=", "control": "input", "values": ""},
+			"openedDate": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+				Class:    "date",
+			},
+			"deadline": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+				Class:    "date",
+			},
+			"estStarted": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+				Class:    "date",
+			},
+			"realStarted": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+				Class:    "date",
+			},
+			"assignedDate": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+				Class:    "date",
+			},
+			"finishedDate": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+				Class:    "date",
+			},
+			"closedDate": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+				Class:    "date",
+			},
+			"canceledDate": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+				Class:    "date",
+			},
+			"lastEditedDate": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+				Class:    "date",
+			},
+			"proofreading": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+				Values:   nil,
+			},
+			"activatedCount": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+				Values:   nil,
+			},
+			"examine": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+				Values:   nil,
+			},
+			"placeOrder": &ConfigSearchParams{
+				Operator: "=",
+				Control:  "input",
+				Values:   nil,
+			},
+		},
 	}
 	Config[local]["printKanban"] = make(map[string]map[string]interface{})
 	Config[local]["printKanban"]["col"] = make(map[string]interface{})
@@ -781,24 +923,24 @@ func configInit(local protocol.CountryNo) {
 		"batchCreate": 5,
 	}
 	Config[local]["task"]["create"] = map[string]interface{}{
-		"requiredFields": []string{"name", "type"},
+		"requiredFields": "name,type",
 	}
 	Config[local]["task"]["edit"] = map[string]interface{}{
-		"requiredFields": Config[local]["task"]["create"]["requiredFields"].([]string),
+		"requiredFields": Config[local]["task"]["create"]["requiredFields"].(string),
 	}
 
 	Config[local]["task"]["finish"] = map[string]interface{}{
-		"requiredFields": []string{"consumed"},
+		"requiredFields": "consumed",
 	}
 	Config[local]["task"]["activate"] = map[string]interface{}{
-		"requiredFields": []string{"left"},
+		"requiredFields": "left",
 	}
 
 	Config[local]["task"]["editor"] = map[string]interface{}{
 		"create":      map[string]interface{}{"id": []string{"desc"}, "tools": "simpleTools"},
 		"edit":        map[string]interface{}{"id": []string{"desc", "comment"}, "tools": "simpleTools"},
 		"view":        map[string]interface{}{"id": []string{"comment", "lastComment"}, "tools": "simpleTools"},
-		"assignto":    map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
+		"assignTo":    map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
 		"start":       map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
 		"restart":     map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
 		"finish":      map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
@@ -807,7 +949,7 @@ func configInit(local protocol.CountryNo) {
 		"cancel":      map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
 		"pause":       map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
 		"finishall":   map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
-		"batchcreate": map[string]interface{}{"id": []string{"desc0", "desc1", "desc2", "desc3", "desc4"}, "tools": "simpleTools"},
+		"batchCreate": map[string]interface{}{"id": []string{"desc0", "desc1", "desc2", "desc3", "desc4"}, "tools": "simpleTools"},
 	}
 	Config[local]["task"]["common"]["exportFields"] = []string{"id", "project", "module", "story", "name", "desc", "type", "pri,estStarted", "realStarted", "deadline", "status,estimate", "consumed", "left", "mailto", "progress", "openedBy", "openedDate", "assignedTo", "assignedDate", "finishedBy", "proofreading", "finishedDate", "canceledBy", "canceledDate", "closedBy", "closedDate", "closedReason", "lastEditedBy", "lastEditedDate", "files"}
 
@@ -817,8 +959,8 @@ func configInit(local protocol.CountryNo) {
 
 	Config[local]["task"]["custom"] = map[string]interface{}{
 		"createFields":      Config[local]["task"]["common"]["customCreateFields"],
-		"batchCreateFields": []string{"module", "story", "assignedTo", "estimate", "desc", "pri"},
-		"batchEditFields":   []string{"module", "assignedTo", "status", "pri", "estimate", "record", "left", "finishedBy", "closedBy", "closedReason"},
+		"batchCreateFields": "module,story,assignedTo,estimate,desc,pri",
+		"batchEditFields":   "module,assignedTo,status,pri,estimate,record,left,finishedBy,closedBy,closedReason",
 	}
 
 	Config[local]["task"]["datatable"] = map[string]interface{}{
@@ -827,7 +969,7 @@ func configInit(local protocol.CountryNo) {
 			"id": map[string]string{
 				"title":    "idAB",
 				"fixed":    "left",
-				"width":    "70",
+				"width":    "100",
 				"required": "yes",
 			},
 			"pri": map[string]string{
@@ -1026,6 +1168,43 @@ func configInit(local protocol.CountryNo) {
 				"required": "yes",
 			},
 		},
+	}
+	Config[local]["testtask"] = make(map[string]map[string]interface{})
+	Config[local]["testtask"]["create"] = map[string]interface{}{
+		"requiredFields": "project,build,begin,end,name",
+	}
+	Config[local]["testtask"]["edit"] = map[string]interface{}{
+		"requiredFields": "project,build,begin,end,name",
+	}
+
+	Config[local]["testtask"]["editor"] = map[string]interface{}{
+		"create": map[string]interface{}{
+			"id":    []string{"desc"},
+			"tools": "simpleTools",
+		},
+		"edit": map[string]interface{}{
+			"id":    []string{"desc", "report", "comment"},
+			"tools": "simpleTools",
+		},
+		"view": map[string]interface{}{
+			"id":    []string{"comment"},
+			"tools": "simpleTools",
+		},
+		"start": map[string]interface{}{
+			"id":    []string{"report", "comment"},
+			"tools": "simpleTools",
+		},
+		"block": map[string]interface{}{
+			"id":    []string{"comment"},
+			"tools": "simpleTools",
+		},
+		"activate": map[string]interface{}{
+			"id":    []string{"comment"},
+			"tools": "simpleTools",
+		},
+	}
+	Config[local]["testtask"]["datatable"] = map[string]interface{}{
+		"defaultField": []string{"id", "pri", "title", "type", "assignedTo", "lastRunner", "lastRunDate", "lastRunResult", "status", "bugs", "results", "stepNumber", "actions"},
 	}
 
 }

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"html/template"
 	"protocol"
 )
@@ -34,8 +35,6 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["common"]["importConfirm"] = "导入确认"
 	Lang[protocol.ZH_CN]["common"]["noticeImport"] = "导入数据中，含有已经存在系统的数据，请确认这些数据要覆盖或者全新插入。"
 	Lang[protocol.ZH_CN]["common"]["pasteTextInfo"] = "粘贴文本到文本域中，每行文字作为一条数据的标题。"
-	Lang[protocol.ZH_CN]["common"]["maxVarsInfo"] = "警告：数据太多，请在php.ini中修改<font color=red>max_input_vars</font>（大于%s的数）。 保存并重新启动apache或php-fpm，否则会造成部分数据无法保存。"
-	Lang[protocol.ZH_CN]["common"]["suhosinInfo"] = "警告：数据太多，请在php.ini中修改<font color=red>sohusin.post.max_vars</font>和<font color=red>sohusin.request.max_vars</font>（大于%s的数）。 保存并重新启动apache或php-fpm，否则会造成部分数据无法保存。"
 
 	Lang[protocol.ZH_CN]["common"]["clientHelp"] = "客户端使用说明"
 	Lang[protocol.ZH_CN]["common"]["downloadClient"] = "下载客户端"
@@ -79,7 +78,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["common"]["unfold"] = "+"
 	Lang[protocol.ZH_CN]["common"]["ipLimited"] = "<html><head><meta http-equiv='Content-Type' content='text/html; charset=utf-8' /></head><body>抱歉，管理员限制当前IP登录，请联系管理员解除限制。</body></html>"
 	Lang[protocol.ZH_CN]["common"]["duplicate"] = "已有相同标题的%s"
-	Lang[protocol.ZH_CN]["common"]["repairTable"] = "数据库表可能损坏，请用phpmyadmin或myisamchk检查修复。"
+	Lang[protocol.ZH_CN]["common"]["repairTable"] = "数据库表可能损坏，请用其他工具检查修复。"
 	Lang[protocol.ZH_CN]["common"]["timeout"] = "连接超时，请检查网络环境，或重试！"
 	Lang[protocol.ZH_CN]["common"]["uploadImages"] = "多图上传 "
 	Lang[protocol.ZH_CN]["common"]["pasteText"] = "多项录入"
@@ -504,7 +503,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["story"]["fromBug"] = "来源Bug"
 	Lang[protocol.ZH_CN]["story"]["sourceNote"] = "来源备注"
 	Lang[protocol.ZH_CN]["story"]["source"] = "需求来源"
-	Lang[protocol.ZH_CN]["story"]["moduleAB"] = "模块"
+	Lang[protocol.ZH_CN]["story"]["moduleAB"] = "更改模块"
 	Lang[protocol.ZH_CN]["story"]["module"] = "所属模块"
 	Lang[protocol.ZH_CN]["story"]["branch"] = "分支/平台"
 	Lang[protocol.ZH_CN]["story"]["product"] = "所属" + Lang[protocol.ZH_CN]["common"]["productCommon"].(string)
@@ -707,7 +706,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["project"]["memberHours"] = `<div class="table-col"><div class="clearfix segments"><div class="segment"><div class="segment-title">%s可用工时</div><div class="segment-value">%s</div></div></div></div>`
 	Lang[protocol.ZH_CN]["project"]["memberHoursAB"] = "<div>%s有 <strong>%s</strong> 工时</div>"
 	Lang[protocol.ZH_CN]["project"]["checkedSummary"] = "选中 <strong>%total%</strong> 个任务，未开始 <strong>%wait%</strong>，进行中 <strong>%doing%</strong>，总预计 <strong>%estimate%</strong> 工时，已消耗 <strong>%consumed%</strong> 工时，剩余 <strong>%left%</strong> 工时。"
-	Lang[protocol.ZH_CN]["project"]["taskSummary"] = "本页共 <strong>%s</strong> 个任务，未开始 <strong>%s</strong>，进行中 <strong>%s</strong>，总预计 <strong>%s</strong> 工时，已消耗 <strong>%s</strong> 工时，剩余 <strong>%s</strong> 工时。"
+	Lang[protocol.ZH_CN]["project"]["taskSummary"] = "本页共 <strong>%d</strong> 个任务，未开始 <strong>%d</strong>，进行中 <strong>%d</strong>，总预计 <strong>%0.0f</strong> 工时，已消耗 <strong>%0.0f</strong> 工时，剩余 <strong>%0.0f</strong> 工时。"
 	Lang[protocol.ZH_CN]["project"]["stats"] = "可用工时 <strong>%s</strong> 工时，总共预计 <strong>%s</strong> 工时，已经消耗 <strong>%s</strong> 工时，预计剩余 <strong>%s</strong> 工时"
 	Lang[protocol.ZH_CN]["project"]["lblStats"] = "工时统计"
 	Lang[protocol.ZH_CN]["project"]["beginAndEnd"] = "起止时间"
@@ -783,7 +782,6 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["project"]["effort"] = `日志` //"日志"替换`日志`
 	Lang[protocol.ZH_CN]["project"]["readjustTask"] = "顺延任务的起止时间"
 	Lang[protocol.ZH_CN]["project"]["readjustTime"] = "调整项目起止时间"
-	Lang[protocol.ZH_CN]["project"]["product"] = Lang[protocol.ZH_CN]["project"]["products"]
 	Lang[protocol.ZH_CN]["project"]["delayed"] = "已延期"
 	Lang[protocol.ZH_CN]["project"]["deleted"] = "已删除"
 	Lang[protocol.ZH_CN]["project"]["other"] = "其他："
@@ -803,6 +801,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["project"]["totalEstimate"] = "预计"
 	Lang[protocol.ZH_CN]["project"]["whitelist"] = "分组白名单"
 	Lang[protocol.ZH_CN]["project"]["products"] = `相关` + Lang[protocol.ZH_CN]["common"]["productCommon"].(string)
+	Lang[protocol.ZH_CN]["project"]["product"] = Lang[protocol.ZH_CN]["project"]["products"]
 	Lang[protocol.ZH_CN]["project"]["order"] = Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + `排序`
 	Lang[protocol.ZH_CN]["project"]["teamname"] = "团队名称"
 	Lang[protocol.ZH_CN]["project"]["acl"] = "访问控制"
@@ -871,8 +870,8 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["task"]["confirmRecord"] = "\"剩余\"为0，任务将标记为\"已完成\"，您确定吗？"
 	Lang[protocol.ZH_CN]["task"]["confirmFinish"] = "\"预计剩余\"为0，确认将任务状态改为\"已完成\"吗？"
 	Lang[protocol.ZH_CN]["task"]["confirmChangeProject"] = "修改" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "会导致相应的所属模块、相关需求和指派人发生变化，确定吗？"
-	Lang[protocol.ZH_CN]["task"]["remindBug"] = "该任务为Bug转化得到，是否更新Bug:%s ?"
-	Lang[protocol.ZH_CN]["task"]["delayWarning"] = " <strong class='text-danger'> 延期%s天 </strong>"
+	Lang[protocol.ZH_CN]["task"]["remindBug"] = "该任务为Bug转化得到，是否更新Bug:%d ?"
+	Lang[protocol.ZH_CN]["task"]["delayWarning"] = " <strong class=\"text-danger\"> 延期%v天 </strong>"
 	Lang[protocol.ZH_CN]["task"]["successSaved"] = "成功添加，"
 	Lang[protocol.ZH_CN]["task"]["afterSubmit"] = "添加之后"
 	Lang[protocol.ZH_CN]["task"]["copyStoryTitle"] = "同需求"
@@ -934,8 +933,8 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["task"]["assignedToAB"] = "指派给"
 	Lang[protocol.ZH_CN]["task"]["assignedTo"] = "指派给"
 	Lang[protocol.ZH_CN]["task"]["batchAssignTo"] = "批量指派"
-	Lang[protocol.ZH_CN]["task"]["assignTo"] = Lang[protocol.ZH_CN]["task"]["assign"]
 	Lang[protocol.ZH_CN]["task"]["assign"] = "指派"
+	Lang[protocol.ZH_CN]["task"]["assignTo"] = Lang[protocol.ZH_CN]["task"]["assign"]
 	Lang[protocol.ZH_CN]["task"]["desc"] = "任务描述"
 	Lang[protocol.ZH_CN]["task"]["status"] = "任务状态"
 	Lang[protocol.ZH_CN]["task"]["deadlineAB"] = "截止"
@@ -1557,8 +1556,8 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["testreport"]["members"] = "参与人员"
 	Lang[protocol.ZH_CN]["testreport"]["owner"] = "负责人"
 	Lang[protocol.ZH_CN]["testreport"]["startEnd"] = "起止时间"
-	Lang[protocol.ZH_CN]["testreport"]["tasks"] = Lang[protocol.ZH_CN]["testreport"]["testtask"]
 	Lang[protocol.ZH_CN]["testreport"]["testtask"] = "测试版本"
+	Lang[protocol.ZH_CN]["testreport"]["tasks"] = Lang[protocol.ZH_CN]["testreport"]["testtask"]
 	Lang[protocol.ZH_CN]["testreport"]["project"] = "所属项目"
 	Lang[protocol.ZH_CN]["testreport"]["storyTitle"] = "需求标题"
 	Lang[protocol.ZH_CN]["testreport"]["bugTitle"] = "Bug 标题"
@@ -1639,7 +1638,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["doc"]["noEditedDoc"] = "您还没有编辑任何文档。"
 	Lang[protocol.ZH_CN]["doc"]["noSearchedDoc"] = "没有搜索到任何文档。"
 	Lang[protocol.ZH_CN]["doc"]["noDoc"] = "暂时没有文档。"
-	Lang[protocol.ZH_CN]["doc"]["versionNotFount"] = "该版本文档不存在"
+	Lang[protocol.ZH_CN]["doc"]["versionNotFound"] = "该版本文档不存在"
 	Lang[protocol.ZH_CN]["doc"]["accessDenied"] = "您没有权限访问！"
 	Lang[protocol.ZH_CN]["doc"]["errorMainSysLib"] = "该系统文档库不能删除！"
 	Lang[protocol.ZH_CN]["doc"]["errorEmptyProject"] = "没有" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "，无法创建文档"
@@ -1765,8 +1764,6 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["report"]["deleteReport"] = "删除报表"
 	Lang[protocol.ZH_CN]["report"]["browseReport"] = "浏览保存报表"
 	Lang[protocol.ZH_CN]["report"]["useReportAction"] = "设计报表"
-	Lang[protocol.ZH_CN]["report"]["useReport"] = Lang[protocol.ZH_CN]["crystal"]["use"]
-	Lang[protocol.ZH_CN]["report"]["custom"] = Lang[protocol.ZH_CN]["crystal"]["custom"]
 	Lang[protocol.ZH_CN]["report"]["null"] = "空"
 	Lang[protocol.ZH_CN]["report"]["crystalExport"] = "水晶报表导出"
 	Lang[protocol.ZH_CN]["report"]["deadline"] = "截止日期"
@@ -2175,6 +2172,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["action"]["actionID"] = "记录ID"
 	Lang[protocol.ZH_CN]["action"]["action"] = "动作"
 	Lang[protocol.ZH_CN]["action"]["menu"] = Lang[protocol.ZH_CN]["admin"]["menu"]
+
 	Lang[protocol.ZH_CN]["action"]["desc"] = map[string]string{
 		"activated":         `$date, 由 <strong>$actor</strong> 激活。` + "\n",
 		"asked":             `$date, 由 <strong>$actor</strong> 追问。` + "\n",
@@ -2225,7 +2223,7 @@ func LangZH_CNInit() {
 		"opened":            `$date, 由 <strong>$actor</strong> 创建。` + "\n",
 		"paused":            `$date, 由 <strong>$actor</strong> 暂停。` + "\n",
 		"proofreading":      `$date, 由 <strong>$actor</strong> 对单完成。`,
-		"recordestimate":    `$date, 由 <strong>$actor</strong> 记录工时，消耗 <strong>$extra</strong> 小时。`,
+		"recordEstimate":    `$date, 由 <strong>$actor</strong> 记录工时，消耗 <strong>$extra</strong> 小时。`,
 		"replied":           `$date, 由 <strong>$actor</strong> 回复。` + "\n",
 		"repocreated":       `$date, 由 <strong>$actor</strong> 评审创建：$extra。` + "\n",
 		"reported":          `$date, 由 <strong>$actor</strong> 销假。` + "\n",
@@ -2245,6 +2243,7 @@ func LangZH_CNInit() {
 		"userdefined":       `$date, 由 <strong>$actor</strong> $extra。` + "\n",
 		"verified":          `$date, 由 <strong>$actor</strong> 验收。` + "\n",
 		"workflowAction":    `$date, 由 <strong>$actor</strong> %s。` + "\n",
+		"batchproofreading": `$date, 由 <strong>$actor</strong> 对单完成` + "\n",
 	}
 	Lang[protocol.ZH_CN]["backup"] = make(map[string]interface{})
 	Lang[protocol.ZH_CN]["backup"]["restoreTip"] = "还原功能只还原附件和数据库，如果需要还原代码，可以手动还原。"
@@ -2260,7 +2259,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["backup"]["size"] = "大小"
 	Lang[protocol.ZH_CN]["backup"]["files"] = "备份文件"
 	Lang[protocol.ZH_CN]["backup"]["time"] = "备份时间"
-	Lang[protocol.ZH_CN]["backup"]["rmPHPHeader"] = "去除安全设置"
+
 	Lang[protocol.ZH_CN]["backup"]["changeAB"] = "修改"
 	Lang[protocol.ZH_CN]["backup"]["change"] = "修改保留时间"
 	Lang[protocol.ZH_CN]["backup"]["restore"] = "还原"
@@ -2331,9 +2330,6 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["mail"]["closeSendCloud"] = "关闭SendCloud"
 	Lang[protocol.ZH_CN]["mail"]["sendCloudSuccess"] = "操作成功"
 	Lang[protocol.ZH_CN]["mail"]["sendCloudFail"] = "操作失败，原因："
-	Lang[protocol.ZH_CN]["mail"]["disableSecure"] = "没有openssl扩展，禁用ssl和tls加密"
-	Lang[protocol.ZH_CN]["mail"]["noOpenssl"] = "ssl和tls加密，请打开openssl扩展。 保存并重新启动apache。"
-	Lang[protocol.ZH_CN]["mail"]["nofsocket"] = "fsocket相关函数被禁用，不能发信！请在php.ini中修改allow_url_fopen为On，打开openssl扩展。 保存并重新启动apache。"
 	Lang[protocol.ZH_CN]["mail"]["centifyFail"] = "验证失败，可能密钥已经修改。请重新绑定！"
 	Lang[protocol.ZH_CN]["mail"]["connectFail"] = "无法连接网站。"
 	Lang[protocol.ZH_CN]["mail"]["needConfigure"] = "无法找到邮件配置信息，请先配置邮件发送参数。"
@@ -2521,7 +2517,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["error"]["gt"] = "『%s』应当大于『%s』。"
 	Lang[protocol.ZH_CN]["error"]["unique"] = "『%s』已经有『%s』这条记录了。如果您确定该记录已删除，请到后台-数据-回收站还原。"
 	Lang[protocol.ZH_CN]["error"]["reg"] = "『%s』不符合格式，应当为:『%s』。"
-	Lang[protocol.ZH_CN]["error"]["length"] = []string{"『%s』长度错误，应当为『%s』", "『%s』长度应当不超过『%s』，且大于『%s』。"}
+	Lang[protocol.ZH_CN]["error"]["length"] = []string{"『%s』长度错误，应当为『%d』", "『%s』长度应当不超过『%d』，且大于『%d』。"}
 	Lang[protocol.ZH_CN]["error"]["companyNotFound"] = "您访问的域名 %s 没有对应的公司。"
 	Lang[protocol.ZH_CN]["pager"] = make(map[string]interface{})
 	Lang[protocol.ZH_CN]["pager"]["pageOfTotal"] = "第 <strong>{page}</strong>/<strong>{totalPage}</strong> 页"
@@ -2928,7 +2924,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["overtime"]["common"] = "加班"
 	Lang[protocol.ZH_CN]["overtime"]["menu"] = Lang[protocol.ZH_CN]["oa"]["menu"]
 	Lang[protocol.ZH_CN]["lieu"] = make(map[string]interface{})
-	Lang[protocol.ZH_CN]["lieu"]["nobcmath"] = "需要安装PHP的bcmath扩展"
+
 	Lang[protocol.ZH_CN]["lieu"]["setReviewerAction"] = "调休设置"
 	Lang[protocol.ZH_CN]["lieu"]["viewAction"] = "调休详情"
 	Lang[protocol.ZH_CN]["lieu"]["deleteAction"] = "删除调休"
@@ -3196,7 +3192,7 @@ func LangZH_CNInit() {
 		"productplan":    "计划|productplan|view|productID=%s",
 		"project":        Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "|project|view|projectID=%s",
 		"proofreading":   "对单完成",
-		"recordestimate": "记录了工时",
+		"recordEstimate": "记录了工时",
 		"release":        "发布|release|view|productID=%s",
 		"replied":        "回复了",
 		"repocreated":    "创建评审",
@@ -3273,7 +3269,7 @@ func LangZH_CNInit() {
 			"moved":               Lang[protocol.ZH_CN]["action"]["label"].(map[string]interface{})["moved"].(string),
 			"opened":              Lang[protocol.ZH_CN]["action"]["label"].(map[string]interface{})["opened"].(string),
 			"paused":              Lang[protocol.ZH_CN]["action"]["label"].(map[string]interface{})["paused"].(string),
-			"recordestimate":      Lang[protocol.ZH_CN]["action"]["label"].(map[string]interface{})["recordestimate"].(string),
+			"recordEstimate":      Lang[protocol.ZH_CN]["action"]["label"].(map[string]interface{})["recordEstimate"].(string),
 			"resolved":            Lang[protocol.ZH_CN]["action"]["label"].(map[string]interface{})["resolved"].(string),
 			"restarted":           Lang[protocol.ZH_CN]["action"]["label"].(map[string]interface{})["restarted"].(string),
 			"reviewed":            Lang[protocol.ZH_CN]["action"]["label"].(map[string]interface{})["reviewed"].(string),
@@ -4922,8 +4918,8 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["file"]["uploadImages"] = "多图上传"
 	Lang[protocol.ZH_CN]["file"]["common"] = "附件"
 	Lang[protocol.ZH_CN]["file"]["imguploadFail"] = "图片上传失败，建议刷新重试,错误%v"
-	Lang[protocol.ZH_CN]["file"]["processFile"] = map[string]string{
-		"processFile": "过程文件",
+	Lang[protocol.ZH_CN]["file"]["processFile"] = []protocol.HtmlKeyValueStr{
+		{"processFile", "过程文件"},
 	}
 	Lang[protocol.ZH_CN]["file"]["typeChoices"] = []protocol.HtmlKeyValueStr{
 
@@ -4945,26 +4941,26 @@ func LangZH_CNInit() {
 		{"twodFile", "2D规范文件"},
 		{"otherFile", "其他规范文件"},
 	}
-	Lang[protocol.ZH_CN]["file"]["typeTOName"] = map[string]string{
-		"processFile": "过程文件",
-		"FinalFile":   "最终文件",
+	Lang[protocol.ZH_CN]["file"]["typeTOName"] = []protocol.HtmlKeyValueStr{
+		{"processFile", "过程文件"},
+		{"FinalFile", "最终文件"},
 	}
-	Lang[protocol.ZH_CN]["excel"]["title"] = map[string]string{
-		"testcase": "用例",
-		"bug":      "Bug",
-		"task":     "任务",
-		"story":    "{$lang->common->storyCommon}",
-		"caselib":  "用例库",
-		"sysValue": "系统数据",
-		"tree":     "树状图",
-		"feedback": "反馈",
+	Lang[protocol.ZH_CN]["excel"]["title"] = []protocol.HtmlKeyValueStr{
+		{"testcase", "用例"},
+		{"bug", "Bug"},
+		{"task", "任务"},
+		{"story", Lang[protocol.ZH_CN]["common"]["storyCommon"].(string)},
+		{"caselib", "用例库"},
+		{"sysValue", "系统数据"},
+		{"tree", "树状图"},
+		{"feedback", "反馈"},
 	}
-	Lang[protocol.ZH_CN]["excel"]["help"] = map[string]string{
-		"testcase": "添加用例时，每个用例步骤在新行用数字 + ‘.’来标记。同样的，预期也是用数字 + ‘.’与步骤对应。“用例标题”和“用例类型”是必填字段，如果不填导入时会忽略该条数据。",
-		"bug":      "添加Bug时，“标题”是必填字段，如果不填导入时会忽略该条数据。",
-		"task":     "添加任务时，“任务名称”和“任务类型”是必填字段，如果不填导入时会忽略该条数据；如需添加子任务，请在任务名称前用“>”标记。",
-		"multiple": "如需添加多人任务，请在“最初预计”列里面，按照“用户名:{$lang->common->hourCommon}”格式添加，多个用户之间用换行分隔。用户名在“系统数据”工作表的F列查看。",
-		"story":    "添加{$lang->storyCommon}时，“{$lang->storyCommon}名称”是必填字段，如果不填导入时会忽略该条数据。",
+	Lang[protocol.ZH_CN]["excel"]["help"] = []protocol.HtmlKeyValueStr{
+		{"testcase", "添加用例时，每个用例步骤在新行用数字 + ‘.’来标记。同样的，预期也是用数字 + ‘.’与步骤对应。“用例标题”和“用例类型”是必填字段，如果不填导入时会忽略该条数据。"},
+		{"bug", "添加Bug时，“标题”是必填字段，如果不填导入时会忽略该条数据。"},
+		{"task", "添加任务时，“任务名称”和“任务类型”是必填字段，如果不填导入时会忽略该条数据；如需添加子任务，请在任务名称前用“>”标记。"},
+		{"multiple", "如需添加多人任务，请在“最初预计”列里面，按照“用户名:年-月-日”格式添加，多个用户之间用换行分隔。用户名在“系统数据”工作表的F列查看。"},
+		{"story", "添加" + Lang[protocol.ZH_CN]["common"]["storyCommon"].(string) + "时，“" + Lang[protocol.ZH_CN]["common"]["storyCommon"].(string) + "名称”是必填字段，如果不填导入时会忽略该条数据。"},
 	}
 	Lang[protocol.ZH_CN]["word"] = make(map[string]interface{})
 	Lang[protocol.ZH_CN]["word"]["more"] = "更多请点击"
@@ -5241,14 +5237,14 @@ func LangZH_CNInit() {
 		{"private", "私有" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "(只有" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "团队成员才能访问)"},
 		{"custom", "自定义白名单(团队成员和白名单的成员可以访问)"},
 	}
-	Lang[protocol.ZH_CN]["project"]["statusSelects"] = map[string]string{
-		"wait":         "未开始",
-		"doing":        "进行中",
-		"finishedbyme": "我完成",
-		"done":         "已完成",
-		"closed":       "已关闭",
-		"cancel":       "已取消",
-		"":             "更多",
+	Lang[protocol.ZH_CN]["project"]["statusSelects"] = []protocol.HtmlKeyValueStr{
+		{"wait", "未开始"},
+		{"doing", "进行中"},
+		{"finishedbyme", "我完成"},
+		{"done", "已完成"},
+		{"closed", "已关闭"},
+		{"cancel", "已取消"},
+		{"", "更多"},
 	}
 	Lang[protocol.ZH_CN]["project"]["groups"] = map[string]string{
 		"story":      "需求分组",
@@ -5305,15 +5301,15 @@ func LangZH_CNInit() {
 		"all":       "全部",
 		"increment": "增量",
 	}
-	Lang[protocol.ZH_CN]["project"]["featureBar"] = map[string]interface{}{
-		"task": map[string]string{
-			"delayed":      "已延期",
-			"needconfirm":  "需求变更",
-			"all":          Lang[protocol.ZH_CN]["project"]["allTasks"].(string),
-			"unclosed":     Lang[protocol.ZH_CN]["project"]["unclosed"].(string),
-			"assignedtome": Lang[protocol.ZH_CN]["project"]["assignedToMe"].(string),
-			"myinvolved":   Lang[protocol.ZH_CN]["project"]["myInvolved"].(string),
-			"status":       "更多",
+	Lang[protocol.ZH_CN]["project"]["featureBar"] = map[string][]protocol.HtmlKeyValueStr{
+		"task": []protocol.HtmlKeyValueStr{
+			{"all", Lang[protocol.ZH_CN]["project"]["allTasks"].(string)},
+			{"unclosed", Lang[protocol.ZH_CN]["project"]["unclosed"].(string)},
+			{"assignedtome", Lang[protocol.ZH_CN]["project"]["assignedToMe"].(string)},
+			{"myinvolved", Lang[protocol.ZH_CN]["project"]["myInvolved"].(string)},
+			{"delayed", "已延期"},
+			{"needconfirm", "需求变更"},
+			{"status", "更多"},
 		},
 	}
 	Lang[protocol.ZH_CN]["project"]["treeLevel"] = map[string]string{
@@ -5561,6 +5557,8 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["crystal"]["browse"] = "已保存报表"
 	Lang[protocol.ZH_CN]["crystal"]["setVar"] = "设置变量"
 	Lang[protocol.ZH_CN]["crystal"]["common"] = "水晶报表"
+	Lang[protocol.ZH_CN]["report"]["useReport"] = Lang[protocol.ZH_CN]["crystal"]["use"]
+	Lang[protocol.ZH_CN]["report"]["custom"] = Lang[protocol.ZH_CN]["crystal"]["custom"]
 	Lang[protocol.ZH_CN]["crystal"]["reportTypeList"] = map[string]string{
 		"count": "计数",
 		"sum":   "求和",
@@ -5825,9 +5823,9 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["svn"]["cat"] = "查看源代码"
 	Lang[protocol.ZH_CN]["svn"]["common"] = "Subversion"
 
-	Lang[protocol.ZH_CN]["task"]["examinePass"] = []string{"通过", "未通过"}
+	Lang[protocol.ZH_CN]["task"]["examinePass"] = []protocol.HtmlKeyValueStr{{"true", "通过"}, {"false", "未通过"}}
 
-	Lang[protocol.ZH_CN]["task"]["proofreadingPass"] = []string{"是", "否"}
+	Lang[protocol.ZH_CN]["task"]["proofreadingPass"] = []protocol.HtmlKeyValueStr{{"true", "是"}, {"false", "否"}}
 
 	Lang[protocol.ZH_CN]["task"]["statusList"] = []protocol.HtmlKeyValueStr{
 		{"", ""},
@@ -5856,7 +5854,7 @@ func LangZH_CNInit() {
 		{"misc", "其他"},
 	}
 
-	Lang[protocol.ZH_CN]["task"]["priList"] = []string{"1", `2`, `3`, `4`}
+	Lang[protocol.ZH_CN]["task"]["priList"] = []protocol.HtmlKeyValueStr{{"1", "1"}, {`2`, "2"}, {`3`, "3"}, {"4", `4`}}
 
 	Lang[protocol.ZH_CN]["task"]["reasonList"] = []protocol.HtmlKeyValueStr{
 		{"", ""},
@@ -5864,22 +5862,37 @@ func LangZH_CNInit() {
 		{"cancel", "已取消"},
 	}
 
-	Lang[protocol.ZH_CN]["task"]["afterChoices"] = map[string]string{
-		"continueAdding": "继续为该需求添加任务",
-		"toTaskList":     "返回任务列表",
-		"toStoryList":    "返回需求列表",
+	Lang[protocol.ZH_CN]["task"]["afterChoices"] = []protocol.HtmlKeyValueStr{
+		{"continueAdding", "继续为该需求添加任务"},
+		{"toTaskList", "返回任务列表"},
+		{"toStoryList", "返回需求列表"},
 	}
 
 	Lang[protocol.ZH_CN]["task"]["error"] = map[string]string{
-		"consumedNumber":   "\"已经消耗\"必须为数字",
-		"estimateNumber":   "\"预计剩余\"必须为数字",
-		"consumedSmall":    "\"已经消耗\"必须大于之前消耗",
-		"consumedThisTime": "请填写\"工时\"",
-		"left":             "请填写\"剩余\"",
-		"work":             "\"备注\"必须小于%d个字符",
-		"skipClose":        "任务：%s 不是“已完成”或“已取消”状态，确定要关闭吗？",
-		"consumed":         "任务：%s工时不能小于0，忽略该任务工时的改动",
-		"assignedTo":       "当前状态的多人任务不能指派给任务团队外的成员。",
+		"consumedNumber":         "\"已经消耗\"必须为数字,不能为负数",
+		"leftNumber":             "\"剩余\"必须为数字,不能为负数",
+		"estimateNumber":         "\"预计剩余\"必须为数字",
+		"consumedSmall":          "\"已经消耗\"必须大于之前消耗",
+		"consumedThisTime":       "请填写\"工时\"",
+		"left":                   "请填写\"剩余\"",
+		"work":                   "\"备注\"必须小于%d个字符",
+		"skipClose":              "任务：%s 不是“已完成”或“已取消”状态，确定要关闭吗？",
+		"consumed":               "任务：%s工时不能小于0，忽略该任务工时的改动",
+		"assignedTo":             "当前状态的多人任务不能指派给任务团队外的成员。",
+		"assignedToNotFoundUser": "未找到指派人",
+		"notFoundTask":           "没有找到任务信息",
+		"estStarted":             "日程规划起始时间不对",
+		"deadline":               "日程规划结束时间不对",
+		"deadlineGtEstStarted":   "起始时间不能大于结束时间",
+		"taskHasAncestors":       "当前任务包含孙任务，无法操作",
+		"dateError":              "日期格式不正确",
+		"newProject":             "找不到新的所属项目，请重新选择",
+		"closedReasonNotempty":   "关闭原因不能为空",
+		"taskleftnotempty":       fmt.Sprintf(Lang[protocol.ZH_CN]["error"]["notempty"].(string), Lang[protocol.ZH_CN]["task"]["left"].(string)),
+		"RealStartedErr":         "实际开始填写错误,必须为日期",
+		"finishedDateErr":        "完成时间填写错误,必须为日期",
+		"TaskIsexist":            "已有相同名字的任务，无法创建",
+		"errorTaskType":          "任务类型不能为空",
 	}
 
 	Lang[protocol.ZH_CN]["task"]["report"] = map[string]interface{}{
@@ -6353,6 +6366,7 @@ func LangZH_CNInit() {
 	}
 	Lang[protocol.ZH_CN]["file"]["error"] = map[string]string{
 		"ErrImgType": "上传图片失败，格式识别错误",
+		"updateTmp":  "文件上传失败，请刷新再试",
 	}
 	Lang[protocol.ZH_CN]["error"]["checkTypeRequire"] = "不能为空"
 	Lang[protocol.ZH_CN]["error"]["checkTypeInt"] = "必须为整数"
@@ -6364,6 +6378,8 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["error"]["checkNegativeAndZero"] = "数值必须小于或等于0"
 	Lang[protocol.ZH_CN]["error"]["checkNegative"] = "数值必须小于0"
 	Lang[protocol.ZH_CN]["error"]["resultType"] = "远程服务器返回的结果不符合预期"
+	Lang[protocol.ZH_CN]["error"]["assignedToNotFoundUser"] = "未找到指派人"
+
 	Lang[protocol.ZH_CN]["product"]["error"] = map[string]string{
 		"NotFound": "没有找到产品",
 	}
@@ -6388,14 +6404,23 @@ func LangZH_CNInit() {
 		"Err_ProjectProductPlanParentNotFound": "没有找到上一级产品计划信息",
 	}
 	Lang[protocol.ZH_CN]["project"]["error"] = map[string]string{
-		"NotFount":              "没有找到对应的" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "信息",
+		"NotFound":              "没有找到对应的" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "信息",
 		"beginTime":             "开始日期格式不正确",
 		"endTime":               "结束日期格式不正",
 		"beginGeEnd":            "开始时间不能大于结束时间",
-		"CreateNotFountProduct": "找不到关联产品，请刷新重试",
-		"CreateNotFountPlan":    "找不到关联计划，请刷新重试",
+		"CreateNotFoundProduct": "找不到关联产品，请刷新重试",
+		"CreateNotFoundPlan":    "找不到关联计划，请刷新重试",
 		"ProjectNameIsExist":    "项目名称或者代号已存在相同的，请修改重试",
 		"daysErr":               "项目可用工作日输入错误，输入范围0-32767",
 	}
 
+	//lang套lang的放在最后
+	LangZH_CN_ADD()
+}
+func LangZH_CN_ADD() {
+	Lang[protocol.ZH_CN]["action"]["descValue"] = map[string]map[string]interface{}{ //2021-9-13，增加 "旧值""新值" 的翻译，参数 objtype，field
+		"task": map[string]interface{}{
+			"status": Lang[protocol.ZH_CN]["task"]["statusList"],
+		},
+	}
 }

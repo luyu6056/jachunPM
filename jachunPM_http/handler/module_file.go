@@ -8,6 +8,7 @@ import (
 	common_image "image"
 	"io"
 	"jachunPM/image"
+	"jachunPM_http/js"
 	"libraries"
 	"strconv"
 	"strings"
@@ -27,6 +28,11 @@ func init() {
 	httpHandlerMap["GET"]["/file/read"] = get_file_read
 	httpHandlerMap["GET"]["/file/buildform"] = get_file_buildform
 	httpHandlerMap["POST"]["/file/ajaxUploadTmp"] = post_file_ajaxUploadTmp
+	httpHandlerMap["GET"]["/file/download"] = get_file_download
+	httpHandlerMap["GET"]["/file/edit"] = get_file_edit
+	httpHandlerMap["POST"]["/file/edit"] = post_file_edit
+	httpHandlerMap["GET"]["/file/delete"] = get_file_delete
+
 }
 
 func post_file_ajaxPasteImage(data *TemplateData) (err error) {
@@ -139,24 +145,40 @@ func get_file_read(data *TemplateData) (err error) {
 		data.ws.WriteString(err.Error())
 		return nil
 	}
-	if result.Ext == "webp" && !strings.Contains(data.ws.Header("Accept"), "image/webp") {
-		result.Ext = "jpg"
-		var err error
-		result.Data, err = image.ConvertImgB(result.Data, result.Ext, 1, 1, 80)
-		if err != nil {
+	if result.Ext == "webp" || result.Ext == "bmp" || result.Ext == "jpg" || result.Ext == "png" {
+		getByte := protocol.GET_MSG_FILE_RangeDown()
+		getByte.FileID = result.FileID
+		getByte.Start = 0
+		getByte.End = result.Size
+		var r *protocol.MSG_FILE_RangeDown_result
+		if err = data.SendMsgWaitResultToDefault(getByte, &r); err != nil {
 			data.ws.SetCode(404)
 			data.ws.WriteString(err.Error())
 			return nil
 		}
-	}
-	buf := bufpool.Get().(*libraries.MsgBuffer)
-	defer func() {
+		if result.Ext == "webp" && !strings.Contains(data.ws.Header("Accept"), "image/webp") {
+			result.Ext = "jpg"
+			var err error
+			r.Byte, err = image.ConvertImgB(r.Byte, result.Ext, 1, 1, 80)
+			if err != nil {
+				data.ws.SetCode(404)
+				data.ws.WriteString(err.Error())
+				return nil
+			}
+		}
+		data.ws.SetContentType("image/" + result.Ext)
+		buf := bufpool.Get().(*libraries.MsgBuffer)
+		buf.Write(r.Byte)
+		data.ws.Write(buf)
 		buf.Reset()
 		bufpool.Put(buf)
-	}()
-	buf.Write(result.Data)
-	data.ws.SetContentType("image/" + result.Ext)
-	data.ws.Write(buf)
+		getByte.Put()
+		r.Put()
+	} else {
+		data.ws.RangeDownload(&fileRangeDown{data: data, fileId: result.FileID, size: result.Size}, result.Size, result.Name)
+	}
+	out.Put()
+	result.Put()
 	return
 }
 func get_file_buildform(data *TemplateData) (err error) {
@@ -194,7 +216,7 @@ func file_descProcessImgURLAnd2Bbcode(data *TemplateData, desc string) (res stri
 		check.NoData = true
 		var result *protocol.MSG_FILE_getByID_result
 		if uploaderr = data.SendMsgWaitResultToDefault(check, &result); uploaderr != nil {
-			if strings.Index(uploaderr.Error(), protocol.Err_FileNotFount.String()) == 0 {
+			if strings.Index(uploaderr.Error(), protocol.Err_FileNotFound.String()) == 0 {
 				//删掉失效文件
 				desc = strings.Replace(desc, match[0], "", 1)
 			} else {
@@ -268,8 +290,11 @@ func file_getByObject(data *TemplateData, object string, ID int32) (file []*prot
 	out.ObjectID = ID
 	var result *protocol.MSG_FILE_getByObject_result
 	err = data.SendMsgWaitResultToDefault(out, &result)
+	if err != nil {
+		return
+	}
 	out.Put()
-	return result.List, err
+	return result.List, nil
 }
 func fileFuncs() {
 	global_Funcs["file_printFiles"] = func(oldData *TemplateData, files []*protocol.MSG_FILE_getByID_result, fieldset bool, Type string) template.HTML {
@@ -282,9 +307,10 @@ func fileFuncs() {
 		}
 		data.Data["files"] = files
 		data.Data["fieldset"] = fieldset
-		templateOut("story.view.html", data)
+		templateOut("file.printfiles.html", data)
+		res := string(data.ws.(*CommonFetch).OutBuffer())
 		putFetchInterface(data.ws.(*CommonFetch))
-		return template.HTML("")
+		return template.HTML(res)
 	}
 
 }
@@ -299,7 +325,7 @@ func post_file_ajaxUploadTmp(data *TemplateData) (err error) {
 	out.BlockSize = blockSize
 	out.Data = append(out.Data, data.ws.Body()...)
 	out.Index = index
-	out.Name = data.ws.Query("name")
+	out.Name = file_getRealName(data.ws.Query("name"))
 	err = data.SendMsgWaitResultToDefault(out, nil)
 	out.Put()
 	if err != nil {
@@ -308,4 +334,124 @@ func post_file_ajaxUploadTmp(data *TemplateData) (err error) {
 		data.ws.WriteString("")
 	}
 	return nil
+}
+
+func file_getRealName(in string) string { //与前端js upload.js一起修改
+	s := strings.Split(in, "_。。_")
+	if len(s) == 2 {
+		return s[1]
+	}
+	return in
+}
+func file_getTitleName(in string) string { //与前端js upload.js一起修改
+	s := strings.Split(in, "_。。_")
+	if len(s) == 2 {
+		return s[0]
+	}
+	return in
+}
+func get_file_download(data *TemplateData) (err error) {
+	out := protocol.GET_MSG_FILE_getByID()
+	out.FileID, _ = strconv.ParseInt(data.ws.Query("fileID"), 10, 64)
+	var result *protocol.MSG_FILE_getByID_result
+	if err = data.SendMsgWaitResultToDefault(out, &result); err != nil {
+		data.ws.SetCode(404)
+		data.ws.WriteString(err.Error())
+		return nil
+	}
+	data.ws.RangeDownload(&fileRangeDown{data: data, fileId: result.FileID, size: result.Size}, result.Size, result.Name)
+	out.Put()
+	result.Put()
+	return nil
+}
+
+//封装一个与common通讯的远程下载
+type fileRangeDown struct {
+	data   *TemplateData
+	fileId int64
+	size   int64
+	offset int64
+}
+
+func (f *fileRangeDown) Read(b []byte) (int, error) {
+	out := protocol.GET_MSG_FILE_RangeDown()
+	out.Start = f.offset
+	out.End = f.offset + int64(len(b))
+	if out.End > f.size {
+		out.End = f.size
+	}
+	out.FileID = f.fileId
+	var result *protocol.MSG_FILE_RangeDown_result
+	if err := f.data.SendMsgWaitResultToDefault(out, &result); err != nil {
+		return 0, err
+	}
+	copy(b, result.Byte)
+	l := len(result.Byte)
+	out.Put()
+	result.Put()
+	f.offset += int64(l)
+	return l, nil
+}
+
+//只做了whence为0的情况
+func (f *fileRangeDown) Seek(offset int64, whence int) (ret int64, err error) {
+	f.offset = offset
+	return offset, nil
+}
+func get_file_edit(data *TemplateData) (err error) {
+	out := protocol.GET_MSG_FILE_getByID()
+	out.FileID, _ = strconv.ParseInt(data.ws.Query("fileID"), 10, 64)
+	out.NoData = true
+	var result *protocol.MSG_FILE_getByID_result
+	if err = data.SendMsgWaitResultToDefault(out, &result); err != nil {
+		return
+	}
+	if strings.Contains(result.Name, ".") {
+		result.Name = result.Name[:strings.LastIndex(result.Name, ".")]
+	}
+	data.Data["file"] = result
+	templateOut("file.edit.html", data)
+	out.Put()
+	result.Put()
+	return nil
+}
+func post_file_edit(data *TemplateData) (err error) {
+	if len(data.ws.Post("fileName")) > 80 || len(data.ws.Post("fileName")) == 0 {
+		data.ws.WriteString(js.Alert(fmt.Sprintf(data.Lang["error"]["length"].([]string)[1], data.Lang["file"]["title"].(string), 80, 1)))
+		return
+	}
+
+	out := protocol.GET_MSG_FILE_edit()
+	out.FileID, _ = strconv.ParseInt(data.ws.Query("fileID"), 10, 64)
+	out.Name = data.ws.Post("fileName") + "." + data.ws.Post("extension")
+
+	if err = data.SendMsgWaitResultToDefault(out, nil); err != nil {
+		return
+	}
+	data.ws.WriteString(js.Reload("parent.parent"))
+	return nil
+}
+
+func get_file_delete(data *TemplateData) (err error) {
+	if data.ws.Query("confirm") != "yes" {
+		data.ws.WriteString(js.Confirm(data.Lang["file"]["confirmDelete"].(string), createLink("file", "delete", "fileID="+data.ws.Query("fileID")+"&confirm=yes"), ""))
+		return
+	}
+	getfile := protocol.GET_MSG_FILE_getByID()
+	getfile.FileID, _ = strconv.ParseInt(data.ws.Query("fileID"), 10, 64)
+	getfile.NoData = true
+	var file *protocol.MSG_FILE_getByID_result
+	if err = data.SendMsgWaitResultToDefault(getfile, &file); err != nil {
+		data.ws.WriteString(js.Alert(err.Error()))
+		return dataErrAlreadyOut
+	}
+	out := protocol.GET_MSG_FILE_DeleteByID()
+	out.FileID = getfile.FileID
+	if err = data.SendMsgWaitResultToDefault(out, nil); err != nil {
+		data.ws.WriteString(js.Alert(err.Error()))
+		return dataErrAlreadyOut
+	}
+	data.ws.WriteString(js.Reload("parent"))
+	data.Msg.ActionCreate(file.ObjectType, file.ObjectID, "deletedFile", "", file.Name, nil, nil)
+	return
 }

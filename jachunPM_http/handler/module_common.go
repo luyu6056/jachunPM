@@ -38,7 +38,10 @@ func hasPriv(data *TemplateData, module, method string, obj ...interface{}) bool
 	return true
 }
 func commonModelFuncs() {
-
+	global_Funcs["log"] = func(i interface{}) string {
+		libraries.DebugLog("%+v", i)
+		return fmt.Sprint(i)
+	}
 	global_Funcs["strAdd"] = func(str ...interface{}) string {
 		buf := bufpool.Get().(*libraries.MsgBuffer)
 		for _, s := range str {
@@ -257,29 +260,7 @@ func commonModelFuncs() {
 		return data.ws.Cookie(key)
 	}
 	global_Funcs["common_printLink"] = func(data *TemplateData, module, method string, v ...string) template.HTML {
-		var (
-			vars   string
-			label  string
-			target string
-			misc   string
-		)
-		if len(v) > 0 {
-			vars = v[0]
-		}
-		if len(v) > 1 {
-			label = v[1]
-		}
-		if len(v) > 2 {
-			target = v[2]
-		}
-		if len(v) > 3 {
-			misc = v[3]
-		}
-		if !hasPriv(data, module, method) {
-			return template.HTML("")
-		}
-
-		return template.HTML(html_a(createLink(module, method, vars), label, target, misc))
+		return template.HTML(common_printLink(data, module, method, v...))
 	}
 	global_Funcs["common_printOrderLink"] = func(data *TemplateData, fieldName, orderBy, vars, label string, moduleMethod ...string) template.HTML {
 		return template.HTML(common_printOrderLink(data, fieldName, orderBy, vars, label, moduleMethod...))
@@ -304,46 +285,53 @@ func commonModelFuncs() {
 	}
 	//格式化输出时间戳，允许不输入timestamp，则为当前时间.timestamp可以是time.Time和int int64 int32,string
 	global_Funcs["date"] = func(layout string, timestamp ...interface{}) (res string) {
+		var t time.Time
 		if len(timestamp) == 1 {
 			switch v := timestamp[0].(type) {
 			case int:
-				res = time.Unix(int64(v), 0).Format(layout)
+				t = time.Unix(int64(v), 0)
 			case int32:
-				res = time.Unix(int64(v), 0).Format(layout)
+				t = time.Unix(int64(v), 0)
 			case int64:
-				res = time.Unix(v, 0).Format(layout)
+				t = time.Unix(v, 0)
 			case time.Time:
-				res = v.Format(layout)
+				t = v
 			case string:
-				if v == "" {
-					res = time.Now().Format(layout)
+				if v == "" || v == "today" || v == "now" {
+					t = time.Now()
 				} else {
 					i, _ := strconv.Atoi(v)
-					res = time.Unix(int64(i), 0).Format(layout)
+					t = time.Unix(int64(i), 0)
 				}
 			}
 
 		} else {
-			res = time.Now().Format(layout)
+			t = time.Now()
 		}
-		return
+		if layout == "Unix" {
+			return strconv.FormatInt(t.Unix(), 10)
+		}
+		if layout == "today" {
+			return t.Format("2006-01-02")
+		}
+		return t.Format(layout)
 	}
 	//num正值+负值-,如(5 -2)或(5,2,-1)，均可输出[5,4]
-	global_Funcs["genlist"] = func(star, num interface{}, setpExt ...int) []string {
+	global_Funcs["genlist"] = func(star, num interface{}, setpExt ...int) []int {
 		n, _ := strconv.Atoi(fmt.Sprint(num))
 		s, _ := strconv.Atoi(fmt.Sprint(star))
 		setp := 1
 		if len(setpExt) > 0 && setpExt[0] > 1 {
 			setp = setpExt[0]
 		}
-		ret := make([]string, n)
+		ret := make([]int, n)
 		if n > 0 {
 			for i := 0; i < n; i++ {
-				ret[i] = strconv.Itoa(s + i*setp)
+				ret[i] = s + i*setp
 			}
 		} else {
 			for i := 0; i < n*-1; i++ {
-				ret[i] = strconv.Itoa(s - i*setp)
+				ret[i] = s - i*setp
 			}
 		}
 
@@ -373,8 +361,8 @@ func commonModelFuncs() {
 	global_Funcs["rem"] = func(i, k int) int {
 		return i % k
 	}
-	global_Funcs["fetch"] = func(oldData *TemplateData, module, method, varstr string) template.HTML {
-		return template.HTML(common_fetch(oldData, module, method, varstr))
+	global_Funcs["fetch"] = func(oldData *TemplateData, module, method string, varstr ...string) template.HTML {
+		return template.HTML(common_fetch(oldData, module, method, varstr...))
 	}
 	global_Funcs["generateUid"] = func() string {
 		id := commoncache.INCRBY("generateUid", 1)
@@ -416,6 +404,9 @@ func commonModelFuncs() {
 	}
 	global_Funcs["intsum"] = func(a, b int) int {
 		return a + b
+	}
+	global_Funcs["intsub"] = func(a, b int) int {
+		return a - b
 	}
 	global_Funcs["strings_replace"] = func(a, b, c string) string {
 		return strings.ReplaceAll(a, b, c)
@@ -475,6 +466,19 @@ func commonModelFuncs() {
 	}
 	global_Funcs["helper_workDays"] = func(begin, end interface{}) template.HTML {
 		return template.HTML("待处理")
+	}
+	global_Funcs["fileSize"] = func(size int64) string {
+		if size < 1024 {
+			return strconv.FormatInt(size, 10) + "B"
+		} else if size < 1024*1024 {
+			return fmt.Sprintf("%0.2fK", float64(size)/1024)
+		} else if size < 1024*1024*1024 {
+			return fmt.Sprintf("%0.2fM", float64(size)/1024/1024)
+		}
+		return fmt.Sprintf("%0.2fG", float64(size)/1024/1024/1024)
+	}
+	global_Funcs["sprintf"] = func(format string, a ...interface{}) string {
+		return fmt.Sprintf(format, a...)
 	}
 }
 
@@ -650,11 +654,14 @@ func common_printIcon(data *TemplateData, module, method, vars string, object in
 	}
 
 	if icon == "" {
+
 		if v, ok := data.Lang["common"]["icons"].(map[string]string)[method]; ok {
 			icon = v
+
 		} else {
 			icon = method
 		}
+
 	}
 	for _, v := range []string{"edit", "copy", "report", "export", "delete"} {
 		if v == method {
@@ -688,15 +695,27 @@ func common_printIcon(data *TemplateData, module, method, vars string, object in
 
 	return ""
 }
-func common_fetch(oldData *TemplateData, module, method, varstr string) string {
+func common_fetch(oldData *TemplateData, module, method string, varstr ...string) string {
 	path := "/" + module + "/" + method
 	data := getFetchInterface(oldData.ws, path)
 	if f, ok := httpHandlerMap["GET"][path]; ok {
-		for _, vars := range strings.Split(varstr, "&") {
-			s := strings.Split(vars, "=")
-			if len(s) == 2 {
-				data.ws.AddQuery(s[0], s[1])
+		if len(varstr) > 0 {
+			if len(varstr) == 1 {
+				for _, vars := range strings.Split(varstr[0], "&") {
+					s := strings.Split(vars, "=")
+					if len(s) == 2 {
+						data.ws.AddQuery(s[0], s[1])
+					}
+				}
+			} else {
+				for _, vars := range varstr {
+					s := strings.Split(vars, "=")
+					if len(s) == 2 {
+						data.ws.AddQuery(s[0], s[1])
+					}
+				}
 			}
+
 		}
 		f(data)
 		res := string(data.ws.(*CommonFetch).OutBuffer())
@@ -731,6 +750,9 @@ func common_getValue(i, key interface{}) interface{} {
 	for r.Kind() == reflect.Ptr {
 		r = r.Elem()
 	}
+	if r.Kind() == reflect.Invalid {
+		return nil
+	}
 	k := reflect.ValueOf(key)
 	if r.Type().Kind() == reflect.Map {
 		value := r.MapIndex(k)
@@ -751,4 +773,29 @@ func common_getValue(i, key interface{}) interface{} {
 		}
 	}
 	return nil
+}
+func common_printLink(data *TemplateData, module, method string, v ...string) string {
+	var (
+		vars   string
+		label  string
+		target string
+		misc   string
+	)
+	if len(v) > 0 {
+		vars = v[0]
+	}
+	if len(v) > 1 {
+		label = v[1]
+	}
+	if len(v) > 2 {
+		target = v[2]
+	}
+	if len(v) > 3 {
+		misc = v[3]
+	}
+	if !hasPriv(data, module, method) {
+		return ""
+	}
+
+	return html_a(createLink(module, method, vars), label, target, misc)
 }

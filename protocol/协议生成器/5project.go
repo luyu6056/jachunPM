@@ -5,11 +5,9 @@ import (
 )
 
 type MSG_PROJECT_tree_getLinePairs struct {
-	QueryID uint32
 }
 type MSG_PROJECT_tree_getLinePairs_result struct {
-	QueryResultID uint32
-	List          []HtmlKeyValueStr
+	List []HtmlKeyValueStr
 }
 type MSG_PROJECT_product_cache struct {
 	Id          int32
@@ -34,20 +32,16 @@ type MSG_PROJECT_product_cache struct {
 	Branchs     []*MSG_PROJECT_branch_info `db:"-"`
 }
 type MSG_PROJECT_product_insert struct {
-	QueryID uint32
 	DocName string
 	Data    *MSG_PROJECT_product_cache
 }
 type MSG_PROJECT_product_insert_result struct {
-	QueryResultID uint32
-	ID            int32
+	ID int32
 }
 type MSG_PROJECT_product_update struct {
-	QueryID uint32
-	Data    *MSG_PROJECT_product_cache
+	Data *MSG_PROJECT_product_cache
 }
 type MSG_PROJECT_product_getStories struct {
-	QueryID    uint32
 	ProductID  int32
 	Branch     int32
 	BrowseType string
@@ -60,9 +54,8 @@ type MSG_PROJECT_product_getStories struct {
 	Total      int
 }
 type MSG_PROJECT_product_getStories_result struct {
-	QueryResultID uint32
-	List          []*MSG_PROJECT_story
-	Total         int
+	List  []*MSG_PROJECT_story
+	Total int
 }
 type MSG_PROJECT_story struct {
 	Id             int32
@@ -124,12 +117,10 @@ type MSG_PROJECT_tree_cache struct {
 	TimeStamp time.Time
 }
 type MSG_PROJECT_tree_getParents struct {
-	QueryID  uint32
 	ModuleID int32
 }
 type MSG_PROJECT_tree_getParents_result struct {
-	QueryResultID uint32
-	List          []*MSG_PROJECT_tree_cache
+	List []*MSG_PROJECT_tree_cache
 }
 type MSG_PROJECT_branch_info struct {
 	Id      int32
@@ -139,19 +130,16 @@ type MSG_PROJECT_branch_info struct {
 	Deleted bool
 }
 type MSG_PROJECT_tree_manageChild struct {
-	QueryID        uint32
 	RootID         int32
 	ViewType       string
 	Modules        []*MSG_PROJECT_tree_cache
 	ParentModuleID int32
 }
 type MSG_PROJECT_tree_manageChild_result struct {
-	QueryResultID uint32
-	Result        ErrCode
-	Name          string
+	Result ErrCode
+	Name   string
 }
 type MSG_PROJECT_product_getStoriesMapBySql struct {
-	QueryID uint32
 	Field   string
 	Where   map[string]interface{}
 	Order   string
@@ -161,29 +149,23 @@ type MSG_PROJECT_product_getStoriesMapBySql struct {
 	Total   int
 }
 type MSG_PROJECT_product_getStoriesMapBySql_result struct {
-	QueryResultID uint32
-	List          []map[string]string
-	Total         int
+	List  []map[string]string
+	Total int
 }
 type MSG_PROJECT_tree_updateList struct {
-	QueryID uint32
 	Modules []*MSG_PROJECT_tree_cache
 }
 type MSG_PROJECT_tree_delete struct {
-	QueryID uint32
-	Ids     []int32
+	Ids []int32
 }
 type MSG_PROJECT_productplan_getPairsForStory struct {
-	QueryID uint32
 	Product int32
 	Branch  int32
 }
 type MSG_PROJECT_productplan_getPairsForStory_result struct {
-	QueryResultID uint32
-	List          []HtmlKeyValueStr
+	List []HtmlKeyValueStr
 }
 type MSG_PROJECT_productplan_getList struct {
-	QueryID    uint32
 	Ids        []int32
 	ProductID  int32
 	Branch     int32
@@ -194,47 +176,38 @@ type MSG_PROJECT_productplan_getList struct {
 	Total      int
 }
 type MSG_PROJECT_productplan_getList_result struct {
-	QueryResultID uint32
-	List          []map[string]string
-	Total         int
+	List  []map[string]string
+	Total int
 }
 type MSG_PROJECT_productplan_getLast struct {
-	QueryID   uint32
 	ProductId int32
 	Branch    int32
 }
 type MSG_PROJECT_productplan_getLast_result struct {
-	QueryResultID uint32
-	Result        map[string]string
+	Result map[string]string
 }
 type MSG_PROJECT_product_editBranch struct {
-	QueryID   uint32
 	ProductID int32
 	Branchs   []*MSG_PROJECT_branch_info
 }
 type MSG_PROJECT_product_deleteBranch struct {
-	QueryID   uint32
 	ProductID int32
 	BranchID  int32
 }
 type MSG_PROJECT_product_deleteBranch_result struct {
-	QueryResultID uint32
-	Result        ErrCode
+	Result ErrCode
 }
 type MSG_PROJECT_productplan_getPairs struct {
-	QueryID   uint32
 	ProductID int32
 	BranchID  int32
 	Expired   string
 	Ids       []int32
 }
 type MSG_PROJECT_productplan_getPairs_result struct {
-	QueryResultID uint32
-	List          []HtmlKeyValueStr
+	List []HtmlKeyValueStr
 }
 type MSG_PROJECT_productplan_insertUpdate struct {
-	QueryID  uint32 `db:"-"`
-	Id       int32  `db:"pk"`
+	Id       int32 `db:"pk"`
 	Product  int32
 	Branch   int32
 	Parent   int32
@@ -248,18 +221,15 @@ type MSG_PROJECT_productplan_insertUpdate struct {
 }
 
 type MSG_PROJECT_productplan_insertUpdate_result struct {
-	QueryResultID uint32
-	Id            int32
-	Result        ErrCode
+	Id     int32
+	Result ErrCode
 }
 type MSG_PROJECT_productplan_delete struct {
-	QueryID uint32
 	Id      int32
 	Product int32
 	Branch  int32
 }
 type MSG_PROJECT_stroy_create struct {
-	QueryID       uint32
 	Product       int32
 	Branch        int32
 	Module        int32
@@ -281,33 +251,26 @@ type MSG_PROJECT_stroy_create struct {
 	ProjectID     int32
 }
 type MSG_PROJECT_stroy_create_result struct {
-	QueryResultID uint32
-	Result        int32 //小于0为ErrCode,大于0位新增ID
+	Result int32 //小于0为ErrCode,大于0位新增ID
 }
 type MSG_PROJECT_story_batchGetStoryStage struct {
-	QueryID uint32
-	Ids     []int32
+	Ids []int32
 }
 type MSG_PROJECT_story_batchGetStoryStage_result struct {
-	QueryResultID uint32
-	List          map[int32][]HtmlKeyValueStr
+	List map[int32][]HtmlKeyValueStr
 }
 type MSG_PROJECT_story_getById struct {
-	QueryID uint32
 	Id      int32
 	Version int16
 }
 type MSG_PROJECT_story_getById_result struct {
-	QueryResultID uint32
-	Story         *MSG_PROJECT_story
+	Story *MSG_PROJECT_story
 }
 type MSG_PROJECT_project_getById struct {
-	QueryID uint32
-	Id      int32
+	Id int32
 }
 type MSG_PROJECT_project_getById_result struct {
-	QueryResultID uint32
-	Project       *MSG_PROJECT_project_cache
+	Project *MSG_PROJECT_project_cache
 }
 type MSG_PROJECT_project_cache struct {
 	Id            int32
@@ -382,7 +345,6 @@ type MSG_PROJECT_TASK struct {
 	RealStarted    time.Time
 	FinishedBy     int32
 	FinishedDate   time.Time
-	FinishedList   string
 	CanceledBy     int32
 	CanceledDate   time.Time
 	ClosedBy       int32
@@ -396,28 +358,27 @@ type MSG_PROJECT_TASK struct {
 	Deleted        bool
 	Finalfile      bool
 	Proofreading   bool
-	Team           int32
+	Team           []int32
 	PlaceOrder     bool
 	//从stroy拿数据
-	StoryID            int32
-	StoryTitle         string
-	StoryStatus        string
-	LatestStoryVersion int16
-	Product            int32
-	Branch             int32
+	StoryID            int32  `db:"-"`
+	StoryTitle         string `db:"-"`
+	StoryStatus        string `db:"-"`
+	LatestStoryVersion int16  `db:"-"`
+	Product            int32  `db:"-"`
+	Branch             int32  `db:"-"`
 	//processTask计算出来
 	Progress      int                 `db:"-"`
-	Delay         int64               `db:"-"` //延期几天
+	Delay         int32               `db:"-"` //延期几天
 	Children      []*MSG_PROJECT_TASK `db:"-"`
 	Grandchildren []*MSG_PROJECT_TASK `db:"-"`
+	NeedConfirm   bool                `db:"-"`
 }
 type MSG_PROJECT_productplan_getById struct {
-	QueryID uint32
-	Id      int32
+	Id int32
 }
 type MSG_PROJECT_productplan_getById_result struct {
-	QueryResultID uint32
-	Info          *MSG_PROJECT_productplan
+	Info *MSG_PROJECT_productplan
 }
 type MSG_PROJECT_productplan struct {
 	Id       int32
@@ -448,12 +409,10 @@ type MSG_PROJECT_build struct {
 	Deleted  bool
 }
 type MSG_PROJECT_build_getById struct {
-	QueryID uint32
-	Id      int32
+	Id int32
 }
 type MSG_PROJECT_build_getById_result struct {
-	QueryResultID uint32
-	Info          *MSG_PROJECT_build
+	Info *MSG_PROJECT_build
 }
 type MSG_PROJECT_release struct {
 	Id       int32
@@ -471,23 +430,18 @@ type MSG_PROJECT_release struct {
 	Deleted  bool
 }
 type MSG_PROJECT_release_getById struct {
-	QueryID uint32
-	Id      int32
+	Id int32
 }
 type MSG_PROJECT_release_getById_result struct {
-	QueryResultID uint32
-	Info          *MSG_PROJECT_release
+	Info *MSG_PROJECT_release
 }
 type MSG_PROJECT_task_getPairs struct {
-	QueryID uint32
-	Where   map[string]interface{}
+	Where map[string]interface{}
 }
 type MSG_PROJECT_task_getPairs_result struct {
-	QueryResultID uint32
-	List          []HtmlKeyValueStr
+	List []HtmlKeyValueStr
 }
 type MSG_PROJECT_task_getListByWhereMap struct {
-	QueryID uint32
 	Where   map[string]interface{}
 	Order   string
 	Page    int
@@ -495,17 +449,14 @@ type MSG_PROJECT_task_getListByWhereMap struct {
 	Total   int
 }
 type MSG_PROJECT_task_getListByWhereMap_result struct {
-	QueryResultID uint32
-	List          []*MSG_PROJECT_TASK
-	Total         int
+	List  []*MSG_PROJECT_TASK
+	Total int
 }
 type MSG_PROJECT_project_getBurn struct {
-	QueryID    uint32
 	ProjectIds []int32
 }
 type MSG_PROJECT_project_getBurn_result struct {
-	QueryResultID uint32
-	List          []*MSG_PROJECT_project_Burn_info
+	List []*MSG_PROJECT_project_Burn_info
 }
 type MSG_PROJECT_project_Burn_info struct {
 	Project  int32
@@ -515,97 +466,76 @@ type MSG_PROJECT_project_Burn_info struct {
 	Consumed float64
 }
 type MSG_PROJECT_story_getPlanStories struct {
-	QueryID uint32
 	PlanID  int32
 	Status  string
 	OrderBy string
 }
 type MSG_PROJECT_story_getPlanStories_result struct {
-	QueryResultID uint32
-	List          []*MSG_PROJECT_story
+	List []*MSG_PROJECT_story
 }
 type MSG_PROJECT_project_linkStory struct {
-	QueryID   uint32
 	ProjectID int32
 	Stories   []int32
 	Products  map[int32]int32
 }
 
 type MSG_PROJECT_branch_getByProducts struct {
-	QueryID      uint32
 	Products     []int32
 	AppendBranch []int32
 }
 type MSG_PROJECT_branch_getByProducts_result struct {
-	QueryResultID uint32
-	List          map[int32][]HtmlKeyValueStr
+	List map[int32][]HtmlKeyValueStr
 }
 type MSG_PROJECT_project_create struct {
-	QueryID       uint32
 	CopyProjectID int32
 	Info          *MSG_PROJECT_project_cache
 }
 type MSG_PROJECT_project_create_result struct {
-	QueryResultID uint32
-	Id            int32
+	Id int32
 }
 type MSG_PROJECT_project_statRelatedData struct {
-	QueryID   uint32
 	ProjectID int32
 }
 type MSG_PROJECT_project_statRelatedData_result struct {
-	QueryResultID uint32
-	StoryCount    int
-	TaskCount     int
-	BugCount      int
+	StoryCount int
+	TaskCount  int
+	BugCount   int
 }
 type MSG_PROJECT_story_getPairsByIds struct {
-	QueryID uint32
-	Ids     []int32
+	Ids []int32
 }
 type MSG_PROJECT_story_getPairsByIds_result struct {
-	QueryResultID uint32
-	List          []HtmlKeyValueStr
+	List []HtmlKeyValueStr
 }
 type MSG_PROJECT_product_getPairsByIds struct {
-	QueryID uint32
-	Ids     []int32
+	Ids []int32
 }
 type MSG_PROJECT_product_getPairsByIds_result struct {
-	QueryResultID uint32
-	List          []HtmlKeyValueStr
+	List []HtmlKeyValueStr
 }
 type MSG_PROJECT_project_getPairsByIds struct {
-	QueryID uint32
-	Ids     []int32
+	Ids []int32
 }
 type MSG_PROJECT_project_getPairsByIds_result struct {
-	QueryResultID uint32
-	List          []HtmlKeyValueStr
+	List []HtmlKeyValueStr
 }
 type MSG_PROJECT_branch_getPairsByIds struct {
-	QueryID uint32
-	Ids     []int32
+	Ids []int32
 }
 type MSG_PROJECT_branch_getPairsByIds_result struct {
-	QueryResultID uint32
-	List          []HtmlKeyValueStr
+	List []HtmlKeyValueStr
 }
 type MSG_PROJECT_tree_getPairsByIds struct {
-	QueryID uint32
-	Ids     []int32
+	Ids []int32
 }
 type MSG_PROJECT_tree_getPairsByIds_result struct {
-	QueryResultID uint32
-	List          []HtmlKeyValueStr
+	List []HtmlKeyValueStr
 }
 type MSG_PROJECT_project_start struct {
-	QueryID uint32
 	Id      int32
 	Comment string //备注
 }
 type MSG_PROJECT_project_putoff struct {
-	QueryID uint32
 	Id      int32
 	Begin   time.Time
 	End     time.Time
@@ -613,12 +543,10 @@ type MSG_PROJECT_project_putoff struct {
 	Comment string
 }
 type MSG_PROJECT_project_suspend struct {
-	QueryID uint32
 	Id      int32
 	Comment string
 }
 type MSG_PROJECT_project_activate struct {
-	QueryID      uint32
 	Id           int32
 	Begin        time.Time
 	End          time.Time
@@ -626,16 +554,13 @@ type MSG_PROJECT_project_activate struct {
 	ReadjustTask bool
 }
 type MSG_PROJECT_project_close struct {
-	QueryID uint32
 	Id      int32
 	Comment string
 }
 type MSG_PROJECT_project_delete struct {
-	QueryID uint32
-	Id      int32
+	Id int32
 }
 type MSG_PROJECT_project_getProjectTasks struct {
-	QueryID   uint32
 	ProjectID int32
 	ProductID int32
 	Type      []string
@@ -646,18 +571,183 @@ type MSG_PROJECT_project_getProjectTasks struct {
 	PerPage   int
 	Total     int
 }
+type MSG_PROJECT_project_getProjectTasksByWhere struct {
+	Where   string
+	OrderBy string
+	Role    string
+	Page    int
+	PerPage int
+	Total   int
+}
 type MSG_PROJECT_project_getProjectTasks_result struct {
-	QueryResultID uint32
-	List          []*MSG_PROJECT_TASK
-	Total         int
+	List  []*MSG_PROJECT_TASK
+	Total int
 }
 type MSG_PROJECT_tree_getTaskTreeModules struct {
-	QueryID   uint32
 	ProjectID int32
 	Parent    bool
 	//LinkStory bool 默认true
 }
 type MSG_PROJECT_tree_getTaskTreeModules_result struct {
-	QueryResultID  uint32
 	ProjectModules map[int32]int32
+}
+type MSG_PROJECT_task_getById struct {
+	StarTime time.Time
+	Id       int32
+}
+
+type MSG_PROJECT_task_getById_result struct {
+	Info *MSG_PROJECT_TASK
+}
+
+type MSG_PROJECT_story_getProjectStoryPairs struct {
+	ProjectID    int32
+	ProductID    int32
+	Branch       int32
+	ModuleIdList []int32
+	ShortType    bool
+}
+type MSG_PROJECT_story_getProjectStoryPairs_result struct {
+	List []*MSG_PROJECT_TASK
+}
+type MSG_PROJECT_task_create struct {
+	Task *MSG_PROJECT_TASK
+}
+type MSG_PROJECT_task_create_result struct {
+	Id     int32
+	Err    ErrCode
+	Change ChangeHistory
+}
+type MSG_PROJECT_TaskEstimate struct {
+	Id       int32
+	Task     int32
+	Date     time.Time
+	Estimate float64
+	Left     float64
+	Consumed float64
+	Uid      int32
+	Account  string
+	Work     string
+}
+type MSG_PROJECT_task_GetTaskEstimateByTaskId struct {
+	TaskId int32
+}
+type MSG_PROJECT_task_GetTaskEstimateByTaskId_result struct {
+	List []*MSG_PROJECT_TaskEstimate
+}
+type MSG_PROJECT_task_UpdateTaskEstimate struct {
+	TaskId int32
+	List   []*MSG_PROJECT_TaskEstimate
+}
+type MSG_PROJECT_task_UpdateTaskEstimate_result struct {
+	Changes []*MSG_LOG_History
+}
+
+type MSG_PROJECT_story_getProductStories struct {
+	Products []int32
+	Branches []int32
+	ModuleID []int32
+	Status   []string
+	Sort     string
+	Page     int
+	PerPage  int
+	Total    int
+}
+type MSG_PROJECT_story_getProductStories_result struct {
+	List  []*MSG_PROJECT_story
+	Total int
+}
+
+type MSG_PROJECT_productplan_getForProducts struct {
+	Products []int32
+}
+type MSG_PROJECT_productplan_getForProducts_result struct {
+	List []HtmlKeyValueStr
+}
+
+type MSG_PROJECT_task_assignTo struct {
+	TaskID     int32
+	AssignedTo int32
+	Left       float64
+	Comment    string
+}
+
+type MSG_PROJECT_task_start struct {
+	TaskID      int32
+	RealStarted time.Time
+	Consumed    float64
+	Left        float64
+	Comment     string
+	MethodName  string
+}
+
+type MSG_PROJECT_task_start_result struct {
+	Changes []*MSG_LOG_History
+}
+type MSG_PROJECT_task_finish struct {
+	TaskID       int32
+	FinishedDate time.Time
+	Consumed     float64
+	Left         float64
+	Mailto       []int32
+	Comment      string
+}
+
+type MSG_PROJECT_task_finish_result struct {
+	Changes []*MSG_LOG_History
+}
+
+type MSG_PROJECT_task_activate struct {
+	TaskID     int32
+	AssignedTo int32
+	Left       float64
+	Mailto     []int32
+	Comment    string
+}
+
+type MSG_PROJECT_task_pause struct {
+	TaskID  int32
+	Comment string
+}
+
+type MSG_PROJECT_task_internalaudit struct {
+	TaskID  int32
+	Comment string
+	Mailto  []int32
+}
+
+type MSG_PROJECT_task_proofreading struct {
+	TaskID       int32
+	Comment      string
+	Proofreading bool
+}
+type MSG_PROJECT_task_close struct {
+	TaskID  int32
+	Comment string
+}
+type MSG_PROJECT_task_getStoryTaskCounts struct {
+	Stories   []int32
+	ProjectID int32
+}
+type MSG_PROJECT_task_getStoryTaskCounts_result struct {
+	List map[int32]int
+}
+type MSG_PROJECT_task_examine struct {
+	TaskID    int32
+	ProjectId int32
+	Examine   bool
+}
+type MSG_PROJECT_task_cancel struct {
+	TaskID  int32
+	Comment string
+}
+
+type MSG_PROJECT_task_delete struct {
+	TaskID    int32
+	ProjectId int32
+}
+
+type MSG_PROJECT_task_placeOrder struct {
+	TaskID int32
+	Action bool
 }

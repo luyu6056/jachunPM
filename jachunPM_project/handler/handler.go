@@ -114,8 +114,67 @@ func Handler(in *protocol.Msg) {
 		project_delete(data, in)
 	case *protocol.MSG_PROJECT_project_getProjectTasks:
 		project_getProjectTasks(data, in)
+	case *protocol.MSG_PROJECT_project_getProjectTasksByWhere:
+		project_getProjectTasksByWhere(data, in)
 	case *protocol.MSG_PROJECT_tree_getTaskTreeModules:
 		tree_getTaskTreeModules(data, in)
+	case *protocol.MSG_PROJECT_task_getById:
+		task_getById(data, in)
+	case *protocol.MSG_PROJECT_story_getProjectStoryPairs:
+		story_getProjectStoryPairs(data, in)
+	case *protocol.MSG_PROJECT_task_create:
+		task_create(data, in)
+	case *protocol.MSG_PROJECT_task_GetTaskEstimateByTaskId:
+		task_GetTaskEstimateByTaskId(data, in)
+	case *protocol.MSG_PROJECT_task_UpdateTaskEstimate:
+		task_UpdateTaskEstimate(data, in)
+	case *protocol.MSG_PROJECT_story_getProductStories:
+		var out = protocol.GET_MSG_PROJECT_story_getProductStories_result()
+		var err error
+		out.List, err = story_getProductStories(data.Products, data.Branches, data.ModuleID, data.Status, data.Sort, data.Page, data.PerPage, &data.Total)
+		if err != nil {
+			in.WriteErr(err)
+			return
+		}
+		out.Total = data.Total
+		in.SendResult(out)
+		out.Put()
+	case *protocol.MSG_PROJECT_productplan_getForProducts:
+		list, err := productplan_getForProducts(data.Products, in)
+		if err != nil {
+			in.WriteErr(err)
+			return
+		}
+		out := protocol.GET_MSG_PROJECT_productplan_getForProducts_result()
+		out.List = list
+		in.SendResult(out)
+		out.Put()
+	case *protocol.MSG_PROJECT_task_assignTo:
+		task_assignTo(data, in)
+	case *protocol.MSG_PROJECT_task_start:
+		task_start(data, in)
+	case *protocol.MSG_PROJECT_task_finish:
+		task_finish(data, in)
+	case *protocol.MSG_PROJECT_task_activate:
+		task_activate(data, in)
+	case *protocol.MSG_PROJECT_task_pause:
+		task_pause(data, in)
+	case *protocol.MSG_PROJECT_task_internalaudit:
+		task_internalaudit(data, in)
+	case *protocol.MSG_PROJECT_task_proofreading:
+		task_proofreading(data, in)
+	case *protocol.MSG_PROJECT_task_close:
+		task_close(data, in)
+	case *protocol.MSG_PROJECT_task_getStoryTaskCounts:
+		task_getStoryTaskCounts(data, in)
+	case *protocol.MSG_PROJECT_task_examine:
+		task_examine(data, in)
+	case *protocol.MSG_PROJECT_task_cancel:
+		task_cancel(data, in)
+	case *protocol.MSG_PROJECT_task_delete:
+		in.WriteErr(task_delete(data.TaskID, in))
+	case *protocol.MSG_PROJECT_task_placeOrder:
+		task_placeOrder(data, in)
 	default:
 		libraries.ReleaseLog("未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 	}

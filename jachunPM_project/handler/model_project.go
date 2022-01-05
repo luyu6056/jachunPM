@@ -23,7 +23,7 @@ func project_setCache(id int32) {
 		} else {
 			out := protocol.GET_MSG_USER_team_getByTypeRoot()
 			out.Type = "project"
-			out.Root = project.Id
+			out.Root = []int32{project.Id}
 			var result *protocol.MSG_USER_team_getByTypeRoot_result
 			if err := (&protocol.RpclientSend{HostConn}).SendMsgWaitResultToDefault(out, &result); err == nil {
 				project.Teams = result.List
@@ -77,7 +77,7 @@ func project_linkStory(data *protocol.MSG_PROJECT_project_linkStory, in *protoco
 			return
 		}
 		if story == nil {
-			in.WriteErr(errors.New(protocol.Err_ProjectStoryNotFount.String()))
+			in.WriteErr(errors.New(protocol.Err_ProjectStoryNotFound.String()))
 			return
 		}
 		story.Project = project.Id
@@ -188,7 +188,7 @@ func project_create(data *protocol.MSG_PROJECT_project_create, in *protocol.Msg)
 	/* Copy team of project. */
 	if data.CopyProjectID > 0 {
 		out := protocol.GET_MSG_USER_team_getByTypeRoot()
-		out.Root = data.CopyProjectID
+		out.Root = []int32{data.CopyProjectID}
 		out.Type = "project"
 		var result *protocol.MSG_USER_team_getByTypeRoot_result
 		if err = in.SendMsgWaitResult(0, out, &result); err != nil {
@@ -436,7 +436,7 @@ func project_activate(data *protocol.MSG_PROJECT_project_activate, in *protocol.
 		}
 		for _, task := range tasks {
 
-			if task.Status == "wait" && task.EstStarted.After(protocol.ZEROTIME) {
+			if task.Status == "wait" && task.EstStarted.After(protocol.NORMALTIME) {
 				taskDays := task.Deadline.Sub(task.EstStarted)
 				taskOffset := task.EstStarted.Sub(oldproject.Begin)
 
@@ -526,6 +526,7 @@ func project_delete(data *protocol.MSG_PROJECT_project_delete, in *protocol.Msg)
 func project_getProjectTasks(data *protocol.MSG_PROJECT_project_getProjectTasks, in *protocol.Msg) {
 	where := map[string]interface{}{
 		"t1.Project": data.ProjectID,
+		"t1.Deleted":false,
 	}
 	if data.ProductID != 0 {
 		var trees []*db.Module
@@ -546,15 +547,18 @@ func project_getProjectTasks(data *protocol.MSG_PROJECT_project_getProjectTasks,
 		for _, s := range storys {
 			storyIds = append(storyIds, strconv.Itoa(int(s.Id)))
 		}
-		where["productRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t1.Module` in (" + strings.Join(treeIds, ",") + ") or `t1.Story` in (" + strings.Join(storyIds, ",") + ")"}
+		where["productRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t1`.`Module` in (" + strings.Join(treeIds, ",") + ") or `t1`.`Story` in (" + strings.Join(storyIds, ",") + ")"}
 	}
 	if data.ModuleID != 0 {
 		where["t1.Module"] = tree_getAllChildId(data.ModuleID)
 	}
-	switch {
-	case data.Type[0] == "all" || len(data.Type) > 0:
+	if data.Type[0] == "all" || len(data.Type) > 0 {
 		where["t1.Parent"] = []interface{}{mysql.WhereOperatorLT, 1}
-	case data.Type[0] == "myinvolved":
+
+	}
+	switch data.Type[0] {
+	case "all":
+	case "myinvolved":
 		out := protocol.GET_MSG_USER_team_getByTypeUid()
 		out.Type = "task"
 		out.Uid = in.GetUserID()
@@ -567,62 +571,120 @@ func project_getProjectTasks(data *protocol.MSG_PROJECT_project_getProjectTasks,
 		for _, t := range result.List {
 			ids = append(ids, strconv.Itoa(int(t.Root)))
 		}
-		where["myinvolvedRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t1.Id` in (" + strings.Join(ids, ",") + ") or `t1.AssignedTo` = " + strconv.Itoa(int(in.GetUserID())) + " or `t1.Finishedby` = " + strconv.Itoa(int(in.GetUserID()))}
+		if len(ids) == 0 {
+			ids = []string{"0"}
+		}
+		where["myinvolvedRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t1`.`Id` in (" + strings.Join(ids, ",") + ") or `t1`.`AssignedTo` = " + strconv.Itoa(int(in.GetUserID())) + " or `t1`.`Finishedby` = " + strconv.Itoa(int(in.GetUserID()))}
 		out.Put()
 		result.Put()
-	case data.Type[0] == "undone":
-		where["undoneRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t1.Status` = 'wait' or `t1.Status` = 'doing'"}
-	case data.Type[0] == "needconfirm":
-		where["needconfirmRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t2.version > t1.storyVersion and t2.Status = 'active'"}
-	case data.Type[0] == "assignedtome":
+	case "undone":
+		where["undoneRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t1`.`Status` = 'wait' or `t1`.`Status` = 'doing'"}
+	case "needconfirm":
+		where["needconfirmRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t2`.`version` > `t1`.`storyVersion` and `t2`.`Status` = 'active'"}
+	case "assignedtome":
 		where["t1.AssignedTo"] = in.GetUserID()
-	case data.Type[0] == "finishedbyme":
+	case "finishedbyme":
 		where["t1.Finishedby"] = in.GetUserID()
 		//->andWhere('t1.finishedby', 1)->eq($this->app->user->account)->orWhere('t1.finishedList')->like("%,{$this->app->user->account},%")
-	case data.Type[0] == "delayed":
-		where["t1.Deadline"] = []interface{}{mysql.WhereOperatorBETWEEN, "1970-01-01", time.Now().Format(protocol.TIMEFORMAT_MYSQLDATE)}
-		where["t1.Status"] = []interface{}{"wait", "doing"}
+	case "delayed":
+		where["t1.Deadline"] = []interface{}{mysql.WhereOperatorBETWEEN, []string{"1970-01-01", time.Now().Format(protocol.TIMEFORMAT_MYSQLDATE)}}
+		where["t1.Status"] = []string{"wait", "doing"}
 	default:
+		where["t1.Status"] = data.Type
+	}
 
-		where["t1.Status"] = data.Type
-	}
-	if len(data.Type) > 0 {
-		where["t1.Status"] = data.Type
-	}
 	if data.Role == "member" {
-		where["RoleRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t1.AssignedTo` = " + strconv.Itoa(int(in.GetUserID())) + " or t1.AssignedTo = ''"}
+		where["RoleRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t1`.`AssignedTo` = " + strconv.Itoa(int(in.GetUserID())) + " or t1.AssignedTo = ''"}
 	}
-	out := protocol.GET_MSG_PROJECT_project_getProjectTasks_result()
-	err := in.DB.Table(db.TABLE_TASK).Alias("t1").Field("DISTINCT t1.*, t2.Id AS StoryID, t2.Title AS StoryTitle, t2.Product as Product, t2.Branch as Branch, t2.version AS LatestStoryVersion, t2.Status AS StoryStatus").LeftJoin(db.TABLE_STORY).Alias("t2").On("t1.Story = t2.Id").Where(where).Order(data.OrderBy).Limit((data.Page-1)*data.PerPage, data.PerPage).Select(&out.List)
+	var tasks []*protocol.MSG_PROJECT_TASK
+	err := in.DB.Table(db.TABLE_TASK).Alias("t1").Field("DISTINCT t1.*, t2.Id AS StoryID, t2.Title AS StoryTitle, t2.Product as Product, t2.Branch as Branch, t2.version AS LatestStoryVersion, t2.Status AS StoryStatus").LeftJoin(db.TABLE_STORY).Alias("t2").On("t1.Story = t2.Id").Where(where).Order(data.OrderBy).Limit((data.Page-1)*data.PerPage, data.PerPage).Select(&tasks)
 	if err != nil {
 		in.WriteErr(err)
 		return
 	}
-	out.Total = data.Total
-	if out.Total == 0 {
-		out.Total, err = in.DB.Table(db.TABLE_TASK).Alias("t1").Field("DISTINCT t1.Id").LeftJoin(db.TABLE_STORY).Alias("t2").On("t1.Story = t2.Id").Where(where).Count()
+	total := data.Total
+	if total == 0 {
+		total, err = in.DB.Table(db.TABLE_TASK).Alias("t1").Field("DISTINCT t1.Id").LeftJoin(db.TABLE_STORY).Alias("t2").On("t1.Story = t2.Id").Where(where).Count()
 		if err != nil {
 			in.WriteErr(err)
 			return
 		}
 	}
+
+	project_getProjectTaskOut(in, tasks, total)
+}
+func project_getProjectTasksByWhere(data *protocol.MSG_PROJECT_project_getProjectTasksByWhere, in *protocol.Msg) {
+	var tasks []*protocol.MSG_PROJECT_TASK
+	err := in.DB.Table(db.TABLE_TASK).Where(data.Where).Order(data.OrderBy).Limit((data.Page-1)*data.PerPage, data.PerPage).Select(&tasks)
+	if err != nil {
+		in.WriteErr(err)
+		return
+	}
+	total := data.Total
+	if total == 0 {
+		total, err = in.DB.Table(db.TABLE_TASK).Where(data.Where).Count()
+		if err != nil {
+			in.WriteErr(err)
+			return
+		}
+	}
+	//补全story消息
+	var ids []int32
+	for _, t := range tasks {
+		if t.Story > 0 {
+			ids = append(ids, t.Story)
+		}
+	}
+	if len(ids) > 0 {
+		var storys []*db.Story
+		err = in.DB.Table(db.TABLE_STORY).Where(map[string]interface{}{"Id": ids}).Select(&storys)
+		if err != nil {
+			in.WriteErr(err)
+			return
+		}
+		for _, t := range tasks {
+			if t.Story > 0 {
+				for _, s := range storys {
+					if s.Id == t.Story {
+						t.StoryID = s.Id
+						t.StoryTitle = s.Title
+						t.Product = s.Product
+						t.Branch = s.Branch
+						t.LatestStoryVersion = s.Version
+						t.StoryStatus = s.Status
+					}
+				}
+			}
+		}
+	}
+	project_getProjectTaskOut(in, tasks, total)
+}
+
+//获取子孙任务并返回
+func project_getProjectTaskOut(in *protocol.Msg, tasks []*protocol.MSG_PROJECT_TASK, total int) {
+	out := protocol.GET_MSG_PROJECT_project_getProjectTasks_result()
+	out.List = tasks
+	out.Total = total
 	//获取子任务
 	var parents, ancestors []int32
 	for _, t := range out.List {
 		if t.Parent == -1 {
+
 			parents = append(parents, t.Id)
 		}
 	}
+	where := map[string]interface{}{}
 	var children []*protocol.MSG_PROJECT_TASK
 	if len(parents) > 0 {
 		where["t1.Parent"] = parents
 		delete(where, "t1.Project")
-		if err = in.DB.Table(db.TABLE_TASK).Alias("t1").Field("DISTINCT t1.*, t2.Id AS StoryID, t2.Title AS StoryTitle, t2.Product as Product, t2.Branch as Branch, t2.version AS LatestStoryVersion, t2.Status AS StoryStatus").LeftJoin(db.TABLE_STORY).Alias("t2").On("t1.Story = t2.Id").Where(where).Order(data.OrderBy).Limit((data.Page-1)*data.PerPage, data.PerPage).Select(&children); err != nil {
+		if err := in.DB.Table(db.TABLE_TASK).Alias("t1").Field("DISTINCT t1.*, t2.Id AS StoryID, t2.Title AS StoryTitle, t2.Product as Product, t2.Branch as Branch, t2.version AS LatestStoryVersion, t2.Status AS StoryStatus").LeftJoin(db.TABLE_STORY).Alias("t2").On("t1.Story = t2.Id").Where(where).Limit(0).Select(&children); err != nil {
 			in.WriteErr(err)
 			return
 		}
 
 		for _, child := range children {
+
 			for _, task := range out.List {
 				if task.Id == child.Parent {
 					task.Children = append(task.Children, child)
@@ -633,24 +695,27 @@ func project_getProjectTasks(data *protocol.MSG_PROJECT_project_getProjectTasks,
 				ancestors = append(ancestors, child.Id)
 			}
 		}
+
 	}
 	//获取孙任务
 	if len(ancestors) > 0 {
 		var grandchildrens []*protocol.MSG_PROJECT_TASK
 		where["t1.Parent"] = ancestors
-		if err = in.DB.Table(db.TABLE_TASK).Alias("t1").Field("DISTINCT t1.*, t2.Id AS StoryID, t2.Title AS StoryTitle, t2.Product as Product, t2.Branch as Branch, t2.version AS LatestStoryVersion, t2.Status AS StoryStatus").LeftJoin(db.TABLE_STORY).Alias("t2").On("t1.Story = t2.Id").Where(where).Order(data.OrderBy).Limit((data.Page-1)*data.PerPage, data.PerPage).Select(&grandchildrens); err != nil {
+		if err := in.DB.Table(db.TABLE_TASK).Alias("t1").Field("DISTINCT t1.*, t2.Id AS StoryID, t2.Title AS StoryTitle, t2.Product as Product, t2.Branch as Branch, t2.version AS LatestStoryVersion, t2.Status AS StoryStatus").LeftJoin(db.TABLE_STORY).Alias("t2").On("t1.Story = t2.Id").Where(where).Limit(0).Select(&grandchildrens); err != nil {
 			in.WriteErr(err)
 			return
 		}
 		for _, grandchild := range grandchildrens {
+
 			for _, child := range children {
 				if child.Id == grandchild.Parent {
-					child.Grandchildren = append(child.Grandchildren, child)
+					child.Grandchildren = append(child.Grandchildren, grandchild)
 					break
 				}
 			}
 		}
 	}
+	task_processTasks(out.List)
 	in.SendResult(out)
 	out.Put()
 }

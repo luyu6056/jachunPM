@@ -368,6 +368,7 @@ func ListDir(dirPth string, suffix string) (files []string, err error) {
 	PthSep := "/"
 	if os.IsPathSeparator('\\') { //前边的判断是否是系统的分隔符
 		PthSep = "\\"
+		dirPth = strings.ReplaceAll(dirPth, "/", "\\")
 	}
 	suffix = strings.ToUpper(suffix) //忽略后缀匹配的大小写
 	for _, fi := range dir {
@@ -391,6 +392,7 @@ func ListDirAll(dirPth string, suffix string) (files []string, err error) {
 	PthSep := "/"
 	if os.IsPathSeparator('\\') { //前边的判断是否是系统的分隔符
 		PthSep = "\\"
+		dirPth = strings.ReplaceAll(dirPth, "/", "\\")
 	}
 	suffix = strings.ToUpper(suffix) //忽略后缀匹配的大小写
 	for _, fi := range dir {
@@ -1531,10 +1533,9 @@ func I2S(i interface{}) (result string) {
 	case int:
 		result = strconv.FormatInt(int64(v), 10)
 	case float32:
-		result = Number_format(v, 10)
+		result = strconv.FormatFloat(float64(v), 'g', -1, 32)
 	case float64:
-		//精度10位小数
-		result = Number_format(v, 10)
+		result = strconv.FormatFloat(v, 'g', -1, 64)
 	default:
 		result = fmt.Sprint(i)
 	}
@@ -1551,4 +1552,17 @@ func GetBaseRootPath() (string, error) {
 		path, err = os.Getwd()
 	}
 	return path, err
+}
+func CopyMap(r reflect.Value) (newMap reflect.Value) {
+	if r.Type().Kind() == reflect.Map {
+		newMap = reflect.MakeMap(r.Type())
+		n := r.MapRange()
+		for n.Next() {
+			key := n.Key()
+			value := CopyMap(n.Value())
+			newMap.SetMapIndex(key, value)
+		}
+		return
+	}
+	return r
 }

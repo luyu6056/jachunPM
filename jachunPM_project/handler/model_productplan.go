@@ -245,3 +245,14 @@ func productplan_getById(data *protocol.MSG_PROJECT_productplan_getById, in *pro
 	in.SendResult(out)
 	out.Put()
 }
+func productplan_getForProducts(products []int32, in *protocol.Msg) (list []protocol.HtmlKeyValueStr, err error) {
+	var plans []*db.Productplan
+	if err = in.DB.Table(db.TABLE_PRODUCTPLAN).Field("`Id`,`Title`").Where(map[string]interface{}{"Product": products, "Deleted": false}).Order("begin desc").Select(&plans); err != nil {
+		return nil, err
+	}
+	list = []protocol.HtmlKeyValueStr{protocol.HtmlKeyValueStr{}}
+	for _, plan := range plans {
+		list = append(list, protocol.HtmlKeyValueStr{strconv.Itoa(int(plan.Id)), plan.Title})
+	}
+	return
+}

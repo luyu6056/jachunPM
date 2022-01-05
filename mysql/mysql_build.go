@@ -14,8 +14,6 @@ import (
 )
 
 const (
-	WhereOperatorIN           = "in"
-	WhereOperatorNOTIN        = "notin"
 	WhereOperatorTIME         = "time"
 	WhereOperatorBETWEEN      = "between"
 	WhereOperatorLT           = "lt" //<
@@ -373,8 +371,56 @@ func (this *Mysql_Build) _where_interface(key string, value interface{}) error {
 				this.buffer.WriteByte(41)
 				//return key + ` IN (` + strings.Replace(Getvalue((val[1])), `,`, `','`, -1) + `)`
 			default:
-				t := reflect.TypeOf(v)
-				return errors.New(`where []interface{} in未设置类型` + t.Name())
+				ref := reflect.ValueOf(v)
+				//增加对Id的支持
+				var ids []string
+				if ref.Kind() == reflect.Slice {
+					if ref.Len() == 0 {
+						this.buffer.WriteString(Getkey(key))
+						this.buffer.WriteString(" is null")
+						return nil
+					}
+					for i := 0; i < ref.Len(); i++ {
+						refV := ref.Index(i)
+						if refV.Kind() == reflect.Ptr {
+							refV = refV.Elem()
+						}
+						if refV.Kind() == reflect.Struct {
+							id := refV.FieldByName("Id")
+							if id.Kind() == reflect.Invalid {
+								id = refV.FieldByName("ID")
+							}
+							if id.Kind() == reflect.Int || id.Kind() == reflect.Int8 || id.Kind() == reflect.Int16 || id.Kind() == reflect.Int32 || id.Kind() == reflect.Int64 {
+								ids = append(ids, strconv.FormatInt(id.Int(), 10))
+
+							}
+							if id.Kind() == reflect.Uint || id.Kind() == reflect.Uint8 || id.Kind() == reflect.Uint16 || id.Kind() == reflect.Uint32 || id.Kind() == reflect.Uint64 {
+								ids = append(ids, strconv.FormatUint(id.Uint(), 10))
+							}
+
+						}
+					}
+				}
+				if len(ids) == 0 {
+					return errors.New(`where []interface{} in未设置类型` + ref.Type().Name())
+				} else {
+					this.buffer.WriteString(Getkey(key))
+					this.buffer.Write([]byte{32, 73, 78, 32, 40}) // IN (
+					if this.prepare {
+						for i := 0; i < len(ids); i++ {
+							this.sql.where_prepare_arg = append(this.sql.where_prepare_arg, ids[i])
+							this.buffer.Write([]byte{63, 44}) //?,
+						}
+					} else {
+						for i := 0; i < len(ids); i++ {
+							this.buffer.WriteString(ids[i])
+							this.buffer.WriteByte(44) //,
+						}
+					}
+					this.buffer.Truncate(this.buffer.Len() - 1)
+					this.buffer.WriteByte(41) //)
+				}
+
 			}
 		case `time`:
 			fallthrough
@@ -560,8 +606,55 @@ func (this *Mysql_Build) _where_interface(key string, value interface{}) error {
 				}
 				this.buffer.WriteByte(41)
 			default:
-				t := reflect.TypeOf(v)
-				return errors.New(`where []interface{} not in未设置类型` + t.Name())
+				ref := reflect.ValueOf(v)
+				//增加对Id的支持
+				var ids []string
+				if ref.Kind() == reflect.Slice {
+					if ref.Len() == 0 {
+						this.buffer.WriteString(Getkey(key))
+						this.buffer.WriteString(" is null")
+						return nil
+					}
+					for i := 0; i < ref.Len(); i++ {
+						refV := ref.Index(i)
+						if refV.Kind() == reflect.Ptr {
+							refV = refV.Elem()
+						}
+						if refV.Kind() == reflect.Struct {
+							id := refV.FieldByName("Id")
+							if id.Kind() == reflect.Invalid {
+								id = refV.FieldByName("ID")
+							}
+							if id.Kind() == reflect.Int || id.Kind() == reflect.Int8 || id.Kind() == reflect.Int16 || id.Kind() == reflect.Int32 || id.Kind() == reflect.Int64 {
+								ids = append(ids, strconv.FormatInt(id.Int(), 10))
+
+							}
+							if id.Kind() == reflect.Uint || id.Kind() == reflect.Uint8 || id.Kind() == reflect.Uint16 || id.Kind() == reflect.Uint32 || id.Kind() == reflect.Uint64 {
+								ids = append(ids, strconv.FormatUint(id.Uint(), 10))
+							}
+
+						}
+					}
+				}
+				if len(ids) == 0 {
+					return errors.New(`where []interface{} in未设置类型` + ref.Type().Name())
+				} else {
+					this.buffer.WriteString(Getkey(key))
+					this.buffer.Write([]byte{32, 110, 111, 116, 32, 73, 78, 32, 40}) // not IN (
+					if this.prepare {
+						for i := 0; i < len(ids); i++ {
+							this.sql.where_prepare_arg = append(this.sql.where_prepare_arg, ids[i])
+							this.buffer.Write([]byte{63, 44}) //?,
+						}
+					} else {
+						for i := 0; i < len(ids); i++ {
+							this.buffer.WriteString(ids[i])
+							this.buffer.WriteByte(44) //,
+						}
+					}
+					this.buffer.Truncate(this.buffer.Len() - 1)
+					this.buffer.WriteByte(41) //)
+				}
 			}
 		case WhereOperatorJSONCONTAINS:
 			switch v := value.([]interface{})[1].(type) {
@@ -868,7 +961,7 @@ func (this *Mysql_Build) SelectMap() ([]map[string]string, error) {
 	this.buffer.Write(this.sql.field.Bytes())
 	this.buffer.Write([]byte{32, 102, 114, 111, 109, 32})
 	this.buffer.Write(this.sql.table.Bytes())
-
+	this.buffer.Write(this.sql.joinTable.Bytes())
 	this.buffer.Write(this.sql.on.Bytes())
 	this.buffer.Write(this.sql.where.Bytes())
 	for _, v := range this.sql.where_prepare_arg {
@@ -899,6 +992,8 @@ func (this *Mysql_Build) Count() (res int, err error) {
 	this.buffer.Write(this.sql.field.Bytes())
 	this.buffer.Write([]byte{41, 32, 97, 115, 32, 99, 111, 110, 117, 116, 32, 102, 114, 111, 109, 32}) //) as conut from
 	this.buffer.Write(this.sql.table.Bytes())
+	this.buffer.Write(this.sql.joinTable.Bytes())
+	this.buffer.Write(this.sql.on.Bytes())
 	this.buffer.Write(this.sql.where.Bytes())
 	for _, v := range this.sql.where_prepare_arg {
 		this.prepare_arg = append(this.prepare_arg, v)
@@ -946,12 +1041,16 @@ func (this *Mysql_Build) Insert(i interface{}) (id int64, err error) {
 	this.buffer.Write([]byte{32, 83, 69, 84, 32})
 	switch r.Kind() {
 	case reflect.Struct:
+		fieldColumnMap := this.db.StructKeyColumn[r.Name()]
+		if fieldColumnMap == nil {
+			return 0, errors.New("Insert未初始化的struct 名称 " + r.Name())
+		}
 		for i1 := 0; i1 < r.NumField(); i1++ {
 			field_t := r.Field(i1)
-			if field_t.Tag.Get(`db`) == `-` || (strings.Contains(field_t.Tag.Get(`db`), `pk`) && string(GetvaluefromPtr(uint_ptr, field_t)) == `0`) {
+			if fieldColumnMap[field_t.Name] == nil || (strings.Contains(field_t.Tag.Get(`db`), `pk`) && string(GetvaluefromPtr(uint_ptr, field_t)) == `0`) {
 				continue
 			}
-			this.buffer.WriteString(Getkey(field_t.Name))
+			this.buffer.WriteString(fieldColumnMap[field_t.Name].KeyName)
 			this.buffer.WriteByte(61)
 			this.buffer.WriteString(GetvaluefromPtr(uint_ptr, field_t))
 			this.buffer.WriteByte(44)
@@ -1007,12 +1106,16 @@ func (this *Mysql_Build) Replace(i interface{}) (err error) {
 	this.buffer.Write([]byte{32, 83, 69, 84, 32})
 	switch r.Kind() {
 	case reflect.Struct:
+		fieldColumnMap := this.db.StructKeyColumn[r.Name()]
+		if fieldColumnMap == nil {
+			return errors.New("Replace未初始化的struct 名称 " + r.Name())
+		}
 		for i1 := 0; i1 < r.NumField(); i1++ {
 			field_t := r.Field(i1)
-			if field_t.Tag.Get(`db`) == `-` {
+			if fieldColumnMap[field_t.Name] == nil {
 				continue
 			}
-			this.buffer.WriteString(Getkey(field_t.Name))
+			this.buffer.WriteString(fieldColumnMap[field_t.Name].KeyName)
 			this.buffer.WriteByte(61)
 			this.buffer.WriteString(GetvaluefromPtr(uint_ptr, field_t))
 			this.buffer.WriteByte(44)
@@ -1059,6 +1162,9 @@ func (this *Mysql_Build) InsertAll(i interface{}) (res bool, err error) {
 	this.buffer.Write([]byte{73, 78, 83, 69, 82, 84, 32}) //do := `INSERT`
 
 	s := (*SliceHeader)(unsafe.Pointer(uint_ptr))
+	if s.Len == 0 {
+		return
+	}
 	uint_ptr = uintptr(s.Data)
 	value := []string{}
 	t := r.Elem()
@@ -1067,6 +1173,7 @@ func (this *Mysql_Build) InsertAll(i interface{}) (res bool, err error) {
 		t = t.Elem()
 		if_ptr = true
 	}
+
 	for i := 0; i < s.Len; i++ {
 		var s_uint_ptr uintptr
 		if if_ptr {
@@ -1080,15 +1187,19 @@ func (this *Mysql_Build) InsertAll(i interface{}) (res bool, err error) {
 		}
 		switch t.Kind() {
 		case reflect.Struct:
+			fieldColumnMap := this.db.StructKeyColumn[t.Name()]
+			if fieldColumnMap == nil {
+				return false, errors.New("InsertAll未初始化的struct 名称 " + r.Name())
+			}
 			vv := []string{}
 			for i1 := 0; i1 < t.NumField(); i1++ {
 				field_t := t.Field(i1)
-				if (strings.Contains(field_t.Tag.Get(`db`), `pk`) && string(GetvaluefromPtr(s_uint_ptr, field_t)) == `0`) || field_t.Tag.Get(`db`) == `-` {
+				if (strings.Contains(field_t.Tag.Get(`db`), `pk`) && string(GetvaluefromPtr(s_uint_ptr, field_t)) == `0`) || fieldColumnMap[field_t.Name] == nil {
 					continue
 				}
 				if i == 0 {
 					//取出key的排列
-					field = append(field, Getkey(t.Field(i1).Name))
+					field = append(field, fieldColumnMap[field_t.Name].KeyName)
 				}
 				vv = append(vv, GetvaluefromPtr(s_uint_ptr, field_t))
 			}
@@ -1140,6 +1251,9 @@ func (this *Mysql_Build) ReplaceAll(i interface{}) (res bool, err error) {
 	this.buffer.Write([]byte{82, 69, 80, 76, 65, 67, 69, 32}) //do = `REPLACE`
 
 	s := (*SliceHeader)(unsafe.Pointer(uint_ptr))
+	if s.Len == 0 {
+		return
+	}
 	uint_ptr = uintptr(s.Data)
 	value := []string{}
 	t := r.Elem()
@@ -1161,15 +1275,19 @@ func (this *Mysql_Build) ReplaceAll(i interface{}) (res bool, err error) {
 		}
 		switch t.Kind() {
 		case reflect.Struct:
+			fieldColumnMap := this.db.StructKeyColumn[t.Name()]
+			if fieldColumnMap == nil {
+				return false, errors.New("ReplaceAll未初始化的struct 名称 " + t.Name())
+			}
 			vv := []string{}
 			for i1 := 0; i1 < t.NumField(); i1++ {
 				field_t := t.Field(i1)
-				if field_t.Tag.Get(`db`) == `-` {
+				if fieldColumnMap[field_t.Name] == nil {
 					continue
 				}
 				if i == 0 {
 					//取出key的排列
-					field = append(field, Getkey(t.Field(i1).Name))
+					field = append(field, fieldColumnMap[field_t.Name].KeyName)
 				}
 				vv = append(vv, GetvaluefromPtr(s_uint_ptr, field_t))
 			}
