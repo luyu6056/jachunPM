@@ -31,6 +31,7 @@ type MSG_USER_INFO_cache struct {
 	Deleted     bool
 	Weixin      string
 	Address     string
+	AclMenu     map[string]bool
 	AclProducts map[int32]bool                          //允许访问的产品
 	AclProjects map[int32]bool                          //允许访问的项目
 	IsAdmin     bool                                    `db:"-"` //暂定id为1是admin
@@ -126,8 +127,8 @@ type MSG_USER_Group_cache struct {
 	Role        string
 	Desc        string
 	Acl         []string
-	AclProducts []int32
-	AclProjects []int32
+	AclProducts []int32 //允许访问的产品
+	AclProjects []int32 //允许访问的项目
 	Developer   int8
 	Priv        map[string]map[string]bool
 }
@@ -205,22 +206,23 @@ type MSG_USER_team_getByIds_result struct {
 	List []*MSG_USER_team_info
 }
 type MSG_USER_team_info struct {
-	Id       int32
-	Root     int32
-	Type     string
-	Uid      int32
-	Account  string
-	Role     string
-	Limited  string
-	Join     time.Time
-	Days     int16
-	Hours    float64
-	Estimate float64
-	Consumed float64
-	Left     float64
-	Order    int8
-	Deleted  bool   `db:"-"`
-	Realname string `db:"-"`
+	Id          int32
+	Root        int32
+	Type        string
+	Uid         int32
+	Account     string
+	Role        string
+	Limited     string
+	Join        time.Time
+	Days        int16
+	Hours       float64
+	Estimate    float64
+	Consumed    float64
+	Left        float64
+	Order       int8
+	Deleted     bool    `db:"-"`
+	Realname    string  `db:"-"`
+	MemberHours float64 `db:"-"`
 }
 type MSG_USER_team_addByList struct {
 	List []*MSG_USER_team_info
@@ -272,4 +274,11 @@ type MSG_USER_config_save struct {
 	Value   string
 	Type    string //add deleted
 
+}
+type MSG_USER_team_delete struct {
+	Where map[string]interface{}
+}
+
+type MSG_USER_group_update struct {
+	Update *MSG_USER_Group_cache
 }

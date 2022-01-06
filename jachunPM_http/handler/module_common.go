@@ -480,12 +480,26 @@ func commonModelFuncs() {
 	global_Funcs["sprintf"] = func(format string, a ...interface{}) string {
 		return fmt.Sprintf(format, a...)
 	}
+	global_Funcs["join"] = func(elems []string, sep string) string {
+		return strings.Join(elems, sep)
+	}
 }
 
 func getModuleMenu(module string, data *TemplateData) (menu []moduleMenu) {
 
 	if i, ok := data.Lang[module]["menu"]; ok {
 		for _, v := range i.([]protocol.HtmlMenu) {
+			find := false
+			if data.User != nil {
+				if data.User.IsAdmin {
+					find = true
+				} else {
+					find = data.User.AclMenu[v.Key]
+				}
+			}
+			if !find {
+				continue
+			}
 			l := strings.Split(v.Value["link"], "|")
 			if len(l) > 2 {
 				menuItem := moduleMenu{

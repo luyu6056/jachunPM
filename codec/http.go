@@ -111,34 +111,6 @@ func (hs *Httpserver) Write(b *libraries.MsgBuffer) {
 	}
 
 	hs.data.Reset(b.Bytes())
-	if b.Len() > 4096 {
-		isdeflate := strings.Contains(hs.Request.GetHeader("Accept-Encoding"), "deflate")
-		var isgzip bool
-		if !isdeflate {
-			isgzip = strings.Contains(hs.Request.GetHeader("Accept-Encoding"), "gzip")
-		}
-		if isdeflate { //deflate压缩资源
-			hs.Out.Write(http1deflate)
-			buf := msgbufpool.Get().(*libraries.MsgBuffer)
-			defer msgbufpool.Put(buf)
-			buf.Reset()
-			w := CompressNoContextTakeover(buf, 6)
-			w.Write(b.Bytes())
-			w.Close()
-			hs.data.Reset(buf.Bytes())
-		} else if isgzip { //gzip可压缩资源
-			hs.Out.Write(http1gzip)
-			g := gzippool.Get().(*gzip.Writer)
-			buf := msgbufpool.Get().(*libraries.MsgBuffer)
-			defer msgbufpool.Put(buf)
-			defer gzippool.Put(g)
-			buf.Reset()
-			g.Reset(buf)
-			g.Write(b.Bytes())
-			g.Flush()
-			hs.data.Reset(buf.Bytes())
-		}
-	}
 	hs.httpsfinish(hs.data, hs.data.Len())
 
 }

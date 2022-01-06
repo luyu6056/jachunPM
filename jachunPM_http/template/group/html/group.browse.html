@@ -1,0 +1,52 @@
+{{template "header.html" .}}
+{{template "tablesorter.html" .}}
+<script type="text/javascript">var  confirmDelete={{.Lang.group.confirmDelete}}</script>  
+<div id='mainMenu' class='clearfix'>
+  <div class='btn-toolbar pull-left'>
+    <span class='btn btn-link btn-active-text'><span class='text'>{{.Lang.group.browse}}</span></span>
+  </div>
+  <div class='btn-toolbar pull-right'>
+    {{common_printIcon . "group" "create" ""  "" "button" "" "" "btn btn-primary iframe" "true" "data-width='550'"}}
+    {{if common_hasPriv . "group" "managePriv"}}
+    {{html_a (helper_createLink "group" "managePriv"  "type=byModule" ""  true) .Lang.group.managePrivByModule "" "class='btn btn-primary iframe'"}}
+    {{end}}
+  </div>
+</div>
+<div id='mainContent' class='main-table'>
+  <table class='table tablesorter' id='groupList'>
+    <thead>
+      <tr>
+        <th class='w-id text-center'>{{.Lang.group.id}}</th>
+        <th class='w-130px'>{{.Lang.group.name}}</th>
+        <th class='w-300px'>{{.Lang.group.desc}}</th>
+        <th>{{.Lang.group.users}}</th>
+        <th class='c-actions-6 text-center'>{{.Lang.common.actions}}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{- range $group := $.Data.groups}}
+      {{- $users := ""}}
+      {{- range $kv :=getValue $.Data.groupUsers $group.Id}}{{$users = strAdd $users $kv.Value ","}}{{end}}
+      <tr>
+        <td class='text-center'>{{$group.Id}}</td>
+        <td>{{$group.Name}}</td>
+        <td title='{{$group.Desc}}'>{{$group.Desc}}</td>
+        <td title='{{$users}}'>{{$users}}</td>
+        <td class='c-actions'>
+          {{common_printIcon $ "group" "manageView"   (strAdd "groupID=" $group.Id)  $group "list" "eye"}}
+          {{common_printIcon $ "group" "managepriv"   (strAdd "type=byGroup&param=" $group.Id)  $group "list" "lock"}}
+          {{common_printIcon $ "group" "manageMember" (strAdd "groupID=" $group.Id)  $group "list" "persons" "" "iframe" "yes" "data-width='750'"}}
+          {{common_printIcon $ "group" "edit"         (strAdd "groupID=" $group.Id)  $group "list" "" "" "iframe" "yes" "data-width='550'"}}
+          {{common_printIcon $ "group" "copy"         (strAdd "groupID=" $group.Id)  $group "list" "" "" "iframe" "yes" "data-width='550'"}}
+          {{- if and (common_hasPriv $ "group" "delete")  (ne $group.Role "limited")}}
+              {{html_a (strAdd "javascript:ajaxDelete(\"" (helper_createLink "group" "delete" "groupID=" $group.Id "&confirm=yes") "\",\"groupList\",confirmDelete)")  "<i class='icon icon-close'></i>" "" (strAdd "title='" $.Lang.group.delete "' class='btn'")}}
+          {{- else}}
+              <button class='btn disabled'><i class='icon icon-close disabled' title='{{$.Lang.group.delete}}'></i></button>
+          {{- end}}
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+</div>
+{{template "footer.html" .}}

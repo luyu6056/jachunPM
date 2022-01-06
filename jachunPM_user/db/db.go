@@ -16,7 +16,7 @@ const (
 	TABLE_USERCONTACT = "usercontact"
 	TABLE_TEAM        = "team"
 	TABLE_USERQUERY   = "userquery"
-	TABLE_Config     = "config"
+	TABLE_Config      = "config"
 )
 
 func Init() *mysql.MysqlDB {
@@ -43,7 +43,7 @@ func Init() *mysql.MysqlDB {
 	if errs != nil {
 		log.Fatalf("数据库启动失败%v", errs)
 	}
-	db.Regsiter(&protocol.MSG_USER_team_info{}, &protocol.MSG_USER_INFO_cache{})
+	db.Regsiter(&protocol.MSG_USER_team_info{}, &protocol.MSG_USER_INFO_cache{}, &protocol.MSG_USER_Group_cache{})
 	return db
 }
 
@@ -73,10 +73,11 @@ type User struct {
 	Fails       int8      `db:"not null;default(0)"`   //密码错误次数
 	Locked      time.Time `db:"not null;default('0000-00-00 00:00:00')"`
 	Deleted     bool
-	ClientLang  string         `db:"default('zh-cn');type:varchar(10)"`
-	AclProducts map[int32]bool //允许访问的产品
-	AclProjects map[int32]bool //允许访问的项目
-	AttendNo    int32          `db:"null"` //打卡机编号
+	ClientLang  string          `db:"default('zh-cn');type:varchar(10)"`
+	AclMenu     map[string]bool //允许访问的视图
+	AclProducts map[int32]bool  //允许访问的产品
+	AclProjects map[int32]bool  //允许访问的项目
+	AttendNo    int32           `db:"null"` //打卡机编号
 	//Birthday     time.Time `db:"not null;default('0000-00-00')"`
 	//Skype        string    `db:"type:varchar(90)"`
 	//Yahoo        string    `db:"type:varchar(90)"`
@@ -137,8 +138,8 @@ type Group struct {
 	Role        string                     `db:"type:varchar(30)"`
 	Desc        string                     `db:"type:tinytext"`
 	Acl         []string                   `db:"type:tinytext"`
-	AclProducts []int32                    //允许访问的产品
-	AclProjects []int32                    //允许访问的项目
+	AclProducts []int32                    //额外允许访问的产品，-1为允许查看所有，group权限大于其他权限
+	AclProjects []int32                    //额外允许访问的项目，-1为允许查看所有，group权限大于其他权限
 	Developer   int8                       `db:"default(1)"` // 0=0,1=1,
 	Priv        map[string]map[string]bool //访问权限map[Module][Method]
 	TimeStamp   time.Time                  `db:"default(current_timestamp());extra('on update current_timestamp()')"` //更新时间戳

@@ -19,3 +19,20 @@ func gruop_getPairs(data *protocol.MSG_USER_Group_getPairs, in *protocol.Msg) {
 	in.SendResult(out)
 	out.Put()
 }
+func group_update(data *protocol.MSG_USER_group_update, in *protocol.Msg) {
+	var oldGroup *protocol.MSG_USER_Group_cache
+	err := in.DB.Table(db.TABLE_GROUP).Where("Id=?", data.Update.Id).Find(&oldGroup)
+	if err != nil {
+		in.WriteErr(err)
+		return
+	}
+	if change, err := protocol.GetDiffChange(oldGroup, data.Update); err != nil && len(change) == 0 {
+		in.WriteErr(err)
+		return
+	}
+	if err = in.DB.Table(db.TABLE_GROUP).Replace(data.Update); err != nil {
+		in.WriteErr(err)
+		return
+	}
+	updateUserView(nil,[]int32{data.Update.Id},nil,nil,in)
+}

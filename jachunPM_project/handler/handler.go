@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"jachunPM_project/db"
 	"libraries"
 	"protocol"
 	"reflect"
@@ -175,6 +176,27 @@ func Handler(in *protocol.Msg) {
 		in.WriteErr(task_delete(data.TaskID, in))
 	case *protocol.MSG_PROJECT_task_placeOrder:
 		task_placeOrder(data, in)
+	case *protocol.MSG_PROJECT_getAllprojectProductID:
+		var project []*db.Project
+		var product []*db.Product
+		err := in.DB.Table(db.TABLE_PROJECT).Limit(0).Select(&project)
+		if err != nil {
+			in.WriteErr(err)
+			return
+		}
+		err = in.DB.Table(db.TABLE_PRODUCTPLAN).Limit(0).Select(&product)
+		if err != nil {
+			in.WriteErr(err)
+			return
+		}
+		out := protocol.GET_MSG_PROJECT_getAllprojectProductID_result()
+		for _, v := range project {
+			out.ProjectID = append(out.ProjectID, v.Id)
+		}
+		for _, v := range product {
+			out.ProductID = append(out.ProductID, v.Id)
+		}
+		in.SendResult(out)
 	default:
 		libraries.ReleaseLog("未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 	}

@@ -33,7 +33,7 @@ func main() {
 	var err error
 	handler.HostConn, err = protocol.NewClient(protocol.HttpServerNo, config.Server.HostIP, config.Server.TokenKey)
 	if err != nil {
-		libraries.ReleaseLog("服务启动失败%v", err)
+		libraries.ReleaseLog("连接host %s 服务启动失败%v", config.Server.HostIP, err)
 	} else {
 		db.Init()
 		handler.HostConn.SetTickHand(handler.HandleTick)
@@ -48,7 +48,7 @@ func main() {
 	var tlsconfig *tls.Config
 	if config.Server.HttpsTLScert != "" && config.Server.HttpsTLSca != "" && config.Server.HttpsTLSkey != "" {
 		tlsconfig = &tls.Config{
-			NextProtos:               []string{"h2", "http/1.1"},
+			NextProtos:               []string{"http/1.1"},
 			PreferServerCipherSuites: true,
 			MinVersion:               tls.VersionTLS12,
 			CipherSuites: []uint16{
@@ -91,13 +91,13 @@ func main() {
 		}
 		tlsconfig.Certificates = []tls.Certificate{cert}
 
-		go func() {
+		/*go func() {
 			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 				r.Header.Add("strict-transport-security", "max-age=31536000; includeSubDomains; preload")
 				http.Redirect(w, r, config.Server.Origin, http.StatusFound)
 			})
 			http.ListenAndServe("0.0.0.0:80", nil)
-		}()
+		}()*/
 	}
 
 	log.Fatal(gnet.Serve(svr, svr.addr, gnet.WithLoopNum(runtime.NumCPU()), gnet.WithTCPKeepAlive(time.Second*600), gnet.WithCodec(&codec.Tlscodec{}), gnet.WithReusePort(true), gnet.WithOutbuf(128), gnet.WithTls(tlsconfig), gnet.WithMultiOut(false)), gnet.WithTCPNoDelay(true))
@@ -153,7 +153,15 @@ func (hs *httpServer) React(data []byte, c gnet.Conn) (action gnet.Action) {
 	case *codec.WSconn:
 
 	case *codec.Http2server:
-		//svr.SendPool.Invoke(svr.WorkStream)
+		//获取当前帧
+		stream := svr.WorkStream
+		//异步执行
+		svr.SendPool.Submit(func() {
+			action = handler.HttpHandler(stream)
+			if action == gnet.Shutdown {
+				svr.Close()
+			}
+		})
 
 	}
 	return

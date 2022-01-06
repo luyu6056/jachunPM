@@ -128,6 +128,8 @@ const (
 	CMD_MSG_PROJECT_task_cancel = 1231270917
 	CMD_MSG_PROJECT_task_delete = 627510533
 	CMD_MSG_PROJECT_task_placeOrder = -2126260731
+	CMD_MSG_PROJECT_getAllprojectProductID = 1136105989
+	CMD_MSG_PROJECT_getAllprojectProductID_result = 2111975429
 )
 
 type MSG_PROJECT_tree_getLinePairs struct {
@@ -7274,6 +7276,104 @@ func READ_MSG_PROJECT_task_placeOrder(buf *libraries.MsgBuffer) *MSG_PROJECT_tas
 func (data *MSG_PROJECT_task_placeOrder) read(buf *libraries.MsgBuffer) {
 	data.TaskID = READ_int32(buf)
 	data.Action = READ_bool(buf)
+
+}
+
+type MSG_PROJECT_getAllprojectProductID struct {
+}
+
+var pool_MSG_PROJECT_getAllprojectProductID = sync.Pool{New: func() interface{} { return &MSG_PROJECT_getAllprojectProductID{} }}
+
+func GET_MSG_PROJECT_getAllprojectProductID() *MSG_PROJECT_getAllprojectProductID {
+	return pool_MSG_PROJECT_getAllprojectProductID.Get().(*MSG_PROJECT_getAllprojectProductID)
+}
+
+func (data *MSG_PROJECT_getAllprojectProductID) cmd() int32 {
+	return CMD_MSG_PROJECT_getAllprojectProductID
+}
+
+func (data *MSG_PROJECT_getAllprojectProductID) Put() {
+	pool_MSG_PROJECT_getAllprojectProductID.Put(data)
+}
+func (data *MSG_PROJECT_getAllprojectProductID) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_PROJECT_getAllprojectProductID,buf)
+	WRITE_MSG_PROJECT_getAllprojectProductID(data, buf)
+}
+
+func WRITE_MSG_PROJECT_getAllprojectProductID(data *MSG_PROJECT_getAllprojectProductID, buf *libraries.MsgBuffer) {
+}
+
+func READ_MSG_PROJECT_getAllprojectProductID(buf *libraries.MsgBuffer) *MSG_PROJECT_getAllprojectProductID {
+	data := pool_MSG_PROJECT_getAllprojectProductID.Get().(*MSG_PROJECT_getAllprojectProductID)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_PROJECT_getAllprojectProductID) read(buf *libraries.MsgBuffer) {
+
+}
+
+type MSG_PROJECT_getAllprojectProductID_result struct {
+	ProjectID []int32
+	ProductID []int32
+}
+
+var pool_MSG_PROJECT_getAllprojectProductID_result = sync.Pool{New: func() interface{} { return &MSG_PROJECT_getAllprojectProductID_result{} }}
+
+func GET_MSG_PROJECT_getAllprojectProductID_result() *MSG_PROJECT_getAllprojectProductID_result {
+	return pool_MSG_PROJECT_getAllprojectProductID_result.Get().(*MSG_PROJECT_getAllprojectProductID_result)
+}
+
+func (data *MSG_PROJECT_getAllprojectProductID_result) cmd() int32 {
+	return CMD_MSG_PROJECT_getAllprojectProductID_result
+}
+
+func (data *MSG_PROJECT_getAllprojectProductID_result) Put() {
+	data.ProjectID = data.ProjectID[:0]
+	data.ProductID = data.ProductID[:0]
+	pool_MSG_PROJECT_getAllprojectProductID_result.Put(data)
+}
+func (data *MSG_PROJECT_getAllprojectProductID_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_PROJECT_getAllprojectProductID_result,buf)
+	WRITE_MSG_PROJECT_getAllprojectProductID_result(data, buf)
+}
+
+func WRITE_MSG_PROJECT_getAllprojectProductID_result(data *MSG_PROJECT_getAllprojectProductID_result, buf *libraries.MsgBuffer) {
+	WRITE_int(len(data.ProjectID), buf)
+	for _, v := range data.ProjectID{
+		WRITE_int32(v, buf)
+	}
+	WRITE_int(len(data.ProductID), buf)
+	for _, v := range data.ProductID{
+		WRITE_int32(v, buf)
+	}
+}
+
+func READ_MSG_PROJECT_getAllprojectProductID_result(buf *libraries.MsgBuffer) *MSG_PROJECT_getAllprojectProductID_result {
+	data := pool_MSG_PROJECT_getAllprojectProductID_result.Get().(*MSG_PROJECT_getAllprojectProductID_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_PROJECT_getAllprojectProductID_result) read(buf *libraries.MsgBuffer) {
+	ProjectID_len := READ_int(buf)
+	if ProjectID_len>cap(data.ProjectID){
+		data.ProjectID= make([]int32, ProjectID_len)
+	}else{
+		data.ProjectID = data.ProjectID[:ProjectID_len]
+	}
+	for i := 0; i < ProjectID_len; i++ {
+		data.ProjectID[i] = READ_int32(buf)
+	}
+	ProductID_len := READ_int(buf)
+	if ProductID_len>cap(data.ProductID){
+		data.ProductID= make([]int32, ProductID_len)
+	}else{
+		data.ProductID = data.ProductID[:ProductID_len]
+	}
+	for i := 0; i < ProductID_len; i++ {
+		data.ProductID[i] = READ_int32(buf)
+	}
 
 }
 

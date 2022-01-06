@@ -1,0 +1,103 @@
+{{template "header.html" .}}
+<div id='mainContent' class='main-content'>
+  <div class='main-header'>
+    <h2 title='{{$.Data.group.Name}}'>
+      <span class='label-id'>{{$.Data.group.Id}}</span>
+      <small> {{.Lang.common.arrow}}{{.Lang.group.manageView}}</small>
+    </h2>
+  </div>
+  <form class="load-indicator main-form form-ajax" id="manageViewForm" method="post" target='hiddenwin'>
+    <table class='table table-form'>
+      <tr>
+        <th class='w-150px'>
+          {{.Lang.group.viewList}}
+        </th>
+        <td>
+          {{range $kv := .Data.menus}}
+          <div class='group-item'>
+            <div class='checkbox-primary'>
+              <input type='checkbox' id='{{$kv.Key}}' name='Acl' value='{{$kv.Key}}' {{$kv.Value.Value}} />
+              <label class='priv' for='{{$kv.Key}}'>
+                {{$kv.Value.Key}}
+              </label>
+            </div>
+          </div>
+        {{end}}
+          <div class='group-item'>
+            <div class='checkbox-primary'>
+              <input type="checkbox" id='allchecker' name="allchecker" onclick="selectAll(this, '', 'checkbox')" {{if eq (len $.Data.group.Acl) 0}}checked{{end}} />
+              <label class='priv' for='allchecker'>
+                {{.Lang.common.selectAll}}
+              </label>
+            </div>
+          </div>
+        </td>
+      </tr>
+      <tr id='productBox' style='display:none'>
+        <th class='text-right'>{{.Lang.group.productList}}</th>
+        <td>
+          <div class='input-group'>
+            {{html_select "AclProducts"  $.Data.products  $.Data.group.AclProducts "class='form-control chosen' multiple"}}
+           
+          </div>
+        </td>
+      </tr>
+      <tr id='projectBox' style='display:none'>
+        <th class='text-right'>{{.Lang.group.projectList}}</th>
+        <td>
+          <div class='input-group'>
+            {{html_select "AclProjects"  $.Data.projects  $.Data.group.AclProjects "class='form-control chosen' multiple"}}
+           
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td colspan='2' class='form-actions text-center'>
+          {{html_submitButton . .Lang.common.save "btn btn-wide btn-primary"}}
+          {{html_backButton .}}
+          {{html_hidden "foo"}}
+        </td>
+      </tr>
+    </table>
+  </form>
+</div>
+<script>
+function selectAll(checker, scope, type)
+{
+    if(scope)
+    {
+        if(type == 'button')
+        {
+            $('#' + scope + ' input').each(function()
+            {
+                $(this).prop("checked", true)
+            });
+        }
+        else if(type == 'checkbox')
+        {
+            $('#' + scope + ' input').each(function()
+            {
+                $(this).prop("checked", checker.checked)
+            });
+         }
+    }
+    else
+    {
+        if(type == 'button')
+        {
+            $('input:checkbox').each(function()
+            {
+                $(this).prop("checked", true)
+            });
+        }
+        else if(type == 'checkbox')
+        {
+            $('input:checkbox').each(function()
+            {
+                $(this).prop("checked", checker.checked)
+            });
+        }
+    }
+}
+</script>
+{{template "footer.html" .}}

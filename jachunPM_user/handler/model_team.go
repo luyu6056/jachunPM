@@ -48,3 +48,16 @@ func team_updateByWhere(data *protocol.MSG_USER_team_updateByWhere, in *protocol
 	_, err := in.DB.Table(db.TABLE_TEAM).Where(data.Where).Update(data.Update)
 	in.WriteErr(err)
 }
+func team_delete(data *protocol.MSG_USER_team_delete,in *protocol.Msg){
+	var teams []*db.Team
+	err:=in.DB.Table(db.TABLE_TEAM).Where(data.Where).Select(&teams)
+	if err!=nil || len(teams)==0{
+		in.WriteErr(err)
+		return
+	}
+	_,err=in.DB.Table(db.TABLE_TEAM).Where(data.Where).Delete()
+	in.WriteErr(err)
+	for _,team:=range teams{
+		in.ActionCreate("team",team.Id,"deleted","","",nil,nil)
+	}
+}

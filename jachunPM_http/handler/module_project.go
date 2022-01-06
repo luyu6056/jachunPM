@@ -42,6 +42,42 @@ func init() {
 	httpHandlerMap["POST"]["/project/task"] = get_project_task
 	httpHandlerMap["GET"]["/project/linkStory"] = get_project_linkStory
 	httpHandlerMap["GET"]["/project/showFile"] = get_project_showFile
+	httpHandlerMap["GET"]["/project/team"] = get_project_team
+	httpHandlerMap["GET"]["/project/unlinkMember"] = get_project_unlinkMember
+
+	searchParamsFunc["project/linkStory"] = func(data *TemplateData) (*searchParam, error) {
+		for i := len(data.Lang["story"]["statusList"].([]protocol.HtmlKeyValueStr)) - 1; i >= 0; i-- {
+			if kv := data.Lang["story"]["statusList"].([]protocol.HtmlKeyValueStr)[i]; kv.Key == "draft" {
+				data.Lang["story"]["statusList"] = append(data.Lang["story"]["statusList"].([]protocol.HtmlKeyValueStr)[:i], data.Lang["story"]["statusList"].([]protocol.HtmlKeyValueStr)[i+1:]...)
+			}
+		}
+		var search *searchParam
+		data.ws.Session().Get("project/linkStory", &search)
+		return search, nil
+	}
+	//项目任务搜索初始化
+	searchParamsFunc["project/task"] = func(data *TemplateData) (*searchParam, error) {
+		search := &searchParam{
+			ConfigSearch: data.Config["project"]["common"]["search"].(*config.ConfigSearch),
+		}
+
+		search.ActionURL = createLink("project", "task", "param=myQueryID&type=bysearch&projectID="+data.ws.Session().Load_str("project"))
+		//$this->config->project->search['params']['project']['values'] = array(''=>'', $projectID => $projects[$projectID], 'all' => $this->lang->project->allProject);
+		//$this->config->project->search['params']['module']['values']  = $this->loadModel('tree')->getTaskOptionMenu($projectID, $startModuleID = 0);
+		paramsProject := search.Params["project"]
+		projectID, _ := strconv.Atoi(data.ws.Query("queryID"))
+		if project := HostConn.GetProjectById(int32(projectID)); project != nil {
+			paramsProject.Values = []protocol.HtmlKeyValueStr{{"", ""}, {strconv.Itoa(projectID), project.Name}, {"all", data.Lang["project"]["allProject"].(string)}}
+		} else {
+			paramsProject.Values = []protocol.HtmlKeyValueStr{{"", ""}, {"all", data.Lang["project"]["allProject"].(string)}}
+		}
+
+		module := search.Params["module"]
+		var err error
+		module.Values, err = tree_getTaskOptionMenu(data, int32(projectID), 0, 0)
+		data.ws.Session().Store("company/browse", search)
+		return search, err
+	}
 }
 func project_ModuleInit(data *TemplateData) (err error) {
 	projects, err := project_getPairs(data, "nocode")
@@ -244,9 +280,10 @@ func project_getList(data *TemplateData, status string, limit int, productID, br
 	} else {
 
 		for _, project := range cache {
-			if project.Deleted || project.IsCat || (data.User.Id != 1 && !data.User.AclProjects[project.Id]) {
+			if project.Deleted || project.IsCat {
 				continue
 			}
+
 			if branch > 0 {
 				find := false
 				for _, id := range project.Branchs {
@@ -267,10 +304,12 @@ func project_getList(data *TemplateData, status string, limit int, productID, br
 						break
 					}
 				}
+
 				if !find {
 					continue
 				}
 			}
+
 			switch status {
 			case "involved":
 				//检查team和openedBy
@@ -300,7 +339,6 @@ func project_getList(data *TemplateData, status string, limit int, productID, br
 
 		}
 		protocol.Order_project(list, nil)
-
 	}
 	if limit > 0 && len(list) > limit {
 		list = list[:limit]
@@ -749,7 +787,6 @@ func project_getTeamMembers(data *TemplateData, projectID int32) ([]*protocol.MS
 		}
 	}
 	out.Put()
-	defer result.Put()
 	return result.List, nil
 }
 func project_getTeamMemberPairs(data *TemplateData, projectID int32, ext string) (list []protocol.HtmlKeyValueStr, err error) {
@@ -976,6 +1013,9 @@ func get_project_ajaxGetDropMenu(data *TemplateData) (err error) {
 	normalProjectsHtml := bufpool.Get().(*libraries.MsgBuffer)
 	closedProjectsHtml := bufpool.Get().(*libraries.MsgBuffer)
 	for _, project := range list {
+		if !data.User.IsAdmin && !data.User.AclProjects[project.Id] {
+			continue
+		}
 		if (project.Status != "done") && (project.Status != "closed") {
 			if project.PM == data.User.Id {
 				myProjectsHtml.WriteString(html_a(fmt.Sprintf(link, project.Id), "<i class='icon icon-folder-outline'></i> "+project.Name, "", "class='text-important' title='"+project.Name+"' data-key='"+project.Code+"'"))
@@ -2188,41 +2228,6 @@ func project_buildStorySearchForm(data *TemplateData, products []int32, modules 
 	return nil
 }
 
-func init() {
-	searchParamsFunc["project/linkStory"] = func(data *TemplateData) (*searchParam, error) {
-		for i := len(data.Lang["story"]["statusList"].([]protocol.HtmlKeyValueStr)) - 1; i >= 0; i-- {
-			if kv := data.Lang["story"]["statusList"].([]protocol.HtmlKeyValueStr)[i]; kv.Key == "draft" {
-				data.Lang["story"]["statusList"] = append(data.Lang["story"]["statusList"].([]protocol.HtmlKeyValueStr)[:i], data.Lang["story"]["statusList"].([]protocol.HtmlKeyValueStr)[i+1:]...)
-			}
-		}
-		var search *searchParam
-		data.ws.Session().Get("project/linkStory", &search)
-		return search, nil
-	}
-	//项目任务搜索初始化
-	searchParamsFunc["project/task"] = func(data *TemplateData) (*searchParam, error) {
-		search := &searchParam{
-			ConfigSearch: data.Config["project"]["common"]["search"].(*config.ConfigSearch),
-		}
-
-		search.ActionURL = createLink("project", "task", "param=myQueryID&type=bysearch&projectID="+data.ws.Session().Load_str("project"))
-		//$this->config->project->search['params']['project']['values'] = array(''=>'', $projectID => $projects[$projectID], 'all' => $this->lang->project->allProject);
-		//$this->config->project->search['params']['module']['values']  = $this->loadModel('tree')->getTaskOptionMenu($projectID, $startModuleID = 0);
-		paramsProject := search.Params["project"]
-		projectID, _ := strconv.Atoi(data.ws.Query("queryID"))
-		if project := HostConn.GetProjectById(int32(projectID)); project != nil {
-			paramsProject.Values = []protocol.HtmlKeyValueStr{{"", ""}, {strconv.Itoa(projectID), project.Name}, {"all", data.Lang["project"]["allProject"].(string)}}
-		} else {
-			paramsProject.Values = []protocol.HtmlKeyValueStr{{"", ""}, {"all", data.Lang["project"]["allProject"].(string)}}
-		}
-
-		module := search.Params["module"]
-		var err error
-		module.Values, err = tree_getTaskOptionMenu(data, int32(projectID), 0, 0)
-		data.ws.Session().Store("company/browse", search)
-		return search, err
-	}
-}
 func get_project_showFile(data *TemplateData) (err error) {
 	projectID, _ := strconv.Atoi(data.ws.Query("projectID"))
 	spec := data.ws.Query("spec")
@@ -2243,5 +2248,69 @@ func get_project_showFile(data *TemplateData) (err error) {
 	templateOut("project.showFile.html", data)
 	out.Put()
 	result.Put()
+	return nil
+}
+func get_project_team(data *TemplateData) (err error) {
+	projectID, _ := strconv.Atoi(data.ws.Query("projectID"))
+	project, err := project_commonAction(data, int32(projectID))
+	if err != nil {
+		return err
+	}
+	data.Data["title"] = project.Name + data.Lang["common"]["colon"].(string) + data.Lang["project"]["team"].(string)
+	teamMembers := data.Data["teamMembers"].([]*protocol.MSG_USER_team_info)
+	var totalHours float64
+	for i := len(teamMembers) - 1; i >= 0; i-- {
+		t := teamMembers[i]
+		if t.Deleted {
+			teamMembers = append(teamMembers[:i], teamMembers[i+1:]...)
+		}
+		t.MemberHours = float64(t.Days) * t.Hours
+		totalHours += t.MemberHours
+	}
+	data.Data["teamMembers"] = teamMembers
+	data.Data["totalHours"] = totalHours
+	templateOut("project.team.html", data)
+	return nil
+}
+
+func get_project_unlinkMember(data *TemplateData) (err error) {
+	confirm := data.ws.Query("confirm") == "yes"
+	if !confirm {
+		data.ws.WriteString(js.Confirm(data.Lang["project"]["confirmUnlinkMember"].(string), createLink("project", "unlinkMember", "projectID="+data.ws.Query("projectID")+"&uid="+data.ws.Query("uid")+"&confirm=yes"), ""))
+		return
+	}
+	projectID, _ := strconv.Atoi(data.ws.Query("projectID"))
+	project, err := project_commonAction(data, int32(projectID))
+	if err != nil {
+		return err
+	}
+	deleteTeam := protocol.GET_MSG_USER_team_delete()
+	deleteTeam.Where = map[string]interface{}{
+		"Root": project.Id,
+		"Type": "project",
+		"Uid":  data.ws.Query("uid"),
+	}
+	if err = data.SendMsgWaitResultToDefault(deleteTeam, nil); err != nil {
+		if data.Ajax {
+			data.ajaxResult(false, err.Error())
+		} else {
+			data.ws.WriteString(js.Error(err.Error()))
+		}
+		return nil
+	}
+	deleteTeam.Put()
+
+	if data.Ajax {
+		data.ajaxResult(true, nil)
+	} else {
+		data.ws.WriteString(js.Location(createLink("project", "team", "projectID="+data.ws.Query("projectID")), "parent"))
+	}
+	updateUserView := protocol.GET_MSG_USER_updateUserView()
+	updateUserView.ProjectIds = []int32{project.Id}
+	uid, _ := strconv.Atoi(data.ws.Query("uid"))
+	updateUserView.UserIds = []int32{int32(uid)}
+	updateUserView.ProductIds = project.Products
+	data.SendMsgWaitResultToDefault(updateUserView, nil)
+	updateUserView.Put()
 	return nil
 }

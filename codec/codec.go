@@ -7,8 +7,12 @@ import (
 	"fmt"
 	"io"
 	"libraries"
+	"net/url"
+	"strings"
 	"sync/atomic"
 	"time"
+
+	"golang.org/x/net/http2/hpack"
 
 	"github.com/luyu6056/gnet"
 	"github.com/luyu6056/tls"
@@ -31,6 +35,7 @@ func (code *Tlscodec) Encode(c gnet.Conn, buf []byte) ([]byte, error) {
 func (code *Tlscodec) Decode(c gnet.Conn) (data []byte, err error) {
 	if c.BufferLength() > 0 {
 		data = c.Read()
+
 		switch svr := c.Context().(type) {
 		case *WSconn:
 			msgtype, data, err := svr.ReadMessage(data)
@@ -63,8 +68,6 @@ func (code *Tlscodec) Decode(c gnet.Conn) (data []byte, err error) {
 				} else if fps > http2fpslimit {
 					return nil, svr.connError(http2ErrCodeFlowControl)
 				}
-
-				//libraries.Log("%+v", h2s.InHeader)
 				switch svr.InHeader.Type {
 				case http2FrameData:
 					if svr.InHeader.StreamID == 0 || int(svr.InHeader.StreamID) > len(svr.Streams) {
@@ -104,6 +107,16 @@ func (code *Tlscodec) Decode(c gnet.Conn) (data []byte, err error) {
 							svr.c.AsyncWrite(svr.Streams[0].Out.Next(l))
 						}
 						svr.WorkStream = stream
+						stream.headerbuf.Reset()
+						stream.henc = hpack.NewEncoder(&stream.headerbuf)
+						//解析post请求
+						if strings.Contains(stream.content_type,"application/x-www-form-urlencoded"){
+							for _,str:=range strings.Split(stream.In.String(),"&"){
+								if i:=strings.Index(str,"=");i>0{
+									stream.post[str[:i]]=append(stream.post[str[:i]],url.QueryEscape(str[i+1:]))
+								}
+							}
+						}
 						return stream.In.Bytes(), nil
 					}
 				case http2FrameHeaders:
@@ -122,6 +135,18 @@ func (code *Tlscodec) Decode(c gnet.Conn) (data []byte, err error) {
 						svr.Streams[stream.Id] = stream
 						stream.close = 0
 						stream.svr = svr
+						stream.query = make(map[string][]string)
+						stream.post = make(map[string][]string)
+						stream.cookie = make(map[string]string)
+						stream.session = nil
+						stream.method = ""
+						stream.path = ""
+						stream.outCode = 200
+						stream.OutContentType = ""
+						stream.OutHeader = map[string]string{}
+						stream.OutCookie = map[string]httpcookie{}
+						stream.content_type =""
+						stream.accept_encoding =""
 					}
 					svr.last_stream_id = stream.Id
 					pos := http2headerlength
@@ -147,6 +172,43 @@ func (code *Tlscodec) Decode(c gnet.Conn) (data []byte, err error) {
 					if err != nil {
 						return nil, svr.connError(http2ErrCodeCompression)
 					}
+
+					//先解析一波header请求
+					for _, head := range stream.Headers {
+						switch head.Name {
+						case ":path":
+							stream.path, stream.uri = head.Value, head.Value
+
+							if i := strings.Index(head.Value, "?"); i > 0 {
+								stream.path = head.Value[:i]
+								for _, str := range strings.Split(head.Value[i+1:], "&") {
+									s := strings.Split(str, "=")
+									if len(s) == 2 {
+										v, err := url.QueryUnescape(s[1])
+										if err == nil {
+											stream.query[s[0]] = append(stream.query[s[0]], v)
+										}
+									}
+								}
+							}
+
+						case "cookie":
+							for _, str := range strings.Split(head.Value, ";") {
+								if i := strings.Index(str, "="); i > 0 {
+									stream.cookie[strings.TrimLeft(str[:i], " ")], _ = url.QueryUnescape(str[i+1:])
+								}
+							}
+						case ":method":
+							stream.method = head.Value
+						case "content-type":
+							stream.content_type =head.Value
+						case "accept-encoding":
+							stream.accept_encoding =head.Value
+						default:
+
+						}
+					}
+
 					if svr.InHeader.Flags&http2FlagHeadersEndStream == http2FlagHeadersEndStream {
 						stream.close |= 1
 						//处理stream数据前清空缓冲数据
@@ -154,6 +216,9 @@ func (code *Tlscodec) Decode(c gnet.Conn) (data []byte, err error) {
 							svr.c.AsyncWrite(svr.Streams[0].Out.Next(l))
 						}
 						svr.WorkStream = stream
+						stream.headerbuf.Reset()
+						stream.henc = hpack.NewEncoder(&stream.headerbuf)
+
 						return stream.In.Bytes(), nil
 					}
 				case http2FrameSettings:

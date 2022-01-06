@@ -34,6 +34,7 @@ type TemplateData struct {
 	Msg       *protocol.Msg
 	Time      time.Time
 	Page      TempLatePage
+	Ajax      bool
 }
 type TempLatePage struct {
 	Total      int
@@ -71,6 +72,7 @@ func loadFuncs() {
 	projectFuncs()
 	customModelFuncs()
 	taskFuncs()
+	groupFuncs()
 	global_t.Funcs(global_Funcs)
 	copyConfig()
 }
@@ -245,20 +247,25 @@ func templateDataInit(ws HttpRequest) *TemplateData {
 		d.App["moduleName"] = ""
 		d.App["methodName"] = ""
 	}
-
-	for module, v := range d.User.Config {
-		if d.Config[module] == nil {
-			d.Config[module] = make(map[string]map[string]interface{})
-		}
-		for section, vv := range v {
-			if d.Config[module][section] == nil {
-				d.Config[module][section] = make(map[string]interface{})
+	if d.User != nil {
+		for module, v := range d.User.Config {
+			if d.Config[module] == nil {
+				d.Config[module] = make(map[string]map[string]interface{})
 			}
-			for key, value := range vv {
-				d.Config[module][section][key] = value
+			for section, vv := range v {
+				if d.Config[module][section] == nil {
+					d.Config[module][section] = make(map[string]interface{})
+				}
+				for key, value := range vv {
+					d.Config[module][section][key] = value
+				}
 			}
-		}
 
+		}
+	}
+	//判断是不是ajax json请求
+	if strings.Contains(d.ws.Header("Accept"), "application/json") || strings.Contains(d.ws.Header("accept"), "application/json") {
+		d.Ajax = true
 	}
 	d.App["ClientLangString"] = protocol.CountryNo(d.App["ClientLang"].(string)).String()
 	d.App["company"] = getCompanyInfo()
@@ -326,7 +333,7 @@ func (data *TemplateData) outErr(err error) {
 	if err == dataErrRedirect || err == dataErrAlreadyOut {
 		return
 	}
-	if data.ws.Query("ajaxform") == "true" {
+	if data.ws.Query("ajaxform") == "true" || data.Ajax {
 		data.ajaxResult(false, err.Error(), "")
 		return
 	}

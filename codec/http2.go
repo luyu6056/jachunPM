@@ -2,8 +2,11 @@ package codec
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"libraries"
+	"net/url"
+	"regexp"
 
 	"github.com/klauspost/compress/gzip"
 	"github.com/luyu6056/cache"
@@ -48,7 +51,7 @@ type Http2server struct {
 	Origin string
 }
 type Http2stream struct {
-	Out                             *libraries.MsgBuffer
+	Out, Out2                       *libraries.MsgBuffer
 	Headers                         []hpack.HeaderField
 	In                              *libraries.MsgBuffer
 	Id                              uint32
@@ -60,6 +63,17 @@ type Http2stream struct {
 	headerbuf                       libraries.MsgBuffer
 	data                            *bytes.Reader
 	compressbuf                     *libraries.MsgBuffer
+	query                           map[string][]string
+	cookie                          map[string]string
+	post                            map[string][]string
+	session                         *cache.Hashvalue
+	method, path, uri               string
+	outCode                         int
+	OutContentType                  string
+	OutHeader                       map[string]string
+	OutCookie                       map[string]httpcookie
+	content_type                    string
+	accept_encoding                 string
 }
 
 const (
@@ -273,7 +287,7 @@ func (h2s *Http2server) connError(code http2ErrCode) error {
 }
 
 var stream_pool = sync.Pool{New: func() interface{} {
-	hs := &Http2stream{Out: &libraries.MsgBuffer{}, In: libraries.NewBuffer(0)}
+	hs := &Http2stream{Out: &libraries.MsgBuffer{}, Out2: &libraries.MsgBuffer{}, In: libraries.NewBuffer(0)}
 	hs.sendch = make(chan int8)
 	hs.data = &bytes.Reader{}
 	hs.compressbuf = &libraries.MsgBuffer{}
@@ -329,6 +343,8 @@ var (
 	headerField_status200            = hpack.HeaderField{Name: ":status", Value: "200"}
 	headerField_status206            = hpack.HeaderField{Name: ":status", Value: "206"}
 	headerField_status404            = hpack.HeaderField{Name: ":status", Value: "404"}
+	headerField_status302            = hpack.HeaderField{Name: ":status", Value: "302"}
+	headerField_status500            = hpack.HeaderField{Name: ":status", Value: "500"}
 	headerField_cachecontrol         = hpack.HeaderField{Name: "cache-control", Value: "max-age=86400"}
 	headerField_nocache              = hpack.HeaderField{Name: "cache-control", Value: "no-store, no-cache, must-revalidate, max-age=0, s-maxage=0"}
 	headerField_server               = hpack.HeaderField{Name: "server", Value: "gnet by luyu6056"}
@@ -360,28 +376,13 @@ type file_cache struct {
 var h2_context_pool = sync.Pool{New: func() interface{} {
 	return &Context{Buf: new(libraries.MsgBuffer), In: new(libraries.MsgBuffer), In2: new(libraries.MsgBuffer)}
 }}
-var sendpool_static = func(i interface{}) (action gnet.Action) {
-	stream, ok := i.(*Http2stream)
-	if !ok || stream.Id == 0 { //主steam不允许处理data
-		action = gnet.Close
-		return
-	}
-	stream.headerbuf.Reset()
-	stream.henc = hpack.NewEncoder(&stream.headerbuf)
+
+func (stream *Http2stream) StaticHandler() (action gnet.Action) {
 	var filename string
 	etag := ""
-	var deflate, isgzip bool
 	var range_start, range_end int
 	for _, head := range stream.Headers {
-
 		switch head.Name {
-		case ":path":
-			filename = head.Value
-		case "accept-encoding":
-			deflate = strings.Contains(head.Value, "deflate")
-			if !deflate {
-				isgzip = strings.Contains(head.Value, "gzip")
-			}
 		case "if-match", "if-none-match":
 			etag = head.Value
 		case "range":
@@ -406,11 +407,15 @@ var sendpool_static = func(i interface{}) (action gnet.Action) {
 			}
 		}
 	}
-
+	var deflate, isgzip bool
+	filename = stream.path
+	deflate = strings.Contains(stream.accept_encoding, "deflate")
+	if !deflate {
+		isgzip = strings.Contains(stream.accept_encoding, "gzip")
+	}
 	if index := strings.IndexByte(filename, '?'); index > 0 {
 		filename = filename[:index]
 	}
-	libraries.DebugLog(filename)
 	if filename == "/" {
 		filename = "/index.html"
 	}
@@ -523,6 +528,17 @@ func (stream *Http2stream) Out404Frame(err error) {
 	}
 }
 func (stream *Http2stream) writeFrame(reader io.Reader, msglen int) (err error) {
+	for k, v := range stream.OutHeader {
+		stream.henc.WriteField(hpack.HeaderField{Name: k, Value: url.QueryEscape(v)})
+	}
+
+	for name, v := range stream.OutCookie {
+		cookie := url.QueryEscape(name) + "=" + url.QueryEscape(v.value)
+		if v.max_age > 0 {
+			cookie += "; Max-age=" + strconv.FormatUint(uint64(v.max_age), 10) + "; Path=/"
+		}
+		stream.henc.WriteField(hpack.HeaderField{Name: "set-cookie", Value: cookie})
+	}
 
 	makelen := stream.headerbuf.Len()
 	stream.Out.Reset()
@@ -545,6 +561,7 @@ func (stream *Http2stream) writeFrame(reader io.Reader, msglen int) (err error) 
 		stream.Out.Reset()
 
 	}
+
 	for olen := stream.Out.Len(); msglen > 0; olen = stream.Out.Len() {
 
 		makelen = stream.svr.Setting.MAX_FRAME_SIZE - olen
@@ -679,51 +696,6 @@ func (errcode http2writeRST_STREAM) writeFrame(stream *Http2stream) (err error) 
 	return nil
 }
 
-//从http1移过来的预处理
-func (stream *Http2stream) BeginRequest(route string, c *Context) {
-
-	//maxFormSize := int64(10 << 20) // 10 MB is a lot of text.
-	//reader := io.LimitReader(c.In, maxFormSize+1)
-	//b, err := ioutil.ReadAll(reader)
-	//if err != nil || len(b) < 20 {
-
-	if c.In.Len() < 20 {
-		stream.Out404Frame(nil)
-		return
-	}
-	token := c.In.Next(16)
-	if stream.svr.Conn == nil {
-		stream.svr.Conn = &ClientConn{Output_data: stream.Output_data}
-		//b := c.In.PreBytes(4)
-		//cmd := int32(b[0]) | int32(b[0])<<8 | int32(b[0])<<16 | int32(b[0])<<24
-		var ok bool
-		stream.svr.Conn.Session, ok = cache.Has(libraries.Bytes2str(token), "session")
-
-		//设置Session指针
-		if !ok {
-			libraries.DebugLog("不ok")
-			c.Conn = stream.svr.Conn
-			//libraries.DebugLog("token不存在", []byte(token))
-
-		}
-	}
-	c.Conn = stream.svr.Conn
-	if control, ok := Control_func[route]; ok {
-		control(c)
-	} else {
-		libraries.DebugLog(fmt.Sprintf("未定义路由%s", route))
-	}
-}
-func (stream *Http2stream) Output_data(b *libraries.MsgBuffer) {
-	stream.henc.WriteField(headerField_status200)
-	stream.henc.WriteField(headerField_nocache)
-	if stream.svr.Origin != "" {
-		stream.henc.WriteField(hpack.HeaderField{Name: "access-control-allow-origin", Value: stream.svr.Origin})
-	}
-	stream.data.Reset(b.Bytes())
-	stream.WriteData(stream.data, stream.data.Len())
-}
-
 var (
 	httpIswatcher bool
 	httpWatcher   *fsnotify.Watcher
@@ -828,4 +800,207 @@ func (cache *file_cache) Check(filename string) (error, *file_cache) {
 	}
 	static_cache.Store(filename, f_cache)
 	return nil, f_cache
+}
+func (stream *Http2stream) AddQuery(key, value string) {
+	stream.query[key] = append(stream.query[key], value)
+}
+func (stream *Http2stream) Body() []byte {
+	return stream.In.Bytes()
+}
+func (stream *Http2stream) Close() {
+	stream.svr.Close()
+}
+func (stream *Http2stream) Cookie(key string) string {
+
+	return stream.cookie[key]
+}
+func (stream *Http2stream) DelSession() {
+	if stream.session != nil {
+		stream.session.Hdel()
+	}
+}
+func (stream *Http2stream) GetAllPost() map[string][]string {
+	return nil
+}
+func (stream *Http2stream) GetAllQuery() map[string][]string {
+	return stream.query
+}
+func (stream *Http2stream) Header(name string) string {
+	for _, head := range stream.Headers {
+		if head.Name == name {
+			return head.Value
+		} else if head.Name == strings.ToLower(name) {
+			return head.Value
+		}
+
+	}
+	return ""
+}
+func (stream *Http2stream) IP() (ip string) {
+
+	if ip = stream.Header("X-Real-IP"); ip == "" {
+		ip = stream.svr.c.RemoteAddr().String()
+	}
+	re3, _ := regexp.Compile(`:\d+$`)
+	ip = re3.ReplaceAllString(ip, "")
+	return ip
+}
+func (stream *Http2stream) Method() string {
+	return stream.method
+}
+func (stream *Http2stream) Path() string {
+	return stream.path
+}
+func (stream *Http2stream) Post(key string) string {
+	if len(stream.post[key]) > 0 {
+		return stream.post[key][0]
+	}
+	return ""
+}
+func (stream *Http2stream) PostSlice(key string) []string {
+	return stream.post[key]
+}
+func (stream *Http2stream) Query(key string) string {
+	if len(stream.query[key]) > 0 {
+		return stream.query[key][0]
+	}
+	return ""
+}
+func (stream *Http2stream) RangeDownload(b HttpIoReader, size int64, name string) {
+	var range_start, range_end int
+	for _, head := range stream.Headers {
+		switch head.Name {
+		case "range":
+			if strings.Index(head.Value, "bytes=") == 0 {
+
+				if e := strings.Index(head.Value, "-"); e > 6 {
+					range_start, _ = strconv.Atoi(head.Value[6:e])
+					range_end, _ = strconv.Atoi(head.Value[e+1:])
+				}
+
+			}
+		}
+	}
+	if range_start > 0 || range_end > 0 {
+		stream.henc.WriteField(headerField_status206)
+		if range_end == 0 {
+			range_end = int(size)
+		}
+		if _, e := b.Seek(int64(range_start), 0); e != nil {
+			stream.OutErr(e)
+			return
+		}
+		stream.henc.WriteField(headerField_Accept_Ranges)
+		stream.henc.WriteField(hpack.HeaderField{Name: "content-range", Value: "bytes " + strconv.Itoa(range_start) + "-" + strconv.Itoa(range_end) + "/" + strconv.Itoa(int(size))})
+		stream.henc.WriteField(hpack.HeaderField{Name: "content-disposition", Value: `attachment; filename*="utf8''` + url.QueryEscape(name) + `"`})
+		stream.WriteData(b, range_end-range_start)
+
+	} else {
+		stream.henc.WriteField(headerField_status200)
+		stream.henc.WriteField(headerField_content_type_default)
+		stream.henc.WriteField(hpack.HeaderField{Name: "content-disposition", Value: `attachment; filename*="utf8''` + url.QueryEscape(name) + `"`})
+		stream.WriteData(b, int(size))
+	}
+
+	return
+}
+func (stream *Http2stream) OutErr(err error) {
+	if Errfunc != nil {
+		if Errfunc(stream, err) {
+			return
+		}
+	}
+	buf := &libraries.MsgBuffer{}
+	buf.WriteString(err.Error())
+	stream.henc.WriteField(headerField_status500)
+	stream.henc.WriteField(hpack.HeaderField{Name: "content-length", Value: strconv.Itoa(buf.Len())})
+	stream.writeFrame(buf, buf.Len())
+}
+func (stream *Http2stream) Redirect(url string) {
+
+	stream.henc.WriteField(headerField_status302)
+	stream.henc.WriteField(hpack.HeaderField{Name: "location", Value: url})
+	stream.writeFrame(nil, 0)
+}
+func (stream *Http2stream) RemoteAddr() string {
+	return stream.svr.c.RemoteAddr().String()
+}
+func (stream *Http2stream) Session() *cache.Hashvalue {
+	if stream.session == nil {
+		//检查sessionID
+		var has bool
+		sessionIdKey := stream.Cookie("sessionID")
+		if sessionIdKey != "" {
+			stream.session, has = cache.Has(sessionIdKey, "session")
+		}
+		//不存在则创建一个
+		if !has {
+			has = true
+			//循环检查到一个没用过的sessionIdKey
+			for has {
+				b := make([]byte, 8)
+				binary.LittleEndian.PutUint64(b, atomic.AddUint64(&sessionID, 1))
+				sessionIdKey = strings.TrimRight(libraries.SHA256_URL_BASE64(strconv.FormatInt(time.Now().UnixNano(), 10)+string(b)), "=")
+				_, has = cache.Has(sessionIdKey, "session")
+			}
+			stream.SetCookie("sessionID", sessionIdKey, 7*86400)
+			stream.session = cache.Hget(sessionIdKey, "session")
+			stream.session.Set("sessionID", sessionIdKey)
+			stream.session.Expire(8 * 3600) //给个临时session
+		}
+	}
+	return stream.session
+}
+func (stream *Http2stream) SetCookie(name, value string, max_age uint32) {
+	stream.OutCookie[name] = httpcookie{
+		value:   value,
+		max_age: max_age,
+	}
+}
+func (stream *Http2stream) SetCode(code int) {
+	stream.outCode = code
+}
+func (stream *Http2stream) SetContentType(t string) {
+	stream.OutContentType = t
+}
+func (stream *Http2stream) SetHeader(key, value string) {
+	stream.OutHeader[key] = value
+}
+func (stream *Http2stream) URI() string {
+	return stream.uri
+}
+func (stream *Http2stream) Write(b *libraries.MsgBuffer) {
+
+	if stream.outCode != 0 && httpCode(stream.outCode).String() != "" {
+		stream.henc.WriteField(hpack.HeaderField{Name: ":status", Value: strconv.Itoa(stream.outCode)})
+	} else {
+		stream.henc.WriteField(hpack.HeaderField{Name: ":status", Value: "200"})
+	}
+	stream.henc.WriteField(headerField_nocache)
+	if stream.OutContentType != "" {
+		stream.henc.WriteField(hpack.HeaderField{Name: "content-type", Value: stream.OutContentType})
+	} else {
+		stream.henc.WriteField(headerField_content_type_html)
+
+	}
+	stream.writeFrame(b, b.Len())
+}
+func (stream *Http2stream) WriteString(str string) {
+	stream.Out2.Reset()
+	stream.Out2.WriteString(str)
+
+	if stream.outCode != 0 && httpCode(stream.outCode).String() != "" {
+		stream.henc.WriteField(hpack.HeaderField{Name: ":status", Value: strconv.Itoa(stream.outCode)})
+	} else {
+		stream.henc.WriteField(hpack.HeaderField{Name: ":status", Value: "200"})
+	}
+	stream.henc.WriteField(headerField_nocache)
+	if stream.OutContentType != "" {
+		stream.henc.WriteField(hpack.HeaderField{Name: "content-type", Value: "stream.OutContentType"})
+
+	} else {
+		stream.henc.WriteField(headerField_content_type_html)
+
+	}
+	stream.writeFrame(stream.Out2, stream.Out2.Len())
 }

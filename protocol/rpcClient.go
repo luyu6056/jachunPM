@@ -543,8 +543,7 @@ func (client *RpcClient) SetTickHand(f func(time.Time)) {
 func (client *RpcClient) GetProjectById(id int32) (res *MSG_PROJECT_project_cache) {
 	err := client.CacheGet(ProjectServerNo, PATH_PROJECT_PROJECT_CACHE, strconv.Itoa(int(id)), &res)
 	if err != nil {
-
-		libraries.DebugLog("获取project缓存失败%+v", err)
+		libraries.DebugLog("获取project  id %d 缓存失败%+v",id, err)
 	}
 	return
 }

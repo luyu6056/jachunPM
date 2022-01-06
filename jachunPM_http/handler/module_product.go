@@ -282,6 +282,7 @@ func product_getAll(data *TemplateData) (result []*protocol.MSG_PROJECT_product_
 		}
 		buf.Reset()
 		bufpool.Put(buf)
+		protocol.Order_product(result, nil)
 		data.Data["product_getAll"] = result
 	}
 

@@ -5,7 +5,7 @@
   </div>
 </div>
 <div id="mainContent">
-  {{if not .Data.projects}}
+  {{if not .Data.projectStats}}
   <div class="table-empty-tip">
     <p>
       <span class="text-muted">{{.Lang.project.noProject}}</span>
@@ -32,7 +32,7 @@
         </tr>
       </thead>
       <tbody>
-        {{range $key,$project := .Data.projects}}
+        {{range $key,$project := .Data.projectStats}}
         <tr>
           <td class='text-left'>{{html_a (helper_createLink "project" "task"  "project="  $project.Id)  $project.Name "_parent"}}</td>
           <td>{{$project.Code}}</td>

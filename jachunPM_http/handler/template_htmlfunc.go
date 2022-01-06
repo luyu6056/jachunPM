@@ -216,7 +216,7 @@ func htmlFuncs() {
 		bufpool.Put(buf)
 		return template.HTML(res)
 	}
-	global_Funcs["html_select"] = func(name string, options []protocol.HtmlKeyValueStr, selectedItem interface{}, attrib string, isappend ...bool) template.HTML {
+	global_Funcs["html_select"] = func(name string, options interface{}, selectedItem interface{}, attrib string, isappend ...bool) template.HTML {
 		return template.HTML(html_select(name, options, selectedItem, attrib, isappend...))
 	}
 	global_Funcs["pager_show"] = func(data *TemplateData, align, typ string) template.HTML { //($align = 'right', $type = 'full')
@@ -501,10 +501,9 @@ func html_input(name string, value ...string) string { // value  attrib
 	bufpool.Put(buf)
 	return res
 }
-func html_select(name string, options []protocol.HtmlKeyValueStr, selectedItem interface{}, attrib string, isappend ...bool) string {
+func html_select(name string, optionsI interface{}, selectedItem interface{}, attrib string, isappend ...bool) string {
 	var selectedItems []string
 	r := reflect.ValueOf(selectedItem)
-
 	if r.Kind() == reflect.Slice {
 		for i := 0; i < r.Len(); i++ {
 			selectedItems = append(selectedItems, libraries.I2S(r.Index(i).Interface()))
@@ -512,7 +511,33 @@ func html_select(name string, options []protocol.HtmlKeyValueStr, selectedItem i
 	} else {
 		selectedItems = []string{libraries.I2S(selectedItem)}
 	}
-
+	var options []protocol.HtmlKeyValueStr
+	switch o := optionsI.(type) {
+	case []protocol.HtmlKeyValueStr:
+		options = o
+	case []*protocol.MSG_PROJECT_project_cache:
+		for _, project := range o {
+			options = append(options, protocol.HtmlKeyValueStr{strconv.Itoa(int(project.Id)), project.Name})
+		}
+	case []*protocol.MSG_PROJECT_product_cache:
+		for _, product := range o {
+			options = append(options, protocol.HtmlKeyValueStr{strconv.Itoa(int(product.Id)), product.Name})
+		}
+	case []*protocol.MSG_PROJECT_TASK:
+		for _, task := range o {
+			options = append(options, protocol.HtmlKeyValueStr{strconv.Itoa(int(task.Id)), task.Name})
+		}
+	case []*protocol.MSG_USER_INFO_cache:
+		for _, user := range o {
+			name := user.Realname
+			if name == "" {
+				name = user.Account
+			}
+			options = append(options, protocol.HtmlKeyValueStr{strconv.Itoa(int(user.Id)), name})
+		}
+	default:
+		return "html_select无法处理options类型" + reflect.TypeOf(optionsI).String()
+	}
 	if len(isappend) > 0 && isappend[0] {
 		for _, item := range selectedItems {
 			find := false
@@ -528,6 +553,7 @@ func html_select(name string, options []protocol.HtmlKeyValueStr, selectedItem i
 		}
 
 	}
+
 	if len(options) == 0 {
 		return ""
 	}

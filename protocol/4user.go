@@ -61,6 +61,8 @@ const (
 	CMD_MSG_USER_team_getMemberPairsByTypeRoot_result = 341559300
 	CMD_MSG_USER_team_updateByWhere = 134391300
 	CMD_MSG_USER_config_save = -942650620
+	CMD_MSG_USER_team_delete = 1310660100
+	CMD_MSG_USER_group_update = 2088353796
 )
 
 type MSG_USER_GET_LoginSalt struct {
@@ -162,6 +164,7 @@ type MSG_USER_INFO_cache struct {
 	Deleted bool
 	Weixin string
 	Address string
+	AclMenu map[string]bool
 	AclProducts map[int32]bool
 	AclProjects map[int32]bool
 	IsAdmin bool `db:"-"`
@@ -201,6 +204,7 @@ func (data *MSG_USER_INFO_cache) Put() {
 	data.Deleted = false
 	data.Weixin = ``
 	data.Address = ``
+	data.AclMenu = nil
 	data.AclProducts = nil
 	data.AclProjects = nil
 	data.IsAdmin = false
@@ -238,6 +242,7 @@ func WRITE_MSG_USER_INFO_cache(data *MSG_USER_INFO_cache, buf *libraries.MsgBuff
 	WRITE_bool(data.Deleted, buf)
 	WRITE_string(data.Weixin, buf)
 	WRITE_string(data.Address, buf)
+	WRITE_map(data.AclMenu,buf)
 	WRITE_map(data.AclProducts,buf)
 	WRITE_map(data.AclProjects,buf)
 	WRITE_bool(data.IsAdmin, buf)
@@ -281,6 +286,7 @@ func (data *MSG_USER_INFO_cache) read(buf *libraries.MsgBuffer) {
 	data.Deleted = READ_bool(buf)
 	data.Weixin = READ_string(buf)
 	data.Address = READ_string(buf)
+	READ_map(&data.AclMenu,buf)
 	READ_map(&data.AclProducts,buf)
 	READ_map(&data.AclProjects,buf)
 	data.IsAdmin = READ_bool(buf)
@@ -2262,6 +2268,7 @@ type MSG_USER_team_info struct {
 	Order int8
 	Deleted bool `db:"-"`
 	Realname string `db:"-"`
+	MemberHours float64 `db:"-"`
 }
 
 var pool_MSG_USER_team_info = sync.Pool{New: func() interface{} { return &MSG_USER_team_info{} }}
@@ -2291,6 +2298,7 @@ func (data *MSG_USER_team_info) Put() {
 	data.Order = 0
 	data.Deleted = false
 	data.Realname = ``
+	data.MemberHours = 0
 	pool_MSG_USER_team_info.Put(data)
 }
 func (data *MSG_USER_team_info) write(buf *libraries.MsgBuffer) {
@@ -2315,6 +2323,7 @@ func WRITE_MSG_USER_team_info(data *MSG_USER_team_info, buf *libraries.MsgBuffer
 	WRITE_int8(data.Order, buf)
 	WRITE_bool(data.Deleted, buf)
 	WRITE_string(data.Realname, buf)
+	WRITE_float64(data.MemberHours, buf)
 }
 
 func READ_MSG_USER_team_info(buf *libraries.MsgBuffer) *MSG_USER_team_info {
@@ -2340,6 +2349,7 @@ func (data *MSG_USER_team_info) read(buf *libraries.MsgBuffer) {
 	data.Order = READ_int8(buf)
 	data.Deleted = READ_bool(buf)
 	data.Realname = READ_string(buf)
+	data.MemberHours = READ_float64(buf)
 
 }
 
@@ -2912,6 +2922,95 @@ func (data *MSG_USER_config_save) read(buf *libraries.MsgBuffer) {
 	data.Key = READ_string(buf)
 	data.Value = READ_string(buf)
 	data.Type = READ_string(buf)
+
+}
+
+type MSG_USER_team_delete struct {
+	Where map[string]interface{}
+}
+
+var pool_MSG_USER_team_delete = sync.Pool{New: func() interface{} { return &MSG_USER_team_delete{} }}
+
+func GET_MSG_USER_team_delete() *MSG_USER_team_delete {
+	return pool_MSG_USER_team_delete.Get().(*MSG_USER_team_delete)
+}
+
+func (data *MSG_USER_team_delete) cmd() int32 {
+	return CMD_MSG_USER_team_delete
+}
+
+func (data *MSG_USER_team_delete) Put() {
+	data.Where = nil
+	pool_MSG_USER_team_delete.Put(data)
+}
+func (data *MSG_USER_team_delete) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_team_delete,buf)
+	WRITE_MSG_USER_team_delete(data, buf)
+}
+
+func WRITE_MSG_USER_team_delete(data *MSG_USER_team_delete, buf *libraries.MsgBuffer) {
+	WRITE_map(data.Where,buf)
+}
+
+func READ_MSG_USER_team_delete(buf *libraries.MsgBuffer) *MSG_USER_team_delete {
+	data := pool_MSG_USER_team_delete.Get().(*MSG_USER_team_delete)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_team_delete) read(buf *libraries.MsgBuffer) {
+	READ_map(&data.Where,buf)
+
+}
+
+type MSG_USER_group_update struct {
+	Update *MSG_USER_Group_cache
+}
+
+var pool_MSG_USER_group_update = sync.Pool{New: func() interface{} { return &MSG_USER_group_update{} }}
+
+func GET_MSG_USER_group_update() *MSG_USER_group_update {
+	return pool_MSG_USER_group_update.Get().(*MSG_USER_group_update)
+}
+
+func (data *MSG_USER_group_update) cmd() int32 {
+	return CMD_MSG_USER_group_update
+}
+
+func (data *MSG_USER_group_update) Put() {
+	if data.Update != nil {
+		data.Update.Put()
+		data.Update = nil
+	}
+	pool_MSG_USER_group_update.Put(data)
+}
+func (data *MSG_USER_group_update) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_group_update,buf)
+	WRITE_MSG_USER_group_update(data, buf)
+}
+
+func WRITE_MSG_USER_group_update(data *MSG_USER_group_update, buf *libraries.MsgBuffer) {
+	if data.Update == nil {
+		WRITE_int8(0, buf)
+	} else {
+		WRITE_int8(1, buf)
+		WRITE_MSG_USER_Group_cache(data.Update, buf)
+	}
+}
+
+func READ_MSG_USER_group_update(buf *libraries.MsgBuffer) *MSG_USER_group_update {
+	data := pool_MSG_USER_group_update.Get().(*MSG_USER_group_update)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_group_update) read(buf *libraries.MsgBuffer) {
+	Update_len := int(READ_int8(buf))
+	if Update_len == 1 {
+		data.Update = READ_MSG_USER_Group_cache(buf)
+	}else{
+		data.Update = nil
+	}
 
 }
 

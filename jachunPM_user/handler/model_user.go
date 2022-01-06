@@ -221,12 +221,16 @@ func user_setCache(user *db.User) {
 	cache.Address = user.Address
 	cache.AclProducts = make(map[int32]bool, len(user.AclProducts))
 	cache.AclProjects = make(map[int32]bool, len(user.AclProducts))
+	cache.AclMenu = make(map[string]bool)
 	cache.IsAdmin = user.Id == 1
 	for k, v := range user.AclProducts {
 		cache.AclProducts[k] = v
 	}
 	for k, v := range user.AclProjects {
 		cache.AclProjects[k] = v
+	}
+	for k, v := range user.AclMenu {
+		cache.AclMenu[k] = v
 	}
 	var configs []*db.Config
 	HostConn.DB.Table(db.TABLE_Config).Prepare().Where("Uid=? or Uid=0", user.Id).Select(&configs)
@@ -235,7 +239,7 @@ func user_setCache(user *db.User) {
 		if cache.Config[config.Module] == nil {
 			cache.Config[config.Module] = make(map[string]map[string]string)
 		}
-		if cache.Config[config.Module][config.Section]==nil{
+		if cache.Config[config.Module][config.Section] == nil {
 			cache.Config[config.Module][config.Section] = make(map[string]string)
 		}
 		cache.Config[config.Module][config.Section][config.Key] = config.Value
@@ -255,105 +259,201 @@ func user_getUserInfo(where map[string]interface{}) (users []*db.User, err error
 	err = HostConn.DB.Table(db.TABLE_USER).Where(where).Limit(0).Select(&users)
 	return
 }
-func updateUserView(data *protocol.MSG_USER_updateUserView, in *protocol.Msg) {
+func updateUserView(uids, groupIds, products, projects []int32, in *protocol.Msg) {
 	session, err := in.BeginTransaction()
 	if err != nil {
 		in.WriteErr(err)
 		return
 	}
 	defer func() {
-		session.Rollback()
+		if err != nil {
+			session.Rollback()
+		} else {
+			session.Commit()
+		}
 		in.WriteErr(err)
 	}()
-	if (len(data.ProductIds) == 0 && len(data.ProjectIds) == 0) || (len(data.UserIds) == 0 && len(data.GroupIds) == 0) {
+
+	if len(uids) == 0 && len(groupIds) == 0 {
 		return
 	}
-
-	var users []*db.User
+	userM := make(map[int32]*db.User)
 	var matchIds []int32
-	err = session.Table(db.TABLE_USER).Limit(0).Select(&users)
+	var u []*db.User
+	err = in.DB.Table(db.TABLE_USER).Field("Id,`Group`,AclProducts,AclMenu").Limit(0).Select(&u)
 	if err != nil {
 		return
 	}
-	if len(data.UserIds) > 0 {
-		for _, user := range users {
-			for _, id := range data.UserIds {
-				if user.Id == id {
-					matchIds = append(matchIds, user.Id)
-					break
+	var groups []*db.Group
+	err = in.DB.Table(db.TABLE_GROUP).Limit(0).Select(&groups)
+	if err != nil {
+		return
+	}
+	//获取匹配user
+	for _, user := range u {
+		for _, id := range uids {
+			if user.Id == id {
+				userM[user.Id] = user
+			}
+		}
+		for _, id1 := range groupIds {
+			for _, id2 := range user.Group {
+				if id1 == id2 {
+					userM[user.Id] = user
 				}
 			}
 		}
-	} else if len(data.GroupIds) > 0 {
-		for _, user := range users {
-		out:
-			for _, id := range data.UserIds {
-				for _, groupid := range user.Group {
-					if id == groupid {
-						matchIds = append(matchIds, user.Id)
-						break out
+		for _, id := range products {
+			if user.AclProducts[id] {
+				userM[user.Id] = user
+			}
+		}
+		for _, id := range projects {
+			if user.AclProjects[id] {
+				userM[user.Id] = user
+			}
+		}
+	}
+	projectCache := make(map[int32]*protocol.MSG_PROJECT_project_cache)
+	productCache := make(map[int32]*protocol.MSG_PROJECT_product_cache)
+	for id, user := range userM {
+		var oldProject, newProject, oldProduct, newProduct []int32
+		var oldMenu, newMenu []string
+		if user.AclProjects == nil {
+			user.AclProjects = make(map[int32]bool)
+		}
+		if user.AclProducts == nil {
+			user.AclProducts = make(map[int32]bool)
+		}
+		for id := range user.AclProjects {
+			oldProject = append(oldProject, id)
+		}
+		for id := range user.AclProducts {
+			oldProduct = append(oldProduct, id)
+		}
+		for name := range user.AclMenu {
+			oldMenu = append(oldMenu, name)
+		}
+		protocol.Order_ascInt32(oldProject)
+		protocol.Order_ascInt32(oldProduct)
+		protocol.Order_ascString(oldMenu)
+		//检查product权限，先把受影响的product加上
+		for _, productID := range products {
+			user.AclProducts[productID] = true
+		}
+		for productID := range user.AclProducts {
+			find := false
+			if productCache[productID] == nil {
+				productCache[productID] = HostConn.GetProductById(productID)
+			}
+			if product := productCache[productID]; product != nil {
+				//从负责人创建人寻找
+				if id == product.CreatedBy || id == product.PO || id == product.QD || id == product.RD {
+					find = true
+				}
+
+				if !find {
+					//从白名单group寻找
+					if product.Acl == "custom" {
+						for _, whiteID := range product.Whitelist {
+							for _, groupID := range user.Group {
+								if groupID == whiteID {
+									find = true
+								}
+							}
+						}
+					}
+				}
+			}
+			//没找到删除
+			if !find {
+				delete(user.AclProducts, productID)
+			}
+		}
+		//检查project权限
+		for _, projectID := range projects {
+			user.AclProjects[projectID] = true
+		}
+
+		for projectID := range user.AclProjects {
+			find := false
+			if projectCache[projectID] == nil {
+				projectCache[projectID] = HostConn.GetProjectById(projectID)
+			}
+			if project := projectCache[projectID]; project != nil {
+				//从负责人创建人寻找
+				if id == project.OpenedBy || id == project.PO || id == project.PM || id == project.QD || id == project.RD {
+					find = true
+				}
+				if !find {
+					//从团队寻找
+					for _, t := range project.Teams {
+						if t.Uid == id {
+							find = true
+						}
+					}
+				}
+				if !find {
+					//从白名单group寻找
+					if project.Acl == "custom" {
+						for _, whiteID := range project.Whitelist {
+							for _, groupID := range user.Group {
+								if groupID == whiteID {
+									find = true
+								}
+							}
+						}
+					}
+				}
+				//把对应的product权限加上
+				if find {
+					for _, product := range project.Products {
+						user.AclProducts[product] = true
+					}
+				}
+			}
+			//没找到删除
+			if !find {
+				delete(user.AclProjects, projectID)
+			}
+		}
+		//叠加group权限
+		user.AclMenu = make(map[string]bool)
+		for _, groupID := range user.Group {
+			for _, group := range groups {
+				if groupID == group.Id {
+					for _, projectID := range group.AclProjects {
+						user.AclProjects[projectID] = true
+					}
+					for _, product := range group.AclProducts {
+						user.AclProducts[product] = true
+					}
+					for _, name := range group.Acl {
+						user.AclMenu[name] = true
 					}
 				}
 			}
 		}
-	}
-	var productIds, projectIds []int32
-	//把需要删除权限的找出来
-	for i := len(users) - 1; i >= 0; i-- {
-		user := users[i]
-		for _, productid := range data.ProductIds {
-			if _, ok := user.AclProducts[productid]; ok {
-				productIds = append(productIds, user.Id)
-				delete(user.AclProducts, productid)
-				break
-			}
-
+		for id := range user.AclProjects {
+			newProject = append(newProject, id)
 		}
-		for _, projectid := range data.ProjectIds {
-			if _, ok := user.AclProjects[projectid]; ok {
-				projectIds = append(projectIds, user.Id)
-				delete(user.AclProjects, projectid)
-				break
-			}
+		for id := range user.AclProducts {
+			newProduct = append(newProduct, id)
 		}
-
-	}
-	//先把权限删除
-	if len(productIds) > 0 {
-		for _, productid := range data.ProductIds {
-			_, err = session.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": productIds}).Update(map[string]interface{}{"AclProducts": []string{"exp", "json_remove(AclProducts, '$." + strconv.Itoa(int(productid)) + "' )"}})
-			if err != nil {
-				return
-			}
+		for name := range user.AclMenu {
+			newMenu = append(newMenu, name)
 		}
-
-	}
-	if len(projectIds) > 0 {
-		for _, projectid := range data.ProjectIds {
-			_, err = session.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": projectIds}).Update(map[string]interface{}{"AclProjects": []string{"exp", "json_remove(AclProjects, '$." + strconv.Itoa(int(projectid)) + "' )"}})
-			if err != nil {
-				return
-			}
-		}
-	}
-	//增加权限
-	if len(matchIds) > 0 {
-		for _, productid := range data.ProductIds {
-			_, err = session.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds, "AclProducts": nil}).Update(map[string]interface{}{"AclProducts": `{}`})
-			if err != nil {
-				return
-			}
-			_, err = session.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds}).Update(map[string]interface{}{"AclProducts": []string{"exp", "json_set(AclProducts, '$." + strconv.Itoa(int(productid)) + "','true' )"}})
-			if err != nil {
-				return
-			}
-		}
-		for _, projectid := range data.ProjectIds {
-			_, err = session.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds, "AclProjects": nil}).Update(map[string]interface{}{"AclProjects": `{}`})
-			if err != nil {
-				return
-			}
-			_, err = session.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds}).Update(map[string]interface{}{"AclProjects": []string{"exp", "json_set(AclProjects, '$." + strconv.Itoa(int(projectid)) + "','true' )"}})
+		protocol.Order_ascInt32(newProject)
+		protocol.Order_ascInt32(newProduct)
+		protocol.Order_ascString(newMenu)
+		//更新
+		if libraries.JsonMarshalToString(oldProject) != libraries.JsonMarshalToString(newProject) || libraries.JsonMarshalToString(oldProduct) != libraries.JsonMarshalToString(newProduct) || libraries.JsonMarshalToString(oldMenu) != libraries.JsonMarshalToString(newMenu) {
+			matchIds = append(matchIds, id)
+			_, err = in.DB.Table(db.TABLE_USER).Where("Id=?", user.Id).Update(map[string]interface{}{
+				"AclProducts": user.AclProducts,
+				"AclProjects": user.AclProjects,
+				"AclMenu":     user.AclMenu,
+			})
 			if err != nil {
 				return
 			}
@@ -366,7 +466,7 @@ func updateUserView(data *protocol.MSG_USER_updateUserView, in *protocol.Msg) {
 			user_setCache(user)
 		}
 	})
-	session.Commit()
+
 }
 func user_getGlobalContacts() (globalContacts []*db.Usercontact, err error) {
 	err = HostConn.DB.Table(db.TABLE_USERCONTACT).Prepare().Where(map[string]interface{}{"Share": true}).Limit(0).Select(&globalContacts)

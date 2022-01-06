@@ -55,7 +55,6 @@ var httpHandlerModuleInit = map[string]map[string]func(data *TemplateData) error
 }
 
 func HttpHandler(ws HttpRequest) gnet.Action {
-
 	if m, ok := httpHandlerMap[ws.Method()]; ok {
 		if f, ok := m[ws.Path()]; ok {
 			//检查是否登录
@@ -101,7 +100,6 @@ func HttpHandler(ws HttpRequest) gnet.Action {
 			return gnet.None
 		}
 	}
-
 	return ws.StaticHandler()
 
 }

@@ -751,3 +751,10 @@ type MSG_PROJECT_task_placeOrder struct {
 	TaskID int32
 	Action bool
 }
+
+type MSG_PROJECT_getAllprojectProductID struct {
+}
+type MSG_PROJECT_getAllprojectProductID_result struct {
+	ProjectID []int32
+	ProductID []int32
+}

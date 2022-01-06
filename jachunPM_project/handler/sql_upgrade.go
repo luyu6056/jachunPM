@@ -24,6 +24,7 @@ func mysqlUpgrade() {
 		libraries.ReleaseLog("mysqlUpgrade无法获取用户信息 err:%v", err)
 		return
 	}
+	msg.DB.Table(db.TABLE_TASK).Delete()
 	out.Put()
 	type Task_old struct {
 		Id             int32
@@ -165,7 +166,74 @@ func mysqlUpgrade() {
 
 	_, err = HostConn.DB.Table(db.TABLE_TASK).InsertAll(tasks_insert)
 	libraries.DebugLog("插入task %d 条，错误 %v", len(tasks_insert), err)
+
+	HostConn.DB.Table(db.TABLE_PROJECT).Delete()
+	var projects []*db.Project
+	err = HostConn.DB.Table("zt_project").Field("Id,IsCat,CatID,Type,Parent,Name,Code,Begin,End,Days,Status,Statge,Pri,`Desc`,OpenedBy,OpenedDate,OpenedVersion,ClosedBy,ClosedDate,CanceledBy,CanceledDate,PO,PM,QD,RD,Team,Acl,Whitelist,`Order`,`Deleted`,FtpPath").Limit(0).Select(&projects)
+	if err != nil {
+		libraries.ReleaseLog("mysqlUpgrade无法获取zt_project表 err:%v", err)
+		return
+	}
+	m1,err := HostConn.DB.Table("zt_project").Field("OpenedBy,ClosedBy,CanceledBy,PO,PM,QD,RD").Limit(0).SelectMap()
+	for k, project := range projects {
+		m, err := HostConn.DB.Table("zt_projectproduct").Where("project=?", project.Id).SelectMap()
+		if err != nil {
+			libraries.ReleaseLog("mysqlUpgrade无法获取zt_projectproduct表 err:%v", err)
+			return
+		}
+		row1:=m1[k]
+		for _, kv := range result.List {
+			if kv.Value == row1["OpenedBy"] {
+				if id, _ := strconv.Atoi(kv.Key); id > 0 {
+					project.OpenedBy = int32(id)
+				}
+			}
+			if kv.Value == row1["ClosedBy"] {
+				if id, _ := strconv.Atoi(kv.Key); id > 0 {
+					project.ClosedBy = int32(id)
+				}
+			}
+			if kv.Value == row1["CanceledBy"] {
+				if id, _ := strconv.Atoi(kv.Key); id > 0 {
+					project.CanceledBy = int32(id)
+				}
+			}
+			if kv.Value == row1["PO"] {
+				if id, _ := strconv.Atoi(kv.Key); id > 0 {
+					project.PO = int32(id)
+				}
+			}
+			if kv.Value == row1["PM"] {
+				if id, _ := strconv.Atoi(kv.Key); id > 0 {
+					project.PM = int32(id)
+				}
+			}
+			if kv.Value == row1["QD"] {
+				if id, _ := strconv.Atoi(kv.Key); id > 0 {
+					project.QD = int32(id)
+				}
+			}
+			if kv.Value == row1["RD"] {
+				if id, _ := strconv.Atoi(kv.Key); id > 0 {
+					project.RD = int32(id)
+				}
+			}
+		}
+		for _, row := range m {
+			product, _ := strconv.Atoi(row["product"])
+			branch, _ := strconv.Atoi(row["branch"])
+			plan, _ := strconv.Atoi(row["plan"])
+			project.Products = append(project.Products, int32(product))
+			project.Branchs = append(project.Branchs, int32(branch))
+			project.Plans = append(project.Plans, int32(plan))
+
+		}
+
+		project.TimeStamp = time.Now()
+	}
+	_, err = msg.DB.Table(db.TABLE_PROJECT).ReplaceAll(projects)
+	libraries.DebugLog("插入project %d 条，错误 %v", len(projects), err)
 }
 func init() {
-	//go time.AfterFunc(time.Second*5, mysqlUpgrade)
+	go time.AfterFunc(time.Second*5, mysqlUpgrade)
 }

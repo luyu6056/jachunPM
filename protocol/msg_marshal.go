@@ -111,9 +111,7 @@ func WRITE_uint64(x uint64, buf *libraries.MsgBuffer) {
 }
 func WRITE_string(data string, buf *libraries.MsgBuffer) {
 	WRITE_int(len(data), buf)
-	x := (*[2]uintptr)(unsafe.Pointer(&data))
-	h := [3]uintptr{x[0], x[1], x[1]}
-	buf.Write(*(*[]byte)(unsafe.Pointer(&h)))
+	buf.WriteString(data)
 }
 func WRITE_ErrCode(data ErrCode, buf *libraries.MsgBuffer) {
 	WRITE_int16(int16(data), buf)
@@ -305,9 +303,9 @@ func WRITE_any(i interface{}, buf *libraries.MsgBuffer) {
 		}
 	default:
 		r := reflect.ValueOf(i)
-		if r.Kind()==reflect.Map{
-			WRITE_int8(interfaceTypeM,buf)
-			WRITE_map(i,buf)
+		if r.Kind() == reflect.Map {
+			WRITE_int8(interfaceTypeM, buf)
+			WRITE_map(i, buf)
 			return
 		}
 		panic("WRITE_any未设置类型" + fmt.Sprintf("%T", v))
@@ -425,7 +423,7 @@ func READ_map(i interface{}, buf *libraries.MsgBuffer) {
 	r = r.Elem()
 	r.Set(reflect.MakeMap(r.Type()))
 	for i := 0; i < l; i++ {
-		r.SetMapIndex(reflect.ValueOf(read_any_result(buf)), reflect.ValueOf(read_any_result(buf,r.Type().Elem())))
+		r.SetMapIndex(reflect.ValueOf(read_any_result(buf)), reflect.ValueOf(read_any_result(buf, r.Type().Elem())))
 	}
 }
 func READ_any(i interface{}, buf *libraries.MsgBuffer) {
@@ -557,7 +555,7 @@ func READ_any(i interface{}, buf *libraries.MsgBuffer) {
 	}
 
 }
-func read_any_result(buf *libraries.MsgBuffer,r_t...reflect.Type) interface{} {
+func read_any_result(buf *libraries.MsgBuffer, r_t ...reflect.Type) interface{} {
 	t := READ_int8(buf)
 	switch t {
 	case interfaceTypeInt:
@@ -683,7 +681,7 @@ func read_any_result(buf *libraries.MsgBuffer,r_t...reflect.Type) interface{} {
 		l := READ_int(buf)
 		s := make([]interface{}, l)
 		for k := range s {
-			s[k] = read_any_result(buf,r_t...)
+			s[k] = read_any_result(buf, r_t...)
 		}
 		return s
 	case interfaceTypeSliceKVs:
@@ -694,16 +692,16 @@ func read_any_result(buf *libraries.MsgBuffer,r_t...reflect.Type) interface{} {
 		}
 		return s
 	case interfaceTypeM:
-		if len(r_t)==0{
+		if len(r_t) == 0 {
 			panic(fmt.Sprintf("read_any_result interfaceTypeM 未传入Type"))
 		}
-		r:=reflect.MakeMap(r_t[0])
+		r := reflect.MakeMap(r_t[0])
 		l := READ_int(buf)
 		if l == 0 {
 			return nil
 		}
 		for i := 0; i < l; i++ {
-			r.SetMapIndex(reflect.ValueOf(read_any_result(buf)), reflect.ValueOf(read_any_result(buf,r.Type().Elem())))
+			r.SetMapIndex(reflect.ValueOf(read_any_result(buf)), reflect.ValueOf(read_any_result(buf, r.Type().Elem())))
 		}
 		return r.Interface()
 	default:

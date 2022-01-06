@@ -18,19 +18,17 @@ func project_setCache(id int32) {
 	project := protocol.GET_MSG_PROJECT_project_cache()
 	HostConn.DB.Table(db.TABLE_PROJECT).Prepare().Where("Id=?", id).Find(&project)
 	if project.Id != 0 {
-		if project.Deleted {
-			HostConn.CacheDel(protocol.PATH_PROJECT_PROJECT_CACHE, strconv.Itoa(int(project.Id)))
-		} else {
-			out := protocol.GET_MSG_USER_team_getByTypeRoot()
-			out.Type = "project"
-			out.Root = []int32{project.Id}
-			var result *protocol.MSG_USER_team_getByTypeRoot_result
-			if err := (&protocol.RpclientSend{HostConn}).SendMsgWaitResultToDefault(out, &result); err == nil {
-				project.Teams = result.List
-			}
-			out.Put()
-			HostConn.CacheSet(protocol.PATH_PROJECT_PROJECT_CACHE, strconv.Itoa(int(project.Id)), project, 0)
+
+		out := protocol.GET_MSG_USER_team_getByTypeRoot()
+		out.Type = "project"
+		out.Root = []int32{project.Id}
+		var result *protocol.MSG_USER_team_getByTypeRoot_result
+		if err := (&protocol.RpclientSend{HostConn}).SendMsgWaitResultToDefault(out, &result); err == nil {
+			project.Teams = result.List
 		}
+		out.Put()
+		HostConn.CacheSet(protocol.PATH_PROJECT_PROJECT_CACHE, strconv.Itoa(int(project.Id)), project, 0)
+
 	}
 	project.Put()
 }
@@ -526,7 +524,7 @@ func project_delete(data *protocol.MSG_PROJECT_project_delete, in *protocol.Msg)
 func project_getProjectTasks(data *protocol.MSG_PROJECT_project_getProjectTasks, in *protocol.Msg) {
 	where := map[string]interface{}{
 		"t1.Project": data.ProjectID,
-		"t1.Deleted":false,
+		"t1.Deleted": false,
 	}
 	if data.ProductID != 0 {
 		var trees []*db.Module

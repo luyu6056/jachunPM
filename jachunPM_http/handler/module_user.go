@@ -51,7 +51,7 @@ func get_user_getsalt(data *TemplateData) (e error) {
 	ws := data.ws
 	name := strings.Trim(ws.Post("account"), " ")
 	if name == "" {
-		ws.WriteString(`{"error":"` + config.Lang[getClientLang(ws)]["user"]["loginFailed"].(string) + `"}`)
+		ws.WriteString(`{"error":"` + data.Lang["user"]["error"].(map[string]string)["loginFailed"] + `"}`)
 		return
 	}
 	out := protocol.GET_MSG_USER_GET_LoginSalt()
@@ -459,4 +459,27 @@ func user_getGroupGetPairs() (list []protocol.HtmlKeyValueStr, err error) {
 		list = append(list, protocol.HtmlKeyValueStr{strconv.Itoa(int(v.Id)), v.Name})
 	}
 	return
+}
+
+func user_getAllcache(data *TemplateData) (result []*protocol.MSG_USER_INFO_cache, err error) {
+	if data.Data["user_getAllcache"] == nil {
+		res, err := HostConn.CacheGetPath(protocol.UserServerNo, protocol.PATH_USER_INFO_CACHE)
+		if err != nil {
+			return nil, err
+		}
+
+		buf := bufpool.Get().(*libraries.MsgBuffer)
+		for _, b := range res {
+			buf.Reset()
+			buf.Write(b)
+			if v, ok := protocol.READ_MSG_DATA(buf).(*protocol.MSG_USER_INFO_cache); ok {
+				result = append(result, v)
+			}
+		}
+		buf.Reset()
+		bufpool.Put(buf)
+		protocol.Order_user(result, nil)
+		data.Data["user_getAllcache"] = result
+	}
+	return data.Data["user_getAllcache"].([]*protocol.MSG_USER_INFO_cache), nil
 }

@@ -1907,8 +1907,8 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["group"]["name"] = "分组名称"
 	Lang[protocol.ZH_CN]["group"]["id"] = "编号"
 	Lang[protocol.ZH_CN]["group"]["noticeVisit"] = "空代表访问没有访问限制"
-	Lang[protocol.ZH_CN]["group"]["projectList"] = `允许访问` + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string)
-	Lang[protocol.ZH_CN]["group"]["productList"] = `允许访问` + Lang[protocol.ZH_CN]["common"]["productCommon"].(string)
+	Lang[protocol.ZH_CN]["group"]["projectList"] = `额外允许访问` + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string)
+	Lang[protocol.ZH_CN]["group"]["productList"] = `额外允许访问` + Lang[protocol.ZH_CN]["common"]["productCommon"].(string)
 	Lang[protocol.ZH_CN]["group"]["viewList"] = "允许访问视图"
 	Lang[protocol.ZH_CN]["group"]["errorNotSaved"] = "没有保存，请确认选择了权限数据。"
 	Lang[protocol.ZH_CN]["group"]["successSaved"] = "成功保存"
@@ -6317,6 +6317,7 @@ func LangZH_CNInit() {
 		"ErrUpdate":              "更新失败，错误%v",
 		"ErrCheckaccount":        "检查账号是否存在失败，错误%v",
 		"UserAccountIsexist":     "该账号已存在，请更换其他账号",
+		"loginFailed":            "登录失败 用户名为空",
 	}
 
 	Lang[protocol.ZH_CN]["user"]["contacts"] = map[string]string{

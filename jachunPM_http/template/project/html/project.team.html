@@ -1,0 +1,67 @@
+{{template "header.html" .}}
+<script type="text/javascript">
+  var confirmUnlinkMember={{.Lang.project.confirmUnlinkMember}}
+</script>
+<div id='mainMenu' class='clearfix'>
+  <div class='btn-toolbar pull-left'>
+    <span class='btn btn-link btn-active-text'><span class='text'>{{.Lang.project.team}}</span></span>
+  </div>
+  <div class='btn-toolbar pull-right'>
+        {{common_printLink . "project" "manageMembers"  (strAdd "projectID=" $.Data.project.Id)  (strAdd "<i class='icon icon-persons'></i> "  .Lang.project.manageMembers) "" "class='btn btn-primary manage-team-btn'"}}
+  </div>
+</div>
+<div id='mainContent'>
+  {{if not $.Data.teamMembers}}
+  <div class="table-empty-tip">
+    <p>
+      <span class="text-muted">{{.Lang.project.noMembers}}</span>
+      {{if common_hasPriv . "project" "manageMembers"}}
+      <span class="text-muted">{{.Lang.common.youCould}}</span>
+      {{html_a (helper_createLink "project" "manageMembers"  "projectID=" $.Data.project.Id)  (strAdd "<i class='icon icon-persons'></i> "  .Lang.project.manageMembers) "" "class='btn btn-info'"}}
+      {{end}}
+    </p>
+  </div>
+  {{else}}
+  <form class='main-table'>
+    <table class='table' id='memberList'>
+      <thead>
+        <tr>
+          <th>{{.Lang.team.account}}</th>
+          <th>{{.Lang.team.role}}</th>
+          <th>{{.Lang.team.join}}</th>
+          <th>{{.Lang.team.days}}</th>
+          <th>{{.Lang.team.hours}}</th>
+          <th>{{.Lang.team.totalHours}}</th>
+          <th class='w-100px text-center'>{{.Lang.team.limited}}</th>
+          <th class='c-actions-1 w-80px'>{{.Lang.common.actions}}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{$totalHours := 0}}
+        {{range $member := $.Data.teamMembers}}
+        <tr>
+          <td>
+          {{if common_hasPriv $ "user" "view"}}{{html_a (helper_createLink "user" "view" "account=" $member.Account) $member.Realname  (strAdd "account=" $member.Account)}}{{else}}{{$member.Realname}}{{end}}
+          </td>
+          <td>{{$member.Role}}</td>
+          <td>{{date "2006-01-02" $member.Join}}</td>
+          <td>{{$member.Days}}{{$.Lang.project.day}}</td>
+          <td>{{$member.Hours}}{{$.Lang.project.workHour}}</td>
+          <td>{{$member.MemberHours}}{{$.Lang.project.workHour}}</td>
+          <td class="text-center">{{getValue $.Lang.team.limitedList $member.Limited}}</td>
+          <td class='c-actions'>
+            {{if common_hasPriv $ "project" "unlinkMember"  $member}}
+                {{html_a (strAdd "javascript:ajaxDelete(\"" (helper_createLink "project"  "unlinkMember" "projectID=" $.Data.project.Id "&uid=" $member.Uid "&confirm=yes") "\",\"memberList\", confirmUnlinkMember)")  "<i class='icon-green-project-unlinkMember icon-close'></i>" "" (strAdd "class='btn' title='" $.Lang.project.unlinkMember "'")}}
+           {{end}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    <div class='table-footer'>
+      <div class='table-statistic'>{{.Lang.team.totalHours}}：<strong>{{$.Data.totalHours}}{{.Lang.project.workHour}}</strong></div>
+    </div>
+  </form>
+  {{end}}
+</div>
+{{template "footer.html" .}}

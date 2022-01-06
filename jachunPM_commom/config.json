@@ -1,6 +1,5 @@
 {
-	"ListenHttp": "tcp://127.0.0.1:8080",
-	"ListenRpc": "tcp://127.0.0.1:8000",
+	"ListenRpc": "tcp://0.0.0.0:8000",
 	"MysqlDsn": "root:123456@tcp(192.168.1.180:3306)/jachunPM_commom?charset=utf8&loc=Local",
 	"MysqlMaxConn": 50
 	
