@@ -1,0 +1,2 @@
+{{html_select "template"  $.Data.templatePairs  $.Data.templateID  "class='form-control chosen' onchange='setTemplate(this.value)'"}}
+{{range $template :=  $.Data.templates}}<span id='template{{$template.Id}}' class='hidden'>{{$template.Content}}</span>{{end}}

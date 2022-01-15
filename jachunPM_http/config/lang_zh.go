@@ -146,8 +146,9 @@ func LangZH_CNInit() {
 		{"product", map[string]string{`link`: Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "|product|index|locate=no"}},
 		{"project", map[string]string{`link`: Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "|project|index|locate=no"}},
 		{"qa", map[string]string{`link`: "测试|qa|index"}},
-		{"doc", map[string]string{`link`: "文档|doc|index"}},
-		{"report", map[string]string{`link`: "统计|report|index"}},
+		{"oa", map[string]string{"link": "办公|attend|personal"}},
+		//{"doc", map[string]string{`link`: "文档|doc|index"}},
+		//{"report", map[string]string{`link`: "统计|report|index"}},
 		{"company", map[string]string{`link`: "组织|company|browse"}},
 		{"admin", map[string]string{`link`: "后台|admin|index"}},
 	}
@@ -172,16 +173,16 @@ func LangZH_CNInit() {
 		"gbk":  "GBK",
 		"big5": "BIG5",
 	}
-	Lang[protocol.ZH_CN]["common"]["exportFileTypeList"] = map[string]string{
-		"csv":  "csv",
-		"xml":  "xml",
-		"html": "html",
-		"xlsx": "xlsx",
-		"xls":  "xls",
+	Lang[protocol.ZH_CN]["common"]["exportFileTypeList"] = []protocol.HtmlKeyValueStr{
+		{"xlsx", "xlsx"},
+		{"csv", "csv"},
+		{"xml", "xml"},
+		{"html", "html"},
+		{"xls", "xls"},
 	}
-	Lang[protocol.ZH_CN]["common"]["exportTypeList"] = map[string]string{
-		"all":      "全部记录",
-		"selected": "选中记录",
+	Lang[protocol.ZH_CN]["common"]["exportTypeList"] = []protocol.HtmlKeyValueStr{
+		{"all", "全部记录"},
+		{"selected", "选中记录"},
 	}
 	Lang[protocol.ZH_CN]["common"]["themes"] = map[string]string{
 		"default":    "深邃蓝（默认）",
@@ -219,7 +220,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["my"]["dynamic"] = "我的动态"
 	Lang[protocol.ZH_CN]["my"]["profile"] = "我的档案"
 	Lang[protocol.ZH_CN]["my"]["myProject"] = "我的" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string)
-	Lang[protocol.ZH_CN]["my"]["story"] = "我的{$lang->common->storyCommon}"
+	Lang[protocol.ZH_CN]["my"]["story"] = "我的" + Lang[protocol.ZH_CN]["common"]["storyCommon"].(string)
 	Lang[protocol.ZH_CN]["my"]["testCase"] = "我的用例"
 	Lang[protocol.ZH_CN]["my"]["testTask"] = "我的版本"
 	Lang[protocol.ZH_CN]["my"]["bug"] = "我的Bug"
@@ -237,11 +238,11 @@ func LangZH_CNInit() {
 		{"testtask", map[string]string{`link`: `测试|my|testtask|`, `subModule`: `testcase,testtask`, `alias`: `testcase`}},
 		{"story", map[string]string{`link`: Lang[protocol.ZH_CN]["common"]["storyCommon"].(string) + "|my|story|", `subModule`: `story`}},
 		{"myProject", map[string]string{`link`: Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "|my|project|"}},
-		{"dynamic", map[string]string{`link`: "动态|my|dynamic|"}},
+		//{"dynamic", map[string]string{`link`: "动态|my|dynamic|"}},
 		{"profile", map[string]string{`link`: `档案|my|profile`, `alias`: `editprofile`}},
 		{"changePassword", map[string]string{`link`: "密码|my|changepassword"}},
 		{"manageContacts", map[string]string{`link`: "联系人|my|managecontacts"}},
-		{"score", map[string]string{`link`: `积分|my|score`, `subModule`: `score`}},
+		//{"score", map[string]string{`link`: `积分|my|score`, `subModule`: `score`}},
 		{"review", map[string]string{`link`: "审批|my|review|type=all"}},
 	}
 	Lang[protocol.ZH_CN]["todo"] = make(map[string]interface{})
@@ -2663,9 +2664,6 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["excel"]["noData"] = "没有数据"
 	Lang[protocol.ZH_CN]["ldap"] = make(map[string]interface{})
 	Lang[protocol.ZH_CN]["ldap"]["menu"] = Lang[protocol.ZH_CN]["admin"]["menu"]
-	Lang[protocol.ZH_CN]["menu"] = make(map[string]interface{})
-	Lang[protocol.ZH_CN]["menu"]["oa"] = "办公|attend|personal|"
-	Lang[protocol.ZH_CN]["common"]["menuOrder"] = []string{"oa"}
 	Lang[protocol.ZH_CN]["oa"] = make(map[string]interface{})
 	Lang[protocol.ZH_CN]["oa"]["menu"] = []protocol.HtmlMenu{
 		{"attend", map[string]string{`link`: `考勤|attend|personal`, `subModule`: `attend`}},
@@ -3022,11 +3020,11 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["trip"]["customer"] = "客户 / 供应商"
 	Lang[protocol.ZH_CN]["trip"]["id"] = "编号"
 	Lang[protocol.ZH_CN]["trip"]["setReviewerAction"] = "外出设置"
-	Lang[protocol.ZH_CN]["trip"]["viewAction		"] = "外出详情"
-	Lang[protocol.ZH_CN]["trip"]["deleteAction	"] = "删除外出"
-	Lang[protocol.ZH_CN]["trip"]["editAction 	"] = "编辑外出"
-	Lang[protocol.ZH_CN]["trip"]["createAction 	"] = "申请外出"
-	Lang[protocol.ZH_CN]["trip"]["browseReview 	"] = "外出审核"
+	Lang[protocol.ZH_CN]["trip"]["viewAction"] = "外出详情"
+	Lang[protocol.ZH_CN]["trip"]["deleteAction"] = "删除外出"
+	Lang[protocol.ZH_CN]["trip"]["editAction"] = "编辑外出"
+	Lang[protocol.ZH_CN]["trip"]["createAction"] = "申请外出"
+	Lang[protocol.ZH_CN]["trip"]["browseReview"] = "外出审核"
 	Lang[protocol.ZH_CN]["trip"]["company"] = "所有外出"
 	Lang[protocol.ZH_CN]["trip"]["department"] = "部门"
 	Lang[protocol.ZH_CN]["trip"]["personal"] = "我的外出"
@@ -3654,19 +3652,19 @@ func LangZH_CNInit() {
 		"backupCode":  "代码备份失败，错误：%s",
 	}
 	Lang[protocol.ZH_CN]["block"] = make(map[string]interface{})
-	Lang[protocol.ZH_CN]["block"]["default"] = map[string]interface{}{
+	Lang[protocol.ZH_CN]["block"]["default"] = map[string][]protocol.HtmlBlock{
 		"product": []protocol.HtmlBlock{
 			protocol.HtmlBlock{
-				Title: Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + " 统计",
+				Title: Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "统计",
 				Block: `statistic`,
 				Grid:  8,
-				Prams: map[string]string{
+				Params: map[string]string{
 					`type`: `all`,
 					`num`:  `20`,
 				},
 			},
 			protocol.HtmlBlock{
-				Title: Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + ` 总览`,
+				Title: Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + `总览`,
 				Block: `overview`,
 				Grid:  4,
 			},
@@ -3674,7 +3672,7 @@ func LangZH_CNInit() {
 				Title: `未关闭的` + Lang[protocol.ZH_CN]["common"]["productCommon"].(string),
 				Block: `list`,
 				Grid:  8,
-				Prams: map[string]string{
+				Params: map[string]string{
 					`num`:  `15`,
 					`type`: `noclosed`,
 				},
@@ -3683,7 +3681,7 @@ func LangZH_CNInit() {
 				Title: `指派给我的需求`,
 				Block: `story`,
 				Grid:  4,
-				Prams: map[string]string{
+				Params: map[string]string{
 					`num`:     `15`,
 					`orderBy`: `id_desc`,
 					`type`:    `assignedTo`,
@@ -3692,22 +3690,22 @@ func LangZH_CNInit() {
 		},
 		"project": []protocol.HtmlBlock{
 			protocol.HtmlBlock{
-				Title: Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + ` 统计`,
+				Title: Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + `统计`,
 				Block: `statistic`,
 				Grid:  8,
-				Prams: map[string]string{
+				Params: map[string]string{
 					`type`: `all`,
 					`num`:  `20`,
 				},
 			}, protocol.HtmlBlock{
-				Title: Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + ` 总览`,
+				Title: Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + `总览`,
 				Block: `overview`,
 				Grid:  4,
 			}, protocol.HtmlBlock{
 				Title: `进行中的` + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string),
 				Block: `list`,
 				Grid:  8,
-				Prams: map[string]string{
+				Params: map[string]string{
 					`num`:     `15`,
 					`orderBy`: `id_desc`,
 					`type`:    `undone`,
@@ -3716,7 +3714,7 @@ func LangZH_CNInit() {
 				Title: `指派给我的任务`,
 				Block: `task`,
 				Grid:  4,
-				Prams: map[string]string{
+				Params: map[string]string{
 					`num`:     `15`,
 					`orderBy`: `id_desc`,
 					`type`:    `assignedTo`,
@@ -3728,7 +3726,7 @@ func LangZH_CNInit() {
 				Title: `测试统计`,
 				Block: `statistic`,
 				Grid:  8,
-				Prams: map[string]string{
+				Params: map[string]string{
 					`type`: `noclosed`,
 					`num`:  `20`,
 				},
@@ -3742,7 +3740,7 @@ func LangZH_CNInit() {
 				Title: `指派给我的用例`,
 				Block: `case`,
 				Grid:  4,
-				Prams: map[string]string{
+				Params: map[string]string{
 					`num`:     `15`,
 					`orderBy`: `id_desc`,
 					`type`:    `assigntome`,
@@ -3752,82 +3750,80 @@ func LangZH_CNInit() {
 				Title: `待测版本列表`,
 				Block: `testtask`,
 				Grid:  4,
-				Prams: map[string]string{
+				Params: map[string]string{
 					`num`:     `15`,
 					`orderBy`: `id_desc`,
 					`type`:    `wait`,
 				},
 			},
 		},
-		"full": map[string][]protocol.HtmlBlock{
-			"my": []protocol.HtmlBlock{
-				protocol.HtmlBlock{
-					Title:  `上下班打卡`,
-					Block:  `clockinout`,
-					Grid:   8,
-					Source: "oa",
+		"my": []protocol.HtmlBlock{
+			protocol.HtmlBlock{
+				Title:  `上下班打卡`,
+				Block:  `clockinout`,
+				Grid:   8,
+				Source: "oa",
+			},
+			protocol.HtmlBlock{
+				Title: `欢迎`,
+				Block: `clockinout`,
+				Grid:  8,
+			},
+			protocol.HtmlBlock{
+				Title: `最新动态`,
+				Block: `dynamic`,
+				Grid:  4,
+			},
+			protocol.HtmlBlock{
+				Title: `流程图`,
+				Block: `flowchart`,
+				Grid:  8,
+			},
+			protocol.HtmlBlock{
+				Title:  `我的待办`,
+				Block:  `list`,
+				Grid:   4,
+				Source: "todo",
+				Params: map[string]string{
+					`num`: `20`,
 				},
-				protocol.HtmlBlock{
-					Title: `欢迎`,
-					Block: `clockinout`,
-					Grid:  8,
+			},
+			protocol.HtmlBlock{
+				Title:  Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + `统计`,
+				Block:  `statistic`,
+				Grid:   8,
+				Source: "project",
+				Params: map[string]string{
+					`type`: `all`,
+					`num`:  `20`,
 				},
-				protocol.HtmlBlock{
-					Title: `最新动态`,
-					Block: `dynamic`,
-					Grid:  4,
+			}, protocol.HtmlBlock{
+				Title:  Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + `总览`,
+				Block:  `overview`,
+				Grid:   4,
+				Source: "project",
+			},
+			protocol.HtmlBlock{
+				Title:  Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "统计",
+				Block:  `statistic`,
+				Grid:   8,
+				Source: "product",
+				Params: map[string]string{
+					`type`: `all`,
+					`num`:  `20`,
 				},
-				protocol.HtmlBlock{
-					Title: `流程图`,
-					Block: `flowchart`,
-					Grid:  8,
-				},
-				protocol.HtmlBlock{
-					Title:  `我的待办`,
-					Block:  `list`,
-					Grid:   4,
-					Source: "todo",
-					Prams: map[string]string{
-						`num`: `20`,
-					},
-				},
-				protocol.HtmlBlock{
-					Title:  Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + `统计`,
-					Block:  `statistic`,
-					Grid:   8,
-					Source: "project",
-					Prams: map[string]string{
-						`type`: `all`,
-						`num`:  `20`,
-					},
-				}, protocol.HtmlBlock{
-					Title:  Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + `总览`,
-					Block:  `overview`,
-					Grid:   4,
-					Source: "project",
-				},
-				protocol.HtmlBlock{
-					Title:  Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "统计",
-					Block:  `statistic`,
-					Grid:   8,
-					Source: "product",
-					Prams: map[string]string{
-						`type`: `all`,
-						`num`:  `20`,
-					},
-				},
-				protocol.HtmlBlock{
-					Title:  Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + `总览`,
-					Block:  `overview`,
-					Grid:   4,
-					Source: "product",
-				},
-				protocol.HtmlBlock{
-					Title:  `指派给我的Bug`,
-					Block:  `bug`,
-					Grid:   4,
-					Source: "qa",
-				},
+			},
+			protocol.HtmlBlock{
+				Title:  Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + `总览`,
+				Block:  `overview`,
+				Grid:   4,
+				Source: "product",
+			},
+			protocol.HtmlBlock{
+				Title:  `指派给我的Bug`,
+				Block:  `bug`,
+				Grid:   4,
+				Source: "qa",
 			},
 		},
 	}
@@ -3838,11 +3834,12 @@ func LangZH_CNInit() {
 		[]string{`研发人员`, `领取任务和Bug`, `更新状态`, `完成任务和Bug`},
 		[]string{`测试人员`, `撰写用例`, `执行用例`, `提交Bug`, `验证Bug`, `关闭Bug`},
 	}
-	Lang[protocol.ZH_CN]["block"] = make(map[string]interface{})
-	Lang[protocol.ZH_CN]["block"]["welcomeList['19:00']"] = "%s，晚上好！"
-	Lang[protocol.ZH_CN]["block"]["welcomeList['13:30']"] = "%s，下午好！"
-	Lang[protocol.ZH_CN]["block"]["welcomeList['11:30']"] = "%s，中午好！"
-	Lang[protocol.ZH_CN]["block"]["welcomeList['06:00']"] = "%s，早上好！"
+	Lang[protocol.ZH_CN]["block"]["welcomeList"] = []protocol.HtmlKeyValueStr{
+		{"19:00", "%s，晚上好！"},
+		{"13:30", "%s，下午好！"},
+		{"11:30", "%s，中午好！"},
+		{"06:00", "%s，早上好！"},
+	}
 	Lang[protocol.ZH_CN]["block"]["welcome"] = "欢迎总览"
 	Lang[protocol.ZH_CN]["block"]["type"] = "类型"
 	Lang[protocol.ZH_CN]["block"]["todoNum"] = "待办数"
@@ -3914,64 +3911,67 @@ func LangZH_CNInit() {
 		"qa":      "测试",
 		"todo":    "待办",
 	}
-	Lang[protocol.ZH_CN]["block"]["modules['attend']"] = map[string]interface{}{
-		"availableBlocks": map[string]string{
-			"clockinout": "上下班打卡",
+	Lang[protocol.ZH_CN]["block"]["modules"] = map[string]protocol.HtmlBlockModule{
+		"attend": protocol.HtmlBlockModule{
+			AvailableBlocks: map[string]string{
+				"clockinout": "上下班打卡",
+			},
+		},
+		"common": protocol.HtmlBlockModule{
+			MoreLinkList: map[string]string{
+				"dynamic": "company|dynamic|",
+			},
+		},
+		"product": protocol.HtmlBlockModule{
+			AvailableBlocks: map[string]string{
+				"list":      Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "列表",
+				"overview":  Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "总览",
+				"plan":      "计划列表",
+				"release":   "发布列表",
+				"statistic": Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "统计",
+				"story":     "需求列表",
+			},
+			MoreLinkList: map[string]string{
+				"list":  "product|all|product=&line=0&status=%s",
+				"story": "my|story|type=%s",
+			},
+		},
+		"project": protocol.HtmlBlockModule{
+			AvailableBlocks: map[string]string{
+				"build":     "版本列表",
+				"list":      Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "列表",
+				"overview":  Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "总览",
+				"statistic": Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "统计",
+				"task":      "任务列表",
+			},
+			MoreLinkList: map[string]string{
+				"list": "project|all|status=%s&project=",
+				"task": "my|task|type=%s",
+			},
+		},
+		"qa": protocol.HtmlBlockModule{
+			AvailableBlocks: map[string]string{
+				"bug":       "Bug列表",
+				"case":      "用例列表",
+				"statistic": "测试统计",
+				"testtask":  "版本列表",
+			},
+			MoreLinkList: map[string]string{
+				"bug":      "my|bug|type=%s",
+				"case":     "my|testcase|type=%s",
+				"testtask": "testtask|browse|type=%s",
+			},
+		},
+		"todo": protocol.HtmlBlockModule{
+			AvailableBlocks: map[string]string{
+				"list": "待办列表",
+			},
+			MoreLinkList: map[string]string{
+				"list": "my|todo|type=all",
+			},
 		},
 	}
-	Lang[protocol.ZH_CN]["block"]["modules['common']"] = map[string]interface{}{
-		"moreLinkList": map[string]string{
-			"dynamic": "company|dynamic|",
-		},
-	}
-	Lang[protocol.ZH_CN]["block"]["modules['product']"] = map[string]interface{}{
-		"availableBlocks": map[string]string{
-			"list":      Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "列表",
-			"overview":  Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "总览",
-			"plan":      "计划列表",
-			"release":   "发布列表",
-			"statistic": Lang[protocol.ZH_CN]["common"]["productCommon"].(string) + "统计",
-			"story":     "需求列表",
-		},
-		"moreLinkList": map[string]string{
-			"list":  "product|all|product=&line=0&status=%s",
-			"story": "my|story|type=%s",
-		},
-	}
-	Lang[protocol.ZH_CN]["block"]["modules['project']"] = map[string]interface{}{
-		"availableBlocks": map[string]string{
-			"build":     "版本列表",
-			"list":      Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "列表",
-			"overview":  Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "总览",
-			"statistic": Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "统计",
-			"task":      "任务列表",
-		},
-		"moreLinkList": map[string]string{
-			"list": "project|all|status=%s&project=",
-			"task": "my|task|type=%s",
-		},
-	}
-	Lang[protocol.ZH_CN]["block"]["modules['qa']"] = map[string]interface{}{
-		"availableBlocks": map[string]string{
-			"bug":       "Bug列表",
-			"case":      "用例列表",
-			"statistic": "测试统计",
-			"testtask":  "版本列表",
-		},
-		"moreLinkList": map[string]string{
-			"bug":      "my|bug|type=%s",
-			"case":     "my|testcase|type=%s",
-			"testtask": "testtask|browse|type=%s",
-		},
-	}
-	Lang[protocol.ZH_CN]["block"]["modules['todo']"] = map[string]interface{}{
-		"availableBlocks": map[string]string{
-			"list": "待办列表",
-		},
-		"moreLinkList": map[string]string{
-			"list": "my|todo|type=all",
-		},
-	}
+
 	Lang[protocol.ZH_CN]["block"]["orderByList"] = map[string]interface{}{
 		"bug": map[string]string{
 			"id_asc":        "ID 递增",
@@ -5869,30 +5869,32 @@ func LangZH_CNInit() {
 	}
 
 	Lang[protocol.ZH_CN]["task"]["error"] = map[string]string{
-		"consumedNumber":         "\"已经消耗\"必须为数字,不能为负数",
-		"leftNumber":             "\"剩余\"必须为数字,不能为负数",
-		"estimateNumber":         "\"预计剩余\"必须为数字",
-		"consumedSmall":          "\"已经消耗\"必须大于之前消耗",
-		"consumedThisTime":       "请填写\"工时\"",
-		"left":                   "请填写\"剩余\"",
-		"work":                   "\"备注\"必须小于%d个字符",
-		"skipClose":              "任务：%s 不是“已完成”或“已取消”状态，确定要关闭吗？",
-		"consumed":               "任务：%s工时不能小于0，忽略该任务工时的改动",
-		"assignedTo":             "当前状态的多人任务不能指派给任务团队外的成员。",
-		"assignedToNotFoundUser": "未找到指派人",
-		"notFoundTask":           "没有找到任务信息",
-		"estStarted":             "日程规划起始时间不对",
-		"deadline":               "日程规划结束时间不对",
-		"deadlineGtEstStarted":   "起始时间不能大于结束时间",
-		"taskHasAncestors":       "当前任务包含孙任务，无法操作",
-		"dateError":              "日期格式不正确",
-		"newProject":             "找不到新的所属项目，请重新选择",
-		"closedReasonNotempty":   "关闭原因不能为空",
-		"taskleftnotempty":       fmt.Sprintf(Lang[protocol.ZH_CN]["error"]["notempty"].(string), Lang[protocol.ZH_CN]["task"]["left"].(string)),
-		"RealStartedErr":         "实际开始填写错误,必须为日期",
-		"finishedDateErr":        "完成时间填写错误,必须为日期",
-		"TaskIsexist":            "已有相同名字的任务，无法创建",
-		"errorTaskType":          "任务类型不能为空",
+		"consumedNumber":          "\"已经消耗\"必须为数字,不能为负数",
+		"leftNumber":              "\"剩余\"必须为数字,不能为负数",
+		"estimateNumber":          "\"预计剩余\"必须为数字",
+		"consumedSmall":           "\"已经消耗\"必须大于之前消耗",
+		"consumedThisTime":        "请填写\"工时\"",
+		"left":                    "请填写\"剩余\"",
+		"work":                    "\"备注\"必须小于%d个字符",
+		"skipClose":               "任务：%s 不是“已完成”或“已取消”状态，确定要关闭吗？",
+		"consumed":                "任务：%s工时不能小于0，忽略该任务工时的改动",
+		"assignedTo":              "当前状态的多人任务不能指派给任务团队外的成员。",
+		"assignedToNotFoundUser":  "未找到指派人",
+		"notFoundTask":            "没有找到任务信息",
+		"estStarted":              "日程规划起始时间不对",
+		"deadline":                "日程规划结束时间不对",
+		"deadlineGtEstStarted":    "起始时间不能大于结束时间",
+		"taskHasAncestors":        "当前任务包含孙任务，无法操作",
+		"dateError":               "日期格式不正确",
+		"newProject":              "找不到新的所属项目，请重新选择",
+		"closedReasonNotempty":    "关闭原因不能为空",
+		"taskleftnotempty":        fmt.Sprintf(Lang[protocol.ZH_CN]["error"]["notempty"].(string), Lang[protocol.ZH_CN]["task"]["left"].(string)),
+		"RealStartedErr":          "实际开始填写错误,必须为日期",
+		"finishedDateErr":         "完成时间填写错误,必须为日期",
+		"TaskIsexist":             "已有相同名字的任务，无法创建",
+		"errorTaskType":           "任务类型不能为空",
+		"taskCanSetChildToParent": "不能将当前任务的子任务设置为当前任务的父任务",
+		"taskExportNotFoundTasks": "找不到需要导出的任务，请刷新再试",
 	}
 
 	Lang[protocol.ZH_CN]["task"]["report"] = map[string]interface{}{
@@ -6405,16 +6407,927 @@ func LangZH_CNInit() {
 		"Err_ProjectProductPlanParentNotFound": "没有找到上一级产品计划信息",
 	}
 	Lang[protocol.ZH_CN]["project"]["error"] = map[string]string{
-		"NotFound":              "没有找到对应的" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "信息",
-		"beginTime":             "开始日期格式不正确",
-		"endTime":               "结束日期格式不正",
-		"beginGeEnd":            "开始时间不能大于结束时间",
-		"CreateNotFoundProduct": "找不到关联产品，请刷新重试",
-		"CreateNotFoundPlan":    "找不到关联计划，请刷新重试",
-		"ProjectNameIsExist":    "项目名称或者代号已存在相同的，请修改重试",
-		"daysErr":               "项目可用工作日输入错误，输入范围0-32767",
+		"NotFound":                 "没有找到对应的" + Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "信息",
+		"beginTime":                "开始日期格式不正确",
+		"endTime":                  "结束日期格式不正",
+		"beginGeEnd":               "开始时间不能大于结束时间",
+		"CreateNotFoundProduct":    "找不到关联产品，请刷新重试",
+		"CreateNotFoundPlan":       "找不到关联计划，请刷新重试",
+		"ProjectNameIsExist":       "项目名称或者代号已存在相同的，请修改重试",
+		"daysErr":                  "项目可用工作日输入错误，输入范围0-32767",
+		"manageMembersUserIsExist": "团队成员%s信息重复录入",
+	}
+	//Lang[protocol.ZH_CN]["common"]["moduleOrder"] = []string{"index", "my", "todo", "product", "story", "productplan", "release", "project", "task", "build", "qa", "bug", "testcase", "testtask", "testsuite", "testreport", "caselib", "doc", "report", "company", "dept", "group", "user", "admin", "extension", "custom", "editor", "convert", "action", "mail", "svn", "git", "search", "tree", "api", "file", "misc", "backup", "cron", "dev", "message"}
+	Lang[protocol.ZH_CN]["common"]["moduleOrder"] = []string{"index", "my", "todo", "product", "story", "productplan", "release", "project", "task", "build", "qa", "bug", "testcase", "testtask", "testsuite", "testreport", "doc", "report", "company", "dept", "group", "user", "admin", "custom", "action", "mail", "search", "tree", "file", "backup", "cron", "attend", "holiday", "leave", "makeup", "overtime", "lieu", "trip"}
+	Lang[protocol.ZH_CN]["resource"] = make(map[string]interface{})
+
+	Lang[protocol.ZH_CN]["resource"]["index"] = []protocol.HtmlKeyValueStr{
+		{"index", "index"},
+		{"notice", "notice"},
+	}
+	/* Index module. */
+
+	Lang[protocol.ZH_CN]["index"]["methodOrder"] = []string{"index", "notice"}
+	/* My module. */
+	Lang[protocol.ZH_CN]["resource"]["my"] = []protocol.HtmlKeyValueStr{
+		{"index", "index"},
+		{"todo", "todo"},
+		{"calendar", "calendar"},
+		{"task", "task"},
+		{"bug", "bug"},
+		{"testTask", "testTask"},
+		{"testCase", "testCase"},
+		{"story", "story"},
+		{"project", "myProject"},
+		{"profile", "profile"},
+		{"dynamic", "dynamic"},
+		{"editProfile", "editProfile"},
+		{"changePassword", "changePassword"},
+		{"unbind", "unbind"},
+		{"manageContacts", "manageContacts"},
+		{"deleteContacts", "deleteContacts"},
+		{"score", "score"},
+	}
+	Lang[protocol.ZH_CN]["my"]["methodOrder"] = []string{"index", "todo", "task", "bug", "testTask", "testCase", "story", "project", "profile", "dynamic", "editProfile", "changePassword", "unbind", "manageContacts", "deleteContacts", "score"}
+	/* Todo. */
+	Lang[protocol.ZH_CN]["resource"]["todo"] = []protocol.HtmlKeyValueStr{
+		{"create", "create"},
+		{"createcycle", "createCycle"},
+		{"batchCreate", "batchCreate"},
+		{"edit", "edit"},
+		{"batchEdit", "batchEdit"},
+		{"view", "view"},
+		{"delete", "delete"},
+		{"export", "export"},
+		{"finish", "finish"},
+		{"batchFinish", "batchFinish"},
+		{"import2Today", "import2Today"},
+		{"assignTo", "assignTo"},
+		{"activate", "activate"},
+		{"close", "close"},
+		{"batchClose", "batchClose"},
 	}
 
+	Lang[protocol.ZH_CN]["todo"]["methodOrder"] = []string{"create", "createCycle", "batchCreate", "edit", "batchEdit", "view", "delete", "export", "finish", "batchFinish", "import2Today", "assignTo", "activate", "close", "batchClose"}
+
+	/* Product. */
+	Lang[protocol.ZH_CN]["resource"]["product"] = []protocol.HtmlKeyValueStr{
+		{"index", "index"},
+		{"browse", "browse"},
+		{"create", "create"},
+		{"view", "view"},
+		{"edit", "edit"},
+		{"batchEdit", "batchEdit"},
+		{"delete", "delete"},
+		{"roadmap", "roadmap"},
+		{"doc", "doc"},
+		{"dynamic", "dynamic"},
+		{"project", "project"},
+		{"close", "close"},
+		{"updateOrder", "updateOrder"},
+		{"all", "all"},
+		{"build", "build"},
+		{"export", "export"},
+	}
+
+	Lang[protocol.ZH_CN]["product"]["methodOrder"] = []string{"index", "browse", "create", "view", "edit", "batchEdit", "delete", "roadmap", "dynamic", "project", "close", "updateOrder", "all", "build", "export"}
+	/* Branch. */
+	Lang[protocol.ZH_CN]["resource"]["branch"] = []protocol.HtmlKeyValueStr{
+		{"manage", "manage"},
+		{"sort", "sort"},
+		{"delete", "delete"},
+	}
+
+	Lang[protocol.ZH_CN]["branch"]["methodOrder"] = []string{
+		"manage", "sort", "delete"}
+
+	/* Story. */
+	Lang[protocol.ZH_CN]["resource"]["story"] = []protocol.HtmlKeyValueStr{
+		{"create", "create"},
+		{"batchCreate", "batchCreate"},
+		{"edit", "edit"},
+		{"linkStory", "linkStory"},
+		{"batchEdit", "batchEdit"},
+		{"export", "export"},
+		{"delete", "delete"},
+		{"view", "view"},
+		{"change", "lblChange"},
+		{"review", "lblReview"},
+		{"batchReview", "batchReview"},
+		{"close", "lblClose"},
+		{"batchClose", "batchClose"},
+		{"activate", "lblActivate"},
+		{"tasks", "tasks"},
+		{"bugs", "bugs"},
+		{"cases", "cases"},
+		{"zeroCase", "zeroCase"},
+		{"report", "reportChart"},
+		{"batchChangePlan", "batchChangePlan"},
+		{"batchChangeBranch", "batchChangeBranch"},
+		{"batchChangeStage", "batchChangeStage"},
+		{"batchAssignTo", "batchAssignTo"},
+		{"batchChangeModule", "batchChangeModule"},
+	}
+	Lang[protocol.ZH_CN]["story"]["methodOrder"] = []string{
+		"create", "batchCreate", "edit", "export", "delete", "view", "change", "review", "batchReview", "close", "batchClose", "batchChangePlan", "batchChangeStage", "batchAssignTo", "activate", "tasks", "bugs", "cases", "zeroCase", "report", "linkStory", "batchChangeBranch", "batchChangeModule"}
+	/* Product plan. */
+	Lang[protocol.ZH_CN]["resource"]["productplan"] = []protocol.HtmlKeyValueStr{
+		{"browse", "browse"},
+		{"create", "create"},
+		{"edit", "edit"},
+		{"delete", "delete"},
+		{"view", "view"},
+		{"linkStory", "linkStory"},
+		{"unlinkStory", "unlinkStory"},
+		{"batchUnlinkStory", "batchUnlinkStory"},
+		{"linkBug", "linkBug"},
+		{"unlinkBug", "unlinkBug"},
+		{"batchUnlinkBug", "batchUnlinkBug"},
+		{"batchEdit", "batchEdit"},
+	}
+
+	Lang[protocol.ZH_CN]["productplan"]["methodOrder"] = []string{
+		"browse", "create", "edit", "delete", "view", "linkStory", "unlinkStory", "batchUnlinkStory", "linkBug", "unlinkBug", "batchUnlinkBug", "batchEdit"}
+	/* Release. */
+	Lang[protocol.ZH_CN]["resource"]["release"] = []protocol.HtmlKeyValueStr{
+		{"browse", "browse"},
+		{"create", "create"},
+		{"edit", "edit"},
+		{"delete", "delete"},
+		{"view", "view"},
+		{"export", "export"},
+		{"linkStory", "linkStory"},
+		{"unlinkStory", "unlinkStory"},
+		{"batchUnlinkStory", "batchUnlinkStory"},
+		{"linkBug", "linkBug"},
+		{"unlinkBug", "unlinkBug"},
+		{"batchUnlinkBug", "batchUnlinkBug"},
+		{"changeStatus", "changeStatus"},
+	}
+
+	Lang[protocol.ZH_CN]["release"]["methodOrder"] = []string{
+		"browse", "create", "edit", "delete", "view", "export", "linkStory", "unlinkStory", "batchUnlinkStory", "linkBug", "unlinkBug", "batchUnlinkBug", "changeStatus"}
+	/* Project. */
+	Lang[protocol.ZH_CN]["resource"]["project"] = []protocol.HtmlKeyValueStr{
+		{"index", "index"},
+		{"view", "view"},
+		{"browse", "browse"},
+		{"create", "create"},
+		{"edit", "edit"},
+		{"batchedit", "batchEdit"},
+		{"start", "start"},
+		{"activate", "activate"},
+		{"putoff", "putoff"},
+		{"suspend", "suspend"},
+		{"close", "close"},
+		{"delete", "delete"},
+		{"task", "task"},
+		{"grouptask", "groupTask"},
+		{"importtask", "importTask"},
+		{"importplanstories", "importPlanStories"},
+		{"importBug", "importBug"},
+		{"story", "story"},
+		{"build", "build"},
+		{"testtask", "testtask"},
+		{"bug", "bug"},
+		{"burn", "burn"},
+		{"computeBurn", "computeBurn"},
+		{"fixFirst", "fixFirst"},
+		{"burnData", "burnData"},
+		{"team", "team"},
+		{"doc", "doc"},
+		{"dynamic", "dynamic"},
+		{"manageProducts", "manageProducts"},
+		//{"manageChilds","manageChilds"},
+		{"manageMembers", "manageMembers"},
+		{"unlinkMember", "unlinkMember"},
+		{"linkStory", "linkStory"},
+		{"showFile", "showFile"},
+		{"unlinkStory", "unlinkStory"},
+		{"batchUnlinkStory", "batchUnlinkStory"},
+		{"updateOrder", "updateOrder"},
+		{"kanban", "kanban"},
+		{"printKanban", "printKanban"},
+		{"tree", "tree"},
+		{"treeTask", "treeOnlyTask"},
+		{"treeStory", "treeOnlyStory"},
+		{"all", "allProjects"},
+		{"kanbanHideCols", "kanbanHideCols"},
+		{"kanbanColsColor", "kanbanColsColor"},
+		{"export", "export"},
+		{"exportfile", "exportfile"},
+		{"storyKanban", "storyKanban"},
+		{"storySort", "storySort"},
+		{"gantt", "ganttchart"},
+	}
+
+	Lang[protocol.ZH_CN]["project"]["methodOrder"] = []string{
+		"index", "view", "browse", "create", "edit", "batchedit", "start", "activate", "putoff", "suspend", "close", "delete", "task", "grouptask", "importtask", "importplanstories", "importBug", "story", "build", "testtask", "bug", "burn", "computeBurn", "fixFirst", "burnData", "team", "dynamic", "manageProducts", "manageMembers", "unlinkMember", "linkStory", "unlinkStory", "batchUnlinkStory", "updateOrder", "kanban", "printKanban", "tree", "tree", "tree", "all", "kanbanHideCols", "kanbanColsColor", "export", "exportfile", "storyKanban", "storySort"}
+	/* Task. */
+	Lang[protocol.ZH_CN]["resource"]["task"] = []protocol.HtmlKeyValueStr{
+		{"create", "create"},
+		{"edit", "edit"},
+		{"assignTo", "assign"},
+		{"start", "start"},
+		{"pause", "pause"},
+		{"restart", "restart"},
+		{"finish", "finish"},
+		{"cancel", "cancel"},
+		{"close", "close"},
+		{"batchCreate", "batchCreate"},
+		{"batchEdit", "batchEdit"},
+		{"batchClose", "batchClose"},
+		{"batchCancel", "batchCancel"},
+		{"batchAssignTo", "batchAssignTo"},
+		{"batchChangeModule", "batchChangeModule"},
+		{"activate", "activate"},
+		{"delete", "delete"},
+		{"view", "view"},
+		{"export", "export"},
+		{"exportfile", "exportfile"},
+		{"examine", "examine"},
+		{"internalaudit", "internalaudit"},
+		{"proofreading", "proofreading"},
+		{"finishall", "finishall"},
+		{"exportfinish", "exportfinish"},
+		{"placeorder", "placeOrder"},
+
+		{"batchexamine", "batchexamine"},
+		{"batchproofreading", "batchproofreading"},
+		{"batchexaminec", "batchexaminec"},
+		{"batchproofreadingc", "batchproofreadingc"},
+
+		{"confirmStoryChange", "confirmStoryChange"},
+		{"recordEstimate", "recordEstimate"},
+		{"editEstimate", "editEstimate"},
+		{"deleteEstimate", "deleteEstimate"},
+		{"report", "reportChart"},
+	}
+
+	Lang[protocol.ZH_CN]["task"]["methodOrder"] = []string{
+		"create", "batchCreate", "batchEdit", "edit", "assignTo", "batchAssignTo", "start", "pause", "restart", "finish", "cancel", "close", "batchClose", "activate", "delete", "view", "export", "exportfile", "confirmStoryChange", "recordEstimate", "editEstimate", "deleteEstimate", "report", "batchChangeModule"}
+	/* Build. */
+	Lang[protocol.ZH_CN]["resource"]["build"] = []protocol.HtmlKeyValueStr{
+		{"create", "create"},
+		{"edit", "edit"},
+		{"delete", "delete"},
+		{"view", "view"},
+		{"linkStory", "linkStory"},
+		{"unlinkStory", "unlinkStory"},
+		{"batchUnlinkStory", "batchUnlinkStory"},
+		{"linkBug", "linkBug"},
+		{"unlinkBug", "unlinkBug"},
+		{"batchUnlinkBug", "batchUnlinkBug"},
+	}
+
+	Lang[protocol.ZH_CN]["build"]["methodOrder"] = []string{
+		"create", "edit", "delete", "view", "linkStory", "unlinkStory", "batchUnlinkStory", "linkBug", "unlinkBug", "batchUnlinkBug"}
+	/* QA. */
+	Lang[protocol.ZH_CN]["resource"]["qa"] = []protocol.HtmlKeyValueStr{
+		{"index", "index"},
+	}
+
+	Lang[protocol.ZH_CN]["qa"]["methodOrder"] = []string{
+		"index"}
+	/* Bug. */
+	Lang[protocol.ZH_CN]["resource"]["bug"] = []protocol.HtmlKeyValueStr{
+		{"index", "index"},
+		{"browse", "browse"},
+		{"create", "create"},
+		{"batchCreate", "batchCreate"},
+		{"confirmBug", "confirmBug"},
+		{"batchConfirm", "batchConfirm"},
+		{"view", "view"},
+		{"edit", "edit"},
+		{"linkBugs", "linkBugs"},
+		{"batchEdit", "batchEdit"},
+		{"batchClose", "batchClose"},
+		{"assignTo", "assignTo"},
+		{"batchAssignTo", "batchAssignTo"},
+		{"resolve", "resolve"},
+		{"batchResolve", "batchResolve"},
+		{"activate", "activate"},
+		{"batchActivate", "batchActivate"},
+		{"close", "close"},
+		{"report", "reportChart"},
+		{"export", "export"},
+		{"confirmStoryChange", "confirmStoryChange"},
+		{"delete", "delete"},
+		{"saveTemplate", "saveTemplate"},
+		{"deleteTemplate", "deleteTemplate"},
+		{"setPublic", "setPublic"},
+		{"batchChangeModule", "batchChangeModule"},
+		{"batchChangeBranch", "batchChangeBranch"},
+	}
+
+	Lang[protocol.ZH_CN]["bug"]["methodOrder"] = []string{
+		"index", "browse", "create", "batchCreate", "batchEdit", "confirmBug", "batchConfirm", "view", "edit", "assignTo", "batchAssignTo", "resolve", "batchResolve", "batchClose", "batchActivate", "activate", "close", "report", "export", "confirmStoryChange", "delete", "saveTemplate", "deleteTemplate", "setPublic", "linkBugs", "batchChangeModule", "batchChangeBranch"}
+	/* Test case. */
+	Lang[protocol.ZH_CN]["resource"]["testcase"] = []protocol.HtmlKeyValueStr{
+		{"index", "index"},
+		{"browse", "browse"},
+		{"groupCase", "groupCase"},
+		{"create", "create"},
+		{"batchCreate", "batchCreate"},
+		{"createBug", "createBug"},
+		{"view", "view"},
+		{"edit", "edit"},
+		{"linkCases", "linkCases"},
+		{"batchEdit", "batchEdit"},
+		{"delete", "delete"},
+		{"batchDelete", "batchDelete"},
+		{"export", "export"},
+		{"exportTemplet", "exportTemplet"},
+		{"import", "import"},
+		{"showImport", "showImport"},
+		{"confirmChange", "confirmChange"},
+		{"confirmStoryChange", "confirmStoryChange"},
+		{"batchChangeModule", "batchChangeModule"},
+		{"batchChangeBranch", "batchChangeBranch"},
+		{"bugs", "bugs"},
+		{"review", "review"},
+		{"batchReview", "batchReview"},
+		{"importFromLib", "importFromLib"},
+		{"batchCaseTypeChange", "batchCaseTypeChange"},
+		{"batchConfirmStoryChange", "batchConfirmStoryChange"},
+	}
+
+	Lang[protocol.ZH_CN]["testcase"]["methodOrder"] = []string{
+		"index", "browse", "groupCase", "create", "batchCreate", "createBug", "view", "edit", "delete", "export", "confirmChange", "confirmStoryChange", "batchEdit", "batchDelete", "batchChangeModule", "batchChangeBranch", "linkCases", "bugs", "review", "batchReview", "batchConfirmStoryChange", "importFromLib", "batchCaseTypeChange"}
+	/* Test task. */
+	Lang[protocol.ZH_CN]["resource"]["testtask"] = []protocol.HtmlKeyValueStr{
+		{"index", "index"},
+		{"create", "create"},
+		{"browse", "browse"},
+		{"view", "view"},
+		{"cases", "lblCases"},
+		{"groupCase", "groupCase"},
+		{"edit", "edit"},
+		{"start", "start"},
+		{"close", "close"},
+		{"delete", "delete"},
+		{"batchAssign", "batchAssign"},
+		{"linkcase", "linkCase"},
+		{"unlinkcase", "lblUnlinkCase"},
+		{"batchUnlinkCases", "batchUnlinkCases"},
+		{"runcase", "lblRunCase"},
+		{"results", "lblResults"},
+		{"results", "lblResults"},
+		{"batchRun", "batchRun"},
+		{"activate", "activate"},
+		{"block", "block"},
+		{"report", "reportChart"},
+	}
+
+	Lang[protocol.ZH_CN]["testtask"]["methodOrder"] = []string{
+		"index", "create", "browse", "view", "cases", "groupCase", "edit", "start", "activate", "block", "close", "delete", "batchAssign", "linkcase", "unlinkcase", "runcase", "results", "batchUnlinkCases", "report"}
+
+	Lang[protocol.ZH_CN]["resource"]["testreport"] = []protocol.HtmlKeyValueStr{
+		{"browse", "browse"},
+		{"create", "create"},
+		{"view", "view"},
+		{"delete", "delete"},
+		{"edit", "edit"},
+	}
+
+	Lang[protocol.ZH_CN]["testreport"]["methodOrder"] = []string{
+		"browse", "create", "view", "delete", "edit"}
+	Lang[protocol.ZH_CN]["resource"]["testsuite"] = []protocol.HtmlKeyValueStr{
+		{"index", "index"},
+		{"browse", "browse"},
+		{"create", "create"},
+		{"view", "view"},
+		{"edit", "edit"},
+		{"delete", "delete"},
+		{"linkCase", "linkCase"},
+		{"unlinkCase", "unlinkCase"},
+		{"batchUnlinkCases", "batchUnlinkCases"},
+	}
+
+	Lang[protocol.ZH_CN]["testsuite"]["methodOrder"] = []string{
+		"index", "browse", "create", "view", "edit", "delete", "linkCase", "unlinkCase", "batchUnlinkCases"}
+	Lang[protocol.ZH_CN]["resource"]["caselib"] = []protocol.HtmlKeyValueStr{
+		{"library", "library"},
+		{"createLib", "createLib"},
+		{"edit", "editLib"},
+		{"createCase", "createCase"},
+		{"libView", "libView"},
+		{"batchCreateCase", "batchCreateCase"},
+		{"exportTemplet", "exportTemplet"},
+		{"import", "import"},
+		{"showImport", "showImport"},
+	}
+
+	Lang[protocol.ZH_CN]["caselib"]["methodOrder"] = []string{
+		"library", "createLib", "edit", "createCase", "batchCreateCase", "libView", "exportTemplet", "import", "showImport"}
+	/* Doc. */
+	Lang[protocol.ZH_CN]["resource"]["doc"] = []protocol.HtmlKeyValueStr{
+		{"index", "index"},
+		{"browse", "browse"},
+		{"createLib", "createLib"},
+		{"editLib", "editLib"},
+		{"deleteLib", "deleteLib"},
+		{"create", "create"},
+		{"view", "view"},
+		{"edit", "edit"},
+		{"delete", "delete"},
+		{"allLibs", "allLibs"},
+		{"objectLibs", "objectLibs"},
+		{"showFiles", "showFiles"},
+		{"sort", "sort"},
+		{"collect", "collect"},
+		//{"diff","diff"},
+	}
+
+	Lang[protocol.ZH_CN]["caselib"]["methodOrder"] = []string{
+		"index", "browse", "createLib", "editLib", "deleteLib", "create", "view", "edit", "delete", "allLibs", "showFiles", "objectLibs", "sort", "collect"}
+	//$lang->doc->methodOrder[55] = "diff";
+
+	/* mail. */
+	Lang[protocol.ZH_CN]["resource"]["mail"] = []protocol.HtmlKeyValueStr{
+		{"index", "index"},
+		{"detect", "detect"},
+		{"edit", "edit"},
+		{"save", "save"},
+		{"test", "test"},
+		{"reset", "reset"},
+		{"browse", "browse"},
+		{"delete", "delete"},
+		{"resend", "resend"},
+		{"batchDelete", "batchDelete"},
+		{"sendCloud", "sendCloud"},
+		{"sendcloudUser", "sendcloudUser"},
+	}
+
+	Lang[protocol.ZH_CN]["mail"]["methodOrder"] = []string{
+		"index", "detect", "edit", "save", "test", "reset", "browse", "delete", "batchDelete", "resend", "sendCloud", "sendcloudUser"}
+	/* custom. */
+	Lang[protocol.ZH_CN]["resource"]["custom"] = []protocol.HtmlKeyValueStr{
+		{"index", "index"},
+		{"set", "set"},
+		{"restore", "restore"},
+		{"flow", "flow"},
+		{"working", "working"},
+		{"setPublic", "setPublic"},
+	}
+
+	Lang[protocol.ZH_CN]["custom"]["methodOrder"] = []string{
+		"index", "set", "restore", "flow", "working", "setPublic"}
+	Lang[protocol.ZH_CN]["resource"]["datatable"] = []protocol.HtmlKeyValueStr{
+		{"setGlobal", "setGlobal"},
+	}
+
+	Lang[protocol.ZH_CN]["datatable"]["methodOrder"] = []string{
+		"setGlobal"}
+	/* Subversion. */
+	Lang[protocol.ZH_CN]["resource"]["svn"] = []protocol.HtmlKeyValueStr{
+		{"diff", "diff"},
+		{"cat", "cat"},
+		{"apiSync", "apiSync"},
+	}
+
+	Lang[protocol.ZH_CN]["svn"]["methodOrder"] = []string{
+		"diff", "cat", "apiSync"}
+	/* Git. */
+	Lang[protocol.ZH_CN]["resource"]["git"] = []protocol.HtmlKeyValueStr{
+		{"diff", "diff"},
+		{"cat", "cat"},
+		{"apiSync", "apiSync"},
+	}
+
+	Lang[protocol.ZH_CN]["git"]["methodOrder"] = []string{
+		"diff", "cat", "apiSync"}
+	/* Company. */
+	Lang[protocol.ZH_CN]["resource"]["company"] = []protocol.HtmlKeyValueStr{
+		{"index", "index"},
+		{"browse", "browse"},
+		{"edit", "edit"},
+		{"view", "view"},
+		{"dynamic", "dynamic"},
+	}
+
+	Lang[protocol.ZH_CN]["company"]["methodOrder"] = []string{
+		"index", "browse", "edit", "dynamic"}
+	/* Department. */
+	Lang[protocol.ZH_CN]["resource"]["dept"] = []protocol.HtmlKeyValueStr{
+		{"browse", "browse"},
+		{"updateOrder", "updateOrder"},
+		{"manageChild", "manageChild"},
+		{"edit", "edit"},
+		{"delete", "delete"},
+	}
+
+	Lang[protocol.ZH_CN]["dept"]["methodOrder"] = []string{
+		"browse", "updateOrder", "manageChild", "edit", "delete"}
+	/* Group. */
+	Lang[protocol.ZH_CN]["resource"]["group"] = []protocol.HtmlKeyValueStr{
+		{"browse", "browse"},
+		{"create", "create"},
+		{"edit", "edit"},
+		{"copy", "copy"},
+		{"delete", "delete"},
+		{"manageView", "manageView"},
+		{"managePriv", "managePriv"},
+		{"manageMember", "manageMember"},
+	}
+
+	Lang[protocol.ZH_CN]["group"]["methodOrder"] = []string{
+		"browse", "create", "edit", "copy", "delete", "managePriv", "manageMember"}
+	/* User. */
+	Lang[protocol.ZH_CN]["resource"]["user"] = []protocol.HtmlKeyValueStr{
+		{"create", "create"},
+		{"batchCreate", "batchCreate"},
+		{"view", "view"},
+		{"edit", "edit"},
+		{"unlock", "unlock"},
+		{"delete", "delete"},
+		{"todo", "todo"},
+		{"story", "story"},
+		{"task", "task"},
+		{"bug", "bug"},
+		{"testTask", "testTask"},
+		{"testCase", "testCase"},
+		{"project", "project"},
+		{"dynamic", "dynamic"},
+		{"profile", "profile"},
+		{"batchEdit", "batchEdit"},
+		{"unbind", "unbind"},
+	}
+
+	Lang[protocol.ZH_CN]["user"]["methodOrder"] = []string{
+		"create", "batchCreate", "view", "edit", "unlock", "delete", "todo", "task", "bug", "project", "dynamic", "profile", "batchEdit", "unbind"}
+	/* Tree. */
+	Lang[protocol.ZH_CN]["resource"]["tree"] = []protocol.HtmlKeyValueStr{
+		{"browse", "browse"},
+		{"browseTask", "browseTask"},
+		{"updateOrder", "updateOrder"},
+		{"manageChild", "manageChild"},
+		{"edit", "edit"},
+		{"fix", "fix"},
+		{"delete", "delete"},
+	}
+
+	Lang[protocol.ZH_CN]["tree"]["methodOrder"] = []string{
+		"browse", "browseTask", "updateOrder", "manageChild", "edit", "delete"}
+	/* Report. */
+	Lang[protocol.ZH_CN]["resource"]["report"] = []protocol.HtmlKeyValueStr{
+		{"index", "index"},
+		{"projectDeviation", "projectDeviation"},
+		{"productSummary", "productSummary"},
+		{"bugCreate", "bugCreate"},
+		{"bugAssign", "bugAssign"},
+		{"workload", "workload"},
+	}
+
+	Lang[protocol.ZH_CN]["report"]["methodOrder"] = []string{
+		"index", "projectDeviation", "productSummary", "bugCreate", "workload"}
+	/* Search. */
+	Lang[protocol.ZH_CN]["resource"]["search"] = []protocol.HtmlKeyValueStr{
+		{"buildForm", "buildForm"},
+		{"buildQuery", "buildQuery"},
+		{"saveQuery", "saveQuery"},
+		{"deleteQuery", "deleteQuery"},
+		{"select", "select"},
+	}
+
+	Lang[protocol.ZH_CN]["search"]["methodOrder"] = []string{
+		"buildForm", "buildQuery", "saveQuery", "deleteQuery", "select"}
+	/* Admin. */
+	Lang[protocol.ZH_CN]["resource"]["admin"] = []protocol.HtmlKeyValueStr{
+		{"index", "index"},
+		{"checkDB", "checkDB"},
+		{"safe", "safeIndex"},
+		{"checkWeak", "checkWeak"},
+		{"sso", "sso"},
+	}
+
+	Lang[protocol.ZH_CN]["admin"]["methodOrder"] = []string{
+		"index", "checkDB", "safeIndex", "checkWeak", "sso"}
+	/* Extension. */
+	Lang[protocol.ZH_CN]["resource"]["extension"] = []protocol.HtmlKeyValueStr{
+		{"browse", "browse"},
+		{"obtain", "obtain"},
+		{"structure", "structure"},
+		{"install", "install"},
+		{"uninstall", "uninstall"},
+		{"activate", "activate"},
+		{"deactivate", "deactivate"},
+		{"upload", "upload"},
+		{"erase", "erase"},
+		{"upgrade", "upgrade"},
+	}
+	Lang[protocol.ZH_CN]["extension"] = map[string]interface{}{
+		"methodOrder": []string{"browse", "obtain", "structure", "install", "uninstall", "activate", "deactivate", "upload", "erase", "upgrade"},
+	}
+
+	/* Editor. */
+	Lang[protocol.ZH_CN]["resource"]["editor"] = []protocol.HtmlKeyValueStr{
+		{"index", "index"},
+		{"extend", "extend"},
+		{"edit", "edit"},
+		{"newPage", "newPage"},
+		{"save", "save"},
+		{"delete", "delete"},
+	}
+
+	Lang[protocol.ZH_CN]["extension"]["methodOrder"] = []string{
+		"index", "extend", "edit", "newPage", "save", "delete"}
+	/* Convert. */
+	Lang[protocol.ZH_CN]["resource"]["convert"] = []protocol.HtmlKeyValueStr{
+		{"index", "index"},
+		{"selectSource", "selectSource"},
+		{"setConfig", "setConfig"},
+		{"setBugfree", "setBugfree"},
+		{"setRedmine", "setRedmine"},
+		{"checkConfig", "checkConfig"},
+		{"checkBugFree", "checkBugFree"},
+		{"checkRedmine", "checkRedmine"},
+		{"execute", "execute"},
+		{"convertBugFree", "convertBugFree"},
+		{"convertRedmine", "convertRedmine"},
+	}
+
+	Lang[protocol.ZH_CN]["convert"]["methodOrder"] = []string{
+		"index", "selectSource", "setConfig", "setBugfree", "setRedmine", "checkConfig", "checkBugFree", "checkRedmine", "execute", "convertBugFree", "convertRedmine"}
+	/* Others. */
+	Lang[protocol.ZH_CN]["resource"]["api"] = []protocol.HtmlKeyValueStr{
+		{"getModel", "getModel"},
+		{"debug", "debug"},
+		{"sql", "sql"},
+	}
+
+	Lang[protocol.ZH_CN]["api"]["methodOrder"] = []string{
+		"getModel", "debug", "sql"}
+	Lang[protocol.ZH_CN]["resource"]["file"] = []protocol.HtmlKeyValueStr{
+		{"download", "download"},
+		{"edit", "edit"},
+		{"delete", "delete"},
+		{"uploadImages", "uploadImages"},
+		{"setPublic", "setPublic"},
+	}
+
+	Lang[protocol.ZH_CN]["file"]["methodOrder"] = []string{
+		"download", "edit", "delete", "uploadImages", "setPublic"}
+	/*Lang[protocol.ZH_CN]["resource"]["misc"] = []protocol.HtmlKeyValueStr{
+		{"ping", "ping"},
+	}
+	Lang[protocol.ZH_CN]["misc"] = make(map[string]interface{})
+	Lang[protocol.ZH_CN]["misc"]["methodOrder"] = []string{
+		"ping"}*/
+	Lang[protocol.ZH_CN]["resource"]["message"] = []protocol.HtmlKeyValueStr{
+		{"index", "index"},
+		{"setting", "setting"},
+	}
+	Lang[protocol.ZH_CN]["message"]["methodOrder"] = []string{
+		"index", "setting"}
+	Lang[protocol.ZH_CN]["resource"]["action"] = []protocol.HtmlKeyValueStr{
+		{"trash", "trash"},
+		{"undelete", "undelete"},
+		{"hideOne", "hideOne"},
+		{"hideAll", "hideAll"},
+		{"comment", "comment"},
+		{"editComment", "editComment"},
+	}
+
+	Lang[protocol.ZH_CN]["action"]["methodOrder"] = []string{
+		"trash", "undelete", "hideOne", "hideAll", "comment", "editComment"}
+	Lang[protocol.ZH_CN]["resource"]["backup"] = []protocol.HtmlKeyValueStr{
+		{"index", "index"},
+		{"backup", "backup"},
+		{"restore", "restore"},
+		{"change", "change"},
+		{"delete", "delete"},
+		{"setting", "setting"},
+	}
+
+	Lang[protocol.ZH_CN]["backup"]["methodOrder"] = []string{
+		"index", "backup", "restore", "delete", "setting", "rmPHPHeader"}
+	Lang[protocol.ZH_CN]["resource"]["cron"] = []protocol.HtmlKeyValueStr{
+		{"index", "index"},
+		{"turnon", "turnon"},
+		{"create", "create"},
+		{"edit", "edit"},
+		{"toggle", "toggle"},
+		{"delete", "delete"},
+		{"openProcess", "openProcess"},
+	}
+
+	Lang[protocol.ZH_CN]["cron"]["methodOrder"] = []string{
+		"index", "turnon", "create", "edit", "toggle", "delete", "openProcess"}
+	Lang[protocol.ZH_CN]["resource"]["dev"] = []protocol.HtmlKeyValueStr{
+		{"api", "api"},
+		{"db", "db"},
+	}
+	Lang[protocol.ZH_CN]["dev"]["methodOrder"] = []string{
+		"api", "db"}
+	/* Every version of new privilege. */
+
+	Lang[protocol.ZH_CN]["resource"]["attend"] = []protocol.HtmlKeyValueStr{
+		{"department", "department"},
+		{"company", "company"},
+		{"browseReview", "browseReview"},
+		{"review", "review"},
+		{"export", "exportAction"},
+		{"stat", "reportAction"},
+		{"saveStat", "saveStatAction"},
+		{"exportJachun", "exportStat"},
+		{"detail", "detailAction"},
+		{"exportDetail", "exportDetail"},
+		{"settings", "settings"},
+		{"personalSettings", "personalSettings"},
+		{"setManager", "setManager"},
+
+		{"personal", "personal"},
+		{"edit", "editAction"},
+		{"clockinout", "clockinout"},
+	}
+
+	Lang[protocol.ZH_CN]["attend"]["methodOrder"] = []string{
+		"department", "company", "browseReview", "review", "export", "stat", "saveStat", "exportStat", "detail", "exportDetail", "settings", "personalSettings", "setManager",
+		"personal", "edit"}
+	/* Holiday */
+	Lang[protocol.ZH_CN]["resource"]["holiday"] = []protocol.HtmlKeyValueStr{
+		{"SetOT", "createAction"},
+		{"SetRE", "editAction"},
+		{"SetNONE", "deleteAction"},
+
+		{"browse", "browse"},
+	}
+
+	Lang[protocol.ZH_CN]["holiday"]["methodOrder"] = []string{
+		"browse", "create", "edit", "delete"}
+	/* Leave */
+	Lang[protocol.ZH_CN]["resource"]["leave"] = []protocol.HtmlKeyValueStr{
+		{"browseReview", "browseReview"},
+		{"company", "companyAction"},
+		{"review", "reviewAction"},
+		{"export", "exportAction"},
+		{"setReviewer", "setReviewerAction"},
+
+		{"personal", "personal"},
+		{"create", "createAction"},
+		{"edit", "editAction"},
+		{"delete", "deleteAction"},
+		{"view", "viewAction"},
+		{"switchstatus", "switchstatus"},
+		{"back", "backAction"},
+		{"personalannual", "personalannual"},
+		{"personalieu", "personalieu"},
+		{"lieulist", "lieulist"},
+		{"getDays", "getDays"},
+	}
+	Lang[protocol.ZH_CN]["leave"]["methodOrder"] = []string{
+		"browseReview", "company", "review", "export", "setReviewer",
+		"personal", "create", "getDays", "edit", "delete", "view", "switchstatus", "back"}
+	/* Makeup */
+	Lang[protocol.ZH_CN]["resource"]["makeup"] = []protocol.HtmlKeyValueStr{
+		{"browseReview", "browseReview"},
+		{"company", "companyAction"},
+		{"review", "reviewAction"},
+		{"export", "exportAction"},
+		{"setReviewer", "setReviewerAction"},
+
+		{"personal", "personal"},
+		{"create", "createAction"},
+		{"edit", "editAction"},
+		{"view", "viewAction"},
+		{"delete", "deleteAction"},
+		{"switchstatus", "switchstatus"},
+	}
+
+	Lang[protocol.ZH_CN]["makeup"]["methodOrder"] = []string{
+		"browseReview", "company", "review", "export", "setReviewer",
+		"personal", "create", "edit", "view", "delete", "switchstatus"}
+	/* Overtime */
+	Lang[protocol.ZH_CN]["resource"]["overtime"] = []protocol.HtmlKeyValueStr{
+		{"browseReview", "browseReview"},
+		{"company", "companyAction"},
+		{"review", "reviewAction"},
+		{"export", "exportAction"},
+		{"setReviewer", "setReviewerAction"},
+
+		{"personal", "personal"},
+		{"create", "createAction"},
+		{"edit", "editAction"},
+		{"view", "viewAction"},
+		{"delete", "deleteAction"},
+		{"switchstatus", "switchstatus"},
+	}
+
+	Lang[protocol.ZH_CN]["overtime"]["methodOrder"] = []string{
+		"browseReview", "company", "review", "export", "setReviewer",
+		"personal", "create", "edit", "view", "delete", "switchstatus"}
+	/* Lieu */
+	Lang[protocol.ZH_CN]["resource"]["lieu"] = []protocol.HtmlKeyValueStr{
+		{"company", "companyAction"},
+		{"browseReview", "browseReviewAction"},
+		{"review", "reviewAction"},
+		{"setReviewer", "setReviewerAction"},
+
+		{"personal", "personal"},
+		{"create", "createAction"},
+		{"edit", "editAction"},
+		{"delete", "deleteAction"},
+		{"view", "viewAction"},
+		{"switchstatus", "switchstatus"},
+	}
+
+	Lang[protocol.ZH_CN]["lieu"]["methodOrder"] = []string{
+		"company", "browseReview", "review", "setReviewer",
+		"personal", "create", "edit", "delete", "view", "switchstatus"}
+	/* trip */
+	Lang[protocol.ZH_CN]["resource"]["trip"] = []protocol.HtmlKeyValueStr{
+		{"browseReview", "browseReview"},
+		{"company", "company"},
+		{"setReviewer", "setReviewerAction"},
+		{"personal", "personal"},
+		{"create", "createAction"},
+		{"edit", "editAction"},
+		{"delete", "deleteAction"},
+		{"view", "viewAction"},
+	}
+
+	Lang[protocol.ZH_CN]["trip"]["methodOrder"] = []string{
+		"browseReview", "company", "setReviewer",
+		"personal", "create", "edit", "delete", "view"}
+	Lang[protocol.ZH_CN]["makeup"] = make(map[string]interface{})
+
+	Lang[protocol.ZH_CN]["makeup"]["common"] = "补班"
+	Lang[protocol.ZH_CN]["makeup"]["browse"] = "补班列表"
+	Lang[protocol.ZH_CN]["makeup"]["create"] = "申请补班"
+	Lang[protocol.ZH_CN]["makeup"]["edit"] = "编辑"
+	Lang[protocol.ZH_CN]["makeup"]["view"] = "详情"
+	Lang[protocol.ZH_CN]["makeup"]["delete"] = "删除"
+	Lang[protocol.ZH_CN]["makeup"]["review"] = "审核"
+	Lang[protocol.ZH_CN]["makeup"]["cancel"] = "撤销"
+	Lang[protocol.ZH_CN]["makeup"]["commit"] = "提交"
+	Lang[protocol.ZH_CN]["makeup"]["export"] = "导出补班记录"
+
+	Lang[protocol.ZH_CN]["makeup"]["personal"] = "我的补班"
+	Lang[protocol.ZH_CN]["makeup"]["browseReview"] = "审核列表"
+	Lang[protocol.ZH_CN]["makeup"]["company"] = "所有补班"
+	Lang[protocol.ZH_CN]["makeup"]["setReviewer"] = "补班设置"
+	Lang[protocol.ZH_CN]["makeup"]["batchReview"] = "批量审核"
+	Lang[protocol.ZH_CN]["makeup"]["batchPass"] = "批量通过"
+
+	Lang[protocol.ZH_CN]["makeup"]["id"] = "编号"
+	Lang[protocol.ZH_CN]["makeup"]["year"] = "年"
+	Lang[protocol.ZH_CN]["makeup"]["begin"] = "开始"
+	Lang[protocol.ZH_CN]["makeup"]["end"] = "结束"
+	Lang[protocol.ZH_CN]["makeup"]["start"] = "开始时间"
+	Lang[protocol.ZH_CN]["makeup"]["finish"] = "结束时间"
+	Lang[protocol.ZH_CN]["makeup"]["hours"] = "总时长"
+	Lang[protocol.ZH_CN]["makeup"]["leave"] = "请假记录"
+	Lang[protocol.ZH_CN]["makeup"]["type"] = "类型"
+	Lang[protocol.ZH_CN]["makeup"]["desc"] = "事由"
+	Lang[protocol.ZH_CN]["makeup"]["status"] = "状态"
+	Lang[protocol.ZH_CN]["makeup"]["createdBy"] = "申请者"
+	Lang[protocol.ZH_CN]["makeup"]["createdDate"] = "申请时间"
+	Lang[protocol.ZH_CN]["makeup"]["reviewedBy"] = "审核者"
+	Lang[protocol.ZH_CN]["makeup"]["reviewedDate"] = "审核时间"
+	Lang[protocol.ZH_CN]["makeup"]["date"] = "日期"
+	Lang[protocol.ZH_CN]["makeup"]["time"] = "时间"
+	Lang[protocol.ZH_CN]["makeup"]["rejectReason"] = "拒绝原因"
+
+	Lang[protocol.ZH_CN]["makeup"]["typeList"] = []protocol.HtmlKeyValueStr{
+		{"compensate", "补班"},
+	}
+	Lang[protocol.ZH_CN]["makeup"]["statusList"] = []protocol.HtmlKeyValueStr{
+		{"draft", "草稿"},
+		{"wait", "等待审核"},
+		{"doing", "审核中"},
+		{"pass", "通过"},
+		{"reject", "拒绝"},
+	}
+
+	Lang[protocol.ZH_CN]["makeup"]["notExist"] = "记录不存在"
+	Lang[protocol.ZH_CN]["makeup"]["denied"] = "信息访问受限"
+	Lang[protocol.ZH_CN]["makeup"]["unique"] = "%s 已经存在补班记录"
+	Lang[protocol.ZH_CN]["makeup"]["sameMonth"] = "不支持跨月份补班"
+	Lang[protocol.ZH_CN]["makeup"]["wrongEnd"] = "结束时间应该大于开始时间"
+	Lang[protocol.ZH_CN]["makeup"]["nodata"] = "没有选择数据"
+	Lang[protocol.ZH_CN]["makeup"]["reviewSuccess"] = "审核成功"
+	Lang[protocol.ZH_CN]["makeup"]["confirmReview"] = map[string]string{
+		"pass":   "您确定要执行通过操作吗？",
+		"reject": "您确定要执行拒绝操作吗？",
+	}
+
+	Lang[protocol.ZH_CN]["makeup"]["hoursTip"] = "小时"
+	Lang[protocol.ZH_CN]["makeup"]["reviewStatusList"] = []protocol.HtmlKeyValueStr{
+
+		{"pass", "通过"},
+		{"reject", "拒绝"},
+	}
+
+	Lang[protocol.ZH_CN]["makeup"]["switchstatus"] = "提交或撤销"
+	Lang[protocol.ZH_CN]["makeup"]["companyAction"] = "所有补班"
+	Lang[protocol.ZH_CN]["makeup"]["reviewAction"] = "审核补班"
+	Lang[protocol.ZH_CN]["makeup"]["exportAction"] = "导出补班"
+	Lang[protocol.ZH_CN]["makeup"]["createAction"] = "申请补班"
+	Lang[protocol.ZH_CN]["makeup"]["editAction"] = "编辑补班"
+	Lang[protocol.ZH_CN]["makeup"]["deleteAction"] = "删除补班"
+	Lang[protocol.ZH_CN]["makeup"]["viewAction"] = "补班详情"
+	Lang[protocol.ZH_CN]["makeup"]["setReviewerAction"] = "补班设置"
 	//lang套lang的放在最后
 	LangZH_CN_ADD()
 }

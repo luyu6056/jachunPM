@@ -7,9 +7,6 @@
   </div>
   <div class='btn-toolbar pull-right'>
     {{common_printIcon . "group" "create" ""  "" "button" "" "" "btn btn-primary iframe" "true" "data-width='550'"}}
-    {{if common_hasPriv . "group" "managePriv"}}
-    {{html_a (helper_createLink "group" "managePriv"  "type=byModule" ""  true) .Lang.group.managePrivByModule "" "class='btn btn-primary iframe'"}}
-    {{end}}
   </div>
 </div>
 <div id='mainContent' class='main-table'>
@@ -34,7 +31,7 @@
         <td title='{{$users}}'>{{$users}}</td>
         <td class='c-actions'>
           {{common_printIcon $ "group" "manageView"   (strAdd "groupID=" $group.Id)  $group "list" "eye"}}
-          {{common_printIcon $ "group" "managepriv"   (strAdd "type=byGroup&param=" $group.Id)  $group "list" "lock"}}
+          {{common_printIcon $ "group" "managePriv"   (strAdd "type=byGroup&param=" $group.Id)  $group "list" "lock"}}
           {{common_printIcon $ "group" "manageMember" (strAdd "groupID=" $group.Id)  $group "list" "persons" "" "iframe" "yes" "data-width='750'"}}
           {{common_printIcon $ "group" "edit"         (strAdd "groupID=" $group.Id)  $group "list" "" "" "iframe" "yes" "data-width='550'"}}
           {{common_printIcon $ "group" "copy"         (strAdd "groupID=" $group.Id)  $group "list" "" "" "iframe" "yes" "data-width='550'"}}

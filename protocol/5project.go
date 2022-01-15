@@ -130,6 +130,9 @@ const (
 	CMD_MSG_PROJECT_task_placeOrder = -2126260731
 	CMD_MSG_PROJECT_getAllprojectProductID = 1136105989
 	CMD_MSG_PROJECT_getAllprojectProductID_result = 2111975429
+	CMD_MSG_PROJECT_doRawSelect = 453809925
+	CMD_MSG_PROJECT_doRawSelect_result = -1258594299
+	CMD_MSG_PROJECT_updateCache = 756258309
 )
 
 type MSG_PROJECT_tree_getLinePairs struct {
@@ -7373,6 +7376,146 @@ func (data *MSG_PROJECT_getAllprojectProductID_result) read(buf *libraries.MsgBu
 	}
 	for i := 0; i < ProductID_len; i++ {
 		data.ProductID[i] = READ_int32(buf)
+	}
+
+}
+
+type MSG_PROJECT_doRawSelect struct {
+	Sql string
+}
+
+var pool_MSG_PROJECT_doRawSelect = sync.Pool{New: func() interface{} { return &MSG_PROJECT_doRawSelect{} }}
+
+func GET_MSG_PROJECT_doRawSelect() *MSG_PROJECT_doRawSelect {
+	return pool_MSG_PROJECT_doRawSelect.Get().(*MSG_PROJECT_doRawSelect)
+}
+
+func (data *MSG_PROJECT_doRawSelect) cmd() int32 {
+	return CMD_MSG_PROJECT_doRawSelect
+}
+
+func (data *MSG_PROJECT_doRawSelect) Put() {
+	data.Sql = ``
+	pool_MSG_PROJECT_doRawSelect.Put(data)
+}
+func (data *MSG_PROJECT_doRawSelect) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_PROJECT_doRawSelect,buf)
+	WRITE_MSG_PROJECT_doRawSelect(data, buf)
+}
+
+func WRITE_MSG_PROJECT_doRawSelect(data *MSG_PROJECT_doRawSelect, buf *libraries.MsgBuffer) {
+	WRITE_string(data.Sql, buf)
+}
+
+func READ_MSG_PROJECT_doRawSelect(buf *libraries.MsgBuffer) *MSG_PROJECT_doRawSelect {
+	data := pool_MSG_PROJECT_doRawSelect.Get().(*MSG_PROJECT_doRawSelect)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_PROJECT_doRawSelect) read(buf *libraries.MsgBuffer) {
+	data.Sql = READ_string(buf)
+
+}
+
+type MSG_PROJECT_doRawSelect_result struct {
+	List []map[string]string
+}
+
+var pool_MSG_PROJECT_doRawSelect_result = sync.Pool{New: func() interface{} { return &MSG_PROJECT_doRawSelect_result{} }}
+
+func GET_MSG_PROJECT_doRawSelect_result() *MSG_PROJECT_doRawSelect_result {
+	return pool_MSG_PROJECT_doRawSelect_result.Get().(*MSG_PROJECT_doRawSelect_result)
+}
+
+func (data *MSG_PROJECT_doRawSelect_result) cmd() int32 {
+	return CMD_MSG_PROJECT_doRawSelect_result
+}
+
+func (data *MSG_PROJECT_doRawSelect_result) Put() {
+	data.List = data.List[:0]
+	pool_MSG_PROJECT_doRawSelect_result.Put(data)
+}
+func (data *MSG_PROJECT_doRawSelect_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_PROJECT_doRawSelect_result,buf)
+	WRITE_MSG_PROJECT_doRawSelect_result(data, buf)
+}
+
+func WRITE_MSG_PROJECT_doRawSelect_result(data *MSG_PROJECT_doRawSelect_result, buf *libraries.MsgBuffer) {
+	WRITE_int(len(data.List), buf)
+	for _, v := range data.List{
+		WRITE_any(v, buf)
+	}
+}
+
+func READ_MSG_PROJECT_doRawSelect_result(buf *libraries.MsgBuffer) *MSG_PROJECT_doRawSelect_result {
+	data := pool_MSG_PROJECT_doRawSelect_result.Get().(*MSG_PROJECT_doRawSelect_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_PROJECT_doRawSelect_result) read(buf *libraries.MsgBuffer) {
+	List_len := READ_int(buf)
+	if List_len>cap(data.List){
+		data.List= make([]map[string]string, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
+	for i := 0; i < List_len; i++ {
+		READ_any(&data.List[i], buf)
+	}
+
+}
+
+type MSG_PROJECT_updateCache struct {
+	Type string
+	Ids []int32
+}
+
+var pool_MSG_PROJECT_updateCache = sync.Pool{New: func() interface{} { return &MSG_PROJECT_updateCache{} }}
+
+func GET_MSG_PROJECT_updateCache() *MSG_PROJECT_updateCache {
+	return pool_MSG_PROJECT_updateCache.Get().(*MSG_PROJECT_updateCache)
+}
+
+func (data *MSG_PROJECT_updateCache) cmd() int32 {
+	return CMD_MSG_PROJECT_updateCache
+}
+
+func (data *MSG_PROJECT_updateCache) Put() {
+	data.Type = ``
+	data.Ids = data.Ids[:0]
+	pool_MSG_PROJECT_updateCache.Put(data)
+}
+func (data *MSG_PROJECT_updateCache) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_PROJECT_updateCache,buf)
+	WRITE_MSG_PROJECT_updateCache(data, buf)
+}
+
+func WRITE_MSG_PROJECT_updateCache(data *MSG_PROJECT_updateCache, buf *libraries.MsgBuffer) {
+	WRITE_string(data.Type, buf)
+	WRITE_int(len(data.Ids), buf)
+	for _, v := range data.Ids{
+		WRITE_int32(v, buf)
+	}
+}
+
+func READ_MSG_PROJECT_updateCache(buf *libraries.MsgBuffer) *MSG_PROJECT_updateCache {
+	data := pool_MSG_PROJECT_updateCache.Get().(*MSG_PROJECT_updateCache)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_PROJECT_updateCache) read(buf *libraries.MsgBuffer) {
+	data.Type = READ_string(buf)
+	Ids_len := READ_int(buf)
+	if Ids_len>cap(data.Ids){
+		data.Ids= make([]int32, Ids_len)
+	}else{
+		data.Ids = data.Ids[:Ids_len]
+	}
+	for i := 0; i < Ids_len; i++ {
+		data.Ids[i] = READ_int32(buf)
 	}
 
 }

@@ -4,11 +4,15 @@ import (
 	"archive/tar"
 	"errors"
 	"fmt"
+	"github.com/luyu6056/cache"
+	"github.com/luyu6056/gnet"
+	"github.com/panjf2000/ants/v2"
 	"io"
 	"jachunPM_commom/db"
 	"libraries"
 	"os"
 	"os/exec"
+	_filepath "path/filepath"
 	"protocol"
 	"reflect"
 	"runtime"
@@ -18,11 +22,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-
-	"github.com/luyu6056/cache"
-	"github.com/luyu6056/gnet"
-	"github.com/panjf2000/ants/v2"
 )
 
 type transactionOption bool
@@ -70,6 +69,7 @@ func init() {
 		os.Mkdir(fileTmpPath, 0777)
 	}
 	go deleteTempFile()
+	go deleteMsgno()
 }
 func deleteTempFile() {
 	defer func() {
@@ -95,6 +95,30 @@ func deleteTempFile() {
 				os.Remove(file)
 			}
 		}
+		time.Sleep(time.Minute)
+	}
+}
+func deleteMsgno() {
+	defer func() {
+		if err := recover(); err != nil {
+			libraries.ReleaseLog("deleteMsgno 发生错误 %v", err)
+		}
+		time.Sleep(time.Second)
+		go deleteMsgno()
+	}()
+	for {
+		now := time.Now()
+		msgnoTtl.Range(func(k, v interface{}) bool {
+			logs, ok := v.([]*db.Log_msg)
+			if !ok || len(logs) == 0 {
+				msgnoTtl.Delete(k)
+			}
+			last := logs[0]
+			if now.Unix()-last.Timestamp.Unix() > int64(last.TimeOut) {
+				msgnoTtl.Delete(k)
+			}
+			return true
+		})
 		time.Sleep(time.Minute)
 	}
 }
@@ -129,7 +153,18 @@ func HandlerMsg(data []byte, c gnet.Conn) error {
 					return errors.New(fmt.Sprintf("消息的local来源不对,in.Local%d,local%d", in.Local, uint16(context.ServerNo)|uint16(context.Id)<<8))
 				}
 				in.SetServer(context)
-				rpcHostMsgInChan <- in
+				if byte(in.GetRemoteID()) == protocol.HostServerNo || (in.GetRemoteID() == 0 && byte(in.Cmd) == protocol.HostServerNo) {
+					if !checkTTL(in) {
+						continue
+					}
+					in.ReadData()
+					in.DB.DB = db.DB
+					hostAsyncHand.Invoke(in)
+					//hostAsyncHand是异步执行，如果有需要同步的需要在这里进行处理
+					protocol.BufPoolPut(in.Buf())
+				} else {
+					rpcHostMsgInChan <- in
+				}
 			case chan *protocol.Msg:
 				if in.Cmd == protocol.CMD_MSG_HOST_regServer {
 					in.ReadData()
@@ -137,13 +172,13 @@ func HandlerMsg(data []byte, c gnet.Conn) error {
 					if ok {
 						go func() {
 							newSvr := NewRpcServer(c)
-							newSvr.Start(data.No, data.IpPort, data.Window, in.QueryID)
+							newSvr.Start(data.No, data.IpPort, data.Window, in)
 							c.SetContext(newSvr)
 							//拉取注册前的消息，推入队列
 							for i := len(context); i > 0; i-- {
-								in:=<-context
+								in := <-context
 								in.SetServer(newSvr)
-								rpcHostMsgInChan <-in
+								rpcHostMsgInChan <- in
 							}
 						}()
 
@@ -214,76 +249,27 @@ func HostServerHandlerMsgIn() {
 		buf := in.Buf()
 		in.DB.DB = db.DB
 		cmdSvrNo := byte(in.Cmd)
+		//检查msgno
 
-		if byte(in.GetRemoteID()) == protocol.HostServerNo || (in.GetRemoteID() == 0 && cmdSvrNo == protocol.HostServerNo) {
-			in.ReadData()
-			hostAsyncHand.Invoke(in)
-			//hostAsyncHand是异步执行，如果有需要同步的需要在这里进行处理
-			protocol.BufPoolPut(buf)
+		if !checkTTL(in) {
+			continue
+		}
+
+		if in.GetRemoteID() == 0 {
+			//libraries.DebugLog("from %d cmd %s ,to %d", in.Local, protocol.CmdToName[in.Cmd], cmdSvrNo)
+			rpcServerOutChan[cmdSvrNo] <- buf
 		} else {
-			//检查msgno
-			b := buf.Bytes()
-			if in.Msgno == 0 {
-				msgno := atomic.AddUint32(&globalMsgno, 1)
-				in.Msgno = msgno
-				b[0] = byte(in.Msgno)
-				b[1] = byte(in.Msgno >> 8)
-				b[2] = byte(in.Msgno >> 16)
-				b[3] = byte(in.Msgno >> 24)
-				ttl := int32(0)
-				msgnoTtl.Store(in.Msgno, &ttl)
-				db.WriteMsgLog(in)
-				time.AfterFunc(protocol.MsgTimeOut*time.Second, func() { msgnoTtl.Delete(msgno) })
-			} else {
-				if v, ok := msgnoTtl.Load(in.Msgno); ok {
-					if _, ttlNoCheck := protocol.CMD_NO_CHECK_TTL[in.Cmd]; !ttlNoCheck {
-						ttl := v.(*int32)
-						newTtl := atomic.AddInt32(ttl, 1)
-						in.Ttl = uint16(newTtl)
-						db.WriteMsgLog(in)
-						if newTtl >= protocol.MaxMsgTtl {
-							libraries.ReleaseLog("ttl过大,local %d remoted %d cmd %s msgno %d", in.Local, in.GetRemoteID(), protocol.CmdToName[in.Cmd], in.Msgno)
-							//抛弃消息
-
-							protocol.BufPoolPut(buf)
-							continue
-						}
-					}
-
+			svrNo := byte(in.GetRemoteID())
+			id := byte(in.GetRemoteID() >> 8)
+			rpcLock.RLock()
+			if v, ok := rpcServerIdList[svrNo]; ok {
+				if remoteSvr := v[id]; remoteSvr != nil {
+					remoteSvr.outChan <- buf
 				} else {
-					libraries.DebugLog("无效的msgno %d,%s %+v", in.Msgno,protocol.CmdToName[in.Cmd], in)
-					protocol.BufPoolPut(buf)
-					continue //抛弃消息
+					rpcServerOutChan[svrNo] <- buf
 				}
 			}
-
-			b[4] = uint8(in.Ttl)
-			b[5] = uint8(in.Ttl >> 8)
-			//检查事务
-			if transactionNo := int(b[10]) | int(b[11])<<8 | int(b[12])<<16 | int(b[13])<<24;transactionNo>0{
-				if _, has := cache.Has(strconv.Itoa(transactionNo), TransactionCacheKey); !has {
-					b[10], b[11], b[12], b[13] = 0, 0, 0, 0
-				}
-			}
-
-
-			if in.GetRemoteID() == 0 {
-				//libraries.DebugLog("from %d cmd %s ,to %d", in.Local, protocol.CmdToName[in.Cmd], cmdSvrNo)
-				rpcServerOutChan[cmdSvrNo] <- buf
-			} else {
-				svrNo := byte(in.GetRemoteID())
-				id := byte(in.GetRemoteID() >> 8)
-				rpcLock.RLock()
-				if v, ok := rpcServerIdList[svrNo]; ok {
-					if remoteSvr := v[id]; remoteSvr != nil {
-						remoteSvr.outChan <- buf
-					} else {
-						rpcServerOutChan[svrNo] <- buf
-					}
-				}
-				rpcLock.RUnlock()
-			}
-
+			rpcLock.RUnlock()
 		}
 
 	}
@@ -295,11 +281,11 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 	if !ok {
 		return
 	}
-	 var svr *RpcServer
+	var svr *RpcServer
 	if in.Local == protocol.HostServerNo {
 		in.SetServer(Host)
-	}else{
-		svr,_=in.Svr.(*RpcServer)
+	} else {
+		svr, _ = in.Svr.(*RpcServer)
 	}
 
 	i := in.Data
@@ -346,40 +332,39 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 		out.Put()
 	case *protocol.MSG_HOST_CACHE_GETPATH:
 		out := protocol.GET_MSG_HOST_CACHE_GETPATH_result()
-		cache.RangePath(data.Path, func(key string, v *cache.Hashvalue) bool {
-			var value []byte
-			if v.Get("value", &value) {
-				out.Value = append(out.Value, value)
-			}
-			return true
-		})
+		if len(data.Names) == 0 {
+			cache.RangePath(data.Path, func(key string, v *cache.Hashvalue) bool {
+				var value []byte
+				if v.Get("value", &value) {
+					out.Value = append(out.Value, value)
+				}
+				return true
+			})
+		} else {
+			cache.RangePath(data.Path, func(key string, v *cache.Hashvalue) bool {
+
+				for _, name := range data.Names {
+					if key == name {
+						var value []byte
+						v.Get("value", &value)
+						out.Value = append(out.Value, value)
+					}
+				}
+				return true
+			})
+		}
+
 		in.SendResult(out)
 		out.Put()
 	case *protocol.MSG_HOST_GET_Msgno:
-		if svr != nil {
-			out := protocol.GET_MSG_HOST_GET_Msgno_result()
-			msgno := atomic.AddUint32(&globalMsgno, 1)
-			out.Msgno = msgno
-			ttl := int32(0)
-			msgnoTtl.Store(msgno, &ttl)
-			//储存uid信息
-			value := make([]byte, 4)
-			value[0] = byte(data.Uid)
-			value[1] = byte(data.Uid >> 8)
-			value[2] = byte(data.Uid >> 16)
-			value[3] = byte(data.Uid >> 24)
-			cache.Hset("Uid", map[string]interface{}{"value": value}, "Msg:"+strconv.Itoa(int(msgno)), protocol.MsgTimeOut)
-			time.AfterFunc(protocol.MsgTimeOut*time.Second, func() { msgnoTtl.Delete(msgno) })
-			in.SendResult(out)
-			out.Put()
-		}
+		libraries.DebugLog("还有GET的")
 	case *protocol.MSG_HOST_regServer:
 		//common掉线可能会导致其他服务反复发送reg
 		if data.No != svr.ServerNo {
 			libraries.DebugLog("注册的serverNo不对，注册%d,实际%d", data.No, svr.ServerNo)
 		}
 	case *protocol.MSG_HOST_ResetWindow:
-		libraries.DebugLog("%d 重置 %d",svr.ServerNo,data.Window)
+		libraries.DebugLog("%d 重置 %d", svr.ServerNo, data.Window)
 		svr.window = data.Window
 	case *protocol.MSG_FILE_upload:
 		var dir string
@@ -587,7 +572,7 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 					if svr.local == protocol.HostServerNo {
 						protocol.MsgTransactionCommit(out)
 					} else {
-						svr.SendMsg(svr.local, 0, 0, 0, in.QueryID, out)
+						svr.SendMsg(in, svr.local, out)
 					}
 
 				}
@@ -605,7 +590,7 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 					if svr.local == protocol.HostServerNo {
 						protocol.MsgTransactionRollBack(out)
 					} else {
-						svr.SendMsg(svr.local, 0, 0, 0, in.QueryID, out)
+						svr.SendMsg(in, svr.local, out)
 					}
 
 				}
@@ -666,7 +651,7 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 			if svr.local == protocol.HostServerNo {
 				err = protocol.MsgTransactionCheck(out)
 			} else {
-				err = svr.SendMsgWaitResult(svr.local, 0, 0, 0, out, nil)
+				err = svr.SendMsgWaitResult(nil, svr.local, out, nil)
 			}
 
 			if err != nil {
@@ -745,10 +730,24 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 			}
 			insert.Pathname = file.Code + "/" + file.Type + now.Format("/2006/01/02/") + file.Name
 
-			if err := os.Rename(fileTmpPath+file.Name, filepath+file.Name); err != nil {
+			newpath:=filepath+insert.Pathname
+			if runtime.GOOS=="windows"{
+				newpath=strings.ReplaceAll(newpath,"/","\\")
+			}
+			dir := _filepath.Dir(newpath)
+			_, err := os.Stat(dir)
+			if err != nil {
+				os.MkdirAll(dir, 0777)
+			}
+			if err := os.Rename(fileTmpPath+file.Name, newpath); err != nil {
 				in.WriteErr(err)
 				for _, i := range insertList {
-					os.Remove(filepath + i.Pathname)
+					if runtime.GOOS=="windows"{
+						os.Remove(filepath + strings.ReplaceAll(i.Pathname,"/","\\"))
+					}else{
+						os.Remove(filepath + i.Pathname)
+					}
+
 				}
 				return
 			}
@@ -775,7 +774,7 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 				in.WriteErr(err)
 				return
 			}
-			actionID, _ := in.ActionCreate(file.ObjectType, file.ObjectID, "editfile", "", data.Name, nil, nil)
+			actionID, _ := in.ActionCreate(file.ObjectType, file.ObjectID, "editfile", "", data.Name, nil, 0)
 			if actionID > 0 {
 				var change protocol.ChangeHistory = []*protocol.MSG_LOG_History{&protocol.MSG_LOG_History{
 					Field: "fileName",
@@ -891,7 +890,7 @@ func getTransactionsvrList(transactionCache *cache.Hashvalue) (svrList []*RpcSer
 }
 func getFile(file *db.File) (*os.File, error) {
 	path := filepath + file.Pathname[:strings.LastIndex(file.Pathname, "/")]
-	f, err := os.Open(path + string(os.PathSeparator) + file.Title)
+	f, err := os.Open(filepath + file.Pathname)
 	if err != nil {
 		e, ok := func() (error, bool) {
 			if runtime.GOOS == "windows" {
@@ -956,7 +955,7 @@ func compress(file *os.File, tw *tar.Writer) error {
 		}
 	} else {
 		header, err := tar.FileInfoHeader(info, "")
-		header.Name =  header.Name
+		header.Name = header.Name
 		if err != nil {
 			return err
 		}
@@ -971,4 +970,45 @@ func compress(file *os.File, tw *tar.Writer) error {
 		}
 	}
 	return nil
+}
+
+func checkTTL(in *protocol.Msg) bool {
+	b := in.Buf().Bytes()
+	//检查事务
+	if transactionNo := int(b[10]) | int(b[11])<<8 | int(b[12])<<16 | int(b[13])<<24; transactionNo > 0 {
+		if _, has := cache.Has(strconv.Itoa(transactionNo), TransactionCacheKey); !has {
+			b[10], b[11], b[12], b[13] = 0, 0, 0, 0
+		}
+	}
+	if in.Msgno == 0 {
+		msgno := atomic.AddUint32(&globalMsgno, 1)
+		in.Msgno = msgno
+		b[0] = byte(in.Msgno)
+		b[1] = byte(in.Msgno >> 8)
+		b[2] = byte(in.Msgno >> 16)
+		b[3] = byte(in.Msgno >> 24)
+		msgnoTtl.Store(in.Msgno, db.MsgtoLog(in, nil))
+	} else {
+		if v, ok := msgnoTtl.Load(in.Msgno); ok {
+			if _, ttlNoCheck := protocol.CMD_NO_CHECK_TTL[in.Cmd]; !ttlNoCheck {
+				msgnoTtl.Store(in.Msgno, db.MsgtoLog(in, v.([]*db.Log_msg)))
+				var lastTTl int
+				if len(v.([]*db.Log_msg)) > 0 {
+					lastTTl = v.([]*db.Log_msg)[len(v.([]*db.Log_msg))-1].Ttl
+				}
+				if lastTTl >= protocol.MaxMsgTtl {
+					libraries.ReleaseLog("ttl过大,local %d remoted %d cmd %s msgno %d", in.Local, in.GetRemoteID(), protocol.CmdToName[in.Cmd], in.Msgno)
+					//抛弃消息
+					protocol.BufPoolPut(in.Buf())
+					return false
+				}
+			}
+
+		} else {
+			libraries.DebugLog("无效的msgno %d,%s %+v", in.Msgno, protocol.CmdToName[in.Cmd], in)
+			protocol.BufPoolPut(in.Buf())
+			return false //抛弃消息
+		}
+	}
+	return true
 }

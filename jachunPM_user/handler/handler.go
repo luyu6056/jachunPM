@@ -79,7 +79,7 @@ func Handler(in *protocol.Msg) {
 		in.SendResult(out)
 		out.Put()
 	case *protocol.MSG_USER_updateUserView:
-		updateUserView(data.UserIds,data.GroupIds,data.ProductIds,data.ProjectIds, in)
+		updateUserView(data.UserIds, data.GroupIds, data.ProductIds, data.ProjectIds, in)
 	case *protocol.MSG_USER_getContactLists:
 		user_getContactLists(data, in)
 	case *protocol.MSG_USER_getContactListByUid:
@@ -121,11 +121,21 @@ func Handler(in *protocol.Msg) {
 	case *protocol.MSG_USER_team_updateByWhere:
 		team_updateByWhere(data, in)
 	case *protocol.MSG_USER_config_save:
-		config_save(data,in)
+		config_save(data, in)
 	case *protocol.MSG_USER_team_delete:
-		team_delete(data,in)
+		team_delete(data, in)
 	case *protocol.MSG_USER_group_update:
-		group_update(data,in)
+		group_update(data, in)
+	case *protocol.MSG_USER_team_getTeams2Import:
+		team_getTeams2Import(data, in)
+	case *protocol.MSG_USER_team_projectManageMembers:
+		team_projectManageMembers(data, in)
+	case *protocol.MSG_USER_block_insertUpdate:
+		block_insertUpdate(data, in)
+	case *protocol.MSG_USER_block_getList:
+		block_getList(data, in)
+	case *protocol.MSG_USER_getExportTemplate:
+		user_getExportTemplate(data,in)
 	default:
 		libraries.ReleaseLog("未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 	}

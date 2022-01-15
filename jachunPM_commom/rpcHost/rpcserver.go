@@ -103,13 +103,13 @@ func NewRpcServer(c gnet.Conn) *RpcServer {
 	s := &RpcServer{ServerConn: c, Id: -1}
 	return s
 }
-func (svr *RpcServer) SendMsg(remote uint16, msgno uint32, ttl uint16, transactionNo, queryID uint32, out protocol.MSG_DATA) {
-	protocol.SendMsg(protocol.HostServerNo, remote, msgno, ttl, transactionNo, queryID, out, rpcServerOutChan[protocol.HostServerNo])
+func (svr *RpcServer) SendMsg(msg *protocol.Msg, remote uint16, out protocol.MSG_DATA) {
+	protocol.SendMsg(msg, protocol.HostServerNo, remote, out, rpcServerOutChan[protocol.HostServerNo])
 }
-func (svr *RpcServer) SendMsgWaitResult(remote uint16, msgno uint32, ttl uint16, transactionNo uint32, out protocol.MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
-	return protocol.SendMsgWaitResult(protocol.HostServerNo, remote, msgno, ttl, transactionNo, out, result, rpcServerOutChan[protocol.HostServerNo], timeout...)
+func (svr *RpcServer) SendMsgWaitResult(msg *protocol.Msg, remote uint16, out protocol.MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
+	return protocol.SendMsgWaitResult(msg, protocol.HostServerNo, remote, out, result, rpcServerOutChan[protocol.HostServerNo], timeout...)
 }
-func (svr *RpcServer) Start(no uint8, ipport string, window int32, queryID uint32) {
+func (svr *RpcServer) Start(no uint8, ipport string, window int32, in *protocol.Msg) {
 	svr.ServerNo = no
 	svr.Ip = ipport
 	svr.zstdDecodeBuf1 = &libraries.MsgBuffer{}
@@ -150,7 +150,7 @@ func (svr *RpcServer) Start(no uint8, ipport string, window int32, queryID uint3
 
 	data := protocol.GET_MSG_HOST_regServer_result()
 	data.Id = uint8(svr.Id)
-	svr.SendMsg(svr.local, 0, 0, 0, queryID, data)
+	svr.SendMsg(in, svr.local, data)
 	data.Put()
 }
 
@@ -193,7 +193,7 @@ func (svr *RpcServer) setCenter() {
 	rpcServerCenterId[svr.ServerNo] = uint8(svr.Id)
 	data := protocol.GET_MSG_HOST_StartTicker()
 	svr.isCenter = true
-	svr.SendMsg(svr.local, 0, 0, 0, 0, data)
+	svr.SendMsg(nil, svr.local, data)
 	data.Put()
 }
 
@@ -214,7 +214,7 @@ func (svr *RpcServer) handlerMsgOut(outChan chan *libraries.MsgBuffer) {
 		//busyTime int64 = time.Now().UnixNano()
 		msgNum int
 	)
-	zstdWriter, _ := zstd.NewWriter(zstdbuf)
+	zstdWriter, _ := zstd.NewWriter(zstdbuf,zstd.WithEncoderLevel(zstd.SpeedFastest))
 	writeToBuf := func(o *libraries.MsgBuffer) {
 		msglen += o.Len()
 		if compress {
@@ -309,7 +309,7 @@ func (svr *RpcServer) handlerMsgOut(outChan chan *libraries.MsgBuffer) {
 			svr.status = rpcStatusHalfOpen
 		}
 		data := protocol.GET_MSG_HOST_PING()
-		svr.SendMsg(svr.local, 0, 0, 0, 0, data)
+		svr.SendMsg(nil, svr.local, data)
 		data.Put()
 		svr.tick(now)
 	}

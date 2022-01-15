@@ -197,7 +197,7 @@ func productplan_insertUpdate(data *protocol.MSG_PROJECT_productplan_insertUpdat
 			out.Id = int32(id)
 			session.CommitCallback(func() {
 				product_setCache(data.Product)
-				in.ActionCreate("productplan", int32(id), "opened", "", "", []int32{data.Product}, nil)
+				in.ActionCreate("productplan", int32(id), "opened", "", "", []int32{data.Product}, 0)
 			})
 			session.Commit()
 			in.SendResult(out)
@@ -212,7 +212,7 @@ func productplan_insertUpdate(data *protocol.MSG_PROJECT_productplan_insertUpdat
 			out.Id = data.Id
 			session.CommitCallback(func() {
 				product_setCache(data.Product)
-				in.ActionCreate("productplan", data.Id, "edited", "", "", []int32{data.Product}, nil)
+				in.ActionCreate("productplan", data.Id, "edited", "", "", []int32{data.Product}, 0)
 			})
 			session.Commit()
 			in.SendResult(out)

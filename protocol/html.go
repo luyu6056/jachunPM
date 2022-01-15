@@ -22,10 +22,21 @@ type HtmlMenu struct {
 }
 type HtmlBlock struct {
 	Source string
-	Grid   int
+	Grid   int8
 	Title  string
 	Block  string
-	Prams  map[string]string
+	Params  map[string]string
+	Height int16
+	BlockLink string
+	MoreLink string
+	ActionLink string
+	Id int32
+	Order int8
+	Module string
+}
+type HtmlBlockModule struct {
+	AvailableBlocks  map[string]string
+	MoreLinkList map[string]string
 }
 
 func HtmlKeyValueStr2MapStringInterface(in []HtmlKeyValueStr) (out map[string]interface{}) {

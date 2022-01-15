@@ -15,8 +15,8 @@
   {{js_import (strAdd .Config.common.common.jsRoot  "zui/min.js?t=")}}
   {{js_import (strAdd .Config.common.common.jsRoot  "my.full.js?t=")}}
 {{- else}}
-  {{css_import (strAdd .Config.common.common.defaultTheme .App.ClientLang "." .App.ClientTheme ".css")}}  
   {{js_import (strAdd .Config.common.common.jsRoot  "all.js")}}
+  {{css_import (strAdd .Config.common.common.defaultTheme .App.ClientLang "." .App.ClientTheme ".css")}}  
 {{- end}}
 {{- if .Data.pageCSS}}<style>{{.Data.pageCSS}}</style>{{end}}
   <link rel='icon' href='{{strAdd .Config.common.common.webRoot "favicon.ico"}}' type='image/x-icon' />
@@ -28,6 +28,8 @@
 <script>config.onlybody = {{.App.onlybody}};
 config.currentMethod='{{.App.methodName}}';
 config.currentModule='{{.App.moduleName}}';
+config.webRoot="/";
+config.cookieLife=30;
 {{if .Data.queryID}}config.queryID='{{.Data.queryID}}';{{end}}
 var lang={};
 lang.submitting = '{{.Lang.common.loading}}';

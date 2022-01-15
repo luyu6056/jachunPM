@@ -92,7 +92,7 @@ func (this *Mysql_Build) Reset(db *MysqlDB) {
 	this.sql.table.Write(Tablepre)
 	this.sql.field.WriteByte(42)
 	this.sql.totle_count = -1
-	this.sql.limit.Write([]byte{32, 76, 73, 77, 73, 84, 32, 49, 48, 48, 48})
+	//this.sql.limit.Write([]byte{32, 76, 73, 77, 73, 84, 32, 49, 48, 48, 48})
 	this.prepare = false
 	this.prepare_arg = nil
 	this.Transaction = nil
@@ -1439,7 +1439,7 @@ func (this *Mysql_Build) Find(s interface{}) (err error) {
 	this.buffer.Write(this.sql.lock.Bytes())
 	//sql := `select ` + this.sql.field + ` from` + this.sql.table + this.sql.where + this.sql.group + this.sql.order + ` LIMIT 1` + this.sql.lock
 	e := query(this.buffer.Bytes(), this.prepare_arg, this.db, this.Transaction, s)
-	//DEBUG(`find的sql语句`, this.buffer.String(), res)
+	//DEBUG(`find的sql语句`, this.buffer.String())
 	if e != nil {
 		err = errors.New(`执行Find出错,sql错误信息：` + e.Error() + `,错误sql：` + this.buffer.String() + "  参数 " + fmt.Sprintf("%+v", this.prepare_arg))
 	}
@@ -1516,6 +1516,7 @@ func (db *MysqlDB) Raw(sql string, arg ...interface{}) *Mysql_RawBuild {
 	raw.build.buffer.Reset()
 	raw.build.buffer.WriteString(sql)
 	raw.build.prepare_arg = arg
+	raw.build.db = db
 	return raw
 }
 func (this *Mysql_RawBuild) Find(s interface{}) (err error) {
@@ -1542,7 +1543,7 @@ func (this *Mysql_RawBuild) exec() (err error) {
 	}
 	return
 }
-func (this *Mysql_RawBuild) query(s interface{}) (err error) {
+func (this *Mysql_RawBuild) Select(s interface{}) (err error) {
 	defer buildPool.Put(this.build)
 	if this.build.err != nil {
 		return this.build.err
@@ -1554,7 +1555,7 @@ func (this *Mysql_RawBuild) query(s interface{}) (err error) {
 	}
 	return
 }
-func (this *Mysql_RawBuild) queryMap() (res []map[string]string, err error) {
+func (this *Mysql_RawBuild) SelectMap() (res []map[string]string, err error) {
 	defer buildPool.Put(this.build)
 	if this.build.err != nil {
 		return nil, this.build.err

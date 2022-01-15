@@ -17,7 +17,7 @@ import (
 )
 
 func init() {
-	fmt.Println("task_commonAction需要增加taskID验证")
+
 	httpHandlerModuleInit["GET"]["task"] = task_commonAction
 	httpHandlerModuleInit["POST"]["task"] = task_commonAction
 	httpHandlerMap["GET"]["/task/create"] = get_task_create
@@ -64,21 +64,95 @@ func init() {
 	httpHandlerMap["POST"]["/task/exportfinish"] = post_task_exportfinish
 	httpHandlerMap["POST"]["/task/placeOrder"] = post_task_placeOrder
 	httpHandlerMap["POST"]["/task/batchAssignTo"] = post_task_batchAssignTo
+	httpHandlerMap["GET"]["/task/export"] = get_task_export
+	httpHandlerMap["POST"]["/task/export"] = post_task_export
+}
+func taskTemplateFuncs() {
+	global_Funcs["MSG_PROJECT_TASK_isClickable"] = func(data *TemplateData, obj interface{}, action string) bool {
+		if task, ok := obj.(*protocol.MSG_PROJECT_TASK); ok {
+			switch action {
 
+			case "start":
+				if len(task.Children) > 0 {
+					return false
+				}
+				return task.Status == "wait"
+			case "recordEstimate":
+				if len(task.Children) > 0 {
+					return false
+				}
+			case "finish":
+				if len(task.Children) > 0 {
+					return false
+				}
+				return task.Status != "done" && task.Status != "closed" && task.Status != "cancel"
+			case "cancel":
+				if len(task.Children) > 0 {
+					return false
+				}
+				return task.Status != "done" && task.Status != "closed" && task.Status != "cancel"
+			case "pause":
+				if len(task.Children) > 0 {
+					return false
+				}
+				return task.Status == "doing"
+			case "internalaudit":
+				if len(task.Children) > 0 {
+					return false
+				}
+				return task.Status == "doing"
+			case "proofreading":
+				if len(task.Children) > 0 {
+					return false
+				}
+				return task.Status == "done" && task.Finalfile
+			case "activate":
+				if len(task.Children) > 0 {
+					return false
+				}
+				return task.Status == "done" || task.Status == "closed" || task.Status == "cancel"
+			case "assignto":
+				if len(task.Children) > 0 {
+					return false
+				}
+				return task.Status != "closed" && task.Status != "cancel"
+			case "close":
+				if len(task.Children) > 0 {
+					return false
+				}
+				return task.Status == "done" || task.Status == "cancel"
+			case "batchcreate":
+
+				if task.Ancestor > 0 {
+					return false
+				}
+
+			case "examine":
+				return task.Status != "wait"
+			case "restart":
+				return task.Status == "pause"
+			}
+		} else {
+			libraries.DebugLog("MSG_PROJECT_project_cache_isClickable传入的值类型%v不对", reflect.TypeOf(obj).Elem().Name())
+		}
+		return true
+	}
 }
 func task_commonAction(data *TemplateData) (err error) {
+
 	taskID, _ := strconv.Atoi(data.ws.Query("taskID"))
 	switch data.App["methodName"] {
-	case "create", "batchCreate", "batchCancel", "batchClose", "batchEdit", "batchexamine", "batchexaminec", "batchproofreading", "batchproofreadingc", "finishall", "exportfinish", "placeOrder", "batchAssignTo":
+	case "create", "batchCreate", "batchCancel", "batchClose", "batchEdit", "batchexamine", "batchexaminec", "batchproofreading", "batchproofreadingc", "finishall", "exportfinish", "placeOrder", "batchAssignTo", "export":
 		projectID, _ := strconv.Atoi(data.ws.Query("projectID"))
-		project := HostConn.GetProjectById(int32(projectID))
+		project := data.getCacheProjectById(int32(projectID))
 		if project == nil {
 			return errors.New(data.Lang["project"]["error"].(map[string]string)["NotFound"])
 		}
+		if !data.User.IsAdmin && !data.User.AclProjects[project.Id] {
+			return errors.New(data.Lang["project"]["accessDenied"].(string))
+		}
 		data.Data["project"] = project
-		//这里需要验证是否有project权限
 	default:
-		//这里添加验证用户是否有权限访问taskID
 
 		task, err := task_getByID(data, int32(taskID))
 		if err != nil {
@@ -87,12 +161,16 @@ func task_commonAction(data *TemplateData) (err error) {
 		if task == nil {
 			return errors.New(data.Lang["task"]["error"].(map[string]string)["notFoundTask"])
 		}
-		project := HostConn.GetProjectById(task.Project)
+		project := data.getCacheProjectById(task.Project)
+		if !data.User.IsAdmin && !data.User.AclProjects[project.Id] {
+			return errors.New(data.Lang["project"]["accessDenied"].(string))
+		}
 		data.Data["project"] = project
 		data.Data["task"] = task
 	}
 
 	projectID := data.Data["project"].(*protocol.MSG_PROJECT_project_cache).Id
+
 	//校验数字
 	if data.ws.Method() == "POST" {
 		var consumedRequired, leftRequired bool
@@ -115,6 +193,7 @@ func task_commonAction(data *TemplateData) (err error) {
 			return errors.New(data.Lang["task"]["error"].(map[string]string)["leftNumber"])
 		}
 	}
+
 	projects, err := project_getPairs(data, "nocode")
 	if err != nil {
 		return
@@ -124,8 +203,10 @@ func task_commonAction(data *TemplateData) (err error) {
 		return
 	}
 
-	if data.Data["actions"], err = action_getList(data, "task", int32(taskID)); err != nil {
-		return
+	if taskID > 0 {
+		if data.Data["actions"], err = action_getList(data, "task", int32(taskID)); err != nil {
+			return
+		}
 	}
 
 	if data.Data["members"], err = project_getTeamMemberPairs(data, projectID, "nodeleted"); err != nil {
@@ -213,7 +294,7 @@ func task_printCell(data *TemplateData, col *config.ConfigDatatable, task *proto
 			buf.WriteString("</span>")
 		case "project":
 			if project := data.getCacheProjectById(task.Project); project != nil {
-				buf.WriteString(html_a(createLink("project", "browse", "projectID="+strconv.Itoa(int(task.Project))), project.Name))
+				buf.WriteString(html_a(createLink("project", "task", "projectID="+strconv.Itoa(int(task.Project))), project.Name))
 			}
 
 		case "name":
@@ -648,10 +729,6 @@ func get_task_view(data *TemplateData) (err error) {
 	data.Data["title"] = fmt.Sprintf("TASK#%d %s / %s", task.Id, task.Name, project.Name)
 	data.Data["project"] = project
 	data.Data["task"] = task
-	if data.Data["actions"], err = action_getList(data, "task", task.Id); err != nil {
-		return
-	}
-
 	if data.Data["users"], err = user_getPairs(data, "noletter"); err != nil {
 		return
 	}
@@ -791,77 +868,7 @@ func get_task_view(data *TemplateData) (err error) {
 	templateOut("task.view.html", data)
 	return
 }
-func taskFuncs() {
-	global_Funcs["MSG_PROJECT_TASK_isClickable"] = func(data *TemplateData, obj interface{}, action string) bool {
-		if task, ok := obj.(*protocol.MSG_PROJECT_TASK); ok {
-			switch action {
 
-			case "start":
-				if len(task.Children) > 0 {
-					return false
-				}
-				return task.Status == "wait"
-			case "recordEstimate":
-				if len(task.Children) > 0 {
-					return false
-				}
-			case "finish":
-				if len(task.Children) > 0 {
-					return false
-				}
-				return task.Status != "done" && task.Status != "closed" && task.Status != "cancel"
-			case "cancel":
-				if len(task.Children) > 0 {
-					return false
-				}
-				return task.Status != "done" && task.Status != "closed" && task.Status != "cancel"
-			case "pause":
-				if len(task.Children) > 0 {
-					return false
-				}
-				return task.Status == "doing"
-			case "internalaudit":
-				if len(task.Children) > 0 {
-					return false
-				}
-				return task.Status == "doing"
-			case "proofreading":
-				if len(task.Children) > 0 {
-					return false
-				}
-				return task.Status == "done" && task.Finalfile
-			case "activate":
-				if len(task.Children) > 0 {
-					return false
-				}
-				return task.Status == "done" || task.Status == "closed" || task.Status == "cancel"
-			case "assignto":
-				if len(task.Children) > 0 {
-					return false
-				}
-				return task.Status != "closed" && task.Status != "cancel"
-			case "close":
-				if len(task.Children) > 0 {
-					return false
-				}
-				return task.Status == "done" || task.Status == "cancel"
-			case "batchcreate":
-
-				if task.Ancestor > 0 {
-					return false
-				}
-
-			case "examine":
-				return task.Status != "wait"
-			case "restart":
-				return task.Status == "pause"
-			}
-		} else {
-			libraries.DebugLog("MSG_PROJECT_project_cache_isClickable传入的值类型%v不对", reflect.TypeOf(obj).Elem().Name())
-		}
-		return true
-	}
-}
 func get_task_create(data *TemplateData) (err error) {
 	//已屏蔽团队限制用户功能，后续看需求再加
 
@@ -891,6 +898,7 @@ func get_task_create(data *TemplateData) (err error) {
 	      task->pri  = todo->pri;
 	      task->desc = todo->desc;
 	  }*/
+
 	moduleID, _ := strconv.Atoi(data.ws.Query("moduleID"))
 	projectID, _ := strconv.Atoi(data.ws.Query("projectID"))
 	taskID, _ := strconv.Atoi(data.ws.Query("taskID"))
@@ -917,6 +925,7 @@ func get_task_create(data *TemplateData) (err error) {
 			}
 		}
 	}
+
 	project := data.getCacheProjectById(int32(projectID))
 	if project == nil {
 		return errors.New(data.Lang["project"]["error"].(map[string]string)["NotFound"])
@@ -974,6 +983,7 @@ func get_task_create(data *TemplateData) (err error) {
 			break
 		}
 	}
+
 	var priList []protocol.HtmlKeyValueStr = make([]protocol.HtmlKeyValueStr, len(data.Lang["task"]["priList"].([]protocol.HtmlKeyValueStr)))
 	copy(priList, data.Lang["task"]["priList"].([]protocol.HtmlKeyValueStr))
 	data.Data["priList"] = priList
@@ -987,6 +997,7 @@ func get_task_create(data *TemplateData) (err error) {
 	}
 	data.Data["task"] = task
 	data.Data["customLink"] = createLink("custom", "ajaxSaveCustomFields", "module=task&section=custom&key=createFields")
+
 	templateOut("task.create.html", data)
 	return
 }
@@ -1008,7 +1019,7 @@ func post_task_create(data *TemplateData) (err error) {
 		return
 	}
 	project := data.Data["project"].(*protocol.MSG_PROJECT_project_cache)
-	data.Msg.ActionCreate("task", task.Id, "Opened", "", "", project.Products, []int32{project.Id})
+	data.Msg.ActionCreate("task", task.Id, "Opened", "", "", project.Products, project.Id)
 
 	if data.onlybody() {
 		data.ajaxResult(true, "", "reload", "parent")
@@ -1180,11 +1191,15 @@ func do_task_create(data *TemplateData, task *protocol.MSG_PROJECT_TASK) (protoc
 		data.ajaxResult(false, data.Lang["project"]["error"].(map[string]string)["NotFound"], "")
 		return nil, false
 	}
-	product := HostConn.GetProductById(project.Products[0])
-	if product == nil {
-		data.ajaxResult(false, data.Lang["product"]["error"].(map[string]string)["NotFound"], "")
-		return nil, false
+	product := &protocol.MSG_PROJECT_product_cache{}
+	if len(project.Products) > 0 {
+		product = HostConn.GetProductById(project.Products[0])
+		if product == nil {
+			data.ajaxResult(false, data.Lang["product"]["error"].(map[string]string)["NotFound"], "")
+			return nil, false
+		}
 	}
+
 	var uploaderr error
 	var newimgids []int64
 	//oldDesc := task.Desc
@@ -1244,6 +1259,7 @@ func do_task_create(data *TemplateData, task *protocol.MSG_PROJECT_TASK) (protoc
 		} else {
 			upload.Code += "/" + project.Code
 		}
+		upload.Code = strings.TrimLeft(upload.Code, "/")
 		upload.ObjectID = result.Id
 		upload.ObjectType = "task"
 		uploadFileTmp.Files = append(uploadFileTmp.Files, upload)
@@ -1478,7 +1494,7 @@ func post_task_edit(data *TemplateData) (err error) {
 	if len(change) > 0 {
 		action = "Edited"
 	}
-	actionid, err := data.Msg.ActionCreate("task", task.Id, action, data.ws.Post("comment"), "", project.Products, []int32{project.Id})
+	actionid, err := data.Msg.ActionCreate("task", task.Id, action, data.ws.Post("comment"), "", project.Products, project.Id)
 	if err != nil {
 		return err
 	}
@@ -1488,7 +1504,7 @@ func post_task_edit(data *TemplateData) (err error) {
 			for _, c := range change {
 				if c.Field == "Status" {
 					confirmURL := createLink("bug", "view", []interface{}{"id=", result.Info.FromBug})
-					cancelURL := data.ws.Header("Referer")
+					cancelURL := data.ws.Referer()
 					if cancelURL == "" {
 						cancelURL = data.ws.Header("REFERER")
 					}
@@ -2201,9 +2217,6 @@ func get_task_delete(data *TemplateData) (err error) {
 }
 func post_task_batchCancel(data *TemplateData) error {
 	out := protocol.GET_MSG_PROJECT_task_cancel()
-	if _, err := data.GetMsg(); err != nil {
-		return err
-	}
 	session, err := data.Msg.BeginTransaction()
 	if err != nil {
 		return err
@@ -2230,9 +2243,6 @@ func post_task_batchCancel(data *TemplateData) error {
 }
 func post_task_batchClose(data *TemplateData) error {
 	out := protocol.GET_MSG_PROJECT_task_close()
-	if _, err := data.GetMsg(); err != nil {
-		return err
-	}
 	session, err := data.Msg.BeginTransaction()
 	if err != nil {
 		return err
@@ -2286,9 +2296,9 @@ func post_task_batchEdit(data *TemplateData) (err error) {
 		this->lang->set("menugroup.task", "my");
 		this->lang->task->menuOrder = this->lang->my->menuOrder;
 		this->loadModel("my")->setMenu();
-		this->view->position[] = html::a(this->createLink("my", "task"), this->lang->my->task);
-		this->view->title      = this->lang->task->batchEdit;
-		this->view->users      = this->loadModel("user")->getPairs("noletter");
+		data.Data["position[] = html::a(this->createLink("my", "task"), this->lang->my->task);
+		data.Data["title      = this->lang->task->batchEdit;
+		data.Data["users      = this->loadModel("user")->getPairs("noletter");
 		*/
 	}
 	/* Get edited tasks. */
@@ -2361,9 +2371,6 @@ func post_task_batchEdit(data *TemplateData) (err error) {
 }
 func post_task_batchexamine(data *TemplateData) error {
 	out := protocol.GET_MSG_PROJECT_task_examine()
-	if _, err := data.GetMsg(); err != nil {
-		return err
-	}
 	session, err := data.Msg.BeginTransaction()
 	if err != nil {
 		return err
@@ -2391,9 +2398,6 @@ func post_task_batchexamine(data *TemplateData) error {
 }
 func post_task_batchexaminec(data *TemplateData) error {
 	out := protocol.GET_MSG_PROJECT_task_examine()
-	if _, err := data.GetMsg(); err != nil {
-		return err
-	}
 	session, err := data.Msg.BeginTransaction()
 	if err != nil {
 		return err
@@ -2421,9 +2425,6 @@ func post_task_batchexaminec(data *TemplateData) error {
 }
 func post_task_batchproofreading(data *TemplateData) error {
 	out := protocol.GET_MSG_PROJECT_task_proofreading()
-	if _, err := data.GetMsg(); err != nil {
-		return err
-	}
 	session, err := data.Msg.BeginTransaction()
 	if err != nil {
 		return err
@@ -2451,9 +2452,6 @@ func post_task_batchproofreading(data *TemplateData) error {
 }
 func post_task_batchproofreadingc(data *TemplateData) error {
 	out := protocol.GET_MSG_PROJECT_task_proofreading()
-	if _, err := data.GetMsg(); err != nil {
-		return err
-	}
 	session, err := data.Msg.BeginTransaction()
 	if err != nil {
 		return err
@@ -2481,9 +2479,6 @@ func post_task_batchproofreadingc(data *TemplateData) error {
 }
 func post_task_finishall(data *TemplateData) error {
 	out := protocol.GET_MSG_PROJECT_task_finish()
-	if _, err := data.GetMsg(); err != nil {
-		return err
-	}
 	session, err := data.Msg.BeginTransaction()
 	if err != nil {
 		return err
@@ -2542,11 +2537,7 @@ func post_task_exportfinish(data *TemplateData) error {
 	return nil
 }
 func post_task_placeOrder(data *TemplateData) (err error) {
-
 	out := protocol.GET_MSG_PROJECT_task_placeOrder()
-	if _, err := data.GetMsg(); err != nil {
-		return err
-	}
 	session, err := data.Msg.BeginTransaction()
 	if err != nil {
 		return err
@@ -2579,9 +2570,6 @@ func post_task_batchAssignTo(data *TemplateData) error {
 		return nil
 	}
 	out := protocol.GET_MSG_PROJECT_task_assignTo()
-	if _, err := data.GetMsg(); err != nil {
-		return err
-	}
 	session, err := data.Msg.BeginTransaction()
 	if err != nil {
 		return err
@@ -2609,5 +2597,383 @@ func post_task_batchAssignTo(data *TemplateData) error {
 	}
 	data.ws.WriteString(js.Reload("parent"))
 	session.Commit()
+	return nil
+}
+func task_getUserTasks(data *TemplateData, uid int32, typ string, pager *TempLatePage, orderBy string) ([]*protocol.MSG_PROJECT_TASK, error) {
+	if typ == "" {
+		typ = "assignedTo"
+	}
+	typ = strings.ToUpper(typ[:1]) + typ[1:]
+	if typ != "all" {
+		if field, ok := reflect.TypeOf(protocol.MSG_PROJECT_TASK{}).FieldByName(typ); !ok || field.Type.Kind() != reflect.Int32 {
+			return nil, nil
+		}
+	}
+
+	out := protocol.GET_MSG_PROJECT_project_getProjectTasksByWhere()
+	out.Where = "Deleted=0"
+	if typ == "AssignedTo" {
+		out.Where += " and Status!='closed'"
+	}
+	if typ != "all" {
+		out.Where += " and " + typ + "=" + strconv.Itoa(int(uid))
+	}
+	if pager == nil {
+		pager = &TempLatePage{
+			Total:   -1,
+			Page:    1,
+			PerPage: 999999999,
+		}
+	}
+	out.PerPage = pager.PerPage
+	out.Page = pager.Page
+	out.Total = pager.Total
+	out.OrderBy = orderBy
+	var result *protocol.MSG_PROJECT_project_getProjectTasks_result
+	if err := data.SendMsgWaitResultToDefault(out, &result); err != nil {
+		return nil, err
+	}
+	out.Put()
+	pager.Total = result.Total
+	return result.List, nil
+}
+func get_task_export(data *TemplateData) (err error) {
+	projectID, _ := strconv.Atoi(data.ws.Query("projectID"))
+	typ := data.ws.Query("projectID")
+	project := data.getCacheProjectById(int32(projectID))
+	allExportFields := data.Config["task"]["common"]["exportFields"].([]string)
+	if project.Type == "ops" {
+		for i := len(allExportFields) - 1; i >= 0; i-- {
+			if allExportFields[i] == "story" {
+				allExportFields = append(allExportFields[:i], allExportFields[i+1:]...)
+				break
+			}
+		}
+	}
+	var browseType string
+
+	fileName := data.Lang["task"]["common"].(string)
+
+	if v, ok := data.Lang["project"]["featureBar"].(map[string][]protocol.HtmlKeyValueStr)["task"]; ok {
+		for _, kv := range v {
+			if kv.Key == typ {
+				browseType = kv.Value
+			}
+		}
+
+	} else {
+		for _, kv := range data.Lang["project"]["statusSelects"].([]protocol.HtmlKeyValueStr) {
+			if kv.Key == typ {
+				browseType = kv.Value
+			}
+		}
+	}
+
+	data.Data["fileName"] = project.Name + data.Lang["common"]["dash"].(string) + browseType + fileName
+	data.Data["allExportFields"] = allExportFields
+	data.Data["customExport"] = true
+	data.Data["orderBy"] = data.ws.Query("orderBy")
+	data.Data["type"] = typ
+	data.Data["projectID"] = projectID
+	templateOut("file.export.html", data)
+	return
+}
+func post_task_export(data *TemplateData) error {
+	taskLang := data.Lang["task"]
+	exportType := data.ws.Post("exportType")
+	/* Create field lists. */
+	//fields = this->post->exportFields ? this->post->exportFields : explode(",", allExportFields);
+	projectID, _ := strconv.Atoi(data.ws.Query("projectID"))
+	project := data.getCacheProjectById(int32(projectID))
+	fields := data.Config["task"]["common"]["exportFields"].([]string)
+	if project.Type == "ops" {
+		for i := len(fields) - 1; i >= 0; i-- {
+			if fields[i] == "story" {
+				fields = append(fields[:i], fields[i+1:]...)
+				break
+			}
+		}
+	}
+	var fieldkv []protocol.HtmlKeyValueStr
+	for _, fieldName := range fields {
+		name := fieldName
+		if v, ok := taskLang[fieldName].(string); ok {
+			name = v
+		}
+		fieldkv = append(fieldkv, protocol.HtmlKeyValueStr{fieldName, name})
+	}
+	var result *protocol.MSG_PROJECT_project_getProjectTasks_result
+	if exportType == "selected" {
+		out := protocol.GET_MSG_PROJECT_project_getProjectTasks()
+		out.Type = []string{"checkedItem", data.ws.Cookie("checkedItem")}
+		out.OrderBy = data.ws.Query("orderBy")
+		out.Page = 1
+		out.PerPage = 99999999
+		out.Total = -1
+		if err := data.SendMsgWaitResultToDefault(out, &result); err != nil {
+			data.ws.WriteString(js.Error(err.Error()))
+			return nil
+		}
+	} else {
+		var msg1 *protocol.MSG_PROJECT_project_getProjectTasks
+		var msg2 *protocol.MSG_PROJECT_project_getProjectTasksByWhere
+		if ok := data.ws.Session().Get("project_task_msg", &msg1); ok {
+			msg1.Page = 1
+			msg1.PerPage = 99999999
+			msg1.Total = -1
+			if err := data.SendMsgWaitResultToDefault(msg1, &result); err != nil {
+				data.ws.WriteString(js.Error(err.Error()))
+				return nil
+			}
+		} else if ok := data.ws.Session().Get("project_task_msg", &msg2); ok {
+			msg2.Page = 1
+			msg2.PerPage = 99999999
+			msg2.Total = -1
+			if err := data.SendMsgWaitResultToDefault(msg2, &result); err != nil {
+				data.ws.WriteString(js.Error(err.Error()))
+				return nil
+			}
+		}
+	}
+	if result == nil || len(result.List) == 0 {
+		data.ws.WriteString(js.Error(taskLang["error"].(map[string]string)["taskExportNotFoundTasks"]))
+		return nil
+	}
+	/* Get tasks.*/
+
+	/* Get users and projects.*/
+	users, err := user_getPairs(data, "noletter")
+	if err != nil {
+		data.ws.WriteString(js.Error(err.Error()))
+		return nil
+	}
+	projects, err := project_getPairs(data, "all|nocode")
+	if err != nil {
+		data.ws.WriteString(js.Error(err.Error()))
+		return nil
+	}
+	relatedModules, err := tree_getTaskOptionMenu(data, int32(projectID), 0, 0)
+	if err != nil {
+		data.ws.WriteString(js.Error(err.Error()))
+		return nil
+	}
+	var taskids []int32
+	for _, task := range result.List {
+		taskids = append(taskids, task.Id)
+	}
+	getFile := protocol.GET_MSG_FILE_getByWhere()
+	getFile.Where = map[string]interface{}{
+		"ObjectType": "task",
+		"ObjectID":   taskids,
+		"Deleted":    0,
+	}
+	getFile.Page = 1
+	getFile.PerPage = 99999999
+	getFile.Total = -1
+	var getFileResult *protocol.MSG_FILE_getByWhere_result
+	if err := data.SendMsgWaitResultToDefault(getFile, &getFileResult); err != nil {
+		data.ws.WriteString(js.Error(err.Error()))
+		return nil
+	}
+	var fileMap = make(map[int32][]*protocol.MSG_FILE_getByID_result)
+	for _, file := range getFileResult.List {
+		fileMap[file.ObjectID] = append(fileMap[file.ObjectID], file)
+	}
+	var exportMap []map[string]string
+	for _, task := range result.List {
+		if task.Consumed == 0 && task.Left == 0 {
+			task.Progress = 0
+		} else if task.Consumed != 0 && task.Left == 0 {
+			task.Progress = 100
+		} else {
+			task.Progress = int(task.Consumed / (task.Consumed + task.Left) * 100)
+		}
+		rowMap := make(map[string]string, len(fields))
+		for _, field := range fields {
+			switch field {
+			case "desc":
+				rowMap[field] = libraries.Bbcode2html(task.Desc, true, false, false, false, true, false)
+			case "project":
+				for _, kv := range projects {
+					if kv.Key == strconv.Itoa(int(task.Project)) {
+						rowMap[field] = fmt.Sprintf("%s(#%d)", kv.Value, task.Project)
+						break
+					}
+				}
+			case "type":
+				for _, kv := range taskLang["typeList"].([]protocol.HtmlKeyValueStr) {
+					if kv.Key == task.Type {
+						rowMap[field] = kv.Value
+						break
+					}
+				}
+			case "pri":
+				for _, kv := range taskLang["priList"].([]protocol.HtmlKeyValueStr) {
+					if kv.Key == strconv.Itoa(int(task.Pri)) {
+						rowMap[field] = kv.Value
+						break
+					}
+				}
+			case "status":
+				for _, kv := range taskLang["statusList"].([]protocol.HtmlKeyValueStr) {
+					if kv.Key == task.Status {
+						rowMap[field] = kv.Value
+						break
+					}
+				}
+			case "closedReason":
+				for _, kv := range taskLang["reasonList"].([]protocol.HtmlKeyValueStr) {
+					if kv.Key == task.ClosedReason {
+						rowMap[field] = kv.Value
+						break
+					}
+				}
+			case "module":
+				if task.Module > 0 {
+					for _, kv := range relatedModules {
+						if kv.Key == strconv.Itoa(int(task.Module)) {
+							rowMap[field] = fmt.Sprintf("%s(#%d)", kv.Value, task.Module)
+							break
+						}
+					}
+				}
+			case "openedBy":
+				for _, kv := range users {
+					if kv.Key == strconv.Itoa(int(task.OpenedBy)) {
+						rowMap[field] = kv.Value
+						break
+					}
+				}
+			case "assignedTo":
+				for _, kv := range users {
+					if kv.Key == strconv.Itoa(int(task.AssignedTo)) {
+						rowMap[field] = kv.Value
+						break
+					}
+				}
+			case "finishedBy":
+				for _, kv := range users {
+					if kv.Key == strconv.Itoa(int(task.FinishedBy)) {
+						rowMap[field] = kv.Value
+						break
+					}
+				}
+			case "canceledBy":
+				for _, kv := range users {
+					if kv.Key == strconv.Itoa(int(task.CanceledBy)) {
+						rowMap[field] = kv.Value
+						break
+					}
+				}
+			case "closedBy":
+				for _, kv := range users {
+					if kv.Key == strconv.Itoa(int(task.ClosedBy)) {
+						rowMap[field] = kv.Value
+						break
+					}
+				}
+			case "lastEditedBy":
+				for _, kv := range users {
+					if kv.Key == strconv.Itoa(int(task.LastEditedBy)) {
+						rowMap[field] = kv.Value
+						break
+					}
+				}
+			case "openedDate":
+				rowMap[field] = task.OpenedDate.Format(protocol.TIMEFORMAT_MYSQLDATE)
+			case "assignedDate":
+				if task.AssignedDate.After(protocol.NORMALTIME) {
+					rowMap[field] = task.AssignedDate.Format(protocol.TIMEFORMAT_MYSQLDATE)
+				}
+			case "finishedDate":
+				if task.FinishedDate.After(protocol.NORMALTIME) {
+					rowMap[field] = task.FinishedDate.Format(protocol.TIMEFORMAT_MYSQLDATE)
+				}
+			case "canceledDate":
+				if task.CanceledDate.After(protocol.NORMALTIME) {
+					rowMap[field] = task.CanceledDate.Format(protocol.TIMEFORMAT_MYSQLDATE)
+				}
+			case "closedDate":
+				if task.ClosedDate.After(protocol.NORMALTIME) {
+					rowMap[field] = task.ClosedDate.Format(protocol.TIMEFORMAT_MYSQLDATE)
+				}
+			case "lastEditedDate":
+				if task.LastEditedDate.After(protocol.NORMALTIME) {
+					rowMap[field] = task.LastEditedDate.Format(protocol.TIMEFORMAT_MYSQLDATE)
+				}
+			case "proofreading":
+				if task.Proofreading {
+					rowMap[field] = "已对"
+				} else {
+					rowMap[field] = "未对"
+				}
+			case "id":
+				rowMap[field] = strconv.Itoa(int(task.Id))
+			case "story":
+				if task.Story > 0 {
+					rowMap[field] = fmt.Sprintf("%s(#%d)", task.StoryTitle, task.Story)
+				}
+
+			case "name":
+				rowMap[field] = task.Name
+			case "estStarted":
+				if task.EstStarted.After(protocol.NORMALTIME) {
+					rowMap[field] = task.EstStarted.Format(protocol.TIMEFORMAT_MYSQLDATE)
+				}
+			case "realStarted":
+				if task.RealStarted.After(protocol.NORMALTIME) {
+					rowMap[field] = task.RealStarted.Format(protocol.TIMEFORMAT_MYSQLDATE)
+				}
+			case "deadline":
+				rowMap[field] = task.Deadline.Format(protocol.TIMEFORMAT_MYSQLDATE)
+			case "estimate":
+				rowMap[field] = strconv.FormatFloat(task.Estimate, 'g', -1, 64)
+			case "consumed":
+				rowMap[field] = strconv.FormatFloat(task.Consumed, 'g', -1, 64)
+			case "left":
+				rowMap[field] = strconv.FormatFloat(task.Left, 'g', -1, 64)
+			case "mailto":
+				var str []string
+				for _, id := range task.Mailto {
+					for _, kv := range users {
+						if kv.Key == strconv.Itoa(int(id)) {
+							str = append(str, kv.Value)
+							break
+						}
+					}
+				}
+				rowMap[field] = strings.Join(str, ",")
+			case "progress":
+				rowMap[field] = strconv.Itoa(int(task.Progress)) + "%"
+			case "files":
+				var files []string
+				for _, file := range fileMap[task.Id] {
+					ext := ""
+					if i := strings.LastIndex(file.Name, "."); i > -1 {
+						ext = file.Name[i+1:]
+					}
+					switch strings.ToLower(ext) {
+					case "webp", "jpg", "jpeg", "png", "bmp":
+						files = append(files, html_a(createLink("file", "read", fmt.Sprintf("fileID=%d", file.FileID)), file.Name))
+					default:
+						files = append(files, html_a(createLink("file", "download", fmt.Sprintf("fileID=%d", file.FileID)), file.Name))
+					}
+				}
+				rowMap[field] = strings.Join(files, "||||")
+			default:
+				libraries.ReleaseLog("导出列名称" + field + "未处理")
+			}
+
+		}
+		exportMap = append(exportMap, rowMap)
+	}
+	switch data.ws.Post("fileType") {
+	case "xlsx":
+		if err := file_export2xlsx(data, data.ws.Post("fileName"), fieldkv, exportMap); err != nil {
+			data.ws.WriteString(js.Error(err.Error()))
+		}
+	default:
+		data.ws.WriteString(js.Error("未处理导出格式" + data.ws.Post("fileType")))
+	}
 	return nil
 }

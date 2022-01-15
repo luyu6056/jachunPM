@@ -17,6 +17,8 @@ const (
 	TABLE_TEAM        = "team"
 	TABLE_USERQUERY   = "userquery"
 	TABLE_Config      = "config"
+	TABLE_Block       = "block"
+	TABLE_Usertpl     = "usertpl"
 )
 
 func Init() *mysql.MysqlDB {
@@ -39,45 +41,55 @@ func Init() *mysql.MysqlDB {
 		new(Team),
 		new(Userquery),
 		new(Config),
+		new(Block),
+		new(Usertpl),
 	)
 	if errs != nil {
 		log.Fatalf("数据库启动失败%v", errs)
 	}
-	db.Regsiter(&protocol.MSG_USER_team_info{}, &protocol.MSG_USER_INFO_cache{}, &protocol.MSG_USER_Group_cache{})
+	db.Regsiter(
+		&protocol.MSG_USER_team_info{},
+		&protocol.MSG_USER_INFO_cache{},
+		&protocol.MSG_USER_Group_cache{},
+		&protocol.MSG_USER_Block_info{},
+		&protocol.MSG_USER_getExportTemplate{},
+	)
 	return db
 }
 
 type User struct {
-	Id          int32  `db:"auto_increment;pk"`
-	Dept        int32  `db:"default(0)"`
-	Account     string `db:"type:varchar(30)"`
-	Salt        string `db:"type:varchar(64)"`
-	Password    string `db:"type:varchar(64)"`
-	Role        string `db:"type:varchar(10)"`
-	Realname    string `db:"type:varchar(100)"`
-	Group       []int32
-	Commiter    string    `db:"type:varchar(100)"`
-	Gender      int8      `db:"default(0)"` // 1男，0女
-	Email       string    `db:"type:varchar(90)"`
-	QQ          int64     `db:"type:varchar(20)"`
-	Mobile      string    `db:"type:varchar(11)"`
-	Phone       string    `db:"type:varchar(20)"`
-	Weixin      string    `db:"type:varchar(90)"`
-	Dingding    string    `db:"type:varchar(90)"`
-	Address     string    `db:"type:varchar(120)"`
-	Zipcode     string    `db:"type:varchar(10)"`
-	Join        time.Time `db:"type:date;default('0000-00-00')"`
-	Visits      int32     `db:"default(0)"`            //访问次数
-	Ip          string    `db:"type:varchar(15)"`      //上次登录ip
-	Last        time.Time `db:"default('0000-00-00')"` //上次登录时间
-	Fails       int8      `db:"not null;default(0)"`   //密码错误次数
-	Locked      time.Time `db:"not null;default('0000-00-00 00:00:00')"`
-	Deleted     bool
-	ClientLang  string          `db:"default('zh-cn');type:varchar(10)"`
-	AclMenu     map[string]bool //允许访问的视图
-	AclProducts map[int32]bool  //允许访问的产品
-	AclProjects map[int32]bool  //允许访问的项目
-	AttendNo    int32           `db:"null"` //打卡机编号
+	Id              int32  `db:"auto_increment;pk"`
+	Dept            int32  `db:"default(0)"`
+	Account         string `db:"type:varchar(30)"`
+	Salt            string `db:"type:varchar(64)"`
+	Password        string `db:"type:varchar(64)"`
+	Role            string `db:"type:varchar(10)"`
+	Realname        string `db:"type:varchar(100)"`
+	Group           []int32
+	Commiter        string                     `db:"type:varchar(100)"`
+	Gender          int8                       `db:"default(0)"` // 1男，0女
+	Email           string                     `db:"type:varchar(90)"`
+	QQ              int64                      `db:"type:varchar(20)"`
+	Mobile          string                     `db:"type:varchar(11)"`
+	Phone           string                     `db:"type:varchar(20)"`
+	Weixin          string                     `db:"type:varchar(90)"`
+	Dingding        string                     `db:"type:varchar(90)"`
+	Address         string                     `db:"type:varchar(120)"`
+	Zipcode         string                     `db:"type:varchar(10)"`
+	Join            time.Time                  `db:"type:date;default('0000-00-00')"`
+	Visits          int32                      `db:"default(0)"`            //访问次数
+	Ip              string                     `db:"type:varchar(15)"`      //上次登录ip
+	Last            time.Time                  `db:"default('0000-00-00')"` //上次登录时间
+	Fails           int8                       `db:"not null;default(0)"`   //密码错误次数
+	Locked          time.Time                  `db:"not null;default('0000-00-00 00:00:00')"`
+	Deleted         bool                       `db:"index"`
+	ClientLang      string                     `db:"default('zh-cn');type:varchar(10)"`
+	AclMenu         map[string]bool            //允许访问的视图
+	AclProducts     map[int32]bool             //允许访问的产品
+	AclProjects     map[int32]bool             //允许访问的项目
+	LimitedProjects map[int32]bool             //team的受限项目
+	Priv            map[string]map[string]bool //从所有group合并
+	AttendNo        int32                      `db:"null"` //打卡机编号
 	//Birthday     time.Time `db:"not null;default('0000-00-00')"`
 	//Skype        string    `db:"type:varchar(90)"`
 	//Yahoo        string    `db:"type:varchar(90)"`
@@ -100,16 +112,16 @@ func (*User) TableName() string {
 }
 
 type Company struct {
-	Id        int32    `db:"auto_increment;pk"`
-	Name      string   `db:"type:varchar(120)"`
-	Phone     string   `db:"type:varchar(20)"`
-	Fax       string   `db:"type:varchar(20)"`
-	Address   string   `db:"type:varchar(120)"`
-	Zipcode   string   `db:"type:varchar(10)"`
-	Website   string   `db:"type:varchar(120)"`
-	Backyard  string   `db:"type:varchar(120)"`
-	Admins    []string `db:"type:varchar(255)"`
-	Deleted   bool
+	Id        int32     `db:"auto_increment;pk"`
+	Name      string    `db:"type:varchar(120)"`
+	Phone     string    `db:"type:varchar(20)"`
+	Fax       string    `db:"type:varchar(20)"`
+	Address   string    `db:"type:varchar(120)"`
+	Zipcode   string    `db:"type:varchar(10)"`
+	Website   string    `db:"type:varchar(120)"`
+	Backyard  string    `db:"type:varchar(120)"`
+	Admins    []string  `db:"type:varchar(255)"`
+	Deleted   bool      `db:"index"`
 	TimeStamp time.Time `db:"default(current_timestamp());extra('on update current_timestamp()')"` //更新时间戳
 }
 
@@ -208,4 +220,35 @@ type Config struct {
 
 func (*Config) TableName() string {
 	return TABLE_Config
+}
+
+type Block struct {
+	Id     int32  `db:"auto_increment;pk"`
+	Uid    int32  `db:"index"`
+	Module string `db:"type:varchar(20);index"`
+	Title  string `db:"type:varchar(100)"`
+	Source string `db:"type:varchar(20)"`
+	Block  string `db:"type:varchar(20)"`
+	Params string `db:"type:text"`
+	Order  int8   `db:"default(0)"`
+	Grid   int8   `db:"default(0)"`
+	Height int16  `db:"default(0)"`
+	Hidden bool   `db:"index"`
+}
+
+func (*Block) TableName() string {
+	return TABLE_Block
+}
+
+type Usertpl struct {
+	Id      int32  `db:"auto_increment;pk"`
+	Uid     int32  `db:"index"`
+	Type    string `db:"type:varchar(30)"`
+	Title   string `db:"type:varchar(150)"`
+	Content string `db:"type:text"`
+	Public  bool
+}
+
+func (*Usertpl) TableName() string {
+	return TABLE_Usertpl
 }

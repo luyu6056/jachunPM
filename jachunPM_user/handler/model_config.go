@@ -7,7 +7,7 @@ import (
 
 func config_save(data *protocol.MSG_USER_config_save, in *protocol.Msg) {
 	var custom db.Config
-	err := in.DB.Table(db.TABLE_Config).Where("Uid=? and Module=? and `Key`=?",data.Uid,data.Module,data.Key).Find(&custom)
+	err := in.DB.Table(db.TABLE_Config).Where("Uid=? and Module=? and `Key`=?", data.Uid, data.Module, data.Key).Find(&custom)
 	if err != nil {
 		in.WriteErr(err)
 		return

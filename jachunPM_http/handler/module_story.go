@@ -70,10 +70,7 @@ func get_story_create(data *TemplateData) (err error) {
 		data.ws.WriteString(js.Location(createLink("product", "create", nil), ""))
 		return
 	}
-	msg, err := data.GetMsg()
-	if err != nil {
-		return
-	}
+
 	users, err := user_getPairs(data, "pdfirst|noclosed|nodeleted")
 	if err != nil {
 		return
@@ -186,7 +183,7 @@ func get_story_create(data *TemplateData) (err error) {
 	productplan_getPairsForStory.Product = int32(productID)
 	productplan_getPairsForStory.Branch = int32(branch)
 	var plans *protocol.MSG_PROJECT_productplan_getPairsForStory_result
-	if err = msg.SendMsgWaitResult(0, productplan_getPairsForStory, &plans); err != nil {
+	if err = data.SendMsgWaitResultToDefault(productplan_getPairsForStory, &plans); err != nil {
 		return
 	}
 	productplan_processFuture(data, plans.List)
@@ -226,18 +223,14 @@ func post_story_create(data *TemplateData) (e error) {
 	}
 	projectID, _ := strconv.Atoi(data.ws.Query("projectID"))
 	bugID, _ := strconv.Atoi(data.ws.Query("bugID"))
-
-	msg, err := data.GetMsg()
+	var err error
 	defer func() {
 		if err != nil {
 			data.ajaxResult(false, err.Error())
 		}
 	}()
-	if err != nil {
-		return
-	}
 	if projectID > 0 {
-		project := HostConn.GetProjectById(int32(projectID))
+		project := data.getCacheProjectById(int32(projectID))
 		if project == nil {
 			err = errors.New(data.Lang["project"]["error"].(map[string]string)["NotFound"])
 			return
@@ -256,7 +249,7 @@ func post_story_create(data *TemplateData) (e error) {
 	out.OpenedBy = data.User.Id
 
 	var result *protocol.MSG_PROJECT_stroy_create_result
-	if err = msg.SendMsgWaitResult(0, out, &result); err != nil {
+	if err = data.SendMsgWaitResultToDefault(out, &result); err != nil {
 		return
 	}
 
@@ -288,7 +281,7 @@ func post_story_create(data *TemplateData) (e error) {
 	data.ajaxResult(true, data.Lang["common"]["saveSuccess"].(string), locate)
 	return
 }
-func storyFuncs() {
+func storyTemplateFuncs() {
 	global_Funcs["story_printCell"] = func(data *TemplateData, col *config.ConfigDatatable, story *protocol.MSG_PROJECT_story, users []protocol.HtmlKeyValueStr, branches []protocol.HtmlKeyValueStr, storyStages map[int32][]protocol.HtmlKeyValueStr, modulePairs []protocol.HtmlKeyValueStr, storyTasks, storyBugs, storyCases map[int32]int, mode string) template.HTML { //mode = 'datatable'
 		if mode == "" {
 			mode = "datatable"
@@ -618,7 +611,7 @@ func get_story_view(data *TemplateData) (err error) {
 	if from == "" {
 		from = "product"
 	}
-	msg, err := data.GetMsg()
+
 	if err != nil {
 		return
 	}
@@ -626,7 +619,7 @@ func get_story_view(data *TemplateData) (err error) {
 	story_getById.Id = int32(storyID)
 	story_getById.Version = int16(version)
 	var result *protocol.MSG_PROJECT_story_getById_result
-	if err = msg.SendMsgWaitResult(0, story_getById, &result); err != nil {
+	if err = data.SendMsgWaitResultToDefault(story_getById, &result); err != nil {
 		return
 	} else if result.Story == nil {
 		data.ws.WriteString(js.Alert(data.Lang["common"]["notFound"].(string)) + js.Location("back", "self"))
@@ -651,7 +644,7 @@ func get_story_view(data *TemplateData) (err error) {
 		getplan.Page = 1
 		getplan.PerPage = 1
 		var getplanResult *protocol.MSG_PROJECT_productplan_getList_result
-		if err = msg.SendMsgWaitResult(0, getplan, &getplanResult); err != nil {
+		if err = data.SendMsgWaitResultToDefault(getplan, &getplanResult); err != nil {
 			return
 		}
 		if len(getplanResult.List) > 0 {
@@ -670,7 +663,7 @@ func get_story_view(data *TemplateData) (err error) {
 		getParents := protocol.GET_MSG_PROJECT_tree_getParents()
 		getParents.ModuleID = result.Story.Module
 		var getParentsResult *protocol.MSG_PROJECT_tree_getParents_result
-		if err = msg.SendMsgWaitResult(0, getParents, &getParentsResult); err != nil {
+		if err = data.SendMsgWaitResultToDefault(getParents, &getParentsResult); err != nil {
 			return
 
 		}
@@ -686,7 +679,7 @@ func get_story_view(data *TemplateData) (err error) {
 	/* Set the menu. */
 
 	if from == "project" && param > 0 {
-		if project := HostConn.GetProjectById(int32(param)); project != nil && project.Status == "done" {
+		if project := data.getCacheProjectById(int32(param)); project != nil && project.Status == "done" {
 			from = ""
 		}
 	}

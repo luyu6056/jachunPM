@@ -8,7 +8,7 @@ import (
 
 const (
 	MaxOutLen               = 2<<32 - 1
-	MsgHeadLen              = 4 + 2 + 2 + 2 + 4 + 4 + 3 //不包含cmd
+	MsgHeadLen              = 4 + 2 + 2 + 2 + 4 + 4 + 4 + 3 //不包含cmd
 	MaxMsgLen               = 2<<24 - 1 - MsgHeadLen
 	MaxMsgNum               = 127
 	MaxMsgTtl               = 1000      //目前只允许查询1000次
@@ -77,6 +77,7 @@ func (n ServerNo) String() string {
 	return serverNoToStr[n]
 }
 
+//多语言设置
 type CountryNo string
 
 const (
@@ -84,6 +85,8 @@ const (
 	ZH_CN       CountryNo = "zh-cn"
 	DefaultLang CountryNo = ZH_CN
 )
+
+var AllCountry = []CountryNo{ZH_CN}
 
 var CountryToStr = map[CountryNo]string{
 	//EN:    "English",

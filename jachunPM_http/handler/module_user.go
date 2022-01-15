@@ -32,12 +32,16 @@ func get_user_login(data *TemplateData) (err error) {
 	//检查是否登录
 	ws := data.ws
 	if data.User != nil {
-		ws.Redirect(createLink("company", "browse", nil))
+		ws.Redirect(createLink("my", "index", nil))
 		return
 	}
 	ws.Session()
 	data.Data["keepLogin"] = ""
-	data.Data["referer"] = ws.Header("Referer")
+	referer := data.ws.Referer()
+	if referer == "" {
+		referer = data.ws.Session().Load_str("referer")
+	}
+	data.Data["referer"] = referer
 	data.Data["title"] = data.Lang["user"]["login"].(string)
 	templateOut("user.login.html", data)
 	return
@@ -99,7 +103,7 @@ func post_user_login(data *TemplateData) (e error) {
 			}
 			referer := ws.Post("referer")
 			if strings.Index(referer, config.Server.Origin) == -1 {
-				referer = createLink("company", "browse", nil)
+				referer = createLink("my", "index", nil)
 			}
 			ws.WriteString(`{"locate":"` + referer + `"}`)
 			return
@@ -226,18 +230,14 @@ func post_user_edit(data *TemplateData) (e error) {
 		data.ajaxResult(false, map[string]string{"password1": data.Lang["user"]["error"].(map[string]string)["passwordsame"], "password2": data.Lang["user"]["error"].(map[string]string)["passwordsame"]}, "")
 		return
 	}
-	msg, err := data.GetMsg()
-	if err != nil {
-		data.ajaxResult(false, map[string]string{"verifyPassword": fmt.Sprintf(data.Lang["common"]["error"].(map[string]string)["ErrGetMsg"], err)}, "")
-		return
-	}
+
 	out := protocol.GET_MSG_USER_CheckPasswd()
 	out.UserId = data.User.Id
 	out.Passwd = data.ws.Post("verifyPassword")
 	session := data.ws.Session()
 	out.Rand = session.Load_int64("edit_rand")
 	var resdata *protocol.MSG_USER_CheckPasswd_result
-	err = msg.SendMsgWaitResult(0, out, &resdata)
+	err := data.SendMsgWaitResultToDefault(out, &resdata)
 	out.Put()
 	if err == nil {
 		if resdata.Result == protocol.Success {
@@ -271,7 +271,7 @@ func post_user_edit(data *TemplateData) (e error) {
 				checkaccount := protocol.GET_MSG_USER_CheckAccount()
 				checkaccount.Account = update["account"]
 				var result *protocol.MSG_USER_CheckAccount_result
-				err = msg.SendMsgWaitResult(0, checkaccount, &result)
+				err = data.SendMsgWaitResultToDefault(checkaccount, &result)
 				if err != nil {
 					data.ajaxResult(false, map[string]string{"account": fmt.Sprintf(data.Lang["user"]["error"].(map[string]string)["ErrCheckaccount"], err)}, "")
 					return
@@ -287,7 +287,7 @@ func post_user_edit(data *TemplateData) (e error) {
 			outupdate := protocol.GET_MSG_USER_INFO_updateByID()
 			outupdate.UserID = int32(userID)
 			outupdate.Update = update
-			err := msg.SendMsgWaitResult(0, outupdate, nil)
+			err := data.SendMsgWaitResultToDefault(outupdate, nil)
 			if err != nil {
 				data.ajaxResult(false, map[string]string{"verifyPassword": fmt.Sprintf(data.Lang["user"]["error"].(map[string]string)["ErrUpdate"], err)}, "")
 				return
@@ -353,11 +353,6 @@ func get_user_delete(data *TemplateData) (err error) {
 	return
 }
 func post_user_delete(data *TemplateData) (e error) {
-	msg, err := data.GetMsg()
-	if err != nil {
-		data.ajaxResult(false, map[string]string{"verifyPassword": fmt.Sprintf(data.Lang["common"]["error"].(map[string]string)["ErrGetMsg"], err)}, "")
-		return
-	}
 	out := protocol.GET_MSG_USER_CheckPasswd()
 	out.UserId = data.User.Id
 	out.Passwd = data.ws.Post("verifyPassword")
@@ -365,7 +360,7 @@ func post_user_delete(data *TemplateData) (e error) {
 	out.Rand = session.Load_int64("delete_rand")
 	deleteId, _ := strconv.Atoi(data.ws.Query("userID"))
 	var resdata *protocol.MSG_USER_CheckPasswd_result
-	err = msg.SendMsgWaitResult(0, out, &resdata)
+	err := data.SendMsgWaitResultToDefault(out, &resdata)
 	out.Put()
 	if err == nil {
 		if resdata.Result == protocol.Success {
@@ -374,7 +369,7 @@ func post_user_delete(data *TemplateData) (e error) {
 			outupdate.Update = map[string]string{
 				"Deleted": "1",
 			}
-			err := msg.SendMsgWaitResult(0, outupdate, nil)
+			err := data.SendMsgWaitResultToDefault(outupdate, nil)
 			if err != nil {
 				data.ajaxResult(false, map[string]string{"verifyPassword": fmt.Sprintf(data.Lang["user"]["error"].(map[string]string)["ErrUpdate"], err)}, "")
 				return

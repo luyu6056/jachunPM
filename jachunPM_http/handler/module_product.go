@@ -54,10 +54,7 @@ func get_product_create(data *TemplateData) (err error) {
 	}
 	err = product_setMenu(data, productID, branch, "")
 	data.Data["groups"], _ = user_getGroupOptionMenu()
-	msg, err := data.GetMsg()
-	if err != nil {
-		return
-	}
+
 	if data.Data["poUsers"], err = user_getPairs(data, "nodeleted|pofirst|noclosed"); err != nil {
 		return
 	}
@@ -77,7 +74,7 @@ func get_product_create(data *TemplateData) (err error) {
 	data.Data["productTypeList"] = productTypeList
 	getLinePairs := protocol.GET_MSG_PROJECT_tree_getLinePairs()
 	var res3 *protocol.MSG_PROJECT_tree_getLinePairs_result
-	if err = msg.SendMsgWaitResult(0, getLinePairs, &res3); err != nil {
+	if err = data.SendMsgWaitResultToDefault(getLinePairs, &res3); err != nil {
 		return
 	}
 	res3.List = append([]protocol.HtmlKeyValueStr{{"", ""}}, res3.List...)
@@ -89,11 +86,6 @@ func get_product_create(data *TemplateData) (err error) {
 }
 func post_product_create(data *TemplateData) (e error) {
 	if !data.ajaxCheckPost() {
-		return
-	}
-	msg, err := data.GetMsg()
-	if err != nil {
-		data.ajaxResult(false, err.Error())
 		return
 	}
 	out := protocol.GET_MSG_PROJECT_product_insert()
@@ -150,7 +142,7 @@ func post_product_create(data *TemplateData) (e error) {
 	out.Data = insert
 	out.DocName = data.Lang["doclib"]["main"].(map[string]string)["product"]
 	var res *protocol.MSG_PROJECT_product_insert_result
-	err = msg.SendMsgWaitResult(0, out, &res)
+	err = data.SendMsgWaitResultToDefault(out, &res)
 	if err != nil {
 		data.ajaxResult(false, err.Error())
 		return
@@ -174,10 +166,6 @@ func get_product_browse(data *TemplateData) (err error) {
 	}
 	if browseType == "" {
 		browseType = "unclosed"
-	}
-	msg, err := data.GetMsg()
-	if err != nil {
-		return
 	}
 	if err = product_setMenu(data, int32(productID), int32(branch), ""); err != nil {
 		return
@@ -230,7 +218,7 @@ func get_product_browse(data *TemplateData) (err error) {
 		return
 	}
 	var stories *protocol.MSG_PROJECT_product_getStories_result
-	if err = msg.SendMsgWaitResult(0, getStories, &stories); err != nil {
+	if err = data.SendMsgWaitResultToDefault(getStories, &stories); err != nil {
 		return
 	}
 	if moduleID > 0 {
@@ -248,7 +236,7 @@ func get_product_browse(data *TemplateData) (err error) {
 		story_batchGetStoryStage.Ids[k] = s.Id
 	}
 	var storyStages *protocol.MSG_PROJECT_story_batchGetStoryStage_result
-	if err = msg.SendMsgWaitResult(0, story_batchGetStoryStage, &storyStages); err != nil {
+	if err = data.SendMsgWaitResultToDefault(story_batchGetStoryStage, &storyStages); err != nil {
 		return
 	}
 
@@ -978,11 +966,6 @@ func post_product_edit(data *TemplateData) (err error) {
 		data.ajaxResult(false, data.Lang["product"]["error"].(map[string]string)["NotFound"])
 		return
 	}
-	msg, err := data.GetMsg()
-	if err != nil {
-		data.ajaxResult(false, err.Error())
-		return nil
-	}
 	out := protocol.GET_MSG_PROJECT_product_update()
 	product.Id = product.Id
 	product.Status = "normal"
@@ -1035,13 +1018,13 @@ func post_product_edit(data *TemplateData) (err error) {
 			deleteimg := protocol.GET_MSG_FILE_DeleteByID()
 			for _, id := range newimgids {
 				deleteimg.FileID = id
-				msg.SendMsg(0, deleteimg)
+				data.SendMsgToDefault(deleteimg)
 			}
 			deleteimg.Put()
 		}
 	}()
 	out.Data = product
-	if err = msg.SendMsgWaitResult(0, out, nil); err != nil {
+	if err = data.SendMsgWaitResultToDefault(out, nil); err != nil {
 		data.ajaxResult(false, err.Error())
 		return nil
 	}
@@ -1108,8 +1091,8 @@ func get_product_project(data *TemplateData) (err error) {
 	templateOut("product.project.html", data)
 	return
 }
-func product_getProductsByProject(projectID int32) []*protocol.MSG_PROJECT_product_cache {
-	project := HostConn.GetProjectById(projectID)
+func product_getProductsByProject(data *TemplateData, projectID int32) []*protocol.MSG_PROJECT_product_cache {
+	project := data.getCacheProjectById(projectID)
 	if project == nil {
 		return nil
 	}

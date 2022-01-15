@@ -27,7 +27,6 @@ $(document).ready(function()
         var account          = $('#account').val().trim();
         var password         = $('input:password').val().trim();
         var passwordStrength = computePasswordStrength(password);
-        var referer   = $('#referer').val();
         var link1     = createLink('user', 'getsalt');
         var link2     = createLink('user', 'login');
         var keepLogin = $('#keepLoginon').prop('checked') == true ? 1 : 0;

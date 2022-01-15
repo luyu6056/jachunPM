@@ -40,7 +40,8 @@ func Init() {
 
 type Log_msg struct {
 	Msgno     uint32 `db:"not null;pk"`
-	Ttl       uint16  `db:"not null;pk"`
+	Ttl       int    `db:"not null;pk"`
+	TimeOut   uint16
 	LocalNo   uint8
 	LocalId   uint8
 	RemoteNo  uint8

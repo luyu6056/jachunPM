@@ -14,7 +14,6 @@ import (
 	"path/filepath"
 	"protocol"
 	"reflect"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -52,27 +51,27 @@ var global_Funcs template.FuncMap = map[string]interface{}{}
 var bufpool = sync.Pool{New: func() interface{} {
 	return new(libraries.MsgBuffer)
 }}
-var ConfigChan sync.Map
-var LangChan sync.Map
+var TemplateDataChan sync.Map
 
-func init() {
-	loadFuncs()
+func Init() {
+	loadTemplateFuncs()
 	loadAlltemplate()
 }
-func loadFuncs() {
-	commonModelFuncs()
-	htmlFuncs()
-	hookFuncs()
-	datatableFuncs()
-	storyFuncs()
-	productplanFuncs()
-	fileFuncs()
+func loadTemplateFuncs() {
+	commonTemplateFuncs()
+	htmlTemplateFuncs()
+	hookTemplateFuncs()
+	datatableTemplateFuncs()
+	storyTemplateFuncs()
+	productplanTemplateFuncs()
+	fileTemplateFuncs()
 	isClickableFuncs()
-	actionModelFuncs()
-	projectFuncs()
-	customModelFuncs()
-	taskFuncs()
-	groupFuncs()
+	actionTemplateFuncs()
+	projectTemplateFuncs()
+	customTemplateFuncs()
+	taskTemplateFuncs()
+	groupTemplateFuncs()
+	blockTemplateFuncs()
 	global_t.Funcs(global_Funcs)
 	copyConfig()
 }
@@ -131,13 +130,19 @@ func loadAlltemplate() {
 }
 func copyConfig() {
 	//异步深度拷贝config和lang
-	for k, v := range config.Config {
-		go func(k protocol.CountryNo, v map[string]map[string]map[string]interface{}) {
-			c := make(chan map[string]map[string]map[string]interface{}, runtime.NumCPU())
-			ConfigChan.Store(k, c)
+	for _, country := range protocol.AllCountry {
+		go func(k protocol.CountryNo) {
+			c := make(chan *TemplateData, 20)
+			TemplateDataChan.Store(k, c)
 			for {
-				newConfig := make(map[string]map[string]map[string]interface{})
-				for kk, vv := range v {
+				data := &TemplateData{
+					App:    make(map[string]interface{}),
+					Data:   make(map[string]interface{}),
+					Config: make(map[string]map[string]map[string]interface{}),
+					Lang:   make(map[string]map[string]interface{}),
+				}
+
+				for kk, vv := range config.Config[k] {
 					tmp1 := make(map[string]map[string]interface{})
 					for kkk, vvv := range vv {
 						tmp2 := make(map[string]interface{})
@@ -152,19 +157,9 @@ func copyConfig() {
 						}
 						tmp1[kkk] = tmp2
 					}
-					newConfig[kk] = tmp1
+					data.Config[kk] = tmp1
 				}
-				c <- newConfig
-			}
-		}(k, v)
-	}
-	for k, v := range config.Lang {
-		go func(k protocol.CountryNo, v map[string]map[string]interface{}) {
-			c := make(chan map[string]map[string]interface{}, runtime.NumCPU())
-			LangChan.Store(k, c)
-			for {
-				newLang := make(map[string]map[string]interface{})
-				for kk, vv := range v {
+				for kk, vv := range config.Lang[k] {
 					tmp1 := make(map[string]interface{})
 					for kkk, vvv := range vv {
 						res := libraries.CopyMap(reflect.ValueOf(vvv))
@@ -175,103 +170,94 @@ func copyConfig() {
 						}
 
 					}
-					newLang[kk] = tmp1
+					data.Lang[kk] = tmp1
 				}
-				c <- newLang
+				c <- data
 			}
-		}(k, v)
+		}(country)
 	}
 }
-func templateDataInit(ws HttpRequest) *TemplateData {
-	d := &TemplateData{
-		App:  make(map[string]interface{}),
-		Data: make(map[string]interface{}),
-		ws:   ws,
-		Time: time.Now(),
+func templateDataInit(ws HttpRequest, user *protocol.MSG_USER_INFO_cache) (data *TemplateData) {
+	clientLang := protocol.DefaultLang
+	clientTheme := "default"
+	session := ws.Session()
+	clientLang = getClientLang(ws)
+	clientTheme = session.Load_str("ClientTheme")
+	if clientTheme == "" {
+		clientTheme = "default"
+		session.Set("ClientTheme", "default")
 	}
-	if ws.Cookie("sessionID") == "" {
-		d.App["ClientLang"] = string(protocol.DefaultLang)
-		d.App["ClientTheme"] = "default"
-	} else {
-		session := ws.Session()
-		d.App["ClientLang"] = string(getClientLang(ws))
-		d.App["ClientTheme"] = session.Load_str("ClientTheme")
-		if d.App["ClientTheme"] == "" {
-			d.App["ClientTheme"] = "default"
-			session.Set("ClientTheme", "default")
-		}
-		if uid := session.Load_int32("UserId"); uid > 0 {
-			d.User = HostConn.GetUserCacheById(uid)
-		}
+	if v, ok := TemplateDataChan.Load(clientLang); ok {
+		data = <-v.(chan *TemplateData)
 	}
-	if v, ok := ConfigChan.Load(protocol.CountryNo(d.App["ClientLang"].(string))); ok {
-		d.Config = <-v.(chan map[string]map[string]map[string]interface{})
+	data.ws = ws
+	data.Time = time.Now()
+	if user == nil {
+		user = HostConn.GetUserCacheById(session.Load_int32("UserId"))
 	}
-
-	if v, ok := LangChan.Load(protocol.CountryNo(d.App["ClientLang"].(string))); ok {
-		d.Lang = <-v.(chan map[string]map[string]interface{})
-	}
-
+	data.User = user
+	data.getMsg()
+	data.App["ClientLang"] = string(clientLang)
+	data.App["ClientTheme"] = clientTheme
 	names := strings.Split(ws.Path(), "/")
 	if len(names) > 2 {
-		d.App["moduleName"] = names[1]
-		d.App["methodName"] = names[2]
-		d.Page.CookieName = "pager" + strings.ToUpper(names[1][:1]) + names[1][1:] + strings.ToUpper(names[2][:1]) + names[2][1:]
+		data.App["moduleName"] = names[1]
+		data.App["methodName"] = names[2]
+		data.Page.CookieName = "pager" + strings.ToUpper(names[1][:1]) + names[1][1:] + strings.ToUpper(names[2][:1]) + names[2][1:]
 		if perPage := ws.Query("recPerPage"); perPage != "" {
-			d.Page.PerPage, _ = strconv.Atoi(perPage)
+			data.Page.PerPage, _ = strconv.Atoi(perPage)
 		} else {
-			if perPage := ws.Cookie(d.Page.CookieName); perPage != "" {
-				d.Page.PerPage, _ = strconv.Atoi(perPage)
+			if perPage := ws.Cookie(data.Page.CookieName); perPage != "" {
+				data.Page.PerPage, _ = strconv.Atoi(perPage)
 			}
 		}
 		if total := ws.Query("recTotal"); total != "" {
-			d.Page.Total, _ = strconv.Atoi(total)
+			data.Page.Total, _ = strconv.Atoi(total)
 		}
 		if page := ws.Query("pageID"); page != "" {
-			d.Page.Page, _ = strconv.Atoi(page)
+			data.Page.Page, _ = strconv.Atoi(page)
 		}
-		if d.Page.PerPage <= 0 {
-			d.Page.PerPage = 20
+		if data.Page.PerPage <= 0 {
+			data.Page.PerPage = 20
 		}
-		if d.Page.Page < 1 {
-			d.Page.Page = 1
+		if data.Page.Page < 1 {
+			data.Page.Page = 1
 		}
-		datatableId := d.App["moduleName"].(string) + strings.ToUpper(d.App["methodName"].(string)[:1]) + d.App["methodName"].(string)[1:]
-		if v1, ok := d.Config["datatable"][datatableId]; ok {
+		datatableId := data.App["moduleName"].(string) + strings.ToUpper(data.App["methodName"].(string)[:1]) + data.App["methodName"].(string)[1:]
+		if v1, ok := data.Config["datatable"][datatableId]; ok {
 			if v2, ok := v1["mode"].(string); ok && v2 == "datatable" {
-				d.Data["useDatatable"] = true
-				d.Data["datatableId"] = datatableId
+				data.Data["useDatatable"] = true
+				data.Data["datatableId"] = datatableId
 			}
 		}
 	} else {
-		d.App["moduleName"] = ""
-		d.App["methodName"] = ""
+		data.App["moduleName"] = ""
+		data.App["methodName"] = ""
 	}
-	if d.User != nil {
-		for module, v := range d.User.Config {
-			if d.Config[module] == nil {
-				d.Config[module] = make(map[string]map[string]interface{})
+	if data.User != nil {
+		for module, v := range data.User.Config {
+			if data.Config[module] == nil {
+				data.Config[module] = make(map[string]map[string]interface{})
 			}
 			for section, vv := range v {
-				if d.Config[module][section] == nil {
-					d.Config[module][section] = make(map[string]interface{})
+				if data.Config[module][section] == nil {
+					data.Config[module][section] = make(map[string]interface{})
 				}
 				for key, value := range vv {
-					d.Config[module][section][key] = value
+					data.Config[module][section][key] = value
 				}
 			}
-
 		}
 	}
 	//判断是不是ajax json请求
-	if strings.Contains(d.ws.Header("Accept"), "application/json") || strings.Contains(d.ws.Header("accept"), "application/json") {
-		d.Ajax = true
+	if strings.Contains(data.ws.Header("Accept"), "application/json") || strings.Contains(data.ws.Header("accept"), "application/json") {
+		data.Ajax = true
 	}
-	d.App["ClientLangString"] = protocol.CountryNo(d.App["ClientLang"].(string)).String()
-	d.App["company"] = getCompanyInfo()
-	d.App["langTheme"] = d.Config["common"]["common"]["themeRoot"].(string) + "lang/" + d.App["ClientLang"].(string) + ".css"
-	d.App["onlybody"] = strings.ToLower(ws.Query("onlybody")) == "yes"
-	return d
+	data.App["ClientLangString"] = clientLang.String()
+	data.App["company"] = getCompanyInfo()
+	data.App["langTheme"] = data.Config["common"]["common"]["themeRoot"].(string) + "lang/" + string(clientLang) + ".css"
+	data.App["onlybody"] = strings.ToLower(ws.Query("onlybody")) == "yes"
+	return data
 }
 func (data *TemplateData) onlybody() bool {
 	if data.App != nil && data.App["onlybody"].(bool) {
@@ -341,7 +327,7 @@ func (data *TemplateData) outErr(err error) {
 		data.ws.WriteString(js.Error(err.Error()))
 	} else {
 
-		data.Data["err"] = err.Error()
+		data.Data["err"] = template.HTML(err.Error())
 		templateLock.RLock()
 		buf := bufpool.Get().(*libraries.MsgBuffer)
 		defer func() {
@@ -361,24 +347,15 @@ func (data *TemplateData) outErr(err error) {
 	}
 
 }
-func (data *TemplateData) GetMsg() (*protocol.Msg, error) {
+func (data *TemplateData) getMsg() (*protocol.Msg, error) {
 	if data.Msg == nil {
-		out := protocol.GET_MSG_HOST_GET_Msgno()
-		defer out.Put()
-		var resdata *protocol.MSG_HOST_GET_Msgno_result
+		msg := &protocol.Msg{DB: &protocol.MsgDB{DB: HostConn.DB}}
 		if data.User != nil {
-			out.Uid = data.User.Id
+			msg.Uid = data.User.Id
 		}
-		send := &protocol.RpclientSend{HostConn}
-		err := send.SendMsgWaitResultToDefault(out, &resdata)
-		if err != nil {
-			return nil, err
-		}
-		msg := &protocol.Msg{Msgno: resdata.Msgno, DB: &protocol.MsgDB{DB: HostConn.DB}}
-		msg.SetServer(send)
+		msg.SetServer(&protocol.RpclientSend{HostConn})
 		data.Msg = msg
 	}
-
 	return data.Msg, nil
 }
 func (data *TemplateData) isajax() bool {
@@ -467,19 +444,9 @@ func setValueUnsafe(ptr uintptr, t reflect.Type, value []string) error {
 
 //重新封装便捷消息发送，所有的消息都基于msg发出
 func (data *TemplateData) SendMsgWaitResultToDefault(out protocol.MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
-	if data.Msg == nil {
-		if _, err = data.GetMsg(); err != nil {
-			return
-		}
-	}
 	return data.Msg.SendMsgWaitResult(0, out, result, timeout...)
 }
 func (data *TemplateData) SendMsgToDefault(out protocol.MSG_DATA) (err error) {
-	if data.Msg == nil {
-		if _, err = data.GetMsg(); err != nil {
-			return
-		}
-	}
 	data.Msg.SendMsg(0, out)
 	return nil
 }
@@ -487,15 +454,19 @@ func (data *TemplateData) getCacheProjectById(id int32) *protocol.MSG_PROJECT_pr
 	if v, ok := data.Data["project_cache_"+strconv.Itoa(int(id))].(*protocol.MSG_PROJECT_project_cache); ok {
 		return v
 	}
+	if list, ok := data.Data["project_getAll"].([]*protocol.MSG_PROJECT_project_cache); ok {
+		for _, p := range list {
+			if p.Id == id {
+				data.Data["project_cache_"+strconv.Itoa(int(id))] = p
+				return p
+			}
+		}
+	}
+
 	project := HostConn.GetProjectById(id)
 	data.Data["project_cache_"+strconv.Itoa(int(id))] = project
 	return project
 }
 func (data *TemplateData) BeginTransaction() (session *protocol.MsgDBTransaction, err error) {
-	if data.Msg == nil {
-		if _, err = data.GetMsg(); err != nil {
-			return
-		}
-	}
 	return data.Msg.BeginTransaction()
 }

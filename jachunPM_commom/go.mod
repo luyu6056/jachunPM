@@ -13,7 +13,7 @@ replace protocol => ../protocol
 replace github.com/luyu6056/gnet => ../gnet
 
 require (
-	github.com/klauspost/compress v1.13.0
+	github.com/klauspost/compress v1.14.1
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/luyu6056/cache v1.1.11
 	github.com/luyu6056/gnet v1.3.2

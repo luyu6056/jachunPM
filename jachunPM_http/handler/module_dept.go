@@ -21,10 +21,7 @@ func get_dept_browse(data *TemplateData) (err error) {
 	ws := data.ws
 	deptID, _ := strconv.Atoi(ws.Query("deptID"))
 	data.Data["deptID"] = deptID
-	msg, err := data.GetMsg()
-	if err != nil {
-		return
-	}
+
 	if int32(deptID) > 0 {
 		getParents := protocol.GET_MSG_USER_Dept_getParents()
 		getParents.Id = int32(deptID)
@@ -44,7 +41,7 @@ func get_dept_browse(data *TemplateData) (err error) {
 	getDataStructure := protocol.GET_MSG_USER_Dept_getDataStructure()
 	getDataStructure.RootDeptID = int32(0)
 	var res *protocol.MSG_USER_Dept_getDataStructure_result
-	if err = msg.SendMsgWaitResult(0, getDataStructure, &res); err != nil {
+	if err = data.SendMsgWaitResultToDefault(getDataStructure, &res); err != nil {
 		return
 	}
 	data.Data["tree"] = res.List
@@ -431,11 +428,12 @@ func dept_getOptionMenu(rootDeptID int32) ([]protocol.HtmlKeyValueStr, error) {
 	res := []protocol.HtmlKeyValueStr{{"0", "/"}}
 	for _, dept := range deptlist {
 
-		var deptNames []string
+		var deptNames = []string{dept.Name}
 		for _, parentDeptID := range dept.Path {
 			for _, parent := range deptlist {
+
 				if parent.Id == parentDeptID {
-					deptNames = append(deptNames, dept.Name)
+					deptNames = append(deptNames, parent.Name)
 					break
 				}
 			}

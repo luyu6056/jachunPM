@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/xuri/excelize/v2"
+
 	"protocol"
 
 	"github.com/luyu6056/cache"
@@ -32,9 +34,51 @@ func init() {
 	httpHandlerMap["GET"]["/file/edit"] = get_file_edit
 	httpHandlerMap["POST"]["/file/edit"] = post_file_edit
 	httpHandlerMap["GET"]["/file/delete"] = get_file_delete
-
+	httpHandlerMap["GET"]["/file/buildExportTPL"] = get_file_buildExportTPL
 }
+func fileTemplateFuncs() {
+	global_Funcs["file_printFiles"] = func(oldData *TemplateData, files []*protocol.MSG_FILE_getByID_result, fieldset bool, Type string) template.HTML {
+		path := "/file/file_printFiles"
+		data := getFetchInterface(oldData.ws, path, oldData.User)
+		if Type != "" {
+			data.Data["type"] = Type
+		} else {
+			data.Data["type"] = "file"
+		}
+		data.Data["files"] = files
+		data.Data["fieldset"] = fieldset
+		templateOut("file.printfiles.html", data)
+		res := string(data.ws.(*CommonFetch).OutBuffer())
+		putFetchInterface(data.ws.(*CommonFetch))
+		return template.HTML(res)
+	}
+	global_Funcs["file_getCustomExport"] = func(data *TemplateData) template.HTML {
+		customExport, _ := data.Data["customExport"].(bool)
+		isCustomExport := customExport && data.Data["allExportFields"] != nil
+		data.Data["isCustomExport"] = isCustomExport
+		if isCustomExport {
+			var selectedFields []string
+			exportFieldPairs := map[string]string{}
+			moduleName := data.App["moduleName"].(string)
+			moduleLang := data.Lang[moduleName]
+			for _, field := range data.Data["allExportFields"].([]string) {
+				if v, ok := moduleLang[field].(string); ok {
+					exportFieldPairs[field] = v
+				} else if v, ok := data.Lang["common"][field].(string); ok {
+					exportFieldPairs[field] = v
+				} else {
+					exportFieldPairs[field] = field
+				}
 
+				selectedFields = append(selectedFields, field)
+			}
+			data.Data["exportFieldPairs"] = exportFieldPairs
+			return template.HTML(`<script type="text/javascript">var defaultExportFields='` + strings.Join(selectedFields, ",") + `'</script>`)
+		}
+
+		return template.HTML("")
+	}
+}
 func post_file_ajaxPasteImage(data *TemplateData) (err error) {
 	editor := data.ws.Post("editor")
 	result, err := libraries.Preg_match_result(`^<img src="data:image/([^;]+);base64,([^"]+)"`, editor, 1)
@@ -145,6 +189,12 @@ func get_file_read(data *TemplateData) (err error) {
 		data.ws.WriteString(err.Error())
 		return nil
 	}
+	if err = checkFileAcl(data, result.ObjectType, result.ObjectID); err != nil {
+		data.ws.SetCode(404)
+		data.ws.WriteString(err.Error())
+		return nil
+	}
+
 	if result.Ext == "webp" || result.Ext == "bmp" || result.Ext == "jpg" || result.Ext == "png" {
 		getByte := protocol.GET_MSG_FILE_RangeDown()
 		getByte.FileID = result.FileID
@@ -203,11 +253,7 @@ func get_file_buildform(data *TemplateData) (err error) {
 	return
 }
 func file_descProcessImgURLAnd2Bbcode(data *TemplateData, desc string) (res string, newimgids []int64, uploaderr error) {
-	if data.Msg == nil {
-		if _, uploaderr = data.GetMsg(); uploaderr != nil {
-			return
-		}
-	}
+
 	//检查移除失效的老文件
 	m, _ := libraries.Preg_match_result(`<img aid="attachimg_0" src="\/file\/read\?fileID=(\d+)" border="0" alt=""  \/>`, desc, -1)
 	for _, match := range m {
@@ -296,24 +342,7 @@ func file_getByObject(data *TemplateData, object string, ID int32) (file []*prot
 	out.Put()
 	return result.List, nil
 }
-func fileFuncs() {
-	global_Funcs["file_printFiles"] = func(oldData *TemplateData, files []*protocol.MSG_FILE_getByID_result, fieldset bool, Type string) template.HTML {
-		path := "/file/file_printFiles"
-		data := getFetchInterface(oldData.ws, path)
-		if Type != "" {
-			data.Data["type"] = Type
-		} else {
-			data.Data["type"] = "file"
-		}
-		data.Data["files"] = files
-		data.Data["fieldset"] = fieldset
-		templateOut("file.printfiles.html", data)
-		res := string(data.ws.(*CommonFetch).OutBuffer())
-		putFetchInterface(data.ws.(*CommonFetch))
-		return template.HTML(res)
-	}
 
-}
 func post_file_ajaxUploadTmp(data *TemplateData) (err error) {
 	blockSize, _ := strconv.Atoi(data.ws.Query("blockSize"))
 	index, _ := strconv.Atoi(data.ws.Query("index"))
@@ -359,6 +388,11 @@ func get_file_download(data *TemplateData) (err error) {
 		data.ws.WriteString(err.Error())
 		return nil
 	}
+	if err = checkFileAcl(data, result.ObjectType, result.ObjectID); err != nil {
+		data.ws.SetCode(404)
+		data.ws.WriteString(err.Error())
+		return nil
+	}
 	data.ws.RangeDownload(&fileRangeDown{data: data, fileId: result.FileID, size: result.Size}, result.Size, result.Name)
 	out.Put()
 	result.Put()
@@ -371,26 +405,41 @@ type fileRangeDown struct {
 	fileId int64
 	size   int64
 	offset int64
+	buf    *libraries.MsgBuffer
 }
 
 func (f *fileRangeDown) Read(b []byte) (int, error) {
-	out := protocol.GET_MSG_FILE_RangeDown()
-	out.Start = f.offset
-	out.End = f.offset + int64(len(b))
-	if out.End > f.size {
-		out.End = f.size
+	if f.buf == nil {
+		out := protocol.GET_MSG_FILE_RangeDown()
+		out.Start = f.offset
+		out.End = f.offset + int64(len(b))
+		if out.End > f.size {
+			out.End = f.size
+		}
+		out.FileID = f.fileId
+		var result *protocol.MSG_FILE_RangeDown_result
+		if err := f.data.SendMsgWaitResultToDefault(out, &result); err != nil {
+			return 0, err
+		}
+		copy(b, result.Byte)
+		l := len(result.Byte)
+		out.Put()
+		result.Put()
+		f.offset += int64(l)
+		return l, nil
 	}
-	out.FileID = f.fileId
-	var result *protocol.MSG_FILE_RangeDown_result
-	if err := f.data.SendMsgWaitResultToDefault(out, &result); err != nil {
-		return 0, err
+	res := f.buf.Bytes()
+	if f.offset > int64(len(res)) {
+		return 0, nil
 	}
-	copy(b, result.Byte)
-	l := len(result.Byte)
-	out.Put()
-	result.Put()
-	f.offset += int64(l)
+	res = res[f.offset:]
+	copy(b, res)
+	l := len(res)
+	if l > len(b) {
+		l = len(b)
+	}
 	return l, nil
+
 }
 
 //只做了whence为0的情况
@@ -405,6 +454,11 @@ func get_file_edit(data *TemplateData) (err error) {
 	var result *protocol.MSG_FILE_getByID_result
 	if err = data.SendMsgWaitResultToDefault(out, &result); err != nil {
 		return
+	}
+	if err = checkFileAcl(data, result.ObjectType, result.ObjectID); err != nil {
+		data.ws.SetCode(404)
+		data.ws.WriteString(err.Error())
+		return nil
 	}
 	if strings.Contains(result.Name, ".") {
 		result.Name = result.Name[:strings.LastIndex(result.Name, ".")]
@@ -445,6 +499,11 @@ func get_file_delete(data *TemplateData) (err error) {
 		data.ws.WriteString(js.Alert(err.Error()))
 		return dataErrAlreadyOut
 	}
+	if err = checkFileAcl(data, file.ObjectType, file.ObjectID); err != nil {
+		data.ws.SetCode(404)
+		data.ws.WriteString(err.Error())
+		return nil
+	}
 	out := protocol.GET_MSG_FILE_DeleteByID()
 	out.FileID = getfile.FileID
 	if err = data.SendMsgWaitResultToDefault(out, nil); err != nil {
@@ -452,6 +511,173 @@ func get_file_delete(data *TemplateData) (err error) {
 		return dataErrAlreadyOut
 	}
 	data.ws.WriteString(js.Reload("parent"))
-	data.Msg.ActionCreate(file.ObjectType, file.ObjectID, "deletedFile", "", file.Name, nil, nil)
+	data.Msg.ActionCreate(file.ObjectType, file.ObjectID, "deletedFile", "", file.Name, nil, 0)
 	return
+}
+func checkFileAcl(data *TemplateData, ObjectType string, ObjectID int32) error {
+	if !data.User.IsAdmin {
+		switch ObjectType {
+		case "task":
+			task, err := task_getByID(data, ObjectID)
+			if err != nil {
+				return err
+			}
+			ObjectID = task.Project
+			fallthrough
+		case "project":
+			if !data.User.AclProjects[ObjectID] {
+				return errors.New(data.Lang["project"]["accessDenied"].(string))
+			}
+		case "product":
+			if !data.User.AclProducts[ObjectID] {
+				return errors.New(data.Lang["product"]["accessDenied"].(string))
+			}
+		}
+	}
+	return nil
+}
+func get_file_buildExportTPL(data *TemplateData) (err error) {
+	module := data.ws.Query("module")
+	out := protocol.GET_MSG_USER_getExportTemplate()
+	out.Module = module
+	out.Uid = data.User.Id
+	var result *protocol.MSG_USER_getExportTemplate_result
+	if err = data.SendMsgWaitResultToDefault(out, &result); err != nil {
+		return
+	}
+	templatePairs := []protocol.HtmlKeyValueStr{protocol.HtmlKeyValueStr{"", data.Lang["file"]["defaultTPL"].(string)}}
+	for _, template := range result.List {
+		name := template.Title
+		if template.Public {
+			name = data.Lang["common"]["public"].(string) + name
+		}
+		templatePairs = append(templatePairs, protocol.HtmlKeyValueStr{strconv.Itoa(int(template.Id)), name})
+	}
+
+	data.Data["templates"] = result.List
+	data.Data["templatePairs"] = templatePairs
+	data.Data["templateID"] = data.ws.Query("templateID")
+	templateOut("file.buildexporttpl.html", data)
+	out.Put()
+	result.Put()
+	return
+}
+
+func file_export2xlsx(data *TemplateData, filename string, fields []protocol.HtmlKeyValueStr, values []map[string]string) (err error) {
+	f := excelize.NewFile()
+	row := 1
+	fileIndex := 0
+	for k, field := range fields {
+		f.SetCellValue("Sheet1", file_getxlsAxis(k, row), field.Value)
+		if field.Key == "files" {
+			fileIndex = k
+		}
+		//给desc加宽
+		if field.Key == "desc" {
+			f.SetColWidth("Sheet1", file_getxlsAxis(k, -1), file_getxlsAxis(k, -1), 60)
+		}
+	}
+	//边框
+	border := []excelize.Border{excelize.Border{Type: "left", Style: 1, Color: "#000000"}, excelize.Border{Type: "right", Style: 1, Color: "#000000"}, excelize.Border{Type: "top", Style: 1, Color: "#000000"}, excelize.Border{Type: "bottom", Style: 1, Color: "#000000"}}
+	//首行样式
+	if style, err := f.NewStyle(&excelize.Style{
+		Fill:      excelize.Fill{Type: "pattern", Color: []string{"#343399"}, Pattern: 1},
+		Font:      &excelize.Font{Bold: true, Size: 9, Color: "#ffffff"},
+		Alignment: &excelize.Alignment{Horizontal: "center", Vertical: "center"},
+		Border:    border,
+	}); err != nil {
+		return err
+	} else {
+		f.SetCellStyle("Sheet1", file_getxlsAxis(0, row), file_getxlsAxis(len(fields), row), style)
+	}
+	//隔行样式
+	style1, _ := f.NewStyle(&excelize.Style{
+		Fill:   excelize.Fill{Type: "pattern", Color: []string{"#b2d7ea"}, Pattern: 1},
+		Border: border,
+	})
+	style2, _ := f.NewStyle(&excelize.Style{
+		Fill:   excelize.Fill{Type: "pattern", Color: []string{"#dee6fb"}, Pattern: 1},
+		Border: border,
+	})
+	style1WrapText, _ := f.NewStyle(&excelize.Style{
+		Fill:      excelize.Fill{Type: "pattern", Color: []string{"#b2d7ea"}, Pattern: 1},
+		Border:    border,
+		Alignment: &excelize.Alignment{WrapText: true},
+	})
+	style2WrapText, _ := f.NewStyle(&excelize.Style{
+		Fill:      excelize.Fill{Type: "pattern", Color: []string{"#dee6fb"}, Pattern: 1},
+		Border:    border,
+		Alignment: &excelize.Alignment{WrapText: true},
+	})
+	maxFileNum := 0
+	for _, v := range values {
+		row++
+		lastindex := 0
+		for k, field := range fields {
+			if field.Key != "files" {
+				lastindex = k
+				f.SetCellValue("Sheet1", file_getxlsAxis(k, row), v[field.Key])
+			}
+		}
+		if row%2 == 1 {
+			f.SetCellStyle("Sheet1", file_getxlsAxis(0, row), file_getxlsAxis(len(fields), row), style2)
+		} else {
+			f.SetCellStyle("Sheet1", file_getxlsAxis(0, row), file_getxlsAxis(len(fields), row), style1)
+		}
+
+		if v["files"] != "" {
+			lastindex++
+			_maxFileNum := 0
+			for _, file := range strings.Split(v["files"], "||||") {
+				m, err := libraries.Preg_match_result(`<a href='([^']+)' >(.+)<\/a>`, file, 1)
+				if err == nil && len(m) == 1 {
+					f.SetCellValue("Sheet1", file_getxlsAxis(lastindex, row), m[0][2])
+					f.SetCellHyperLink("Sheet1", file_getxlsAxis(lastindex, row), m[0][1], "External")
+				} else {
+					f.SetCellValue("Sheet1", file_getxlsAxis(lastindex, row), file)
+				}
+				lastindex++
+				_maxFileNum++
+
+				if row%2 == 1 {
+					f.SetCellStyle("Sheet1", file_getxlsAxis(lastindex, row), file_getxlsAxis(lastindex, row), style2WrapText)
+				} else {
+					f.SetCellStyle("Sheet1", file_getxlsAxis(lastindex, row), file_getxlsAxis(lastindex, row), style1WrapText)
+				}
+
+			}
+			if _maxFileNum > maxFileNum {
+				maxFileNum = _maxFileNum
+			}
+		}
+	}
+	//设置files的宽度
+	if maxFileNum > 0 {
+		f.SetColWidth("Sheet1", file_getxlsAxis(fileIndex, -1), file_getxlsAxis(fileIndex+maxFileNum, -1), 35)
+	}
+	buf := bufpool.Get().(*libraries.MsgBuffer)
+	buf.Reset()
+	if err = f.Write(buf); err != nil {
+		return
+	}
+	data.ws.SetContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	data.ws.RangeDownload(&fileRangeDown{data: data, size: int64(buf.Len()), buf: buf}, int64(buf.Len()), filename+".xlsx")
+	buf.Reset()
+	bufpool.Put(buf)
+	return
+}
+
+//index 和 row 为-1时，表示行列
+func file_getxlsAxis(index int, row int) string {
+	axis := ""
+	if index > -1 {
+		if s1 := index / 26; s1 > 0 {
+			axis = string(rune(64 + s1))
+		}
+		axis += string(rune(65 + index%26))
+	}
+	if row > 0 {
+		axis += strconv.Itoa(row)
+	}
+	return axis
 }

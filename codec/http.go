@@ -11,9 +11,6 @@ import (
 	"io/ioutil"
 	"libraries"
 	"math/rand"
-	"mime"
-	"mime/multipart"
-	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -42,29 +39,29 @@ type Httpserver struct {
 	Origin         string
 	OutHeader      map[string]string
 	OutCookie      map[string]httpcookie
-	StartTime      time.Time
+	//StartTime      time.Time
 }
 type httpcookie struct {
 	value   string
 	max_age uint32
 }
+type httpQuery struct {
+	key   string
+	value []string
+}
 type Request struct {
-	Code          int
-	CodeMsg       string
-	Proto, Method string
-	path, query   string
-	RemoteAddr    string
-	Connection    string
-	Header        map[string]string
-	Cookie        map[string]string
-	Body          *libraries.MsgBuffer
-	FormCache     url.Values
-	PostForm      url.Values
-	QueryCache    url.Values
-	MultipartForm *multipart.Form
-	Form          url.Values
-	URL           *url.URL
-	IsHttps       bool
+	Code             int
+	CodeMsg          string
+	Proto, Method    string
+	path, query, uri string
+	RemoteAddr       string
+	Connection       string
+	Header           map[string]string
+	Cookie           map[string]string
+	Body             *libraries.MsgBuffer
+	queryS           []httpQuery
+	postS            []httpQuery
+	IsHttps          bool
 }
 
 var Httppool = sync.Pool{New: func() interface{} {
@@ -110,8 +107,19 @@ func (hs *Httpserver) Write(b *libraries.MsgBuffer) {
 		hs.Out.WriteString("Content-Type: text/html;charset=utf-8\r\n")
 	}
 
-	hs.data.Reset(b.Bytes())
-	hs.httpsfinish(hs.data, hs.data.Len())
+	if b.Len() > 9192 && strings.Contains(hs.Request.GetHeader("Accept-Encoding"), "deflate") {
+		buf := msgbufpool.Get().(*libraries.MsgBuffer)
+		buf.Reset()
+		w := CompressNoContextTakeover(buf, 6)
+		w.Write(b.Bytes())
+		w.Close()
+		hs.Out.Write(http1deflate)
+		hs.httpsfinish(buf, buf.Len())
+		buf.Reset()
+		msgbufpool.Put(buf)
+	} else {
+		hs.httpsfinish(b, b.Len())
+	}
 
 }
 func (hs *Httpserver) WriteString(str string) {
@@ -132,11 +140,19 @@ func (hs *Httpserver) WriteString(str string) {
 		hs.Out.WriteString("Content-Type: text/html;charset=utf-8\r\n")
 	}
 	buf := msgbufpool.Get().(*libraries.MsgBuffer)
-	defer msgbufpool.Put(buf)
 	buf.Reset()
-	buf.WriteString(str)
+	if len(str) > 9192 && strings.Contains(hs.Request.GetHeader("Accept-Encoding"), "deflate") {
+		w := CompressNoContextTakeover(buf, 6)
+		w.Write(libraries.Str2bytes(str))
+		w.Close()
+		hs.Out.Write(http1deflate)
+	} else {
+		buf.WriteString(str)
+	}
+
 	hs.httpsfinish(buf, buf.Len())
 	buf.Reset()
+	msgbufpool.Put(buf)
 }
 func (hs *Httpserver) RemoteAddr() string {
 	return hs.c.RemoteAddr().String()
@@ -158,19 +174,13 @@ func (hs *Httpserver) UserAgent() string {
 	return hs.Request.GetHeader("UserAgent")
 }
 func (hs *Httpserver) URI() string {
-	if hs.Request.URL == nil {
-		var u string
-		if hs.Request.IsHttps {
-			u = fmt.Sprintf("https://%s%s", hs.Request.Header["Host"], hs.Request.path)
-		} else {
-			u = fmt.Sprintf("http://%s%s", hs.Request.Header["Host"], hs.Request.path)
-		}
-		if hs.Request.query != "" {
-			u += "?" + hs.Request.query
-		}
-		hs.Request.URL, _ = url.Parse(u)
+	if hs.ishttps {
+		return fmt.Sprintf("https://%s%s", hs.Request.Header["Host"], hs.Request.uri)
 	}
-	return hs.Request.URL.RequestURI()
+	return fmt.Sprintf("http://%s%s", hs.Request.Header["Host"], hs.Request.uri)
+}
+func (hs *Httpserver) Referer() string {
+	return hs.Request.Header["Referer"]
 }
 
 var errprotocol = errors.New("the client is not using the websocket protocol:")
@@ -249,7 +259,6 @@ func (hs *Httpserver) Upgradews() (err error) {
 
 func (req *Request) Parsereq(data []byte) (int, []byte, error) {
 	sdata := string(data)
-
 	var i, s int
 
 	var line string
@@ -273,6 +282,7 @@ func (req *Request) Parsereq(data []byte) (int, []byte, error) {
 			} else {
 				req.path = sdata[s:i]
 			}
+			req.uri = sdata[s:i]
 			i++
 			s = bytes.Index(data[i:], []byte{13, 10})
 			if s > -1 {
@@ -350,6 +360,7 @@ func (req *Request) Parsereq(data []byte) (int, []byte, error) {
 						req.Body.Write(data[s : s+clen])
 						s += clen
 					} else if l-s == 2 && data[s] == 13 && data[s+1] == 10 {
+						req.decodeQueryPost()
 						return s + 2, req.Body.Bytes(), nil
 					}
 
@@ -360,6 +371,7 @@ func (req *Request) Parsereq(data []byte) (int, []byte, error) {
 					return 0, nil, nil
 				}
 				req.Body.ResetBuf(data[s : s+clen])
+				req.decodeQueryPost()
 				return s + clen, req.Body.Bytes(), nil
 			}
 		} else {
@@ -371,6 +383,99 @@ func (req *Request) Parsereq(data []byte) (int, []byte, error) {
 
 	// not enough data
 	return 0, nil, nil
+}
+func (req *Request) decodeQueryPost() {
+	if req.query != "" {
+		for _, str := range strings.Split(req.query, "&") {
+			s := strings.Split(str, "=")
+			if len(s) == 2 {
+				k, err1 := url.QueryUnescape(s[0])
+				v, err2 := url.QueryUnescape(s[1])
+				if err1 == nil && err2 == nil {
+					req.addquery(k, v)
+				}
+			}
+		}
+	}
+
+	if strings.Contains(req.Header["Content-Type"], "application/x-www-form-urlencoded") {
+		for _, str := range strings.Split(req.Body.String(), "&") {
+			if i := strings.Index(str, "="); i > 0 {
+				k, err1 := url.QueryUnescape(str[:i])
+				v, err2 := url.QueryUnescape(str[i+1:])
+				if err1 == nil && err2 == nil {
+					req.addpost(k, v)
+				}
+
+			}
+		}
+	}
+	if strings.Contains(req.Header["Content-Type"], "multipart/form-data") {
+		if i := strings.Index(req.Header["Content-Type"], "boundary="); i > -1 {
+			for _, str := range strings.Split(req.Body.String(), "--"+req.Header["Content-Type"][i+9:]+"\r\n") {
+				i := strings.Index(str, "\r\n")
+
+				if i > -1 {
+					if strings.Contains(str[:i], "Content-Disposition: form-data;") {
+						var key, value string
+						if j := strings.Index(str[:i], `name="`); j > -1 {
+							key, _ = url.QueryUnescape(str[j+6 : i-1])
+						}
+						if j := strings.Index(str[i+4:], "\r\n"); j > -1 {
+							value, _ = url.QueryUnescape(str[i+4 : i+4+j])
+						}
+						if key != "" {
+							req.addpost(key, value)
+						}
+					}
+
+				}
+
+			}
+		}
+
+	}
+}
+func (req *Request) addquery(name, value string) {
+	for _, v := range req.queryS {
+		if v.key == name {
+			v.value = append(v.value, value)
+			return
+		}
+	}
+	oldlen := len(req.queryS)
+	if oldlen+1 > cap(req.queryS) {
+		req.queryS = append(req.queryS, httpQuery{
+			key:   name,
+			value: []string{value},
+		})
+	} else {
+		req.queryS = req.queryS[:oldlen+1]
+		req.queryS[oldlen].key = name
+		req.queryS[oldlen].value = req.queryS[oldlen].value[:0]
+		req.queryS[oldlen].value = append(req.queryS[oldlen].value, value)
+	}
+}
+func (req *Request) addpost(name, value string) {
+	for _, v := range req.postS {
+		if v.key == name {
+			v.value = append(v.value, value)
+			return
+		}
+	}
+	oldlen := len(req.postS)
+	if oldlen+1 > cap(req.postS) {
+		req.postS = append(req.postS, httpQuery{
+			key:   name,
+			value: []string{value},
+		})
+	} else {
+		req.postS = req.postS[:oldlen+1]
+		req.postS[oldlen].key = name
+		req.postS[oldlen].value = req.postS[oldlen].value[:0]
+		req.postS[oldlen].value = append(req.postS[oldlen].value, value)
+
+	}
 }
 
 var (
@@ -494,7 +599,6 @@ func (hs *Httpserver) RangeDownload(b HttpIoReader, size int64, name string) {
 			range_end, _ = strconv.Atoi(r[e+1:])
 		}
 	}
-
 	if range_start > 0 || range_end > 0 {
 		hs.Out.Write(http1head206)
 		if range_end == 0 {
@@ -551,12 +655,14 @@ func (hs *Httpserver) httpsfinish(b io.Reader, l int) {
 	hs.Out.WriteString("\r\nContent-Length: ")
 	hs.Out.WriteString(strconv.Itoa(l))
 	hs.Out.WriteString("\r\n\r\n")
-
 	for msglen := l; msglen > 0; msglen = l {
 		if msglen > http2initialMaxFrameSize*100-hs.Out.Len() { //切分为一个tls包
 			msglen = http2initialMaxFrameSize*100 - hs.Out.Len()
 		}
 		if _, e := b.Read(hs.Out.Make(msglen)); e != nil {
+			libraries.DebugLog("httpsfinish Read错误%v", e)
+			hs.Out.Reset()
+			hs.OutErr(e)
 			hs.c.Close()
 			return
 		}
@@ -590,7 +696,7 @@ func (hs *Httpserver) OutErr(err error) {
 			return
 		}
 	}
-	hs.Out.WriteString("HTTP/1.1 500 Internal Server Error\r\nContent-Length: ")
+	hs.Out.WriteString("HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/html;charset=utf-8\nContent-Length: ")
 	hs.Out.WriteString(strconv.Itoa(len(err.Error())))
 	hs.Out.WriteString("\r\n\r\n")
 	hs.Out.WriteString(err.Error())
@@ -664,8 +770,8 @@ func (hs *Httpserver) Redirect(url string) {
 	hs.Out.Reset()
 	hs.Out.WriteString("HTTP/1.1 302 OK\r\nserver: gnet by luyu6056\r\nCache-Control: Max-age=0\r\nContent-Type: text/html;charset=utf-8\r\nLocation: ")
 	hs.Out.WriteString(url)
-	hs.Out.WriteString("\r\n\r\n")
-	hs.c.AsyncWrite(hs.Out.Bytes())
+	hs.Out.WriteString("\r\n")
+	hs.httpsfinish(nil, 0)
 }
 func (hs *Httpserver) Recovery() {
 	hs.Out.Reset()
@@ -680,15 +786,11 @@ func (hs *Httpserver) Recovery() {
 	}
 	hs.Request.Cookie = nil
 	hs.session = nil
-	hs.Request.FormCache = nil
-	hs.Request.QueryCache = nil
-	hs.Request.PostForm = nil
-	hs.Request.Form = nil
-	hs.Request.MultipartForm = nil
+	hs.Request.queryS = hs.Request.queryS[:0]
+	hs.Request.postS = hs.Request.postS[:0]
 	hs.OutCode = 0
 	hs.OutContentType = ""
-	hs.Request.URL = nil
-	hs.Request.query = hs.Request.query[:0]
+	hs.Request.query = ""
 }
 func (hs *Httpserver) Cookie(name string) string {
 	if cookieHead, ok := hs.Request.Header["Cookie"]; ok {
@@ -706,249 +808,54 @@ func (hs *Httpserver) Path() string {
 	return hs.Request.path
 }
 func (hs *Httpserver) Query(key string) string {
-	hs.getQueryCache()
-	if values, ok := hs.Request.QueryCache[key]; ok && len(values) > 0 {
-		return values[0]
+	for _, q := range hs.Request.queryS {
+		if q.key == key {
+			return q.value[0]
+		}
 	}
 	return ""
 }
-func (hs *Httpserver) getQueryCache() {
-	if hs.Request.QueryCache == nil {
-		hs.Request.QueryCache = make(url.Values)
-		hs.Request.QueryCache, _ = url.ParseQuery(hs.Request.query)
-	}
-}
+
 func (hs *Httpserver) Post(key string) (value string) {
-	value = hs.PostForm(key)
-	if value == "" {
-		value = hs.Query(key)
+	for _, q := range hs.Request.postS {
+		if q.key == key {
+			return q.value[0]
+		}
 	}
 	return
 }
 func (hs *Httpserver) PostSlice(key string) []string {
-	hs.Request.getFormCache()
-	return hs.Request.FormCache[key]
+	for _, q := range hs.Request.postS {
+		if q.key == key {
+			return q.value
+		}
+	}
+	return nil
 }
 func (hs *Httpserver) GetAllPost() (res map[string][]string) {
-	hs.Request.getFormCache()
-	res = make(map[string][]string, len(hs.Request.FormCache))
-	for k, v := range hs.Request.FormCache {
-		res[k] = v
+	res = make(map[string][]string, len(hs.Request.postS))
+	for _, v := range hs.Request.postS {
+		res[v.key] = v.value
 	}
 	return res
 }
 func (hs *Httpserver) GetAllQuery() (res map[string][]string) {
-	hs.getQueryCache()
-	res = make(map[string][]string, len(hs.Request.QueryCache))
-	for k, v := range hs.Request.QueryCache {
-		res[k] = v
+	res = make(map[string][]string, len(hs.Request.queryS))
+	for _, v := range hs.Request.queryS {
+		res[v.key] = v.value
 	}
 	return res
 }
 func (hs *Httpserver) AddQuery(name, value string) {
-	hs.getQueryCache()
-	for k, _ := range hs.Request.QueryCache {
-		if k == name {
-			hs.Request.QueryCache[k] = []string{value}
-			return
-		}
-	}
-	hs.Request.QueryCache[name] = []string{value}
+	hs.Request.addquery(name, value)
 }
+
 func (hs *Httpserver) SetCode(code int) {
 	hs.OutCode = code
 }
 func (hs *Httpserver) SetContentType(ContentType string) {
 	hs.OutContentType = ContentType
 }
-func (hs *Httpserver) PostForm(key string) string {
-	hs.Request.getFormCache()
-	if values := hs.Request.FormCache[key]; len(values) > 0 {
-		return values[0]
-	}
-	return ""
-}
-func (req *Request) getFormCache() {
-	if req.FormCache == nil {
-		req.ParseMultipartForm(2 ^ 16)
-		if err := req.ParseForm(); err != nil {
-			if err != http.ErrNotMultipart {
-				libraries.DebugLog("error on parse multipart form array: %v", err)
-			}
-		}
-		req.FormCache = req.PostForm
-	}
-}
-
-var multipartByReader = &multipart.Form{
-	Value: make(map[string][]string),
-	File:  make(map[string][]*multipart.FileHeader),
-}
-
-func (r *Request) ParseMultipartForm(maxMemory int64) error {
-	if r.MultipartForm == multipartByReader {
-		return errors.New("http: multipart handled by MultipartReader")
-	}
-	if r.Form == nil {
-		err := r.ParseForm()
-		if err != nil {
-			return err
-		}
-	}
-	if r.MultipartForm != nil {
-		return nil
-	}
-
-	mr, err := r.multipartReader(false)
-	if err != nil {
-		return err
-	}
-
-	f, err := mr.ReadForm(maxMemory)
-	if err != nil {
-		return err
-	}
-
-	if r.PostForm == nil {
-		r.PostForm = make(url.Values)
-	}
-	for k, v := range f.Value {
-		r.Form[k] = append(r.Form[k], v...)
-		// r.PostForm should also be populated. See Issue 9305.
-		r.PostForm[k] = append(r.PostForm[k], v...)
-	}
-
-	r.MultipartForm = f
-
-	return nil
-}
-func (r *Request) ParseForm() error {
-	var err error
-	if r.PostForm == nil {
-		if r.Method == "POST" || r.Method == "PUT" || r.Method == "PATCH" {
-			r.PostForm, err = parsePostForm(r)
-		}
-		if r.PostForm == nil {
-			r.PostForm = make(url.Values)
-		}
-	}
-	if r.Form == nil {
-		if len(r.PostForm) > 0 {
-			r.Form = make(url.Values)
-			copyValues(r.Form, r.PostForm)
-		}
-		var newValues url.Values
-		if r.URL != nil {
-			var e error
-			newValues, e = url.ParseQuery(r.URL.RawQuery)
-			if err == nil {
-				err = e
-			}
-		}
-		if newValues == nil {
-			newValues = make(url.Values)
-		}
-		if r.Form == nil {
-			r.Form = newValues
-		} else {
-			copyValues(r.Form, newValues)
-		}
-	}
-	return err
-}
-func (r *Request) multipartReader(allowMixed bool) (*multipart.Reader, error) {
-	v := r.GetHeader("Content-Type")
-	if v == "" {
-		return nil, ErrNotMultipart
-	}
-	d, params, err := mime.ParseMediaType(v)
-	if err != nil || !(d == "multipart/form-data" || allowMixed && d == "multipart/mixed") {
-		return nil, ErrNotMultipart
-	}
-	boundary, ok := params["boundary"]
-	if !ok {
-		return nil, ErrMissingBoundary
-	}
-	return multipart.NewReader(r.Body, boundary), nil
-}
-func parsePostForm(r *Request) (vs url.Values, err error) {
-	if r.Body == nil {
-		err = errors.New("missing form body")
-		return
-	}
-	ct := r.GetHeader("Content-Type")
-	// RFC 7231, section 3.1.1.5 - empty type
-	//   MAY be treated as application/octet-stream
-	if ct == "" {
-		ct = "application/octet-stream"
-	}
-	ct, _, err = mime.ParseMediaType(ct)
-	switch {
-	case ct == "application/x-www-form-urlencoded":
-		var e error
-		vs, e = url.ParseQuery(r.Body.String())
-		if err == nil {
-			err = e
-		}
-	case ct == "multipart/form-data":
-		// handled by ParseMultipartForm (which is calling us, or should be)
-		// TODO(bradfitz): there are too many possible
-		// orders to call too many functions here.
-		// Clean this up and write more tests.
-		// request_test.go contains the start of this,
-		// in TestParseMultipartFormOrder and others.
-
-	}
-	return
-}
-func copyValues(dst, src url.Values) {
-	for k, vs := range src {
-		for _, value := range vs {
-			dst.Add(k, value)
-		}
-	}
-}
-
-type ProtocolError struct {
-	ErrorString string
-}
-
-func (pe *ProtocolError) Error() string { return pe.ErrorString }
-
-var (
-	// ErrNotSupported is returned by the Push method of Pusher
-	// implementations to indicate that HTTP/2 Push support is not
-	// available.
-	ErrNotSupported = &ProtocolError{"feature not supported"}
-
-	// Deprecated: ErrUnexpectedTrailer is no longer returned by
-	// anything in the net/http package. Callers should not
-	// compare errors against this variable.
-	ErrUnexpectedTrailer = &ProtocolError{"trailer header without chunked transfer encoding"}
-
-	// ErrMissingBoundary is returned by Request.MultipartReader when the
-	// request's Content-Type does not include a "boundary" parameter.
-	ErrMissingBoundary = &ProtocolError{"no multipart boundary param in Content-Type"}
-
-	// ErrNotMultipart is returned by Request.MultipartReader when the
-	// request's Content-Type is not multipart/form-data.
-	ErrNotMultipart = &ProtocolError{"request Content-Type isn't multipart/form-data"}
-
-	// Deprecated: ErrHeaderTooLong is no longer returned by
-	// anything in the net/http package. Callers should not
-	// compare errors against this variable.
-	ErrHeaderTooLong = &ProtocolError{"header too long"}
-
-	// Deprecated: ErrShortBody is no longer returned by
-	// anything in the net/http package. Callers should not
-	// compare errors against this variable.
-	ErrShortBody = &ProtocolError{"entity body too short"}
-
-	// Deprecated: ErrMissingContentLength is no longer returned by
-	// anything in the net/http package. Callers should not
-	// compare errors against this variable.
-	ErrMissingContentLength = &ProtocolError{"missing ContentLength in HEAD response"}
-)
 
 type httpCode int
 

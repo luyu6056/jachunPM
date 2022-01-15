@@ -4,6 +4,7 @@ package handler
 import (
 	"codec"
 	"libraries"
+	"protocol"
 	"sync"
 
 	"github.com/luyu6056/cache"
@@ -21,11 +22,11 @@ var fetchpool = sync.Pool{New: func() interface{} {
 	return &CommonFetch{buf: &libraries.MsgBuffer{}}
 }}
 
-func getFetchInterface(oldws HttpRequest, path string) *TemplateData {
+func getFetchInterface(oldws HttpRequest, path string, user *protocol.MSG_USER_INFO_cache) *TemplateData {
 	f := fetchpool.Get().(*CommonFetch)
 	f.oldws = oldws
 	f.path = path
-	return templateDataInit(f)
+	return templateDataInit(f, user)
 }
 func putFetchInterface(f *CommonFetch) {
 	f.queryCache = nil
@@ -117,6 +118,9 @@ func (f *CommonFetch) Close() {
 func (f *CommonFetch) RangeDownload(r codec.HttpIoReader, size int64, name string) {
 	f.oldws.RangeDownload(r, size, name)
 }
-func (f *CommonFetch) URI() string{
+func (f *CommonFetch) URI() string {
 	return f.oldws.URI()
+}
+func (f *CommonFetch) Referer() string {
+	return f.oldws.Referer()
 }

@@ -1,0 +1,57 @@
+{{template "header.html" .}}
+{{template "datatable.fix.html" .}}
+<div id="mainMenu" class="clearfix">
+  <div class="btn-toolbar pull-left">
+    {{$recTotalLabel := strAdd "<span class='label label-light label-badge'>" $.Page.Total "</span>"}}
+    {{html_a (inlink . "task"  "type=assignedtome")   (strAdd "<span class='text'>" .Lang.my.taskMenu.assignedToMe "</span>"  (or (and (eq $.Data.type "assignedtome") $recTotalLabel) "")) "" (strAdd "class='btn btn-link"  (or (and (eq $.Data.type "assignedtome") " btn-active-text") "")  "'")}}
+    {{html_a (inlink . "task"  "type=openedBy")   (strAdd "<span class='text'>" .Lang.my.taskMenu.openedByMe "</span>"  (or (and (eq $.Data.type "openedBy") $recTotalLabel) "")) "" (strAdd "class='btn btn-link"  (or (and (eq $.Data.type "openedBy") " btn-active-text") "")  "'")}}
+    {{html_a (inlink . "task"  "type=finishedbyme")   (strAdd "<span class='text'>" .Lang.my.taskMenu.finishedByMe "</span>"  (or (and (eq $.Data.type "finishedbyme") $recTotalLabel) "")) "" (strAdd "class='btn btn-link"  (or (and (eq $.Data.type "finishedbyme") " btn-active-text") "")  "'")}}
+    {{html_a (inlink . "task"  "type=closedBy")   (strAdd "<span class='text'>" .Lang.my.taskMenu.closedByMe "</span>"  (or (and (eq $.Data.type "closedBy") $recTotalLabel) "")) "" (strAdd "class='btn btn-link"  (or (and (eq $.Data.type "closedBy") " btn-active-text") "")  "'")}}
+    {{html_a (inlink . "task"  "type=canceledBy")   (strAdd "<span class='text'>" .Lang.my.taskMenu.canceledByMe "</span>"  (or (and (eq $.Data.type "canceledBy") $recTotalLabel) "")) "" (strAdd "class='btn btn-link"  (or (and (eq $.Data.type "canceledBy") " btn-active-text") "")  "'")}}
+  </div>
+</div>
+<div id="mainContent">
+  {{if $.Data.tasks}}
+  <div class="table-empty-tip">
+    <p><span class="text-muted">{{.Lang.task.noTask}}</span></p>
+  </div>
+  {{else}}
+  <form id='myTaskForm' class="main-table table-task" data-ride="table" method="post">
+    <div class="table-header fixed-right">
+        <nav class="btn-toolbar pull-right"></nav>
+    </div>
+    {{- $canBatchEdit  := common_hasPriv . "task" "batchEdit"}}
+    {{- $canBatchClose := and (common_hasPriv . "task" "batchClose") (ne $.Data.type "closedBy")}}
+  
+    <table class="table has-sort-head table-fixed" id='tasktable'>
+      <thead>
+        <tr>
+          {{- range $field := $.Data.customFields}}
+              {{if $field.Show}}{{datatable_printHead $ $field $.Data.orderBy $.Data.vars}}{{end}}
+          {{- end}}
+      </thead>
+      <tbody>
+       {{.Data.taskCell}}
+      </tbody>
+    </table>
+    <div class="table-footer">
+      {{if or $canBatchEdit $canBatchClose}}
+      <div class="checkbox-primary check-all"><label>{{.Lang.common.selectAll}}</label></div>
+      {{end}}
+      <div class="table-actions btn-toolbar">
+      {{- if $canBatchEdit}}
+          {{html_commonButton .Lang.common.edit (strAdd "onclick=\"setFormAction('" (helper_createLink "task" "batchEdit" "projectID=0&orderBy=" $.Data.orderBy) "'\"")}}
+      {{- end}}
+      {{- if $canBatchClose}}
+          {{html_commonButton .Lang.common.close (strAdd "onclick=\"setFormAction('" (helper_createLink "task" "batchClose") "','hiddenwin'\"")}}
+      {{- end}}
+      </div>
+      {{pager_show $ "right" "pagerjs"}}
+    </div>
+  </form>
+  {{end}}
+</div>
+<script type="text/javascript">
+  var listName='tasktable';
+</script>
+{{template "footer.html" .}}

@@ -23,7 +23,7 @@ func project_setCache(id int32) {
 		out.Type = "project"
 		out.Root = []int32{project.Id}
 		var result *protocol.MSG_USER_team_getByTypeRoot_result
-		if err := (&protocol.RpclientSend{HostConn}).SendMsgWaitResultToDefault(out, &result); err == nil {
+		if err := (&protocol.RpclientSend{HostConn}).SendMsgWaitResultToDefault(nil, out, &result); err == nil {
 			project.Teams = result.List
 		}
 		out.Put()
@@ -114,7 +114,7 @@ func project_linkStory(data *protocol.MSG_PROJECT_project_linkStory, in *protoco
 			in.DB.Table(db.TABLE_STORY).Prepare().Where("Id=?", id).Find(&story)
 			if story != nil {
 				story_setStage(id, in)
-				in.ActionCreate("story", id, "linked2project", "", strconv.Itoa(int(project.Id)), []int32{story.Product}, []int32{project.Id})
+				in.ActionCreate("story", id, "linked2project", "", strconv.Itoa(int(project.Id)), []int32{story.Product}, project.Id)
 			}
 
 		}
@@ -170,12 +170,12 @@ func project_create(data *protocol.MSG_PROJECT_project_create, in *protocol.Msg)
 
 		if oldproject != nil {
 			newproject := HostConn.GetProjectById(int32(id))
-			actionID, err := in.ActionCreate("project", int32(id), "edited", "", "", products, []int32{int32(id)})
+			actionID, err := in.ActionCreate("project", int32(id), "edited", "", "", products, int32(id))
 			if err == nil {
 				in.ActionLogHistory(actionID, oldproject, newproject)
 			}
 		} else {
-			in.ActionCreate("project", int32(id), "opened", "", "", products, []int32{int32(id)})
+			in.ActionCreate("project", int32(id), "opened", "", "", products, int32(id))
 		}
 
 	})
@@ -329,7 +329,7 @@ func project_start(data *protocol.MSG_PROJECT_project_start, in *protocol.Msg) {
 	session.CommitCallback(func() {
 		var newProject *protocol.MSG_PROJECT_project_cache
 		in.DB.Table(db.TABLE_PROJECT).Prepare().Where("Id=?", project.Id).Find(&newProject)
-		actionID, err := in.ActionCreate("project", project.Id, "Started", comment, "", project.Products, []int32{project.Id})
+		actionID, err := in.ActionCreate("project", project.Id, "Started", comment, "", project.Products, project.Id)
 		if err == nil {
 			in.ActionLogHistory(actionID, project, newProject)
 		}
@@ -359,7 +359,7 @@ func project_putoff(data *protocol.MSG_PROJECT_project_putoff, in *protocol.Msg)
 	session.CommitCallback(func() {
 		var project *protocol.MSG_PROJECT_project_cache
 		in.DB.Table(db.TABLE_PROJECT).Prepare().Where("Id=?", id).Find(&project)
-		actionID, err := in.ActionCreate("project", project.Id, "Delayed", comment, "", project.Products, []int32{project.Id})
+		actionID, err := in.ActionCreate("project", project.Id, "Delayed", comment, "", project.Products, project.Id)
 		if err == nil {
 			in.ActionLogHistory(actionID, oldproject, project)
 		}
@@ -389,7 +389,7 @@ func project_suspend(data *protocol.MSG_PROJECT_project_suspend, in *protocol.Ms
 	session.CommitCallback(func() {
 		var project *protocol.MSG_PROJECT_project_cache
 		in.DB.Table(db.TABLE_PROJECT).Prepare().Where("Id=?", id).Find(&project)
-		actionID, err := in.ActionCreate("project", project.Id, "Suspended", comment, "", project.Products, []int32{project.Id})
+		actionID, err := in.ActionCreate("project", project.Id, "Suspended", comment, "", project.Products, project.Id)
 		if err == nil {
 			in.ActionLogHistory(actionID, oldproject, project)
 		}
@@ -419,7 +419,7 @@ func project_activate(data *protocol.MSG_PROJECT_project_activate, in *protocol.
 	session.CommitCallback(func() {
 		var project *protocol.MSG_PROJECT_project_cache
 		in.DB.Table(db.TABLE_PROJECT).Prepare().Where("Id=?", id).Find(&project)
-		actionID, err := in.ActionCreate("project", project.Id, "Activated", comment, "", project.Products, []int32{project.Id})
+		actionID, err := in.ActionCreate("project", project.Id, "Activated", comment, "", project.Products, project.Id)
 		if err == nil {
 			in.ActionLogHistory(actionID, oldproject, project)
 		}
@@ -489,7 +489,7 @@ func project_close(data *protocol.MSG_PROJECT_project_close, in *protocol.Msg) {
 	session.CommitCallback(func() {
 		var project *protocol.MSG_PROJECT_project_cache
 		in.DB.Table(db.TABLE_PROJECT).Prepare().Where("Id=?", id).Find(&project)
-		actionID, err := in.ActionCreate("project", project.Id, "Closed", comment, "", project.Products, []int32{project.Id})
+		actionID, err := in.ActionCreate("project", project.Id, "Closed", comment, "", project.Products, project.Id)
 		if err == nil {
 			in.ActionLogHistory(actionID, oldproject, project)
 		}
@@ -523,8 +523,10 @@ func project_delete(data *protocol.MSG_PROJECT_project_delete, in *protocol.Msg)
 }
 func project_getProjectTasks(data *protocol.MSG_PROJECT_project_getProjectTasks, in *protocol.Msg) {
 	where := map[string]interface{}{
-		"t1.Project": data.ProjectID,
 		"t1.Deleted": false,
+	}
+	if data.ProjectID > 0 {
+		where["t1.Project"] = data.ProjectID
 	}
 	if data.ProductID != 0 {
 		var trees []*db.Module
@@ -550,12 +552,9 @@ func project_getProjectTasks(data *protocol.MSG_PROJECT_project_getProjectTasks,
 	if data.ModuleID != 0 {
 		where["t1.Module"] = tree_getAllChildId(data.ModuleID)
 	}
-	if data.Type[0] == "all" || len(data.Type) > 0 {
-		where["t1.Parent"] = []interface{}{mysql.WhereOperatorLT, 1}
-
-	}
 	switch data.Type[0] {
 	case "all":
+		where["t1.Parent"] = []interface{}{mysql.WhereOperatorLT, 1}
 	case "myinvolved":
 		out := protocol.GET_MSG_USER_team_getByTypeUid()
 		out.Type = "task"
@@ -577,23 +576,31 @@ func project_getProjectTasks(data *protocol.MSG_PROJECT_project_getProjectTasks,
 		result.Put()
 	case "undone":
 		where["undoneRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t1`.`Status` = 'wait' or `t1`.`Status` = 'doing'"}
+		where["t1.Parent"] = []interface{}{mysql.WhereOperatorLT, 1}
 	case "needconfirm":
 		where["needconfirmRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t2`.`version` > `t1`.`storyVersion` and `t2`.`Status` = 'active'"}
-	case "assignedtome":
-		where["t1.AssignedTo"] = in.GetUserID()
+	case "openedBy":
+		where["t1.OpenedBy"] = in.GetUserID()
+	case "closedBy":
+		where["t1.ClosedBy"] = in.GetUserID()
+	case "canceledBy":
+		where["t1.CanceledBy"] = in.GetUserID()
 	case "finishedbyme":
 		where["t1.Finishedby"] = in.GetUserID()
+
 		//->andWhere('t1.finishedby', 1)->eq($this->app->user->account)->orWhere('t1.finishedList')->like("%,{$this->app->user->account},%")
 	case "delayed":
 		where["t1.Deadline"] = []interface{}{mysql.WhereOperatorBETWEEN, []string{"1970-01-01", time.Now().Format(protocol.TIMEFORMAT_MYSQLDATE)}}
 		where["t1.Status"] = []string{"wait", "doing"}
+	case "assignedtome":
+		where["t1.AssignedTo"] = in.GetUserID()
+	case "checkedItem":
+		where["t1.Id"] = strings.Split(data.Type[1], ",")
 	default:
 		where["t1.Status"] = data.Type
+		where["t1.Parent"] = []interface{}{mysql.WhereOperatorLT, 1}
 	}
 
-	if data.Role == "member" {
-		where["RoleRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t1`.`AssignedTo` = " + strconv.Itoa(int(in.GetUserID())) + " or t1.AssignedTo = ''"}
-	}
 	var tasks []*protocol.MSG_PROJECT_TASK
 	err := in.DB.Table(db.TABLE_TASK).Alias("t1").Field("DISTINCT t1.*, t2.Id AS StoryID, t2.Title AS StoryTitle, t2.Product as Product, t2.Branch as Branch, t2.version AS LatestStoryVersion, t2.Status AS StoryStatus").LeftJoin(db.TABLE_STORY).Alias("t2").On("t1.Story = t2.Id").Where(where).Order(data.OrderBy).Limit((data.Page-1)*data.PerPage, data.PerPage).Select(&tasks)
 	if err != nil {
@@ -608,9 +615,22 @@ func project_getProjectTasks(data *protocol.MSG_PROJECT_project_getProjectTasks,
 			return
 		}
 	}
+	if data.Type[0] != "assignedtome" && data.Type[0] != "finishedbyme" && data.Type[0] != "closedBy" && data.Type[0] != "canceledBy" && data.Type[0] != "checkedItem" {
+		tasks, err = project_getProjectTaskOut(in, tasks)
+		if err != nil {
+			in.WriteErr(err)
+			return
+		}
+	}
 
-	project_getProjectTaskOut(in, tasks, total)
+	out := protocol.GET_MSG_PROJECT_project_getProjectTasks_result()
+	out.List = tasks
+	out.Total = total
+
+	in.SendResult(out)
+	out.Put()
 }
+
 func project_getProjectTasksByWhere(data *protocol.MSG_PROJECT_project_getProjectTasksByWhere, in *protocol.Msg) {
 	var tasks []*protocol.MSG_PROJECT_TASK
 	err := in.DB.Table(db.TABLE_TASK).Where(data.Where).Order(data.OrderBy).Limit((data.Page-1)*data.PerPage, data.PerPage).Select(&tasks)
@@ -655,19 +675,25 @@ func project_getProjectTasksByWhere(data *protocol.MSG_PROJECT_project_getProjec
 			}
 		}
 	}
-	project_getProjectTaskOut(in, tasks, total)
-}
-
-//获取子孙任务并返回
-func project_getProjectTaskOut(in *protocol.Msg, tasks []*protocol.MSG_PROJECT_TASK, total int) {
+	tasks, err = project_getProjectTaskOut(in, tasks)
+	if err != nil {
+		in.WriteErr(err)
+		return
+	}
 	out := protocol.GET_MSG_PROJECT_project_getProjectTasks_result()
 	out.List = tasks
 	out.Total = total
+	in.SendResult(out)
+	out.Put()
+}
+
+//获取子孙任务并返回
+func project_getProjectTaskOut(in *protocol.Msg, tasks []*protocol.MSG_PROJECT_TASK) ([]*protocol.MSG_PROJECT_TASK, error) {
+
 	//获取子任务
 	var parents, ancestors []int32
-	for _, t := range out.List {
+	for _, t := range tasks {
 		if t.Parent == -1 {
-
 			parents = append(parents, t.Id)
 		}
 	}
@@ -677,13 +703,12 @@ func project_getProjectTaskOut(in *protocol.Msg, tasks []*protocol.MSG_PROJECT_T
 		where["t1.Parent"] = parents
 		delete(where, "t1.Project")
 		if err := in.DB.Table(db.TABLE_TASK).Alias("t1").Field("DISTINCT t1.*, t2.Id AS StoryID, t2.Title AS StoryTitle, t2.Product as Product, t2.Branch as Branch, t2.version AS LatestStoryVersion, t2.Status AS StoryStatus").LeftJoin(db.TABLE_STORY).Alias("t2").On("t1.Story = t2.Id").Where(where).Limit(0).Select(&children); err != nil {
-			in.WriteErr(err)
-			return
+			return nil, err
 		}
 
 		for _, child := range children {
 
-			for _, task := range out.List {
+			for _, task := range tasks {
 				if task.Id == child.Parent {
 					task.Children = append(task.Children, child)
 					break
@@ -700,20 +725,19 @@ func project_getProjectTaskOut(in *protocol.Msg, tasks []*protocol.MSG_PROJECT_T
 		var grandchildrens []*protocol.MSG_PROJECT_TASK
 		where["t1.Parent"] = ancestors
 		if err := in.DB.Table(db.TABLE_TASK).Alias("t1").Field("DISTINCT t1.*, t2.Id AS StoryID, t2.Title AS StoryTitle, t2.Product as Product, t2.Branch as Branch, t2.version AS LatestStoryVersion, t2.Status AS StoryStatus").LeftJoin(db.TABLE_STORY).Alias("t2").On("t1.Story = t2.Id").Where(where).Limit(0).Select(&grandchildrens); err != nil {
-			in.WriteErr(err)
-			return
+			return nil, err
 		}
 		for _, grandchild := range grandchildrens {
 
 			for _, child := range children {
 				if child.Id == grandchild.Parent {
+					grandchild.Ancestor = child.Parent //修复移动父任务到另一个任务，导致孙任务id没改过来的问题
 					child.Grandchildren = append(child.Grandchildren, grandchild)
 					break
 				}
 			}
 		}
 	}
-	task_processTasks(out.List)
-	in.SendResult(out)
-	out.Put()
+	task_processTasks(tasks)
+	return tasks, nil
 }

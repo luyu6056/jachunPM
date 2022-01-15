@@ -34,5 +34,5 @@ func group_update(data *protocol.MSG_USER_group_update, in *protocol.Msg) {
 		in.WriteErr(err)
 		return
 	}
-	updateUserView(nil,[]int32{data.Update.Id},nil,nil,in)
+	updateUserView(nil, []int32{data.Update.Id}, nil, nil, in)
 }

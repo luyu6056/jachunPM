@@ -222,12 +222,16 @@ func user_setCache(user *db.User) {
 	cache.AclProducts = make(map[int32]bool, len(user.AclProducts))
 	cache.AclProjects = make(map[int32]bool, len(user.AclProducts))
 	cache.AclMenu = make(map[string]bool)
+	cache.LimitedProjects = make(map[int32]bool, len(user.LimitedProjects))
 	cache.IsAdmin = user.Id == 1
 	for k, v := range user.AclProducts {
 		cache.AclProducts[k] = v
 	}
 	for k, v := range user.AclProjects {
 		cache.AclProjects[k] = v
+	}
+	for k, v := range user.LimitedProjects {
+		cache.LimitedProjects[k] = v
 	}
 	for k, v := range user.AclMenu {
 		cache.AclMenu[k] = v
@@ -244,8 +248,16 @@ func user_setCache(user *db.User) {
 		}
 		cache.Config[config.Module][config.Section][config.Key] = config.Value
 	}
+	cache.Priv = make(map[string]map[string]bool)
+	for module, v := range user.Priv {
+		if cache.Priv[module] == nil {
+			cache.Priv[module] = make(map[string]bool)
+		}
+		for method := range v {
+			cache.Priv[module][method] = true
+		}
+	}
 	HostConn.CacheSet(protocol.PATH_USER_INFO_CACHE, strconv.Itoa(int(user.Id)), cache, 0)
-	cache.Put()
 }
 func user_insertMap(insert map[string]interface{}) error {
 	id, err := HostConn.DB.Table(db.TABLE_USER).Insert(insert)
@@ -317,26 +329,14 @@ func updateUserView(uids, groupIds, products, projects []int32, in *protocol.Msg
 	projectCache := make(map[int32]*protocol.MSG_PROJECT_project_cache)
 	productCache := make(map[int32]*protocol.MSG_PROJECT_product_cache)
 	for id, user := range userM {
-		var oldProject, newProject, oldProduct, newProduct []int32
-		var oldMenu, newMenu []string
+
 		if user.AclProjects == nil {
 			user.AclProjects = make(map[int32]bool)
 		}
 		if user.AclProducts == nil {
 			user.AclProducts = make(map[int32]bool)
 		}
-		for id := range user.AclProjects {
-			oldProject = append(oldProject, id)
-		}
-		for id := range user.AclProducts {
-			oldProduct = append(oldProduct, id)
-		}
-		for name := range user.AclMenu {
-			oldMenu = append(oldMenu, name)
-		}
-		protocol.Order_ascInt32(oldProject)
-		protocol.Order_ascInt32(oldProduct)
-		protocol.Order_ascString(oldMenu)
+		user.LimitedProjects = make(map[int32]bool)
 		//检查product权限，先把受影响的product加上
 		for _, productID := range products {
 			user.AclProducts[productID] = true
@@ -389,6 +389,9 @@ func updateUserView(uids, groupIds, products, projects []int32, in *protocol.Msg
 					//从团队寻找
 					for _, t := range project.Teams {
 						if t.Uid == id {
+							if t.Limited == "yes" {
+								user.LimitedProjects[project.Id] = true
+							}
 							find = true
 						}
 					}
@@ -419,6 +422,7 @@ func updateUserView(uids, groupIds, products, projects []int32, in *protocol.Msg
 		}
 		//叠加group权限
 		user.AclMenu = make(map[string]bool)
+		user.Priv = make(map[string]map[string]bool)
 		for _, groupID := range user.Group {
 			for _, group := range groups {
 				if groupID == group.Id {
@@ -431,39 +435,55 @@ func updateUserView(uids, groupIds, products, projects []int32, in *protocol.Msg
 					for _, name := range group.Acl {
 						user.AclMenu[name] = true
 					}
+					for module, v := range group.Priv {
+						if user.Priv[module] == nil {
+							user.Priv[module] = make(map[string]bool)
+						}
+						for method := range v {
+							user.Priv[module][method] = true
+						}
+					}
 				}
 			}
 		}
-		for id := range user.AclProjects {
-			newProject = append(newProject, id)
+		//特殊权限
+		if user.Priv["company"] == nil {
+			user.Priv["company"] = make(map[string]bool)
 		}
-		for id := range user.AclProducts {
-			newProduct = append(newProduct, id)
+		if user.Priv["action"] == nil {
+			user.Priv["action"] = make(map[string]bool)
 		}
-		for name := range user.AclMenu {
-			newMenu = append(newMenu, name)
-		}
-		protocol.Order_ascInt32(newProject)
-		protocol.Order_ascInt32(newProduct)
-		protocol.Order_ascString(newMenu)
+		user.Priv["company"]["dynamic"] = true
+		user.Priv["action"]["editcomment"] = true
+		user.Priv["action"]["comment"] = true
 		//更新
-		if libraries.JsonMarshalToString(oldProject) != libraries.JsonMarshalToString(newProject) || libraries.JsonMarshalToString(oldProduct) != libraries.JsonMarshalToString(newProduct) || libraries.JsonMarshalToString(oldMenu) != libraries.JsonMarshalToString(newMenu) {
-			matchIds = append(matchIds, id)
-			_, err = in.DB.Table(db.TABLE_USER).Where("Id=?", user.Id).Update(map[string]interface{}{
-				"AclProducts": user.AclProducts,
-				"AclProjects": user.AclProjects,
-				"AclMenu":     user.AclMenu,
-			})
-			if err != nil {
-				return
-			}
+
+		matchIds = append(matchIds, id)
+		_, err = in.DB.Table(db.TABLE_USER).Where("Id=?", user.Id).Update(map[string]interface{}{
+			"AclProducts": user.AclProducts,
+			"AclProjects": user.AclProjects,
+			"AclMenu":     user.AclMenu,
+			"Priv":        user.Priv,
+		})
+		if err != nil {
+			return
 		}
+
 	}
 	session.CommitCallback(func() {
 		var users []*db.User
 		in.DB.Table(db.TABLE_USER).Where(map[string]interface{}{"Id": matchIds}).Limit(0).Select(&users)
 		for _, user := range users {
 			user_setCache(user)
+		}
+		if len(projects) > 0 {
+			out := protocol.GET_MSG_PROJECT_updateCache()
+			out.Type = "project"
+			out.Ids = projects
+			if msg, err := HostConn.GetMsg(); err == nil {
+				msg.SendMsg(0, out)
+			}
+			out.Put()
 		}
 	})
 
@@ -570,4 +590,15 @@ func user_getUserqueryByWhere(data *protocol.MSG_USER_user_getUserqueryByWhere, 
 		in.SendResult(out)
 	}
 	return
+}
+
+func user_getExportTemplate(data *protocol.MSG_USER_getExportTemplate, in *protocol.Msg) {
+	out := protocol.GET_MSG_USER_getExportTemplate_result()
+	err := in.DB.Table(db.TABLE_Usertpl).Where("(Uid=? or Public=1) and Type=?", data.Uid, "export"+data.Module).Select(&out.List)
+	if err != nil {
+		in.WriteErr(err)
+	} else {
+		in.SendResult(out)
+	}
+	out.Put()
 }

@@ -10,6 +10,8 @@ import (
 func init() {
 	httpHandlerMap["GET"]["/company/browse"] = get_company_browse
 	httpHandlerMap["POST"]["/company/browse"] = get_company_browse
+	httpHandlerMap["GET"]["/company/updateCache"] = get_company_updateCache
+
 }
 func get_company_browse(data *TemplateData) (err error) {
 	ws := data.ws
@@ -79,15 +81,25 @@ func get_company_browse(data *TemplateData) (err error) {
 	return
 }
 func getCompanyInfo() protocol.MSG_USER_Company_cache {
-	var c protocol.MSG_USER_Company_cache
-	c.Name = "杰骏数码"
-	err := HostConn.CacheGet(protocol.UserServerNo, protocol.PATH_USER_COMPANY_CACHE, "1", &c)
+
+	return companyCache
+}
+func get_company_updateCache(data *TemplateData) error {
+	Company_updateCache()
+	data.ws.WriteString("ok")
+	return nil
+}
+func Company_updateCache() {
+	err := HostConn.CacheGet(protocol.UserServerNo, protocol.PATH_USER_COMPANY_CACHE, "1", &companyCache)
 	if err != nil {
 		libraries.ReleaseLog("获取Company缓存失败%+v", err)
 	}
-	return c
 }
+
+var companyCache protocol.MSG_USER_Company_cache
+
 func init() {
+
 	searchParamsFunc["company/browse"] = func(data *TemplateData) (*searchParam, error) {
 		search := &searchParam{
 			ConfigSearch: data.Config["company"]["browse"]["search"].(*config.ConfigSearch),

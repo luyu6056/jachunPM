@@ -74,6 +74,7 @@ type Http2stream struct {
 	OutCookie                       map[string]httpcookie
 	content_type                    string
 	accept_encoding                 string
+	referer                         string
 }
 
 const (
@@ -968,6 +969,9 @@ func (stream *Http2stream) SetHeader(key, value string) {
 }
 func (stream *Http2stream) URI() string {
 	return stream.uri
+}
+func (stream *Http2stream) Referer() string {
+	return stream.referer
 }
 func (stream *Http2stream) Write(b *libraries.MsgBuffer) {
 

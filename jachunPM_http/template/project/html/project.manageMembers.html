@@ -1,0 +1,131 @@
+{{template "header.html" .}}
+<div id='mainMenu' class='clearfix'>
+  <div class='btn-toolbar pull-left'>
+    <span class='btn btn-link btn-active-text'>
+      {{html_a (helper_createLink "project" "managemembers"  "projectID=" $.Data.project.Id)  (strAdd "<span class='text'>" .Lang.project.manageMembers "</span>")}}
+    </span>
+    <div class='input-group space w-200px'>
+      <span class='input-group-addon'>{{.Lang.project.selectDept}}</span>
+      {{html_select "dept"  $.Data.depts  $.Data.dept  (strAdd "class='form-control chosen' onchange='setDeptUsers(this)' data-placeholder='" .Lang.project.selectDeptTitle "'")}}
+      {{if ne (len $.Data.teams2Import) 1}}
+      <span class='input-group-addon'>{{.Lang.project.copyTeam}}</span>
+      {{html_select "project"  $.Data.teams2Import  $.Data.team2Import  (strAdd "class='form-control chosen' onchange='choseTeam2Copy(this)' data-placeholder='" .Lang.project.copyTeamTitle "'")}}
+      {{end}}
+    </div>
+  </div>
+</div>
+<div id='mainContent' class='main-content'>
+  <form class='main-form' method='post' id='teamForm'>
+    <table class='table table-form'>
+      <thead>
+        <tr class='text-center'>
+          <th>{{.Lang.team.account}}</th>
+          <th>{{.Lang.team.role}}</th>
+          <th class='w-100px'>{{.Lang.team.days}}</th>
+          <th class='w-100px'>{{.Lang.team.hours}}</th>
+          <th class='w-100px'>{{.Lang.team.limited}}</th>
+          <th class="w-90px"> {{.Lang.comnmon.actions}}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{$i := 0}}
+        {{range $member := $.Data.currentMembers}}
+        <tr>
+          <td><input type='text' name='realnames[{{$i}}]' id='account{{$i}}' value='{{$member.Realname}}' readonly class='form-control' /></td>
+          <td><input type='text' name='roles[{{$i}}]'     id='role{{($i)}}'    value='{{$member.Role}}' class='form-control' /></td>
+          <td><input type='text' name='days[{{$i}}]'     id='days{{($i)}}'    value='{{$member.Days}}' class='form-control' /></td>
+          <td>
+            <input type='text'   name='hours[{{$i}}]' id='hours{{($i)}}' value='{{$member.Hours}}' class='form-control' />
+            <input type='hidden' name='modes[{{$i}}]' value='update' />
+            <input type='hidden' name='accounts[{{$i}}]' value='{{$member.Uid}}' />
+          </td>
+          <td>{{html_radio (strAdd "limited[" $i "]")  $.Lang.team.limitedList  $member.Limited}}</td>
+          <td class='c-actions'>
+            <a href='javascript:;' onclick='addItem(this)' class='btn btn-link'><i class='icon-plus'></i></a>
+          </td>
+        </tr>
+        {{$i = intsum $i 1}}
+        {{end}}
+
+        {{range $member2Import := $.Data.members2Import}}
+        <tr class='addedItem'>
+          <td>{{html_select (strAdd "accounts[" $i "]")  $.Data.users  $member2Import.Uid (strAdd "class='form-control chosen' onchange='setRole(this.value, " $i ")'")}}</td>
+          <td><input type='text' name='roles[{{$i}}]' id='role{{($i)}}' class='form-control' value='{{$member2Import.Role}}' /></td>
+          <td><input type='text' name='days[{{$i}}]'  id='days{{($i)}}' class='form-control' value='{{$.Data.project.Days}}'/></td>
+          <td>
+            <input type='text'   name='hours[{{$i}}]' id='hours{{($i)}}' class='form-control' value='{{$member2Import.Hours}}' />
+            <input type='hidden' name='modes[{{$i}}]' value='create' />
+          </td>
+          <td>{{html_radio (strAdd "limited[" $i "]")  $.Lang.team.limitedList "no"}}</td>
+          <td class='c-actions'>
+            <a href='javascript:;' onclick='addItem(this)' class='btn btn-link'><i class='icon-plus'></i></a>
+            <a href='javascript:;' onclick='deleteItem(this)' class='btn btn-link'><i class='icon icon-close'></i></a>
+          </td>
+        </tr>
+        {{$i = intsum $i 1}}
+        {{end}}
+
+        {{range $kv := $.Data.deptUsers}}
+        <tr class='addedItem'>
+          <td>{{html_select (strAdd "accounts[" $i "]")  $.Data.users  $kv.Key (strAdd "class='form-control chosen' onchange='setRole(this.value, " $i ")'")}}</td>
+          <td><input type='text' name='roles[{{$i}}]' id='role{{($i)}}' class='form-control' value='{{getValue $.Data.roles $kv.Key}}'/></td>
+          <td><input type='text' name='days[{{$i}}]'  id='days{{($i)}}' class='form-control' value='{{$.Data.project.Days}}'/></td>
+          <td>
+            <input type='text'   name='hours[{{$i}}]' id='hours{{($i)}}' class='form-control' value='{{$.Config.project.defaultWorkhours}}' />
+            <input type='hidden' name='modes[{{$i}}]' value='create' />
+          </td>
+          <td>{{html_radio (strAdd "limited[" $i "]")  $.Lang.team.limitedList "no"}}</td>
+          <td class='c-actions'>
+            <a href='javascript:;' onclick='addItem(this)' class='btn btn-link'><i class='icon-plus'></i></a>
+            <a href='javascript:;' onclick='deleteItem(this)' class='btn btn-link'><i class='icon icon-close'></i></a>
+          </td>
+        </tr>
+        
+        {{$i = intsum $i 1}}
+        {{end}}
+
+        {{range $j := genlist 0 5}}
+        <tr class='addedItem'>
+          <td>{{html_select (strAdd "accounts[" $i "]")  $.Data.users ""  (strAdd "class='form-control chosen' onchange='setRole(this.value, " $i ")'")}}</td>
+          <td><input type='text' name='roles[{{$i}}]' id='role{{($i)}}' class='form-control' /></td>
+          <td><input type='text' name='days[{{$i}}]'  id='days{{($i)}}' class='form-control' value='{{$.Data.project.Days}}'/></td>
+          <td>
+            <input type='text'   name='hours[{{$i}}]' id='hours{{($i)}}' class='form-control' value='{{$.Config.project.defaultWorkhours}}' />
+            <input type='hidden' name='modes[{{$i}}]' value='create' />
+          </td>
+          <td>{{html_radio (strAdd "limited[" $i "]") $.Lang.team.limitedList "no"}}</td>
+          <td class='c-actions'>
+            <a href='javascript:;' onclick='addItem(this)' class='btn btn-link'><i class='icon-plus'></i></a>
+            <a href='javascript:;' onclick='deleteItem(this)' class='btn btn-link'><i class='icon icon-close'></i></a>
+          </td>
+        </tr>
+        {{$i = intsum $i 1}}
+        {{end}}
+      </tbody>
+      <tfoot><tr><td colspan='6' class='text-center form-actions'>{{html_submitButton .}} {{html_backButton .}}</td></tr></tfoot>
+    </table>
+  </form>
+</div>
+<div>
+
+  <table class='hidden'>
+    <tr id='addItem' class='hidden'>
+      <td>{{html_select  (strAdd "accounts[" $i "]")  $.Data.users ""  (strAdd "class='form-control' onchange='setRole(this.value, " $i ")'")}}</td>
+      <td><input type='text' name='roles[{{$i}}]' id='role{{($i)}}' class='form-control' /></td>
+      <td><input type='text' name='days[{{$i}}]'  id='days{{($i)}}' class='form-control' value='{{$.Data.project.Days}}'/></td>
+      <td>
+        <input type='text'   name='hours[{{$i}}]' id='hours{{($i)}}' class='form-control' value='{{$.Config.project.defaultWorkhours}}' />
+        <input type='hidden' name='modes[{{$i}}]' value='create' />
+      </td>
+      <td>{{html_radio (strAdd "limited[" $i "]")  $.Lang.team.limitedList  "no"}}</td>
+      <td class='c-actions'>
+        <a href='javascript:;' onclick='addItem(this)' class='btn btn-link'><i class='icon-plus'></i></a>
+        <a href='javascript:;' onclick='deleteItem(this)' class='btn btn-link'><i class='icon icon-close'></i></a>
+      </td>
+    </tr>
+  </table>
+</div>
+<script type="text/javascript">
+  var projectID={{.Data.project.Id}},team2Import={{.Data.team2Import}},roles={{.Data.roles}},dept={{$.Data.dept}},i={{$i}};
+</script>
+{{template "footer.html" .}}

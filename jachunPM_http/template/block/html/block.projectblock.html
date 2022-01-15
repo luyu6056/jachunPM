@@ -1,0 +1,51 @@
+{{if not $.Data.projectStats}}
+<div class='empty-tip'>{{common_printLink "project" "create" ""  (strAdd "<i class='icon-plus'></i> " $.Lang.project.create) "" "class='btn btn-primary'"}}</div>
+{{else}}
+<div class="panel-body has-table scrollbar-hover">
+  <table class='table table-borderless table-hover table-fixed table-fixed-head tablesorter block-projects tablesorter'>
+    <thead>
+      <tr class='text-center'>
+        <th class='c-name text-left'>{{.Lang.project.name}}</th>
+        <th class="c-date">{{.Lang.project.end}}</th>
+        {{if $.Data.longBlock}}
+        <th class="c-status">{{.Lang.common.statusAB}}</th>
+        <th class="c-hours">{{.Lang.project.totalEstimate}}</th>
+        <th class="c-hours">{{.Lang.project.totalConsumed}}</th>
+        <th class="c-hours">{{.Lang.project.totalLeft}}</th>
+        {{end}}
+        <th class="c-progress">{{.Lang.project.progress}}</th>
+
+      </tr>
+    </thead>
+    <tbody class="text-center">
+     {{$id := 0}}
+     {{range $project := $.Data.projectStats}}
+      <tr data-url='{{helper_createLink "project" "task" "project=" $project.Id}}' class='text-center'>
+        <td class='c-name text-left' title='{{$project.Name}}'><nobr>{{html_a (helper_createLink "project" "task"  "project="  $project.Id)  $project.Name "" (strAdd "title='" $project.Name "'")}}</nobr></td>
+        <td class="c-date">{{date "2006-01-02" $project.End}}</td>
+        {{if $.Data.longBlock}}
+        <td class="c-status">
+          {{if $project.Delay}}
+          <span class="status-project status-delayed">{{$.Lang.project.delayed}}</span>
+          {{else}}
+          <span class="status-project status-{{$project.Status}}">{{getValue $.Lang.project.statusList $project.Status}}</span>
+          {{end}}
+        </td>
+        <td class="c-hours">{{$project.Hours.totalEstimate}}</td>
+        <td class="c-hours">{{$project.Hours.totalConsumed}}</td>
+        <td class="c-hours">{{$project.Hours.totalLeft}}</td>
+        {{end}}
+        <td class="c-progress">
+          <div class="progress progress-text-left">
+            <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="{{$project.Hours.progress}}" aria-valuemin="0" aria-valuemax="100" style="width: {{$project.Hours.progress}}%">
+            <span class="progress-text">{{$project.Hours.progress}}%</span>
+            </div>
+          </div>
+        </td>
+
+     </tr>
+     {{end}}
+    </tbody>
+  </table>
+</div>
+{{end}}

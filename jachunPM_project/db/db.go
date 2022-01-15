@@ -81,7 +81,7 @@ type Module struct {
 	OwnerID   int32
 	Collector string    `db:"type:text"`
 	Short     string    `db:"type:varchar(30)"`
-	Deleted   bool      `db:"default(0)"` // 0=0,1=1,
+	Deleted   bool      `db:"index"`
 	TimeStamp time.Time `db:"default(current_timestamp());extra('on update current_timestamp()')"`
 }
 
@@ -107,7 +107,7 @@ type Product struct {
 	CreatedBy   int32
 	CreatedDate time.Time
 	Order       int32
-	Deleted     bool
+	Deleted     bool      `db:"index"`
 	TimeStamp   time.Time `db:"default(current_timestamp());extra('on update current_timestamp()')"`
 }
 
@@ -127,7 +127,7 @@ type Doclib struct {
 	Main      bool    `db:"default(0)"`
 	Collector string  `db:"type:text"`
 	Order     int8    `db:""`
-	Deleted   bool    `db:"default(0)"`
+	Deleted   bool    `db:"index"`
 }
 
 func (*Doclib) TableName() string {
@@ -166,7 +166,7 @@ type Story struct {
 	ChildStories   []int32 `db:"type:json"`
 	LinkStories    []int32 `db:"type:json"`
 	DuplicateStory int32
-	Deleted        bool
+	Deleted        bool   `db:"index"`
 	Version        int16  `db:"not null;default(1)"`
 	Color          string `db:"type:varchar(7)"`
 	//Type           string  `db:"type:varchar(30)"`
@@ -177,11 +177,11 @@ func (*Story) TableName() string {
 }
 
 type Branch struct {
-	Id        int32  `db:"auto_increment;pk"`
-	Product   int32  `db:"index"`
-	Name      string `db:"type:varchar(255)"`
-	Order     int16  `db:""`
-	Deleted   bool
+	Id        int32     `db:"auto_increment;pk"`
+	Product   int32     `db:"index"`
+	Name      string    `db:"type:varchar(255)"`
+	Order     int16     `db:""`
+	Deleted   bool      `db:"index"`
 	TimeStamp time.Time `db:"default(current_timestamp());extra('on update current_timestamp()')"`
 }
 
@@ -200,7 +200,7 @@ type Productplan struct {
 	Begin    time.Time `db:"index;type:date"`
 	End      time.Time `db:"index;type:date"`
 	Order    string    `db:"type:text"`
-	Deleted  bool
+	Deleted  bool      `db:"index"`
 }
 
 func (*Productplan) TableName() string {
@@ -237,7 +237,7 @@ type Project struct {
 	Acl           string  `db:"default(0)"` // 0=open,1=private,2=custom,
 	Whitelist     []int32 `db:"type:json"`
 	Order         int32
-	Deleted       bool
+	Deleted       bool      `db:"index"`
 	FtpPath       string    `db:"type:varchar(255)"`
 	Products      []int32   `db:"index"`
 	Branchs       []int32   `db:"index"`
@@ -311,8 +311,8 @@ type Task struct {
 	Examine        bool      `db:"not null;default(0);index"`
 	ExamineDate    time.Time `db:"not null"`
 	ExamineBy      int32     `db:"type:varchar(30)"`
-	Deleted        bool
-	Finalfile      bool `db:"default('0');type:varchar(3)"`
+	Deleted        bool      `db:"index"`
+	Finalfile      bool      `db:"default('0');type:varchar(3)"`
 	Proofreading   bool
 	Team           []int32
 	PlaceOrder     bool
@@ -335,7 +335,7 @@ type Release struct {
 	LeftBugs string    `db:"type:text"`
 	Desc     string    `db:"type:text"`
 	Status   string    `db:"default('normal');type:varchar(20)"`
-	Deleted  bool
+	Deleted  bool      `db:"index"`
 }
 
 func (*Release) TableName() string {
@@ -355,7 +355,7 @@ type Build struct {
 	Bugs     []int32 `db:"type:json"`
 	Builder  string  `db:"type:varchar(30)"`
 	Desc     string  `db:"type:text"`
-	Deleted  bool
+	Deleted  bool    `db:"index"`
 }
 
 func (*Build) TableName() string {

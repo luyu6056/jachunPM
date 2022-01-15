@@ -28,6 +28,7 @@ type HttpRequest interface {
 	Cookie(key string) string
 	Session() *cache.Hashvalue
 	URI() string
+	Referer() string
 
 	Header(name string) string
 	Method() string
@@ -58,9 +59,10 @@ func HttpHandler(ws HttpRequest) gnet.Action {
 	if m, ok := httpHandlerMap[ws.Method()]; ok {
 		if f, ok := m[ws.Path()]; ok {
 			//检查是否登录
-			data := templateDataInit(ws)
+			data := templateDataInit(ws, nil)
 			if data.User == nil {
 				if !strings.Contains("/user/login|/user/getsalt", ws.Path()) {
+					data.ws.Session().Store("referer", data.ws.URI())
 					if strings.Contains(ws.Path(), "onlyBody=yes") {
 						ws.WriteString(js.Location(createLink("user", "login", nil), "parent"))
 						return gnet.None
@@ -83,7 +85,31 @@ func HttpHandler(ws HttpRequest) gnet.Action {
 					data.User.Put()
 				}
 			}()
-			//检查权限
+			moduleName := data.App["moduleName"].(string)
+			methodName := data.App["methodName"].(string)
+			if data.User != nil && !data.User.IsAdmin && moduleName == "user" && !(methodName == "logout" || methodName == "login") {
+				//检查权限
+				if !hasPriv(data, moduleName, methodName) {
+					if v, ok := data.Lang[moduleName]["common"].(string); ok {
+						moduleName = v
+					}
+					if v, ok := data.Lang[data.App["moduleName"].(string)][methodName].(string); ok {
+						methodName = v
+					}
+					data.outErr(errors.New(fmt.Sprintf(data.Lang["user"]["error"].(map[string]string)["errorDeny"], moduleName, methodName)))
+					return gnet.None
+				}
+				//检查视图
+				if v, ok := data.Lang["menugroup"][moduleName].(string); ok {
+					moduleName = v
+				}
+				if !data.User.AclMenu[moduleName] {
+					data.outErr(errors.New(fmt.Sprintf(data.Lang["user"]["error"].(map[string]string)["errorView"], data.Lang[moduleName]["common"])))
+					return gnet.None
+				}
+
+			}
+
 			//执行moduleInit
 			if init, ok := httpHandlerModuleInit[ws.Method()][data.App["moduleName"].(string)]; ok {
 				if err := init(data); err != nil {

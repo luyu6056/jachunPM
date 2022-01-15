@@ -33,7 +33,7 @@ type MSG_LOG_Action_Create struct {
 	Extra      string //额外信息
 	ActorId    int32  //操作者
 	Products   []int32
-	Projects   []int32
+	Project    int32
 }
 type MSG_LOG_Action_Create_result struct {
 	ActionId int64
@@ -54,11 +54,15 @@ type MSG_LOG_Action_GetByWhereMap_result struct {
 	List []*MSG_LOG_Action
 }
 type MSG_LOG_Action_transformActions struct {
-	Where map[string]interface{}
-	Order string
+	Where   map[string]interface{}
+	Order   string
+	Page    int
+	PerPage int
+	Total   int
 }
 type MSG_LOG_Action_transformActions_result struct {
-	List []*MSG_LOG_transformActions_info
+	List  []*MSG_LOG_transformActions_info
+	Total int
 }
 type MSG_LOG_transformActions_info struct {
 	Id         int64

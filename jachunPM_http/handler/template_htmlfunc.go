@@ -18,7 +18,7 @@ const (
 func createLink(moduleName string, methodName string, vars interface{}) string {
 	return config.Server.Origin + protocol.CreateLink(moduleName, methodName, vars)
 }
-func htmlFuncs() {
+func htmlTemplateFuncs() {
 	global_Funcs["helper_createLink"] = func(moduleName, methodName string, vars ...interface{}) string {
 
 		return createLink(moduleName, methodName, vars)
@@ -409,7 +409,7 @@ func htmlFuncs() {
 		return template.HTML(fmt.Sprint(i))
 	}
 }
-func hookFuncs() {
+func hookTemplateFuncs() {
 	global_Funcs["importHeaderHook"] = func(data *TemplateData) (res template.HTML) {
 		templateLock.RLock()
 		buf := bufpool.Get().(*libraries.MsgBuffer)
@@ -578,6 +578,8 @@ func html_select(name string, optionsI interface{}, selectedItem interface{}, at
 		key := strings.ReplaceAll(option.Key, "item", "")
 		buf.WriteString("<option value='")
 		buf.WriteString(key)
+		buf.WriteString("' data-keys='")
+		buf.WriteString(key)
 		buf.WriteString("'")
 		for _, v := range selectedItems {
 			if key == v {
@@ -585,7 +587,9 @@ func html_select(name string, optionsI interface{}, selectedItem interface{}, at
 				break
 			}
 		}
-		buf.WriteString(">")
+		buf.WriteString(" title='")
+		buf.WriteString(option.Value)
+		buf.WriteString("'>")
 		buf.WriteString(option.Value)
 		buf.WriteString("</option>\n")
 	}

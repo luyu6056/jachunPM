@@ -40,7 +40,8 @@ type MSG_HOST_CACHE_GET_result struct {
 	Value []byte
 }
 type MSG_HOST_CACHE_GETPATH struct {
-	Path string
+	Path  string
+	Names []string
 }
 type MSG_HOST_CACHE_GETPATH_result struct {
 	Value [][]byte

@@ -53,6 +53,14 @@ func Handler(in *protocol.Msg) {
 		bug_getCountByWhere(data, in)
 	case *protocol.MSG_TEST_CASE_getTaskCasePairs:
 		case_getTaskCasePairs(data, in)
+	case *protocol.MSG_TEST_doRawSelect:
+		out := protocol.GET_MSG_TEST_doRawSelect_result()
+		var err error
+		if out.List, err = in.DB.Raw(data.Sql).SelectMap(); err != nil {
+			in.WriteErr(err)
+		} else {
+			in.SendResult(out)
+		}
 	default:
 		libraries.ReleaseLog("未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 	}

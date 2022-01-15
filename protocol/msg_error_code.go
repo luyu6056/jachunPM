@@ -41,6 +41,7 @@ const (
 	Err_taskHasAncestors                      ErrCode = -32
 	Err_taskleftnotempty                      ErrCode = -33
 	Err_taskconsumedSmall                     ErrCode = -34
+	Err_taskCanSetChildToParent               ErrCode = -35
 )
 
 var errCodeMap = map[ErrCode]string{
@@ -72,6 +73,7 @@ var errCodeMap = map[ErrCode]string{
 	Err_taskHasAncestors:                      "taskHasAncestors",
 	Err_taskleftnotempty:                      "taskleftnotempty",
 	Err_taskconsumedSmall:                     "consumedSmall",
+	Err_taskCanSetChildToParent:               "taskCanSetChildToParent",
 }
 
 func (err ErrCode) String() string {

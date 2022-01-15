@@ -37,8 +37,8 @@ type Action struct {
 	Id         int64   `db:"auto_increment;pk"`
 	ObjectType string  `db:"type:varchar(30);index"`
 	ObjectID   int32   `db:"default(0);index"`
-	Products   []int32 `db:"type:json"`
-	Projects   []int32 `db:"type:json"`
+	Products   []int32 `db:"type:json;index"`
+	Project   int32   `db:"index"`
 	ActorId    int32
 	Actor      string    `db:"type:varchar(30)"`
 	Action     string    `db:"type:varchar(30)"`

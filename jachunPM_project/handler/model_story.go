@@ -171,7 +171,7 @@ func story_create(data *protocol.MSG_PROJECT_stroy_create, in *protocol.Msg) {
 			if err = in.SendMsgWaitResult(0, bug, nil); err != nil {
 				return
 			}
-			in.ActionCreate("bug", data.FromBug, "ToStory", "", strconv.Itoa(int(insertId)), []int32{data.Product}, []int32{data.ProjectID})
+			in.ActionCreate("bug", data.FromBug, "ToStory", "", strconv.Itoa(int(insertId)), []int32{data.Product}, data.ProjectID)
 
 			//$this->action->create('bug', $bugID, 'Closed');
 
@@ -207,7 +207,7 @@ func story_create(data *protocol.MSG_PROJECT_stroy_create, in *protocol.Msg) {
 			    extra  = fromObjectID;
 			}*/
 
-			in.ActionCreate("story", int32(insertId), action, "", extra, []int32{data.Product}, []int32{data.ProjectID})
+			in.ActionCreate("story", int32(insertId), action, "", extra, []int32{data.Product}, data.ProjectID)
 		})
 		session.Commit()
 	}

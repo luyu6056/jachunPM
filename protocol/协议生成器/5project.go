@@ -754,7 +754,19 @@ type MSG_PROJECT_task_placeOrder struct {
 
 type MSG_PROJECT_getAllprojectProductID struct {
 }
+
 type MSG_PROJECT_getAllprojectProductID_result struct {
 	ProjectID []int32
 	ProductID []int32
+}
+
+type MSG_PROJECT_doRawSelect struct {
+	Sql string
+}
+type MSG_PROJECT_doRawSelect_result struct {
+	List []map[string]string
+}
+type MSG_PROJECT_updateCache struct {
+	Type string
+	Ids  []int32
 }

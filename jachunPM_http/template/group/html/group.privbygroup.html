@@ -1,0 +1,101 @@
+{{if eq $.Data.group.Role "limited"}}
+<div id='mainMenu' class='clearfix'>
+  <div class='btn-toolbar pull-left'>
+    <a href='javascript:;' class='btn btn-link btn-active-text'><span class='text'>{{$.Data.group.Name}}</span></a>
+  </div>
+</div>
+<div id='mainContent' class='main-content'>
+  <form class="load-indicator main-form form-ajax" id="managePrivForm" method="post" target='hiddenwin'>
+    <table class='table table-hover table-striped table-bordered'>
+      <thead>
+        <tr class='text-center'>
+          <th>{{.Lang.group.module}}</th>
+          <th>{{.Lang.group.method}}</th>
+        </tr>
+      </thead>
+      <tr class='{{cycle . "even" "bg-gray"}}'>
+        <th class='text-right w-150px'>{{.Lang.my.common}}</th>
+        <td id='my' class='pv-10px'>
+          <div class='checkbox-primary'>
+            <input type='checkbox' name='actions[my][]' value='limited' {{if and $.Data.group.Priv.my $.Data.group.Priv.my.limited}}checked{{end}} />
+            <label class='priv' id="my-limited">{{.Lang.my.limited}}</label>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <th class='text-right'></th>
+        <td class='form-actions'>
+          {{html_submitButton . .Lang.common.save "btn btn-wide btn-primary"  "onclick='setNoChecked()'"}}
+          {{html_backButton .}}
+          {{html_hidden "noChecked"}}
+        </td>
+      </tr>
+    </table>
+  </form>
+</div>
+{{else}}
+<div id='mainMenu' class='clearfix'>
+  <div class='btn-toolbar pull-left'>
+  <span id='groupName'><i class='icon-lock'> {{$.Data.group.Name}}</i><i class="icon icon-chevron-right"></i></span>
+    
+    {{$active := or (and (not $.Data.menu) "btn-active-text") ""}}
+    {{html_a (helper_createLink "group" "managePriv"  (printf $.Data.params ""))  (strAdd "<span class='text'>" .Lang.group.all "</span>")  "" (strAdd "class='btn btn-link " $active "'")}}
+
+    {{range $kv := .Data.commonMenu}}
+    {{$active := or (and (eq $.Data.menu  $kv.Key) "btn-active-text") ""}}
+    {{html_a (helper_createLink "group" "managePriv"  (printf $.Data.params $kv.Key))  (strAdd "<span class='text'>" $kv.Value "</span>") "" (strAdd "class='btn btn-link " $active "'")}}
+    {{end}}
+
+    {{$active := or (and ((eq $.Data.menu "other") ) "btn-active-text") ""}}
+    {{html_a (helper_createLink "group" "managePriv"  (printf $.Data.params "other"))   (strAdd "<span class='text'>" .Lang.group.other "</span>") "" (strAdd "class='btn btn-link " $active "'")}}
+
+  </div>
+</div>
+<div id='mainContent' class='main-content'>
+  <form class="load-indicator main-form form-ajax" id="managePrivForm" method="post" target='hiddenwin'>
+    <table class='table table-hover table-striped table-bordered' id='privList'>
+      <thead>
+        <tr class='text-center'>
+          <th class='w-150px'>{{.Lang.group.module}}</th>
+          <th>{{.Lang.group.method}}</th>
+        </tr>
+      </thead>
+      {{- range $kvkv  := $.Data.resource}}
+      {{- $moduleName := $kvkv.Key}}
+      <tr class='{{cycle $ "even" "bg-gray"}}'>
+        <th class='text-middle text-right w-150px'>
+          <div class="checkbox-primary checkbox-inline checkbox-right check-all">
+            <input type='checkbox' id='allChecker{{$moduleName}}'>
+            <label class='text-right' for='allChecker{{$moduleName}}'>{{getValue (getValue $.Lang $moduleName) "common"}}</label>
+          </div>
+        </th>
+        <td id='{{$moduleName}}' class='pv-10px'>
+          {{- if eq $moduleName "caselib"}}{{$moduleName = "testsuite"}}{{end}}
+          {{- range $kv := $kvkv.Value}}
+          <div class='group-item'>
+            {{html_checkbox $moduleName (appendKeyValueStr $kv.Key (getValue $kv.Value "name")) (getValue $kv.Value "pri") "" "inline"}}
+          </div>
+          {{- end}}
+        </td>
+      </tr>
+      {{- end}}
+      <tr>
+        <th class='text-right'>
+          <div class="checkbox-primary checkbox-inline checkbox-right check-all">
+            <input type='checkbox' id='allChecker'>
+            <label class='text-right' for='allChecker'>{{.Lang.common.selectAll}}</label>
+          </div>
+        </th>
+        <td class='form-actions'>
+          {{html_submitButton . .Lang.common.save "btn btn-wide btn-primary" "onclick='setNoChecked()'"}}
+          {{html_backButton .}}
+          {{html_hidden "noChecked"}}
+        </td>
+      </tr>
+    </table>
+  </form>
+</div>
+{{end}}
+<script type="text/javascript">
+  var groupID={{$.Data.groupID}},menu={{$.Data.menu}};
+</script>

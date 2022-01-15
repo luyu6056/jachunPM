@@ -1,0 +1,4 @@
+{{template "header.html" .}}
+{{if eq $.Data.type "byGroup"}}{{template "group.privbygroup.html" .}}{{end}}
+{{if eq $.Data.type "byModule"}}{{template "group.privbymodule.html" .}}{{end}}
+{{template "footer.html" .}}

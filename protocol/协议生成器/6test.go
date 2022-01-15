@@ -138,3 +138,10 @@ type MSG_TEST_CASE_getTaskCasePairs struct {
 type MSG_TEST_CASE_getTaskCasePairs_result struct {
 	List []HtmlKeyValueStr
 }
+
+type MSG_TEST_doRawSelect struct {
+	Sql string
+}
+type MSG_TEST_doRawSelect_result struct {
+	List []map[string]string
+}

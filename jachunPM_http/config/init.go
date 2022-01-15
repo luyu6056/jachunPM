@@ -33,6 +33,9 @@ func init() {
 	if err != nil {
 		log.Fatalf("无法解析配置json,错误%v", err)
 	}
+	if Server.Origin == "" {
+		log.Fatalf("config.json未设置Orgin")
+	}
 	//Lang[protocol.EN] = make(map[string]map[string]interface{})
 	Lang[protocol.ZH_CN] = make(map[string]map[string]interface{})
 	Config[protocol.ZH_CN] = make(map[string]map[string]map[string]interface{})

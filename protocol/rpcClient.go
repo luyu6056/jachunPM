@@ -12,7 +12,6 @@ import (
 	"runtime/debug"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/klauspost/compress/zstd"
@@ -38,16 +37,14 @@ var (
 	RpcClientQueryTimeOutErr    = errors.New("请求超时")
 	rpcHanleMsgNum              = runtime.NumCPU()
 	rpcClientQueryLock          sync.RWMutex
-	rpcClientQueryMap           = make(map[uint32]chan RpcQueryResult)
+	rpcClientQueryMap           = make(map[uint32]chan *Msg)
 	rpcClientQueryId            = cache.Hget("rpcClientQueryId", "rpcClientQuery")
 )
 
 type RpcClient struct {
-	No                     uint8 //服务no
-	Id                     uint8 //服务自身id
-	ErrNum                 uint32
+	No                     uint8     //服务no
+	Id                     uint8     //服务自身id
 	CloseChan              chan bool //只允许在Close()里面发起chan
-	ErrChan                chan string
 	HandleMsg              func(*Msg)
 	Addr                   string
 	Status                 int
@@ -74,7 +71,6 @@ func NewClient(no uint8, hostAddr string, tokenKey string) (*RpcClient, error) {
 		inchan:    make(chan *Msg, rpcHanleMsgNum*4),
 		outchan:   make(chan *libraries.MsgBuffer, Rpcmsgnum),
 		CloseChan: make(chan bool, 1),
-		ErrChan:   make(chan string),
 		reconnect: make(chan []byte, Rpcmsgnum),
 
 		No:         no,
@@ -90,7 +86,6 @@ func NewClient(no uint8, hostAddr string, tokenKey string) (*RpcClient, error) {
 		inchan:    make(chan *Msg, rpcHanleMsgNum),
 		outchan:   make(chan *libraries.MsgBuffer, Rpcmsgnum),
 		CloseChan: make(chan bool, 1),
-		ErrChan:   make(chan string),
 		reconnect: make(chan []byte, Rpcmsgnum),
 
 		No:         no + 128,
@@ -130,11 +125,9 @@ func (client *RpcClient) Dial() error {
 func (client *RpcClient) Start() {
 	go client.handleWrite()
 	go client.runTick()
-	go client.handleRead()
 	for i := 0; i < runtime.NumCPU(); i++ {
 		go client.handleMsg()
 	}
-
 	if client.cache != nil {
 		client.cache.Svr.(*RpclientSend).Start()
 		client.waitshutdown.Add(6)
@@ -156,16 +149,15 @@ func (client *RpcClient) reg() {
 	data.Time = time.Now().Unix()
 	data.Token = libraries.SHA256_S(client.tokenKey + strconv.Itoa(int(data.Time)))
 	data.Window = client.window
-	client.sendStruct.SendMsgToDefault(data)
+	client.sendStruct.SendMsgToDefault(nil,data)
 	data.Put()
 }
-
 
 func (client *RpcClient) handleWrite() {
 	defer func() {
 		if err := recover(); err != nil {
-			client.ErrChan <- fmt.Sprintf("%v\r\n", err) + string(debug.Stack())
-			atomic.AddUint32(&client.ErrNum, 1)
+			fmt.Println(err)
+			debug.PrintStack()
 		}
 		if client.outchan != nil {
 			go client.handleWrite()
@@ -180,7 +172,7 @@ func (client *RpcClient) handleWrite() {
 		//busyTime int64 = time.Now().UnixNano()
 		msgNum int
 	)
-	zstdWriter, _ := zstd.NewWriter(zstdbuf)
+	zstdWriter, _ := zstd.NewWriter(zstdbuf,zstd.WithEncoderLevel(zstd.SpeedFastest))
 	writeToBuf := func(o *libraries.MsgBuffer) {
 		msglen += o.Len()
 		if compress {
@@ -256,7 +248,6 @@ func (client *RpcClient) handleWrite() {
 	for {
 		select {
 		case o := <-client.outchan:
-
 			compress = false
 			out.Reset()
 			msgbuf.Reset()
@@ -333,16 +324,192 @@ func (client *RpcClient) handleWrite() {
 	}
 }
 
+func (client *RpcClient) runTick() {
+	for {
+		select {
+		case now := <-client.tick.C:
+			if client.handleTick != nil {
+				go func() {
+					defer func() {
+						if err := recover(); err != nil {
+							fmt.Println("定时任务发生错误", err)
+							debug.PrintStack()
+						}
+					}()
+					client.handleTick(now)
+				}()
+			}
+		case <-client.CloseChan:
+			client.waitshutdown.Done()
+			client.CloseChan <- true
+			return
+		}
+	}
+}
+
+func (client *RpclientSend) SendMsg(msg *Msg,remote uint16, out MSG_DATA) {
+	SendMsg(msg,uint16(client.No)|uint16(client.Id)<<8, remote, out, client.outchan)
+}
+
+func (client *RpclientSend) SendMsgWaitResult(msg *Msg,remote uint16, out MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
+	return SendMsgWaitResult(msg,uint16(client.No)|uint16(client.Id)<<8, remote, out, result, client.outchan, timeout...)
+}
+
+//没有remote,msgno,ttl,transactionNo发送
+func (client *RpclientSend) SendMsgToDefault(msg *Msg,out MSG_DATA) {
+	SendMsg(msg,uint16(client.No)|uint16(client.Id)<<8, 0,   out, client.outchan)
+}
+
+func (client *RpclientSend) SendMsgWaitResultToDefault(msg *Msg,out MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
+	return SendMsgWaitResult(msg,uint16(client.No)|uint16(client.Id)<<8,    0, out, result, client.outchan, timeout...)
+}
+func (client *RpcClient) CacheGet(serverNo uint8, path string, key string, value interface{}) (err error) {
+	b, err := client.cache.Get(key, strconv.Itoa(int(serverNo))+"_"+path)
+	if len(b) > 4 {
+		cmd := int32(b[0]) | int32(b[1])<<8 | int32(b[2])<<16 | int32(b[3])<<24
+		buf := BufPoolGet()
+		defer func() {
+			if r := recover(); r != nil {
+				err = errors.New("cache反序列化错误" + fmt.Sprint(r))
+			}
+			buf.Reset()
+			BufPoolPut(buf)
+		}()
+		buf.Write(b[4:])
+		if v, ok := value.(MSG_DATA); ok {
+			if cmd == v.cmd() {
+				v.read(buf)
+				return
+			}
+		} else {
+			r := reflect.ValueOf(value)
+			if r.Elem().IsNil() {
+				if f, ok := cmdMapFunc[cmd]; ok {
+					v := reflect.ValueOf(f(buf))
+					if v.Kind() == r.Elem().Kind() {
+						r.Elem().Set(v)
+						return
+					}
+				}
+			}
+
+		}
+		return errors.New("找不到反序列化方法或者cmd值不对")
+	} else {
+		return errors.New("消息不够长，不足以读取一条缓存")
+	}
+	return err
+}
+func (client *RpcClient) CacheGetPath(serverNo uint8, path string, names ...string) ([][]byte, error) {
+
+	return client.cache.GetPath(strconv.Itoa(int(serverNo))+"_"+path, names...)
+}
+
+//只允许修改本服务的缓存
+func (client *RpcClient) CacheSet(path, key string, value MSG_DATA, expire int64) error {
+	buf := BufPoolGet()
+	value.write(buf)
+	err := client.cache.Set(key, strconv.Itoa(int(client.No))+"_"+path, buf.Bytes(), expire)
+	buf.Reset()
+	BufPoolPut(buf)
+	return err
+}
+func (client *RpcClient) CacheDel(path, key string) error {
+	return client.cache.Del(key, strconv.Itoa(int(client.No))+"_"+path)
+}
+func (client *RpcClient) CacheDelPath(path string) error {
+	return client.cache.DelPath(strconv.Itoa(int(client.No)) + "_" + path)
+}
+
+
+func (client *RpcClient) GetMsg() (*Msg, error) {
+	msg := &Msg{ DB: &MsgDB{DB: client.DB}}
+	msg.SetServer(client.sendStruct)
+	return msg, nil
+}
+
+func (client *RpcClient) SetConfig(lang CountryNo, key string, config map[string]map[string]interface{}) (err error) {
+	return client.cache.Set(key, PATH_CONFIG_CACHE+lang.String(), libraries.JsonMarshal(config), 0)
+}
+func (client *RpcClient) GetUserCacheById(id int32) (user *MSG_USER_INFO_cache) {
+	if id <= 0 {
+		return nil
+	}
+	err := client.CacheGet(UserServerNo, PATH_USER_INFO_CACHE, strconv.Itoa(int(id)), &user)
+	if err != nil {
+		libraries.DebugLog("获取user缓存失败%+v", err)
+	}
+	return
+}
+func (client *RpcClient) GetUserCacheByIds(ids []int32) (user []*MSG_USER_INFO_cache) {
+	if len(ids) == 0 {
+		return
+	}
+	var idstr = make([]string, len(ids))
+	for k, v := range ids {
+		idstr[k] = strconv.Itoa(int(v))
+	}
+	res, err := client.cache.GetPath(strconv.Itoa(int(UserServerNo))+"_"+PATH_USER_INFO_CACHE, idstr...)
+	if err != nil {
+		return nil
+	}
+
+	buf := BufPoolGet()
+	for _, b := range res {
+		buf.Reset()
+		buf.Write(b)
+		if v, ok := READ_MSG_DATA(buf).(*MSG_USER_INFO_cache); ok {
+			user = append(user, v)
+		} else {
+			user = append(user, nil)
+		}
+	}
+	buf.Reset()
+	BufPoolPut(buf)
+	return
+}
+func (client *RpcClient) GetTreeById(moduleID int32) (res *MSG_PROJECT_tree_cache) {
+	err := client.CacheGet(ProjectServerNo, PATH_PROJECT_TREE_CACHE, strconv.Itoa(int(moduleID)), &res)
+	if err != nil {
+		libraries.DebugLog("获取tree缓存失败%+v", err)
+	}
+	return
+}
+func (client *RpcClient) GetProductById(productID int32) (res *MSG_PROJECT_product_cache) {
+	err := client.CacheGet(ProjectServerNo, PATH_PROJECT_PRODUCT_CACHE, strconv.Itoa(int(productID)), &res)
+	if err != nil {
+
+		libraries.DebugLog("获取Product缓存失败%+v", err)
+	}
+	return
+}
+func (client *RpcClient) SetTickHand(f func(time.Time)) {
+	client.handleTick = f
+}
+func (client *RpcClient) GetProjectById(id int32) (res *MSG_PROJECT_project_cache) {
+	err := client.CacheGet(ProjectServerNo, PATH_PROJECT_PROJECT_CACHE, strconv.Itoa(int(id)), &res)
+	if err != nil {
+		libraries.DebugLog("获取project  id %d 缓存失败%+v", id, err)
+	}
+	return
+}
+func (client *RpcClient) Decompress(in []byte) (out []byte) {
+	client.decodebuf2.Reset()
+	client.decodebuf2.WriteByte(in[0] - 128)
+	client.decodebuf1.Reset()
+	client.decodebuf1.Write(in[1:])
+	client.decoder.Reset(client.decodebuf1)
+	io.Copy(client.decodebuf2, client.decoder)
+	return client.decodebuf2.Bytes()
+}
 func (client *RpcClient) handleMsg() {
 
 	defer func() {
 		if err := recover(); err != nil {
-			go func() {
-				client.ErrChan <- fmt.Sprint(err) + string("\r\n")
-			}()
-			atomic.AddUint32(&client.ErrNum, 1)
-			go client.handleMsg()
+			fmt.Println(err)
+			debug.PrintStack()
 		}
+		go client.handleMsg()
 	}()
 
 	for {
@@ -390,169 +557,9 @@ func (client *RpcClient) handleMsg() {
 			}
 			i.Put()
 			BufPoolPut(msg.buf)
-		case errstr := <-client.ErrChan:
-			libraries.ReleaseLog(errstr)
 		case <-client.CloseChan:
 			client.CloseChan <- true
 			return
 		}
 	}
-}
-
-func (client *RpcClient) runTick() {
-	for {
-		select {
-		case now := <-client.tick.C:
-			if client.handleTick != nil {
-				go func() {
-					defer func() {
-						if err := recover(); err != nil {
-							fmt.Println("定时任务发生错误", err)
-							debug.PrintStack()
-						}
-					}()
-					client.handleTick(now)
-				}()
-			}
-		case <-client.CloseChan:
-			client.waitshutdown.Done()
-			client.CloseChan <- true
-			return
-		}
-	}
-}
-
-func (client *RpclientSend) SendMsg(remote uint16, msgno uint32, ttl uint16, transactionNo uint32, queryID uint32, out MSG_DATA) {
-	SendMsg(uint16(client.No)|uint16(client.Id)<<8, remote, msgno, ttl, transactionNo, queryID, out, client.outchan)
-}
-
-func (client *RpclientSend) SendMsgWaitResult(remote uint16, msgno uint32, ttl uint16, transactionNo uint32, out MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
-	return SendMsgWaitResult(uint16(client.No)|uint16(client.Id)<<8, remote, msgno, ttl, transactionNo, out, result, client.outchan, timeout...)
-}
-
-//没有remote,msgno,ttl,transactionNo发送
-func (client *RpclientSend) SendMsgToDefault(out MSG_DATA) {
-	SendMsg(uint16(client.No)|uint16(client.Id)<<8, 0, 0, 0, 0, 0, out, client.outchan)
-}
-
-func (client *RpclientSend) SendMsgWaitResultToDefault(out MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
-	return SendMsgWaitResult(uint16(client.No)|uint16(client.Id)<<8, 0, 0, 0, 0, out, result, client.outchan, timeout...)
-}
-func (client *RpcClient) CacheGet(serverNo uint8, path, key string, value interface{}) (err error) {
-	b, err := client.cache.Get(key, strconv.Itoa(int(serverNo))+"_"+path)
-	if len(b) > 4 {
-		cmd := int32(b[0]) | int32(b[1])<<8 | int32(b[2])<<16 | int32(b[3])<<24
-		buf := BufPoolGet()
-		defer func() {
-			if r := recover(); r != nil {
-				err = errors.New("cache反序列化错误" + fmt.Sprint(r))
-			}
-			buf.Reset()
-			BufPoolPut(buf)
-		}()
-		buf.Write(b[4:])
-		if v, ok := value.(MSG_DATA); ok {
-			if cmd == v.cmd() {
-				v.read(buf)
-				return
-			}
-		} else {
-			r := reflect.ValueOf(value)
-			if r.Elem().IsNil() {
-				if f, ok := cmdMapFunc[cmd]; ok {
-					v := reflect.ValueOf(f(buf))
-					if v.Kind() == r.Elem().Kind() {
-						r.Elem().Set(v)
-						return
-					}
-				}
-			}
-
-		}
-		return errors.New("找不到反序列化方法或者cmd值不对")
-	} else {
-		return errors.New("消息不够长，不足以读取一条缓存")
-	}
-	return err
-}
-func (client *RpcClient) CacheGetPath(serverNo uint8, path string) ([][]byte, error) {
-	return client.cache.GetPath(strconv.Itoa(int(serverNo)) + "_" + path)
-}
-
-//只允许修改本服务的缓存
-func (client *RpcClient) CacheSet(path, key string, value MSG_DATA, expire int64) error {
-	buf := BufPoolGet()
-	value.write(buf)
-	err := client.cache.Set(key, strconv.Itoa(int(client.No))+"_"+path, buf.Bytes(), expire)
-	buf.Reset()
-	BufPoolPut(buf)
-	return err
-}
-func (client *RpcClient) CacheDel(path, key string) error {
-	return client.cache.Del(key, strconv.Itoa(int(client.No))+"_"+path)
-}
-func (client *RpcClient) CacheDelPath(path string) error {
-	return client.cache.DelPath(strconv.Itoa(int(client.No)) + "_" + path)
-}
-
-//暂时不开放getMsg接口
-func (client *RpcClient) GetMsg() (*Msg, error) {
-	data := GET_MSG_HOST_GET_Msgno()
-	defer data.Put()
-	var resdata *MSG_HOST_GET_Msgno_result
-	err := client.sendStruct.SendMsgWaitResultToDefault(data, &resdata)
-	if err != nil {
-		return nil, err
-	}
-	msg := &Msg{Msgno: resdata.Msgno, DB: &MsgDB{DB: client.DB}}
-	msg.SetServer(client.sendStruct)
-	return msg, nil
-}
-
-func (client *RpcClient) SetConfig(lang CountryNo, key string, config map[string]map[string]interface{}) (err error) {
-	return client.cache.Set(key, PATH_CONFIG_CACHE+lang.String(), libraries.JsonMarshal(config), 0)
-}
-func (client *RpcClient) GetUserCacheById(id int32) (user *MSG_USER_INFO_cache) {
-	if id <= 0 {
-		return nil
-	}
-	err := client.CacheGet(UserServerNo, PATH_USER_INFO_CACHE, strconv.Itoa(int(id)), &user)
-	if err != nil {
-		libraries.DebugLog("获取user缓存失败%+v", err)
-	}
-	return
-}
-func (client *RpcClient) GetTreeById(moduleID int32) (res *MSG_PROJECT_tree_cache) {
-	err := client.CacheGet(ProjectServerNo, PATH_PROJECT_TREE_CACHE, strconv.Itoa(int(moduleID)), &res)
-	if err != nil {
-		libraries.DebugLog("获取tree缓存失败%+v", err)
-	}
-	return
-}
-func (client *RpcClient) GetProductById(productID int32) (res *MSG_PROJECT_product_cache) {
-	err := client.CacheGet(ProjectServerNo, PATH_PROJECT_PRODUCT_CACHE, strconv.Itoa(int(productID)), &res)
-	if err != nil {
-
-		libraries.DebugLog("获取Product缓存失败%+v", err)
-	}
-	return
-}
-func (client *RpcClient) SetTickHand(f func(time.Time)) {
-	client.handleTick = f
-}
-func (client *RpcClient) GetProjectById(id int32) (res *MSG_PROJECT_project_cache) {
-	err := client.CacheGet(ProjectServerNo, PATH_PROJECT_PROJECT_CACHE, strconv.Itoa(int(id)), &res)
-	if err != nil {
-		libraries.DebugLog("获取project  id %d 缓存失败%+v",id, err)
-	}
-	return
-}
-func (client *RpcClient) Decompress(in []byte) (out []byte) {
-	client.decodebuf2.Reset()
-	client.decodebuf2.WriteByte(in[0] - 128)
-	client.decodebuf1.Reset()
-	client.decodebuf1.Write(in[1:])
-	client.decoder.Reset(client.decodebuf1)
-	io.Copy(client.decodebuf2, client.decoder)
-	return client.decodebuf2.Bytes()
 }

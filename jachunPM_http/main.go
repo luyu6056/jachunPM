@@ -34,12 +34,16 @@ func main() {
 	handler.HostConn, err = protocol.NewClient(protocol.HttpServerNo, config.Server.HostIP, config.Server.TokenKey)
 	if err != nil {
 		libraries.ReleaseLog("连接host %s 服务启动失败%v", config.Server.HostIP, err)
+		return
 	} else {
 		db.Init()
 		handler.HostConn.SetTickHand(handler.HandleTick)
 		handler.HostConn.HandleMsg = handler.Handler
 		handler.HostConn.DB = db.DB
 		go handler.HostConn.Start()
+		time.Sleep(time.Second * 2)
+		handler.Init()
+		handler.Company_updateCache()
 	}
 
 	go http.ListenAndServe("0.0.0.0:"+strconv.Itoa(8100+protocol.HttpServerNo), nil)
@@ -140,14 +144,14 @@ func (hs *httpServer) OnClosed(c gnet.Conn, err error) (action gnet.Action) {
 }
 
 func (hs *httpServer) React(data []byte, c gnet.Conn) (action gnet.Action) {
-
+	b := time.Now()
 	switch svr := c.Context().(type) {
 	case *codec.Httpserver:
 		action = handler.HttpHandler(svr)
 		if svr.Request.Connection == "close" {
 			action = gnet.Close
 		}
-		c.AsyncWrite(svr.Out.Bytes())
+		libraries.DebugLog("%s花费%v", svr.URI(), time.Since(b))
 		svr.Recovery()
 		return
 	case *codec.WSconn:

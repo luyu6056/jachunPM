@@ -63,6 +63,16 @@ const (
 	CMD_MSG_USER_config_save = -942650620
 	CMD_MSG_USER_team_delete = 1310660100
 	CMD_MSG_USER_group_update = 2088353796
+	CMD_MSG_USER_team_getTeams2Import = 2007227908
+	CMD_MSG_USER_team_getTeams2Import_result = -2136393468
+	CMD_MSG_USER_team_projectManageMembers = 325167364
+	CMD_MSG_USER_Block_info = 956596484
+	CMD_MSG_USER_block_getList = -1059160828
+	CMD_MSG_USER_block_getList_result = -1058153212
+	CMD_MSG_USER_block_insertUpdate = -235377660
+	CMD_MSG_USER_userTpl = 282910212
+	CMD_MSG_USER_getExportTemplate = -255305468
+	CMD_MSG_USER_getExportTemplate_result = 1388729604
 )
 
 type MSG_USER_GET_LoginSalt struct {
@@ -167,6 +177,8 @@ type MSG_USER_INFO_cache struct {
 	AclMenu map[string]bool
 	AclProducts map[int32]bool
 	AclProjects map[int32]bool
+	LimitedProjects map[int32]bool
+	Priv map[string]map[string]bool
 	IsAdmin bool `db:"-"`
 	Config map[string]map[string]map[string]string `db:"-"`
 }
@@ -207,6 +219,8 @@ func (data *MSG_USER_INFO_cache) Put() {
 	data.AclMenu = nil
 	data.AclProducts = nil
 	data.AclProjects = nil
+	data.LimitedProjects = nil
+	data.Priv = nil
 	data.IsAdmin = false
 	data.Config = nil
 	pool_MSG_USER_INFO_cache.Put(data)
@@ -245,6 +259,8 @@ func WRITE_MSG_USER_INFO_cache(data *MSG_USER_INFO_cache, buf *libraries.MsgBuff
 	WRITE_map(data.AclMenu,buf)
 	WRITE_map(data.AclProducts,buf)
 	WRITE_map(data.AclProjects,buf)
+	WRITE_map(data.LimitedProjects,buf)
+	WRITE_map(data.Priv,buf)
 	WRITE_bool(data.IsAdmin, buf)
 	WRITE_map(data.Config,buf)
 }
@@ -289,6 +305,8 @@ func (data *MSG_USER_INFO_cache) read(buf *libraries.MsgBuffer) {
 	READ_map(&data.AclMenu,buf)
 	READ_map(&data.AclProducts,buf)
 	READ_map(&data.AclProjects,buf)
+	READ_map(&data.LimitedProjects,buf)
+	READ_map(&data.Priv,buf)
 	data.IsAdmin = READ_bool(buf)
 	READ_map(&data.Config,buf)
 
@@ -3010,6 +3028,529 @@ func (data *MSG_USER_group_update) read(buf *libraries.MsgBuffer) {
 		data.Update = READ_MSG_USER_Group_cache(buf)
 	}else{
 		data.Update = nil
+	}
+
+}
+
+type MSG_USER_team_getTeams2Import struct {
+	ProjectId int32
+}
+
+var pool_MSG_USER_team_getTeams2Import = sync.Pool{New: func() interface{} { return &MSG_USER_team_getTeams2Import{} }}
+
+func GET_MSG_USER_team_getTeams2Import() *MSG_USER_team_getTeams2Import {
+	return pool_MSG_USER_team_getTeams2Import.Get().(*MSG_USER_team_getTeams2Import)
+}
+
+func (data *MSG_USER_team_getTeams2Import) cmd() int32 {
+	return CMD_MSG_USER_team_getTeams2Import
+}
+
+func (data *MSG_USER_team_getTeams2Import) Put() {
+	data.ProjectId = 0
+	pool_MSG_USER_team_getTeams2Import.Put(data)
+}
+func (data *MSG_USER_team_getTeams2Import) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_team_getTeams2Import,buf)
+	WRITE_MSG_USER_team_getTeams2Import(data, buf)
+}
+
+func WRITE_MSG_USER_team_getTeams2Import(data *MSG_USER_team_getTeams2Import, buf *libraries.MsgBuffer) {
+	WRITE_int32(data.ProjectId, buf)
+}
+
+func READ_MSG_USER_team_getTeams2Import(buf *libraries.MsgBuffer) *MSG_USER_team_getTeams2Import {
+	data := pool_MSG_USER_team_getTeams2Import.Get().(*MSG_USER_team_getTeams2Import)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_team_getTeams2Import) read(buf *libraries.MsgBuffer) {
+	data.ProjectId = READ_int32(buf)
+
+}
+
+type MSG_USER_team_getTeams2Import_result struct {
+	List []HtmlKeyValueStr
+}
+
+var pool_MSG_USER_team_getTeams2Import_result = sync.Pool{New: func() interface{} { return &MSG_USER_team_getTeams2Import_result{} }}
+
+func GET_MSG_USER_team_getTeams2Import_result() *MSG_USER_team_getTeams2Import_result {
+	return pool_MSG_USER_team_getTeams2Import_result.Get().(*MSG_USER_team_getTeams2Import_result)
+}
+
+func (data *MSG_USER_team_getTeams2Import_result) cmd() int32 {
+	return CMD_MSG_USER_team_getTeams2Import_result
+}
+
+func (data *MSG_USER_team_getTeams2Import_result) Put() {
+	data.List = data.List[:0]
+	pool_MSG_USER_team_getTeams2Import_result.Put(data)
+}
+func (data *MSG_USER_team_getTeams2Import_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_team_getTeams2Import_result,buf)
+	WRITE_MSG_USER_team_getTeams2Import_result(data, buf)
+}
+
+func WRITE_MSG_USER_team_getTeams2Import_result(data *MSG_USER_team_getTeams2Import_result, buf *libraries.MsgBuffer) {
+	WRITE_int(len(data.List), buf)
+	for _, v := range data.List{
+		WRITE_HtmlKeyValueStr(v, buf)
+	}
+}
+
+func READ_MSG_USER_team_getTeams2Import_result(buf *libraries.MsgBuffer) *MSG_USER_team_getTeams2Import_result {
+	data := pool_MSG_USER_team_getTeams2Import_result.Get().(*MSG_USER_team_getTeams2Import_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_team_getTeams2Import_result) read(buf *libraries.MsgBuffer) {
+	List_len := READ_int(buf)
+	if List_len>cap(data.List){
+		data.List= make([]HtmlKeyValueStr, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
+	for i := 0; i < List_len; i++ {
+		data.List[i] = READ_HtmlKeyValueStr(buf)
+	}
+
+}
+
+type MSG_USER_team_projectManageMembers struct {
+	ProjectId int32
+	Update []*MSG_USER_team_info
+}
+
+var pool_MSG_USER_team_projectManageMembers = sync.Pool{New: func() interface{} { return &MSG_USER_team_projectManageMembers{} }}
+
+func GET_MSG_USER_team_projectManageMembers() *MSG_USER_team_projectManageMembers {
+	return pool_MSG_USER_team_projectManageMembers.Get().(*MSG_USER_team_projectManageMembers)
+}
+
+func (data *MSG_USER_team_projectManageMembers) cmd() int32 {
+	return CMD_MSG_USER_team_projectManageMembers
+}
+
+func (data *MSG_USER_team_projectManageMembers) Put() {
+	data.ProjectId = 0
+	for _,v := range data.Update {
+		v.Put()
+	}
+	data.Update = data.Update[:0]
+	pool_MSG_USER_team_projectManageMembers.Put(data)
+}
+func (data *MSG_USER_team_projectManageMembers) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_team_projectManageMembers,buf)
+	WRITE_MSG_USER_team_projectManageMembers(data, buf)
+}
+
+func WRITE_MSG_USER_team_projectManageMembers(data *MSG_USER_team_projectManageMembers, buf *libraries.MsgBuffer) {
+	WRITE_int32(data.ProjectId, buf)
+	WRITE_int(len(data.Update), buf)
+	for _, v := range data.Update{
+		WRITE_MSG_USER_team_info(v, buf)
+	}
+}
+
+func READ_MSG_USER_team_projectManageMembers(buf *libraries.MsgBuffer) *MSG_USER_team_projectManageMembers {
+	data := pool_MSG_USER_team_projectManageMembers.Get().(*MSG_USER_team_projectManageMembers)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_team_projectManageMembers) read(buf *libraries.MsgBuffer) {
+	data.ProjectId = READ_int32(buf)
+	Update_len := READ_int(buf)
+	if Update_len>cap(data.Update){
+		data.Update= make([]*MSG_USER_team_info, Update_len)
+	}else{
+		data.Update = data.Update[:Update_len]
+	}
+	for i := 0; i < Update_len; i++ {
+		data.Update[i] = READ_MSG_USER_team_info(buf)
+	}
+
+}
+
+type MSG_USER_Block_info struct {
+	Id int32
+	Uid int32
+	Module string
+	Title string
+	Source string
+	Block string
+	Params string
+	Order int8
+	Grid int8
+	Height int16
+	Hidden bool
+}
+
+var pool_MSG_USER_Block_info = sync.Pool{New: func() interface{} { return &MSG_USER_Block_info{} }}
+
+func GET_MSG_USER_Block_info() *MSG_USER_Block_info {
+	return pool_MSG_USER_Block_info.Get().(*MSG_USER_Block_info)
+}
+
+func (data *MSG_USER_Block_info) cmd() int32 {
+	return CMD_MSG_USER_Block_info
+}
+
+func (data *MSG_USER_Block_info) Put() {
+	data.Id = 0
+	data.Uid = 0
+	data.Module = ``
+	data.Title = ``
+	data.Source = ``
+	data.Block = ``
+	data.Params = ``
+	data.Order = 0
+	data.Grid = 0
+	data.Height = 0
+	data.Hidden = false
+	pool_MSG_USER_Block_info.Put(data)
+}
+func (data *MSG_USER_Block_info) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_Block_info,buf)
+	WRITE_MSG_USER_Block_info(data, buf)
+}
+
+func WRITE_MSG_USER_Block_info(data *MSG_USER_Block_info, buf *libraries.MsgBuffer) {
+	WRITE_int32(data.Id, buf)
+	WRITE_int32(data.Uid, buf)
+	WRITE_string(data.Module, buf)
+	WRITE_string(data.Title, buf)
+	WRITE_string(data.Source, buf)
+	WRITE_string(data.Block, buf)
+	WRITE_string(data.Params, buf)
+	WRITE_int8(data.Order, buf)
+	WRITE_int8(data.Grid, buf)
+	WRITE_int16(data.Height, buf)
+	WRITE_bool(data.Hidden, buf)
+}
+
+func READ_MSG_USER_Block_info(buf *libraries.MsgBuffer) *MSG_USER_Block_info {
+	data := pool_MSG_USER_Block_info.Get().(*MSG_USER_Block_info)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_Block_info) read(buf *libraries.MsgBuffer) {
+	data.Id = READ_int32(buf)
+	data.Uid = READ_int32(buf)
+	data.Module = READ_string(buf)
+	data.Title = READ_string(buf)
+	data.Source = READ_string(buf)
+	data.Block = READ_string(buf)
+	data.Params = READ_string(buf)
+	data.Order = READ_int8(buf)
+	data.Grid = READ_int8(buf)
+	data.Height = READ_int16(buf)
+	data.Hidden = READ_bool(buf)
+
+}
+
+type MSG_USER_block_getList struct {
+	Module string
+	Uid int32
+}
+
+var pool_MSG_USER_block_getList = sync.Pool{New: func() interface{} { return &MSG_USER_block_getList{} }}
+
+func GET_MSG_USER_block_getList() *MSG_USER_block_getList {
+	return pool_MSG_USER_block_getList.Get().(*MSG_USER_block_getList)
+}
+
+func (data *MSG_USER_block_getList) cmd() int32 {
+	return CMD_MSG_USER_block_getList
+}
+
+func (data *MSG_USER_block_getList) Put() {
+	data.Module = ``
+	data.Uid = 0
+	pool_MSG_USER_block_getList.Put(data)
+}
+func (data *MSG_USER_block_getList) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_block_getList,buf)
+	WRITE_MSG_USER_block_getList(data, buf)
+}
+
+func WRITE_MSG_USER_block_getList(data *MSG_USER_block_getList, buf *libraries.MsgBuffer) {
+	WRITE_string(data.Module, buf)
+	WRITE_int32(data.Uid, buf)
+}
+
+func READ_MSG_USER_block_getList(buf *libraries.MsgBuffer) *MSG_USER_block_getList {
+	data := pool_MSG_USER_block_getList.Get().(*MSG_USER_block_getList)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_block_getList) read(buf *libraries.MsgBuffer) {
+	data.Module = READ_string(buf)
+	data.Uid = READ_int32(buf)
+
+}
+
+type MSG_USER_block_getList_result struct {
+	List []*MSG_USER_Block_info
+}
+
+var pool_MSG_USER_block_getList_result = sync.Pool{New: func() interface{} { return &MSG_USER_block_getList_result{} }}
+
+func GET_MSG_USER_block_getList_result() *MSG_USER_block_getList_result {
+	return pool_MSG_USER_block_getList_result.Get().(*MSG_USER_block_getList_result)
+}
+
+func (data *MSG_USER_block_getList_result) cmd() int32 {
+	return CMD_MSG_USER_block_getList_result
+}
+
+func (data *MSG_USER_block_getList_result) Put() {
+	for _,v := range data.List {
+		v.Put()
+	}
+	data.List = data.List[:0]
+	pool_MSG_USER_block_getList_result.Put(data)
+}
+func (data *MSG_USER_block_getList_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_block_getList_result,buf)
+	WRITE_MSG_USER_block_getList_result(data, buf)
+}
+
+func WRITE_MSG_USER_block_getList_result(data *MSG_USER_block_getList_result, buf *libraries.MsgBuffer) {
+	WRITE_int(len(data.List), buf)
+	for _, v := range data.List{
+		WRITE_MSG_USER_Block_info(v, buf)
+	}
+}
+
+func READ_MSG_USER_block_getList_result(buf *libraries.MsgBuffer) *MSG_USER_block_getList_result {
+	data := pool_MSG_USER_block_getList_result.Get().(*MSG_USER_block_getList_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_block_getList_result) read(buf *libraries.MsgBuffer) {
+	List_len := READ_int(buf)
+	if List_len>cap(data.List){
+		data.List= make([]*MSG_USER_Block_info, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
+	for i := 0; i < List_len; i++ {
+		data.List[i] = READ_MSG_USER_Block_info(buf)
+	}
+
+}
+
+type MSG_USER_block_insertUpdate struct {
+	Insert bool
+	List []*MSG_USER_Block_info
+}
+
+var pool_MSG_USER_block_insertUpdate = sync.Pool{New: func() interface{} { return &MSG_USER_block_insertUpdate{} }}
+
+func GET_MSG_USER_block_insertUpdate() *MSG_USER_block_insertUpdate {
+	return pool_MSG_USER_block_insertUpdate.Get().(*MSG_USER_block_insertUpdate)
+}
+
+func (data *MSG_USER_block_insertUpdate) cmd() int32 {
+	return CMD_MSG_USER_block_insertUpdate
+}
+
+func (data *MSG_USER_block_insertUpdate) Put() {
+	data.Insert = false
+	for _,v := range data.List {
+		v.Put()
+	}
+	data.List = data.List[:0]
+	pool_MSG_USER_block_insertUpdate.Put(data)
+}
+func (data *MSG_USER_block_insertUpdate) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_block_insertUpdate,buf)
+	WRITE_MSG_USER_block_insertUpdate(data, buf)
+}
+
+func WRITE_MSG_USER_block_insertUpdate(data *MSG_USER_block_insertUpdate, buf *libraries.MsgBuffer) {
+	WRITE_bool(data.Insert, buf)
+	WRITE_int(len(data.List), buf)
+	for _, v := range data.List{
+		WRITE_MSG_USER_Block_info(v, buf)
+	}
+}
+
+func READ_MSG_USER_block_insertUpdate(buf *libraries.MsgBuffer) *MSG_USER_block_insertUpdate {
+	data := pool_MSG_USER_block_insertUpdate.Get().(*MSG_USER_block_insertUpdate)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_block_insertUpdate) read(buf *libraries.MsgBuffer) {
+	data.Insert = READ_bool(buf)
+	List_len := READ_int(buf)
+	if List_len>cap(data.List){
+		data.List= make([]*MSG_USER_Block_info, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
+	for i := 0; i < List_len; i++ {
+		data.List[i] = READ_MSG_USER_Block_info(buf)
+	}
+
+}
+
+type MSG_USER_userTpl struct {
+	Id int32
+	Uid int32
+	Type string
+	Title string
+	Content string
+	Public bool
+}
+
+var pool_MSG_USER_userTpl = sync.Pool{New: func() interface{} { return &MSG_USER_userTpl{} }}
+
+func GET_MSG_USER_userTpl() *MSG_USER_userTpl {
+	return pool_MSG_USER_userTpl.Get().(*MSG_USER_userTpl)
+}
+
+func (data *MSG_USER_userTpl) cmd() int32 {
+	return CMD_MSG_USER_userTpl
+}
+
+func (data *MSG_USER_userTpl) Put() {
+	data.Id = 0
+	data.Uid = 0
+	data.Type = ``
+	data.Title = ``
+	data.Content = ``
+	data.Public = false
+	pool_MSG_USER_userTpl.Put(data)
+}
+func (data *MSG_USER_userTpl) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_userTpl,buf)
+	WRITE_MSG_USER_userTpl(data, buf)
+}
+
+func WRITE_MSG_USER_userTpl(data *MSG_USER_userTpl, buf *libraries.MsgBuffer) {
+	WRITE_int32(data.Id, buf)
+	WRITE_int32(data.Uid, buf)
+	WRITE_string(data.Type, buf)
+	WRITE_string(data.Title, buf)
+	WRITE_string(data.Content, buf)
+	WRITE_bool(data.Public, buf)
+}
+
+func READ_MSG_USER_userTpl(buf *libraries.MsgBuffer) *MSG_USER_userTpl {
+	data := pool_MSG_USER_userTpl.Get().(*MSG_USER_userTpl)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_userTpl) read(buf *libraries.MsgBuffer) {
+	data.Id = READ_int32(buf)
+	data.Uid = READ_int32(buf)
+	data.Type = READ_string(buf)
+	data.Title = READ_string(buf)
+	data.Content = READ_string(buf)
+	data.Public = READ_bool(buf)
+
+}
+
+type MSG_USER_getExportTemplate struct {
+	Module string
+	Uid int32
+}
+
+var pool_MSG_USER_getExportTemplate = sync.Pool{New: func() interface{} { return &MSG_USER_getExportTemplate{} }}
+
+func GET_MSG_USER_getExportTemplate() *MSG_USER_getExportTemplate {
+	return pool_MSG_USER_getExportTemplate.Get().(*MSG_USER_getExportTemplate)
+}
+
+func (data *MSG_USER_getExportTemplate) cmd() int32 {
+	return CMD_MSG_USER_getExportTemplate
+}
+
+func (data *MSG_USER_getExportTemplate) Put() {
+	data.Module = ``
+	data.Uid = 0
+	pool_MSG_USER_getExportTemplate.Put(data)
+}
+func (data *MSG_USER_getExportTemplate) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_getExportTemplate,buf)
+	WRITE_MSG_USER_getExportTemplate(data, buf)
+}
+
+func WRITE_MSG_USER_getExportTemplate(data *MSG_USER_getExportTemplate, buf *libraries.MsgBuffer) {
+	WRITE_string(data.Module, buf)
+	WRITE_int32(data.Uid, buf)
+}
+
+func READ_MSG_USER_getExportTemplate(buf *libraries.MsgBuffer) *MSG_USER_getExportTemplate {
+	data := pool_MSG_USER_getExportTemplate.Get().(*MSG_USER_getExportTemplate)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_getExportTemplate) read(buf *libraries.MsgBuffer) {
+	data.Module = READ_string(buf)
+	data.Uid = READ_int32(buf)
+
+}
+
+type MSG_USER_getExportTemplate_result struct {
+	List []*MSG_USER_userTpl
+}
+
+var pool_MSG_USER_getExportTemplate_result = sync.Pool{New: func() interface{} { return &MSG_USER_getExportTemplate_result{} }}
+
+func GET_MSG_USER_getExportTemplate_result() *MSG_USER_getExportTemplate_result {
+	return pool_MSG_USER_getExportTemplate_result.Get().(*MSG_USER_getExportTemplate_result)
+}
+
+func (data *MSG_USER_getExportTemplate_result) cmd() int32 {
+	return CMD_MSG_USER_getExportTemplate_result
+}
+
+func (data *MSG_USER_getExportTemplate_result) Put() {
+	for _,v := range data.List {
+		v.Put()
+	}
+	data.List = data.List[:0]
+	pool_MSG_USER_getExportTemplate_result.Put(data)
+}
+func (data *MSG_USER_getExportTemplate_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_getExportTemplate_result,buf)
+	WRITE_MSG_USER_getExportTemplate_result(data, buf)
+}
+
+func WRITE_MSG_USER_getExportTemplate_result(data *MSG_USER_getExportTemplate_result, buf *libraries.MsgBuffer) {
+	WRITE_int(len(data.List), buf)
+	for _, v := range data.List{
+		WRITE_MSG_USER_userTpl(v, buf)
+	}
+}
+
+func READ_MSG_USER_getExportTemplate_result(buf *libraries.MsgBuffer) *MSG_USER_getExportTemplate_result {
+	data := pool_MSG_USER_getExportTemplate_result.Get().(*MSG_USER_getExportTemplate_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_getExportTemplate_result) read(buf *libraries.MsgBuffer) {
+	List_len := READ_int(buf)
+	if List_len>cap(data.List){
+		data.List= make([]*MSG_USER_userTpl, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
+	for i := 0; i < List_len; i++ {
+		data.List[i] = READ_MSG_USER_userTpl(buf)
 	}
 
 }

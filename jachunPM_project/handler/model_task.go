@@ -107,15 +107,7 @@ func task_getById(data *protocol.MSG_PROJECT_task_getById, in *protocol.Msg) {
 	task_processTask(out.Info)
 }
 func task_create(data *protocol.MSG_PROJECT_task_create, in *protocol.Msg) {
-	c, err := in.DB.Table(db.TABLE_TASK).Where("Name=? and Project=? and Deleted=0", data.Task.Name, data.Task.Project).Count()
-	if err != nil {
-		in.WriteErr(err)
-		return
-	}
-	if c > 0 {
-		in.WriteErr(protocol.Err_TaskIsexist.Err())
-		return
-	}
+
 	session, err := in.BeginTransaction()
 	out := protocol.GET_MSG_PROJECT_task_create_result()
 	defer func() {
@@ -132,6 +124,15 @@ func task_create(data *protocol.MSG_PROJECT_task_create, in *protocol.Msg) {
 		return
 	}
 	if data.Task.Id == 0 { //create
+		c, err := in.DB.Table(db.TABLE_TASK).Where("Name=? and Project=? and Deleted=0", data.Task.Name, data.Task.Project).Count()
+		if err != nil {
+			in.WriteErr(err)
+			return
+		}
+		if c > 0 {
+			in.WriteErr(protocol.Err_TaskIsexist.Err())
+			return
+		}
 		var id int64
 		if id, err = session.Table(db.TABLE_TASK).Insert(data.Task); err != nil || id == 0 {
 			return
@@ -170,6 +171,10 @@ func task_create(data *protocol.MSG_PROJECT_task_create, in *protocol.Msg) {
 			if len(children) > 0 {
 				for _, v := range children {
 					childrenIds = append(childrenIds, v.Id)
+					if data.Task.Parent==v.Id{
+						err = protocol.Err_taskHasAncestors.Err()
+						return
+					}
 				}
 				var ancestors []*db.Task
 				if err = session.Table(db.TABLE_TASK).Field("Id").Where(map[string]interface{}{"parent": mysql.WhereOperatorIN(childrenIds), "Deleted": false}).Select(&ancestors); err != nil {
@@ -293,7 +298,7 @@ func task_UpdateTaskEstimate(data *protocol.MSG_PROJECT_task_UpdateTaskEstimate,
 		}
 
 		consumed += estimate.Consumed
-		actionID, err = in.ActionCreate("task", task.Id, "RecordEstimate", estimate.Work, fmt.Sprint(estimate.Consumed), project.Products, []int32{project.Id})
+		actionID, err = in.ActionCreate("task", task.Id, "RecordEstimate", estimate.Work, fmt.Sprint(estimate.Consumed), project.Products, project.Id)
 		if err != nil {
 			in.WriteErr(err)
 			return
@@ -627,7 +632,7 @@ func task_updateParentStatus(taskID int32, in *protocol.Msg) (err error) {
 			action = "Activated"
 		}
 		project := HostConn.GetProjectById(oldtask.Project)
-		if actionID, e := in.ActionCreate("task", parentID, action, "", "", project.Products, []int32{project.Id}); e != nil {
+		if actionID, e := in.ActionCreate("task", parentID, action, "", "", project.Products, project.Id); e != nil {
 			return e
 		} else {
 			in.ActionLogHistory(actionID, oldtask, parentTask)
@@ -812,7 +817,7 @@ func task_assignTo(data *protocol.MSG_PROJECT_task_assignTo, in *protocol.Msg) {
 		}
 	}
 	var actionID int64
-	if actionID, err = in.ActionCreate("task", data.TaskID, "Assigned", data.Comment, name, project.Products, []int32{project.Id}); err != nil {
+	if actionID, err = in.ActionCreate("task", data.TaskID, "Assigned", data.Comment, name, project.Products, project.Id); err != nil {
 		return
 	}
 	_, err = in.ActionLogHistory(actionID, oldTask, newTask)
@@ -931,7 +936,7 @@ func task_start(data *protocol.MSG_PROJECT_task_start, in *protocol.Msg) {
 		}
 		project := HostConn.GetProjectById(oldtask.Project)
 		var actionID int64
-		if actionID, err = in.ActionCreate("task", data.TaskID, act, data.Comment, "", project.Products, []int32{project.Id}); err != nil {
+		if actionID, err = in.ActionCreate("task", data.TaskID, act, data.Comment, "", project.Products, project.Id); err != nil {
 			return
 		}
 		if len(changes) > 0 {
@@ -1053,7 +1058,7 @@ func task_finish(data *protocol.MSG_PROJECT_task_finish, in *protocol.Msg) {
 		act := "Finished"
 		project := HostConn.GetProjectById(oldtask.Project)
 		var actionID int64
-		if actionID, err = in.ActionCreate("task", data.TaskID, act, data.Comment, "", project.Products, []int32{project.Id}); err != nil {
+		if actionID, err = in.ActionCreate("task", data.TaskID, act, data.Comment, "", project.Products, project.Id); err != nil {
 			return
 		}
 		if len(changes) > 0 {
@@ -1137,7 +1142,7 @@ func task_activate(data *protocol.MSG_PROJECT_task_activate, in *protocol.Msg) {
 		act := "Activated"
 		project := HostConn.GetProjectById(oldtask.Project)
 		var actionID int64
-		if actionID, err = in.ActionCreate("task", data.TaskID, act, data.Comment, strconv.Itoa(int(data.AssignedTo)), project.Products, []int32{project.Id}); err != nil {
+		if actionID, err = in.ActionCreate("task", data.TaskID, act, data.Comment, strconv.Itoa(int(data.AssignedTo)), project.Products, project.Id); err != nil {
 			return
 		}
 		if len(changes) > 0 {
@@ -1193,7 +1198,7 @@ func task_pause(data *protocol.MSG_PROJECT_task_pause, in *protocol.Msg) {
 		act := "Paused"
 		project := HostConn.GetProjectById(oldtask.Project)
 		var actionID int64
-		if actionID, err = in.ActionCreate("task", data.TaskID, act, data.Comment, "", project.Products, []int32{project.Id}); err != nil {
+		if actionID, err = in.ActionCreate("task", data.TaskID, act, data.Comment, "", project.Products, project.Id); err != nil {
 			return
 		}
 		if len(changes) > 0 {
@@ -1251,7 +1256,7 @@ func task_internalaudit(data *protocol.MSG_PROJECT_task_internalaudit, in *proto
 		act := "internalaudit"
 		project := HostConn.GetProjectById(oldtask.Project)
 		var actionID int64
-		if actionID, err = in.ActionCreate("task", data.TaskID, act, data.Comment, "", project.Products, []int32{project.Id}); err != nil {
+		if actionID, err = in.ActionCreate("task", data.TaskID, act, data.Comment, "", project.Products, project.Id); err != nil {
 			return
 		}
 		if len(changes) > 0 {
@@ -1309,7 +1314,7 @@ func task_proofreading(data *protocol.MSG_PROJECT_task_proofreading, in *protoco
 		act := "proofreading"
 		project := HostConn.GetProjectById(oldtask.Project)
 		var actionID int64
-		if actionID, err = in.ActionCreate("task", data.TaskID, act, data.Comment, "", project.Products, []int32{project.Id}); err != nil {
+		if actionID, err = in.ActionCreate("task", data.TaskID, act, data.Comment, "", project.Products, project.Id); err != nil {
 			return
 		}
 		if len(changes) > 0 {
@@ -1376,7 +1381,7 @@ func task_close(data *protocol.MSG_PROJECT_task_close, in *protocol.Msg) {
 		act := "Closed"
 		project := HostConn.GetProjectById(oldtask.Project)
 		var actionID int64
-		if actionID, err = in.ActionCreate("task", data.TaskID, act, data.Comment, "", project.Products, []int32{project.Id}); err != nil {
+		if actionID, err = in.ActionCreate("task", data.TaskID, act, data.Comment, "", project.Products, project.Id); err != nil {
 			return
 		}
 		if len(changes) > 0 {
@@ -1423,7 +1428,7 @@ func task_examine(data *protocol.MSG_PROJECT_task_examine, in *protocol.Msg) {
 	if data.Examine{
 		extra="通过"
 	}
-	if _, err := in.ActionCreate("task", data.TaskID, act, "", extra, project.Products, []int32{project.Id}); err != nil {
+	if _, err := in.ActionCreate("task", data.TaskID, act, "", extra, project.Products, project.Id); err != nil {
 		in.WriteErr(err)
 		return
 	}
@@ -1486,7 +1491,7 @@ func task_cancel(data *protocol.MSG_PROJECT_task_cancel, in *protocol.Msg) {
 		act := "Canceled"
 		project := HostConn.GetProjectById(oldtask.Project)
 		var actionID int64
-		if actionID, err = in.ActionCreate("task", data.TaskID, act, data.Comment, "", project.Products, []int32{project.Id}); err != nil {
+		if actionID, err = in.ActionCreate("task", data.TaskID, act, data.Comment, "", project.Products, project.Id); err != nil {
 			return
 		}
 		if len(changes) > 0 {

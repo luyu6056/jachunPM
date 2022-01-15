@@ -1,0 +1,22 @@
+<style>
+.block-overview .tile-amount {font-size: 48px; margin-bottom: 10px;}
+</style>
+<div class="panel-body table-row">
+  <div class="col-4 text-middle text-center">
+    <div class="tile">
+      <div class="tile-title">{{.Lang.project.allProject}}</div>
+      <div class="tile-amount">{{$.Data.total}}</div>
+      <a class="btn btn-primary btn-circle btn-icon-right btn-sm" href="{{helper_createLink "project" "all"}}">{{.Lang.project.viewAll}} <span class="label label-badge label-icon"><i class="icon icon-arrow-right"></i></span></a>
+    </div>
+  </div>
+  <div class="col-8 text-middle">
+    <ul class="status-bars">
+      {{range $kv :=.Lang.project.statusList}}
+      <li>
+        <span class="bar" style="height: {{getValue $.Data.overviewPercent $kv.Key}}"><span class="value">{{getValue $.Data.overview $kv.Key}}</span></span>
+        <span class="title">{{$kv.Value}}</span>
+      </li>
+      {{end}}
+    </ul>
+  </div>
+</div>

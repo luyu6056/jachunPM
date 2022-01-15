@@ -3,9 +3,9 @@ package rpcHost
 import (
 	"errors"
 	"fmt"
+	"jachunPM_commom/db"
 	"protocol"
 	"strconv"
-	"sync/atomic"
 	"time"
 
 	"github.com/luyu6056/cache"
@@ -16,22 +16,17 @@ type HostServer struct {
 
 var Host HostServer
 
-func (HostServer) SendMsg(remote uint16, msgno uint32, ttl uint16, transactionNo, queryID uint32, out protocol.MSG_DATA) {
-	protocol.SendMsg(protocol.HostServerNo, remote, msgno, ttl, transactionNo, queryID, out, rpcServerOutChan[protocol.HostServerNo])
+func (HostServer) SendMsg(msg *protocol.Msg, remote uint16, out protocol.MSG_DATA) {
+	protocol.SendMsg(msg, protocol.HostServerNo, remote, out, rpcServerOutChan[protocol.HostServerNo])
 }
-func (HostServer) SendMsgWaitResult(remote uint16, msgno uint32, ttl uint16, transactionNo uint32, out protocol.MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
-	return protocol.SendMsgWaitResult(protocol.HostServerNo, remote, msgno, ttl, transactionNo, out, result, rpcServerOutChan[protocol.HostServerNo], timeout...)
+func (HostServer) SendMsgWaitResult(msg *protocol.Msg, remote uint16, out protocol.MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
+	return protocol.SendMsgWaitResult(msg, protocol.HostServerNo, remote, out, result, rpcServerOutChan[protocol.HostServerNo], timeout...)
 }
 
-func GetOneMsg() *protocol.Msg {
-	m := &protocol.Msg{}
-	msgno := atomic.AddUint32(&globalMsgno, 1)
-	m.Msgno = msgno
-	ttl := int32(0)
-	msgnoTtl.Store(m.Msgno, &ttl)
-	time.AfterFunc(protocol.MsgTimeOut*time.Second, func() { msgnoTtl.Delete(msgno) })
-	m.SetServer(Host)
-	return m
+func GetMsg() *protocol.Msg {
+	msg := &protocol.Msg{DB: &protocol.MsgDB{DB: db.DB}}
+	msg.SetServer(Host)
+	return msg
 }
 func (HostServer) GetUserCacheById(id int32) (user *protocol.MSG_USER_INFO_cache, err error) {
 	r := cache.Hget(strconv.Itoa(int(id)), strconv.Itoa(protocol.UserServerNo)+"_"+protocol.PATH_USER_INFO_CACHE)

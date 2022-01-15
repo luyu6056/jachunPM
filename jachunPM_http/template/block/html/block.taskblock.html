@@ -1,0 +1,44 @@
+{{if not $.Data.tasks}}
+<div class='empty-tip'>{{.Lang.block.emptyTip}}</div>
+{{else}}
+<style>
+.block-tasks .c-id {width: 55px;}
+.block-tasks .c-pri {width: 45px;text-align: center;}
+.block-tasks .c-estimate {width: 60px;}
+.block-tasks .c-deadline {width: 95px;}
+.block-tasks .c-status {width: 80px;}
+.block-tasks.block-sm .c-status {text-align: center;}
+</style>
+<div class='panel-body has-table scrollbar-hover'>
+  <table class='table table-borderless table-hover table-fixed table-fixed-head tablesorter block-tasks {{if not $.Data.longBlock}}block-sm{{end}}'>
+    <thead>
+      <tr>
+        <th class='c-id'>{{.Lang.common.idAB}}</th>
+        <th class='c-pri'>{{.Lang.common.priAB}}</th>
+        <th class='c-name'> {{.Lang.task.name}}</th>
+        {{if $.Data.longBlock}}
+        <th class='c-estimate'>{{.Lang.task.estimateAB}}</th>
+        <th class='c-deadline'>{{.Lang.task.deadline}}</th>
+        {{end}}
+        <th class='c-status text-center'>{{.Lang.common.statusAB}}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range $task := $.Data.tasks}}
+      <tr data-url='{{helper_createLink "task" "view" "taskID=" $task.Id}}'>
+        <td class='c-id-xs'>{{printf "%03d" $task.Id}}</td>
+        <td class='c-pri'><span class='label-pri label-pri-{{$task.Pri}}' title='{{getValue $.Lang.task.priList $task.Pri}}'>{{getValue $.Lang.task.priList $task.Pri}}</span></td>
+        <td class='c-name' style='color: {{$task.Color}}' title='{{$task.Name}}'>{{$task.Name}}</td>
+        {{if $.Data.longBlock}}
+        <td class='c-estimate text-center'>{{$task.Estimate}}</td>
+        <td class='c-deadline'>{{date "2006-01-02" $task.Deadline "normaltime"}}</td>
+        {{end}}
+        <td class='c-status' title='{{getValue $.Lang.task.statusList $task.Status}}'>
+          <span class="status-task status-{{$task.Status}}">{{getValue $.Lang.task.statusList $task.Status}}</span>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+</div>
+{{end}}

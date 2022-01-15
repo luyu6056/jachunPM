@@ -23,7 +23,8 @@ require (
 	github.com/luyu6056/reflect2 v1.0.2
 	github.com/luyu6056/tls v0.15.1
 	github.com/rubenfonseca/fastimage v0.0.0-20170112075114-7e006a27a95b
-	golang.org/x/image v0.0.0-20200927104501-e162460cd6b5
+	github.com/xuri/excelize/v2 v2.5.0 // indirect
+	golang.org/x/image v0.0.0-20210220032944-ac19c3e999fb
 	jachunPM/image v0.0.0-00010101000000-000000000000
 	libraries v0.0.0-00010101000000-000000000000
 	mysql v0.0.0-00010101000000-000000000000

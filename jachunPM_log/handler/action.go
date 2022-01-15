@@ -23,7 +23,7 @@ func action_crate(data *protocol.MSG_LOG_Action_Create, in *protocol.Msg) {
 		Date:       time.Now(),
 		Extra:      data.Extra,
 		Products:   data.Products,
-		Projects:   data.Projects,
+		Project:   data.Project,
 		Comment:    libraries.Html2bbcode(data.Comment),
 	}
 	if user := HostConn.GetUserCacheById(data.ActorId); user != nil {
@@ -49,12 +49,27 @@ func action_GetByWhereMap(data *protocol.MSG_LOG_Action_GetByWhereMap, in *proto
 	in.SendResult(out)
 	out.Put()
 }
-func action_transformActions(where map[string]interface{}, order string, in *protocol.Msg) (res []*protocol.MSG_LOG_transformActions_info, err error) {
-	if err = HostConn.DB.Table(db.TABLE_ACTION).WhereOr(where).Order(order).Limit(0).Select(&res); err != nil {
+func action_transformActions(data *protocol.MSG_LOG_Action_transformActions, in *protocol.Msg)  {
+	out := protocol.GET_MSG_LOG_Action_transformActions_result()
+	var err error
+	defer func(){
+		if err!=nil{
+			in.WriteErr(err)
+		}else{
+			in.SendResult(out)
+			out.Put()
+		}
+	}()
+	if err = HostConn.DB.Table(db.TABLE_ACTION).Prepare().WhereOr(data.Where).Order(data.Order).Limit((data.Page-1)*data.PerPage,data.Page*data.PerPage).Select(&out.List); err != nil {
 		return
 	}
+	if data.Total==0{
+		if data.Total,err=HostConn.DB.Table(db.TABLE_ACTION).WhereOr(data.Where).Order(data.Order).Count();err!=nil{
+			return
+		}
+	}
 	objectTypes := make(map[string][]int32)
-	for _, action := range res {
+	for _, action := range out.List {
 		action.ObjectName = "action_transformActions需要处理ObjectType:" + action.ObjectType
 		objectTypes[action.ObjectType] = append(objectTypes[action.ObjectType], action.ObjectID)
 	}
@@ -78,7 +93,6 @@ func action_transformActions(where map[string]interface{}, order string, in *pro
 				return
 			}
 			objectNames[typename] = result.List
-			libraries.DebugLog("%+v", ids)
 			out.Put()
 		case "productplan":
 			out := protocol.GET_MSG_PROJECT_productplan_getPairs()
@@ -167,8 +181,9 @@ func action_transformActions(where map[string]interface{}, order string, in *pro
 	if err != nil {
 		return
 	}
-	for i := len(res) - 1; i >= 0; i-- {
-		action := res[i]
+	for i := len(out.List) - 1; i >= 0; i-- {
+
+		action := out.List[i]
 		/* Add name field to the actions. */
 		if v, ok := objectNames[action.ObjectType]; ok {
 			for _, kv := range v {
@@ -198,7 +213,7 @@ func action_transformActions(where map[string]interface{}, order string, in *pro
 		if len(label) == 4 {
 			objectLabel, moduleName, methodName, vars := label[0], label[1], label[2], label[3]
 			if !in.HasPriv(moduleName, methodName) {
-				res = append(res[:i], res[i+1:]...)
+				out.List = append(out.List[:i], out.List[i+1:]...)
 				continue
 			}
 
@@ -223,7 +238,6 @@ func action_transformActions(where map[string]interface{}, order string, in *pro
 			}
 		}
 	}
-	return
 }
 func action_AddHistory(data *protocol.MSG_LOG_Action_AddHistory, in *protocol.Msg) {
 	var action *protocol.MSG_LOG_Action
@@ -233,11 +247,12 @@ func action_AddHistory(data *protocol.MSG_LOG_Action_AddHistory, in *protocol.Ms
 	}
 	if action != nil {
 		action.Historys = append(action.Historys, data.History...)
+		_, err = in.DB.Table(db.TABLE_ACTION).Where("Id=?", data.Id).Update("Historys = ?", action.Historys)
+		if err != nil {
+			libraries.ReleaseLog("增加history失败%+v", err)
+		}
 	}
-	_, err = in.DB.Table(db.TABLE_ACTION).Where("Id=?", data.Id).Update("Historys = ?", action.Historys)
-	if err != nil {
-		libraries.ReleaseLog("增加history失败%+v", err)
-	}
+
 
 }
 func action_read(data *protocol.MSG_LOG_Action_set_read, in *protocol.Msg) {

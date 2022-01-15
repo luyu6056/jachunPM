@@ -17,8 +17,11 @@ func init() {
 
 }
 func datatable_getSetting(data *TemplateData, module string, method string) (setting []*config.ConfigDatatable) {
+	datatableId := module
+	if method != "" {
+		datatableId += strings.ToUpper(method[:1]) + method[1:]
+	}
 
-	datatableId := module + strings.ToUpper(method[:1]) + method[1:]
 	mode := "table"
 	if v1, ok := data.Config["datatable"][datatableId]; ok {
 		if v2, ok := v1["mode"].(string); ok {
@@ -192,7 +195,7 @@ func datatable_setFixedFieldWidth(setting []*config.ConfigDatatable) map[string]
 	return widths
 
 }
-func datatableFuncs() {
+func datatableTemplateFuncs() {
 	global_Funcs["datatable_printHead"] = func(data *TemplateData, col *config.ConfigDatatable, orderBy, vars string, checkBoxExt ...bool) template.HTML {
 		checkBox := true
 		if len(checkBoxExt) > 0 {

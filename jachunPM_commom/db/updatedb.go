@@ -20,20 +20,22 @@ var (
 	updateChan_log_msg = make(chan *Log_msg, maxUpdateNum)
 )
 
-func WriteMsgLog(msg *protocol.Msg) {
+func MsgtoLog(msg *protocol.Msg, logs []*Log_msg) []*Log_msg {
+	var lastTTl int
+	if len(logs) > 0 {
+		lastTTl = logs[len(logs)-1].Ttl
+	}
 	log := updatePool_log_msg.Get().(*Log_msg)
 	log.Cmd = protocol.CmdToName[msg.Cmd]
 	log.LocalNo = uint8(msg.Local)
 	log.LocalId = uint8(msg.Local >> 8)
 	log.Msgno = msg.Msgno
+	log.TimeOut=msg.TtlTimeout
 	log.RemoteNo = uint8(msg.GetRemoteID())
 	log.RemoteId = uint8(msg.GetRemoteID() >> 8)
 	log.Timestamp = time.Now()
 	log.Err = ""
-	if msg.Ttl >= protocol.MaxMsgTtl {
-		msg.Ttl = 255
-	}
-	log.Ttl = msg.Ttl
+	log.Ttl = lastTTl + 1
 	if msg.Cmd == protocol.CMD_MSG_HOST_QueryErr {
 		msg.ReadDataWithCopy()
 		if data, ok := msg.Data.(*protocol.MSG_HOST_QueryErr); ok {
@@ -41,7 +43,17 @@ func WriteMsgLog(msg *protocol.Msg) {
 			log.Stack = string(data.Stack)
 		}
 	}
-	updateChan_log_msg <- log
+	//大于一定的ttl阈值才保存，避免每条消息都存
+	if log.Ttl > 50 {
+		for _, l := range logs[1:] {
+			updateChan_log_msg <- l
+		}
+		updateChan_log_msg <- log
+		return []*Log_msg{log}
+	} else {
+		logs = append(logs, log)
+	}
+	return logs
 }
 
 func UpdatedbInit() {

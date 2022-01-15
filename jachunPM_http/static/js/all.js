@@ -13774,7 +13774,9 @@ function() {
 		}, a.prototype.destroy = function() {
 			return d(this.container[0].ownerDocument).unbind("click.chosen", this.click_test_action), this.search_field[0].tabIndex && (this.form_field_jq[0].tabIndex = this.search_field[0].tabIndex), this.container.remove(), this.form_field_jq.removeData("chosen"), this.form_field_jq.show()
 		}, a.prototype.search_field_disabled = function() {
-			return this.is_disabled = this.form_field_jq[0].disabled, this.is_disabled ? (this.container.addClass("chosen-disabled"), this.search_field[0].disabled = !0, this.is_multiple || this.selected_item.unbind("focus.chosen", this.activate_action), this.close_field()) : (this.container.removeClass("chosen-disabled"), this.search_field[0].disabled = !1, this.is_multiple ? void 0 : this.selected_item.bind("focus.chosen", this.activate_action))
+
+			 this.is_disabled = this.form_field_jq[0].disabled, this.is_disabled ? (this.container.addClass("chosen-disabled"), this.search_field[0].disabled = !0, this.is_multiple || this.selected_item.unbind("focus.chosen", this.activate_action), this.close_field()) : (this.container.removeClass("chosen-disabled"), this.search_field[0].disabled = !1, this.is_multiple ? void 0 : this.selected_item.bind("focus.chosen", this.activate_action))
+			 return
 		}, a.prototype.container_mousedown = function(m) {
 			if (!this.is_disabled && (m && "mousedown" === m.type && !this.results_showing && m.preventDefault(), null == m || !d(m.target).hasClass("search-choice-close"))) {
 				return this.active_field ? this.is_multiple || !m || d(m.target)[0] !== this.selected_item[0] && !d(m.target).parents("a.chosen-single").length || (m.preventDefault(), this.results_toggle()) : (this.is_multiple && this.search_field.val(""), d(this.container[0].ownerDocument).bind("click.chosen", this.click_test_action), this.results_show()), this.activate_field()
@@ -13795,7 +13797,7 @@ function() {
 		}, a.prototype.close_field = function() {
 			return d(this.container[0].ownerDocument).unbind("click.chosen", this.click_test_action), this.active_field = !1, this.results_hide(), this.container.removeClass("chosen-container-active"), this.clear_backstroke(), this.show_search_field_default(), this.search_field_scale()
 		}, a.prototype.activate_field = function() {
-			return this.container.addClass("chosen-container-active"), this.active_field = !0, this.search_field.val(this.search_field.val()), this.search_field.focus()
+			return this.container.addClass("chosen-container-active"), this.active_field = !0, this.search_field.val(this.search_field.val()), this.search_field[0].focus()
 		}, a.prototype.test_active_click = function(n) {
 			var m;
 			return m = d(n.target).closest(".chosen-container"), m.length && this.container[0] === m[0] ? this.active_field = !0 : this.close_field()

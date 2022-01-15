@@ -21,7 +21,7 @@ type MSG_DATA interface {
 }
 type Msg struct {
 	Msgno              uint32
-	Ttl                uint16
+	TtlTimeout         uint16
 	Local, remoteID    uint16
 	Cmd                int32
 	Data               MSG_DATA
@@ -33,6 +33,7 @@ type Msg struct {
 	DB                 *MsgDB
 	lang               CountryNo
 	QueryID            uint32
+	Uid                int32
 	Addr               string
 }
 type MsgDB struct {
@@ -68,11 +69,12 @@ func ReadOneMsg(buf *libraries.MsgBuffer) (msg *Msg, err error) {
 	msg = &Msg{DB: &MsgDB{}}
 	msg.datalen = datalen
 	msg.Msgno = uint32(data[0]) | uint32(data[1])<<8 | uint32(data[2])<<16 | uint32(data[3])<<24
-	msg.Ttl = uint16(data[4]) | uint16(data[5])<<8
+	msg.TtlTimeout = uint16(data[4]) | uint16(data[5])<<8
 	msg.Local = uint16(data[6]) | uint16(data[7])<<8
 	msg.remoteID = uint16(data[8]) | uint16(data[9])<<8
 	msg.DB.transactionNo = uint32(data[10]) | uint32(data[11])<<8 | uint32(data[12])<<16 | uint32(data[13])<<24
 	msg.QueryID = uint32(data[14]) | uint32(data[15])<<8 | uint32(data[16])<<16 | uint32(data[17])<<24
+	msg.Uid = int32(data[18]) | int32(data[19])<<8 | int32(data[20])<<16 | int32(data[21])<<24
 	msg.DB.msg = msg
 	msg.Cmd = int32(data[MsgHeadLen]) | int32(data[MsgHeadLen+1])<<8 | int32(data[MsgHeadLen+2])<<16 | int32(data[MsgHeadLen+3])<<24
 	msg.lang = DefaultLang //暂时默认语言
@@ -91,11 +93,12 @@ func ReadOneMsgFromBytes(data []byte) (msg *Msg, length int, err error) {
 	msg = &Msg{DB: &MsgDB{}}
 	msg.datalen = datalen
 	msg.Msgno = uint32(data[0]) | uint32(data[1])<<8 | uint32(data[2])<<16 | uint32(data[3])<<24
-	msg.Ttl = uint16(data[4]) | uint16(data[5])<<8
+	msg.TtlTimeout = uint16(data[4]) | uint16(data[5])<<8
 	msg.Local = uint16(data[6]) | uint16(data[7])<<8
 	msg.remoteID = uint16(data[8]) | uint16(data[9])<<8
 	msg.DB.transactionNo = uint32(data[10]) | uint32(data[11])<<8 | uint32(data[12])<<16 | uint32(data[13])<<24
 	msg.QueryID = uint32(data[14]) | uint32(data[15])<<8 | uint32(data[16])<<16 | uint32(data[17])<<24
+	msg.Uid = int32(data[18]) | int32(data[19])<<8 | int32(data[20])<<16 | int32(data[21])<<24
 	msg.DB.msg = msg
 	msg.Cmd = int32(data[MsgHeadLen]) | int32(data[MsgHeadLen+1])<<8 | int32(data[MsgHeadLen+2])<<16 | int32(data[MsgHeadLen+3])<<24
 	msg.lang = DefaultLang //暂时默认语言
@@ -138,8 +141,8 @@ func (m *Msg) Buf() *libraries.MsgBuffer {
 }
 
 type MsgServer interface {
-	SendMsg(remote uint16, msgno uint32, ttl uint16, transactionNo uint32, queryID uint32, out MSG_DATA)
-	SendMsgWaitResult(remote uint16, msgno uint32, ttl uint16, transactionNo uint32, out MSG_DATA, result interface{}, timeout ...time.Duration) (err error)
+	SendMsg(msg *Msg, remote uint16, out MSG_DATA)
+	SendMsgWaitResult(msg *Msg, remote uint16, out MSG_DATA, result interface{}, timeout ...time.Duration) (err error)
 }
 
 //实现msg读写,由msg发出的消息，继承msgno和ttl
@@ -150,30 +153,18 @@ func (m *Msg) SetServer(svr MsgServer) {
 
 //指定服务器发送
 func (m *Msg) SendMsg(remote uint16, out MSG_DATA) {
-	transactionNo := m.DB.transactionNo
-	if transactionNo == 0 && m.DB.transaction != nil {
-		transactionNo = m.DB.transaction.newTransactionNo
-	}
-	m.Svr.SendMsg(remote, m.Msgno, m.Ttl, transactionNo, 0, out)
+	m.Svr.SendMsg(m, remote, out)
 }
 func (m *Msg) SendMsgWaitResult(remote uint16, out MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
 	if m.DB.transaction != nil && timeout != nil && timeout[0] > MsgTimeOut*time.Second { //事务有默认超时，不允许timeout大于事务超时
 		return errTransactionTimeOut
 	}
-	transactionNo := m.DB.transactionNo
-	if transactionNo == 0 && m.DB.transaction != nil {
-		transactionNo = m.DB.transaction.newTransactionNo
-	}
-	return m.Svr.SendMsgWaitResult(remote, m.Msgno, m.Ttl, transactionNo, out, result, timeout...)
+	return m.Svr.SendMsgWaitResult(m, remote, out, result, timeout...)
 }
 
 //原路返回
 func (m *Msg) SendResult(out MSG_DATA) {
-	transactionNo := m.DB.transactionNo
-	if transactionNo == 0 && m.DB.transaction != nil {
-		transactionNo = m.DB.transaction.newTransactionNo
-	}
-	m.Svr.SendMsg(m.Local, m.Msgno, m.Ttl, transactionNo, m.QueryID, out)
+	m.Svr.SendMsg(m, m.Local, out)
 }
 
 //原路返回err
@@ -187,15 +178,11 @@ func (m *Msg) WriteErr(err error) {
 		data.Err = err.Error()
 		data.Stack = debug.Stack()
 	}
-	transactionNo := m.DB.transactionNo
-	if transactionNo == 0 && m.DB.transaction != nil {
-		transactionNo = m.DB.transaction.newTransactionNo
-	}
-	m.Svr.SendMsg(m.Local, m.Msgno, m.Ttl, transactionNo, m.QueryID, data)
+	m.Svr.SendMsg(m, m.Local, data)
 	data.Put()
 	if err != nil {
-		fmt.Println(err)
-		debug.PrintStack()
+		//fmt.Println(err)
+		//debug.PrintStack()
 	}
 
 }
@@ -275,8 +262,8 @@ func MSG_DATA_Write(data MSG_DATA, buf *libraries.MsgBuffer) {
 }
 
 //result可以传入nil，但是返回非MSG_HOST_QueryErr就会报错
-func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint16, transactionNo uint32, out MSG_DATA, result interface{}, outchan chan *libraries.MsgBuffer, timeout ...time.Duration) (err error) {
-	resultchan := make(chan RpcQueryResult, 1)
+func SendMsgWaitResult(msg *Msg, local, remote uint16, out MSG_DATA, result interface{}, outchan chan *libraries.MsgBuffer, timeout ...time.Duration) (err error) {
+	resultchan := make(chan *Msg, 1)
 	rpcClientQueryLock.Lock()
 	var queryId uint32
 	for {
@@ -290,27 +277,49 @@ func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint16, transacti
 	}
 	rpcClientQueryMap[queryId] = resultchan
 	rpcClientQueryLock.Unlock()
+	_timeout := MsgTimeOut * time.Second
+	if len(timeout) == 1 {
+		_timeout = timeout[0]
+	}
 	buf := BufPoolGet()
 	b := buf.Make(MsgHeadLen)
-	b[0] = byte(msgno)
-	b[1] = byte(msgno >> 8)
-	b[2] = byte(msgno >> 16)
-	b[3] = byte(msgno >> 24)
-	b[4] = byte(ttl)
-	b[5] = byte(ttl >> 8)
+	b[0] = 0
+	b[1] = 0
+	b[2] = 0
+	b[3] = 0
+	b[10] = 0
+	b[11] = 0
+	b[12] = 0
+	b[13] = 0
+	b[18] = 0
+	b[19] = 0
+	b[20] = 0
+	b[21] = 0
+
+	b[4] = byte(MsgTimeOut)
+	b[5] = byte(MsgTimeOut >> 8)
 	b[6] = byte(local)
 	b[7] = byte(local >> 8)
 	b[8] = byte(remote)
 	b[9] = byte(remote >> 8)
-	b[10] = byte(transactionNo)
-	b[11] = byte(transactionNo >> 8)
-	b[12] = byte(transactionNo >> 16)
-	b[13] = byte(transactionNo >> 24)
-
 	b[14] = byte(queryId)
 	b[15] = byte(queryId >> 8)
 	b[16] = byte(queryId >> 16)
 	b[17] = byte(queryId >> 24)
+	if msg != nil {
+		b[0] = byte(msg.Msgno)
+		b[1] = byte(msg.Msgno >> 8)
+		b[2] = byte(msg.Msgno >> 16)
+		b[3] = byte(msg.Msgno >> 24)
+		b[10] = byte(msg.DB.transactionNo)
+		b[11] = byte(msg.DB.transactionNo >> 8)
+		b[12] = byte(msg.DB.transactionNo >> 16)
+		b[13] = byte(msg.DB.transactionNo >> 24)
+		b[18] = byte(msg.Uid)
+		b[19] = byte(msg.Uid >> 8)
+		b[20] = byte(msg.Uid >> 16)
+		b[21] = byte(msg.Uid >> 24)
+	}
 	out.write(buf)
 	if buf.Len() > MaxMsgLen {
 		libraries.ReleaseLog("消息发送失败，包体超过限制" + string(debug.Stack()))
@@ -326,10 +335,7 @@ func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint16, transacti
 		b[MsgHeadLen-1] = byte(msglen >> 16)
 		outchan <- buf
 	}
-	_timeout := MsgTimeOut * time.Second
-	if len(timeout) == 1 {
-		_timeout = timeout[0]
-	}
+
 	checkAndSetResult := func(resultmsg RpcQueryResult) error {
 		r1 := reflect.ValueOf(result)
 		if r1.Kind() != reflect.Ptr {
@@ -347,11 +353,14 @@ func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint16, transacti
 		return nil
 	}
 	select {
-	case r := <-resultchan:
+	case in := <-resultchan:
 		rpcClientQueryLock.Lock()
 		defer rpcClientQueryLock.Unlock()
 		delete(rpcClientQueryMap, queryId)
-		if err, ok := r.(*MSG_HOST_QueryErr); ok {
+		if msg != nil && msg.Msgno == 0 {
+			msg.Msgno = in.Msgno
+		}
+		if err, ok := in.Data.(*MSG_HOST_QueryErr); ok {
 			if err.Err != "" {
 				return errors.New(err.Err)
 			} else if result == nil {
@@ -361,15 +370,17 @@ func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint16, transacti
 				return errors.New(fmt.Sprintf("实际返回的结果为MSG_HOST_QueryErr,与请求的%s不相符", r1.Type().Elem().Elem().Name()))
 			}
 		}
-		return checkAndSetResult(r)
+		return checkAndSetResult(in.Data)
 	case <-time.After(_timeout):
 		rpcClientQueryLock.Lock()
 		defer rpcClientQueryLock.Unlock()
 		delete(rpcClientQueryMap, queryId)
 		select {
-		case r := <-resultchan:
-			defer r.(MSG_DATA).Put()
-			if err, ok := r.(*MSG_HOST_QueryErr); ok {
+		case in := <-resultchan:
+			if msg != nil && msg.Msgno == 0 {
+				msg.Msgno = in.Msgno
+			}
+			if err, ok := in.Data.(*MSG_HOST_QueryErr); ok {
 				if err.Err != "" {
 					return errors.New(err.Err)
 				} else if result == nil {
@@ -379,7 +390,7 @@ func SendMsgWaitResult(local, remote uint16, msgno uint32, ttl uint16, transacti
 					return errors.New(fmt.Sprintf("实际返回的结果为MSG_HOST_QueryErr,与请求的%s不相符", r1.Elem().Elem().Type().Name()))
 				}
 			}
-			return checkAndSetResult(r)
+			return checkAndSetResult(in.Data)
 		default:
 		}
 	}
@@ -391,10 +402,7 @@ func SetMsgQuery(in *Msg) bool {
 	rpcClientQueryLock.RLock()
 	defer rpcClientQueryLock.RUnlock()
 	if v, ok := rpcClientQueryMap[queryID]; ok {
-		if in.Data == nil {
-			in.ReadData()
-		}
-		v <- in.Data.(RpcQueryResult)
+		v <- in
 	} else {
 		return false
 	}
@@ -402,28 +410,53 @@ func SetMsgQuery(in *Msg) bool {
 	return true
 
 }
-func SendMsg(local, remote uint16, msgno uint32, ttl uint16, transactionNo uint32, queryId uint32, out MSG_DATA, outchan chan *libraries.MsgBuffer) {
+func SendMsg(msg *Msg, local, remote uint16, out MSG_DATA, outchan chan *libraries.MsgBuffer) {
+
 	buf := BufPoolGet()
 	b := buf.Make(MsgHeadLen)
-	b[0] = byte(msgno)
-	b[1] = byte(msgno >> 8)
-	b[2] = byte(msgno >> 16)
-	b[3] = byte(msgno >> 24)
-	b[4] = byte(ttl)
-	b[5] = byte(ttl >> 8)
+	b[0] = 0
+	b[1] = 0
+	b[2] = 0
+	b[3] = 0
+	b[10] = 0
+	b[11] = 0
+	b[12] = 0
+	b[13] = 0
+	b[14] = 0
+	b[15] = 0
+	b[16] = 0
+	b[17] = 0
+	b[18] = 0
+	b[19] = 0
+	b[20] = 0
+	b[21] = 0
+
+	b[4] = byte(MsgTimeOut)
+	b[5] = byte(MsgTimeOut >> 8)
 	b[6] = byte(local)
 	b[7] = byte(local >> 8)
 	b[8] = byte(remote)
 	b[9] = byte(remote >> 8)
-	b[10] = byte(transactionNo)
-	b[11] = byte(transactionNo >> 8)
-	b[12] = byte(transactionNo >> 16)
-	b[13] = byte(transactionNo >> 24)
 
-	b[14] = byte(queryId)
-	b[15] = byte(queryId >> 8)
-	b[16] = byte(queryId >> 16)
-	b[17] = byte(queryId >> 24)
+	if msg != nil {
+		b[0] = byte(msg.Msgno)
+		b[1] = byte(msg.Msgno >> 8)
+		b[2] = byte(msg.Msgno >> 16)
+		b[3] = byte(msg.Msgno >> 24)
+		b[10] = byte(msg.DB.transactionNo)
+		b[11] = byte(msg.DB.transactionNo >> 8)
+		b[12] = byte(msg.DB.transactionNo >> 16)
+		b[13] = byte(msg.DB.transactionNo >> 24)
+		b[18] = byte(msg.Uid)
+		b[19] = byte(msg.Uid >> 8)
+		b[20] = byte(msg.Uid >> 16)
+		b[21] = byte(msg.Uid >> 24)
+
+		b[14] = byte(msg.QueryID)
+		b[15] = byte(msg.QueryID >> 8)
+		b[16] = byte(msg.QueryID >> 16)
+		b[17] = byte(msg.QueryID >> 24)
+	}
 	out.write(buf)
 	if buf.Len() > MaxMsgLen {
 		libraries.ReleaseLog("消息发送失败，包体超过限制" + string(debug.Stack()))
@@ -492,7 +525,8 @@ func (msg *Msg) BeginTransaction() (*MsgDBTransaction, error) {
 	//沿用旧的事务conn给予新的DB，transactionNo，拦截后续申请的子事务
 	newMsg := &Msg{
 		Msgno:              msg.Msgno,
-		Ttl:                msg.Ttl,
+		Uid:                msg.Uid,
+		TtlTimeout:         msg.TtlTimeout,
 		Local:              msg.Local,
 		remoteID:           msg.remoteID,
 		Cmd:                msg.Cmd,
@@ -605,7 +639,7 @@ func MsgTransactionRollBack(data *MSG_HOST_Transaction_RollBack) {
 		}
 	}
 }
-func (m *Msg) ActionCreate(objectType string, objectID int32, actionType, comment, extra string, products, projects []int32) (actionID int64, err error) {
+func (m *Msg) ActionCreate(objectType string, objectID int32, actionType, comment, extra string, products []int32, project int32) (actionID int64, err error) {
 	out := GET_MSG_LOG_Action_Create()
 	out.ObjectType = objectType
 	out.ObjectID = objectID
@@ -614,7 +648,7 @@ func (m *Msg) ActionCreate(objectType string, objectID int32, actionType, commen
 	out.Extra = extra           //额外信息
 	out.ActorId = m.GetUserID()
 	out.Products = products
-	out.Projects = projects
+	out.Project = project
 	var result *MSG_LOG_Action_Create_result
 
 	if err = m.SendMsgWaitResult(0, out, &result); err != nil {
@@ -625,11 +659,7 @@ func (m *Msg) ActionCreate(objectType string, objectID int32, actionType, commen
 
 }
 func (m *Msg) GetUserID() int32 {
-	b, err := m.cache.Get("Uid", "Msg:"+strconv.Itoa(int(m.Msgno)))
-	if err == nil {
-		return int32(b[0]) | int32(b[1])<<8 | int32(b[2])<<16 | int32(b[3])<<24
-	}
-	return 0
+	return m.Uid
 }
 func (m *Msg) HasPriv(moduleName, methodName string, ext ...interface{}) bool {
 	return true

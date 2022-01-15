@@ -38,10 +38,6 @@ func get_tree_browse(data *TemplateData) (err error) {
 	if viewType == "" {
 		viewType = data.ws.Query("viewType")
 	}
-	msg, err := data.GetMsg()
-	if err != nil {
-		return
-	}
 
 	if viewType != "" {
 		data.Data["manageChild"] = "manage" + strings.ToUpper(viewType[:1]) + viewType[1:] + "Child"
@@ -88,7 +84,7 @@ func get_tree_browse(data *TemplateData) (err error) {
 		getTestsuite := protocol.GET_MSG_TEST_testsuite_getById()
 		getTestsuite.Id = int32(rootID)
 		var getTestsuiteResult *protocol.MSG_TEST_testsuite_getById_result
-		err = msg.SendMsgWaitResult(0, getTestsuite, &getTestsuiteResult)
+		err = data.SendMsgWaitResultToDefault(getTestsuite, &getTestsuiteResult)
 		if err != nil {
 			return
 		}
@@ -202,7 +198,7 @@ func get_tree_browse(data *TemplateData) (err error) {
 		getParents := protocol.GET_MSG_PROJECT_tree_getParents()
 		getParents.ModuleID = int32(currentModuleID)
 		var getParentsResult *protocol.MSG_PROJECT_tree_getParents_result
-		err = msg.SendMsgWaitResult(0, getParents, &getParentsResult)
+		err = data.SendMsgWaitResultToDefault(getParents, &getParentsResult)
 		if err != nil {
 			return
 		}
@@ -556,7 +552,6 @@ func post_tree_manageChild(data *TemplateData) (e error) {
 			b, _ := strconv.Atoi(branchs[k])
 			tmp.Branch = int32(b)
 		}
-		libraries.DebugLog("%+v", tmp)
 		out.Modules = append(out.Modules, tmp)
 	}
 	if len(out.Modules) == 0 {
@@ -1161,7 +1156,7 @@ func tree_getTaskTreeMenu(data *TemplateData, rootID, productID, startModule int
 	extra := map[string]interface{}{"projectID": rootID, "productID": productID, "tip": true}
 
 	/* If createdVersion <= 4.1, go to getTreeMenu(). */
-	products := product_getProductsByProject(rootID)
+	products := product_getProductsByProject(data, rootID)
 	var ids []int32 = make([]int32, len(products))
 	for k, p := range products {
 		ids[k] = p.Id
@@ -1339,7 +1334,7 @@ func tree_createBranchLink(viewType string, rootID, branchID int32, branch strin
 func tree_getModulePairs(data *TemplateData, rootID int32, viewType string, showModule, extra string) (modulePairs []protocol.HtmlKeyValueStr, err error) {
 	var modules []*protocol.MSG_PROJECT_tree_cache
 	if viewType == "task" {
-		project := HostConn.GetProjectById(rootID)
+		project := data.getCacheProjectById(rootID)
 		if len(project.Products) == 0 || !tree_isMergeModule(viewType) {
 			list, err := tree_getAllcache(data)
 			if err != nil {
@@ -1420,7 +1415,7 @@ func get_tree_browseTask(data *TemplateData) (err error) {
 	if err = project_setMenu(data, int32(rootID), 0, ""); err != nil {
 		return
 	}
-	project := HostConn.GetProjectById(int32(rootID))
+	project := data.getCacheProjectById(int32(rootID))
 
 	data.Data["root"] = project
 
@@ -1543,7 +1538,7 @@ func tree_getTaskStructure(data *TemplateData, rootID int32) (fullTrees []map[st
 	}
 	out.Put()
 	result.Put()
-	project := HostConn.GetProjectById(rootID)
+	project := data.getCacheProjectById(rootID)
 	if project == nil {
 		return
 	}

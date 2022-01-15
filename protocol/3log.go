@@ -188,7 +188,7 @@ type MSG_LOG_Action_Create struct {
 	Extra string
 	ActorId int32
 	Products []int32
-	Projects []int32
+	Project int32
 }
 
 var pool_MSG_LOG_Action_Create = sync.Pool{New: func() interface{} { return &MSG_LOG_Action_Create{} }}
@@ -209,7 +209,7 @@ func (data *MSG_LOG_Action_Create) Put() {
 	data.Extra = ``
 	data.ActorId = 0
 	data.Products = data.Products[:0]
-	data.Projects = data.Projects[:0]
+	data.Project = 0
 	pool_MSG_LOG_Action_Create.Put(data)
 }
 func (data *MSG_LOG_Action_Create) write(buf *libraries.MsgBuffer) {
@@ -228,10 +228,7 @@ func WRITE_MSG_LOG_Action_Create(data *MSG_LOG_Action_Create, buf *libraries.Msg
 	for _, v := range data.Products{
 		WRITE_int32(v, buf)
 	}
-	WRITE_int(len(data.Projects), buf)
-	for _, v := range data.Projects{
-		WRITE_int32(v, buf)
-	}
+	WRITE_int32(data.Project, buf)
 }
 
 func READ_MSG_LOG_Action_Create(buf *libraries.MsgBuffer) *MSG_LOG_Action_Create {
@@ -256,15 +253,7 @@ func (data *MSG_LOG_Action_Create) read(buf *libraries.MsgBuffer) {
 	for i := 0; i < Products_len; i++ {
 		data.Products[i] = READ_int32(buf)
 	}
-	Projects_len := READ_int(buf)
-	if Projects_len>cap(data.Projects){
-		data.Projects= make([]int32, Projects_len)
-	}else{
-		data.Projects = data.Projects[:Projects_len]
-	}
-	for i := 0; i < Projects_len; i++ {
-		data.Projects[i] = READ_int32(buf)
-	}
+	data.Project = READ_int32(buf)
 
 }
 
@@ -496,6 +485,9 @@ func (data *MSG_LOG_Action_GetByWhereMap_result) read(buf *libraries.MsgBuffer) 
 type MSG_LOG_Action_transformActions struct {
 	Where map[string]interface{}
 	Order string
+	Page int
+	PerPage int
+	Total int
 }
 
 var pool_MSG_LOG_Action_transformActions = sync.Pool{New: func() interface{} { return &MSG_LOG_Action_transformActions{} }}
@@ -511,6 +503,9 @@ func (data *MSG_LOG_Action_transformActions) cmd() int32 {
 func (data *MSG_LOG_Action_transformActions) Put() {
 	data.Where = nil
 	data.Order = ``
+	data.Page = 0
+	data.PerPage = 0
+	data.Total = 0
 	pool_MSG_LOG_Action_transformActions.Put(data)
 }
 func (data *MSG_LOG_Action_transformActions) write(buf *libraries.MsgBuffer) {
@@ -521,6 +516,9 @@ func (data *MSG_LOG_Action_transformActions) write(buf *libraries.MsgBuffer) {
 func WRITE_MSG_LOG_Action_transformActions(data *MSG_LOG_Action_transformActions, buf *libraries.MsgBuffer) {
 	WRITE_map(data.Where,buf)
 	WRITE_string(data.Order, buf)
+	WRITE_int(data.Page, buf)
+	WRITE_int(data.PerPage, buf)
+	WRITE_int(data.Total, buf)
 }
 
 func READ_MSG_LOG_Action_transformActions(buf *libraries.MsgBuffer) *MSG_LOG_Action_transformActions {
@@ -532,11 +530,15 @@ func READ_MSG_LOG_Action_transformActions(buf *libraries.MsgBuffer) *MSG_LOG_Act
 func (data *MSG_LOG_Action_transformActions) read(buf *libraries.MsgBuffer) {
 	READ_map(&data.Where,buf)
 	data.Order = READ_string(buf)
+	data.Page = READ_int(buf)
+	data.PerPage = READ_int(buf)
+	data.Total = READ_int(buf)
 
 }
 
 type MSG_LOG_Action_transformActions_result struct {
 	List []*MSG_LOG_transformActions_info
+	Total int
 }
 
 var pool_MSG_LOG_Action_transformActions_result = sync.Pool{New: func() interface{} { return &MSG_LOG_Action_transformActions_result{} }}
@@ -554,6 +556,7 @@ func (data *MSG_LOG_Action_transformActions_result) Put() {
 		v.Put()
 	}
 	data.List = data.List[:0]
+	data.Total = 0
 	pool_MSG_LOG_Action_transformActions_result.Put(data)
 }
 func (data *MSG_LOG_Action_transformActions_result) write(buf *libraries.MsgBuffer) {
@@ -566,6 +569,7 @@ func WRITE_MSG_LOG_Action_transformActions_result(data *MSG_LOG_Action_transform
 	for _, v := range data.List{
 		WRITE_MSG_LOG_transformActions_info(v, buf)
 	}
+	WRITE_int(data.Total, buf)
 }
 
 func READ_MSG_LOG_Action_transformActions_result(buf *libraries.MsgBuffer) *MSG_LOG_Action_transformActions_result {
@@ -584,6 +588,7 @@ func (data *MSG_LOG_Action_transformActions_result) read(buf *libraries.MsgBuffe
 	for i := 0; i < List_len; i++ {
 		data.List[i] = READ_MSG_LOG_transformActions_info(buf)
 	}
+	data.Total = READ_int(buf)
 
 }
 

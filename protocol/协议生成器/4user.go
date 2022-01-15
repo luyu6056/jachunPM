@@ -9,33 +9,35 @@ type MSG_USER_GET_LoginSalt_result struct {
 	Salt string
 }
 type MSG_USER_INFO_cache struct {
-	Id          int32
-	Dept        int32
-	Account     string
-	Role        string
-	Realname    string
-	Group       []int32
-	Commiter    string
-	Gender      int8 // 0男，1女
-	Email       string
-	Mobile      string
-	Join        int64
-	Visits      int32 //访问次数
-	QQ          int64
-	Ip          string //上次登录ip
-	Last        int64  //上次登录时间
-	Fails       int8   //密码错误次数
-	Locked      int64
-	ClientLang  string
-	AttendNo    int32 //打卡机编号
-	Deleted     bool
-	Weixin      string
-	Address     string
-	AclMenu     map[string]bool
-	AclProducts map[int32]bool                          //允许访问的产品
-	AclProjects map[int32]bool                          //允许访问的项目
-	IsAdmin     bool                                    `db:"-"` //暂定id为1是admin
-	Config      map[string]map[string]map[string]string `db:"-"`
+	Id              int32
+	Dept            int32
+	Account         string
+	Role            string
+	Realname        string
+	Group           []int32
+	Commiter        string
+	Gender          int8 // 0男，1女
+	Email           string
+	Mobile          string
+	Join            int64
+	Visits          int32 //访问次数
+	QQ              int64
+	Ip              string //上次登录ip
+	Last            int64  //上次登录时间
+	Fails           int8   //密码错误次数
+	Locked          int64
+	ClientLang      string
+	AttendNo        int32 //打卡机编号
+	Deleted         bool
+	Weixin          string
+	Address         string
+	AclMenu         map[string]bool
+	AclProducts     map[int32]bool                          //允许访问的产品
+	AclProjects     map[int32]bool                          //允许访问的项目
+	LimitedProjects map[int32]bool                          //team的受限项目
+	Priv            map[string]map[string]bool              //从所有group合并
+	IsAdmin         bool                                    `db:"-"` //暂定id为1是admin
+	Config          map[string]map[string]map[string]string `db:"-"`
 }
 
 //检查密码是否正确，有Id优先查询Id，Id为0，Name查询account，realname，Mobile
@@ -281,4 +283,58 @@ type MSG_USER_team_delete struct {
 
 type MSG_USER_group_update struct {
 	Update *MSG_USER_Group_cache
+}
+type MSG_USER_team_getTeams2Import struct {
+	ProjectId int32
+}
+type MSG_USER_team_getTeams2Import_result struct {
+	List []HtmlKeyValueStr
+}
+
+type MSG_USER_team_projectManageMembers struct {
+	ProjectId int32
+	Update    []*MSG_USER_team_info
+}
+type MSG_USER_Block_info struct {
+	Id     int32
+	Uid    int32
+	Module string
+	Title  string
+	Source string
+	Block  string
+	Params string
+	Order  int8
+	Grid   int8
+	Height int16
+	Hidden bool
+}
+
+type MSG_USER_block_getList struct {
+	Module string
+	Uid    int32
+}
+type MSG_USER_block_getList_result struct {
+	List []*MSG_USER_Block_info
+}
+type MSG_USER_block_insertUpdate struct {
+	Insert bool
+	List   []*MSG_USER_Block_info
+}
+
+type MSG_USER_userTpl struct {
+	Id      int32
+	Uid     int32
+	Type    string
+	Title   string
+	Content string
+	Public  bool
+}
+
+type MSG_USER_getExportTemplate struct {
+	Module string
+	Uid    int32
+}
+
+type MSG_USER_getExportTemplate_result struct {
+	List []*MSG_USER_userTpl
 }

@@ -197,6 +197,25 @@ func Handler(in *protocol.Msg) {
 			out.ProductID = append(out.ProductID, v.Id)
 		}
 		in.SendResult(out)
+	case *protocol.MSG_PROJECT_doRawSelect:
+		out := protocol.GET_MSG_PROJECT_doRawSelect_result()
+		var err error
+		if out.List, err = in.DB.Raw(data.Sql).SelectMap(); err != nil {
+			in.WriteErr(err)
+		} else {
+			in.SendResult(out)
+		}
+	case *protocol.MSG_PROJECT_updateCache:
+		switch data.Type {
+		case "project":
+			for _, id := range data.Ids {
+				project_setCache(id)
+			}
+		case "product":
+			for _, id := range data.Ids {
+				product_setCache(id)
+			}
+		}
 	default:
 		libraries.ReleaseLog("未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
 	}

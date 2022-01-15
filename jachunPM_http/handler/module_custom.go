@@ -10,7 +10,7 @@ func init() {
 	httpHandlerMap["POST"]["/custom/ajaxSaveCustomFields"] = custom_ajaxSaveCustomFields
 	httpHandlerMap["GET"]["/custom/ajaxSaveCustomFields"] = custom_ajaxSaveCustomFields
 }
-func customModelFuncs() {
+func customTemplateFuncs() {
 	global_Funcs["custom_getFeatureMenu"] = func(data *TemplateData, module, method string) []moduleMenu {
 
 		var allMenu []protocol.HtmlKeyValueStr

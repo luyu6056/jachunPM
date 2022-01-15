@@ -163,9 +163,16 @@ func mysqlUpgrade() {
 		task.PlaceOrder = v.PlaceOrder
 		tasks_insert[k] = task
 	}
+	for i:=0;i<len(tasks_insert);i+=100{
+		en:=i+100
+		if en>len(tasks_insert){
+			en=len(tasks_insert)
+		}
 
-	_, err = HostConn.DB.Table(db.TABLE_TASK).InsertAll(tasks_insert)
-	libraries.DebugLog("插入task %d 条，错误 %v", len(tasks_insert), err)
+		_, err = HostConn.DB.Table(db.TABLE_TASK).InsertAll(tasks_insert[i:en])
+		libraries.DebugLog("插入task %d-%d 条，错误 %v", i,en, err)
+	}
+
 
 	HostConn.DB.Table(db.TABLE_PROJECT).Delete()
 	var projects []*db.Project
@@ -235,5 +242,5 @@ func mysqlUpgrade() {
 	libraries.DebugLog("插入project %d 条，错误 %v", len(projects), err)
 }
 func init() {
-	go time.AfterFunc(time.Second*5, mysqlUpgrade)
+	//go time.AfterFunc(time.Second*5, mysqlUpgrade)
 }

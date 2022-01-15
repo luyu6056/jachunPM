@@ -121,6 +121,7 @@ func HandleTick(t time.Time) {
 			cache.Role = group.Role
 			cache.AclProducts = group.AclProducts
 			cache.AclProjects = group.AclProjects
+
 			HostConn.CacheSet(protocol.PATH_USER_GROUP_CACHE, strconv.Itoa(int(group.Id)), cache, 0)
 		}
 		cache.Put()

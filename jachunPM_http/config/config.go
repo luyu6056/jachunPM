@@ -951,7 +951,7 @@ func configInit(local protocol.CountryNo) {
 		"finishall":   map[string]interface{}{"id": []string{"comment"}, "tools": "simpleTools"},
 		"batchCreate": map[string]interface{}{"id": []string{"desc0", "desc1", "desc2", "desc3", "desc4"}, "tools": "simpleTools"},
 	}
-	Config[local]["task"]["common"]["exportFields"] = []string{"id", "project", "module", "story", "name", "desc", "type", "pri,estStarted", "realStarted", "deadline", "status,estimate", "consumed", "left", "mailto", "progress", "openedBy", "openedDate", "assignedTo", "assignedDate", "finishedBy", "proofreading", "finishedDate", "canceledBy", "canceledDate", "closedBy", "closedDate", "closedReason", "lastEditedBy", "lastEditedDate", "files"}
+	Config[local]["task"]["common"]["exportFields"] = []string{"id", "project", "module", "story", "name", "desc", "type", "pri", "estStarted", "realStarted", "deadline", "status", "estimate", "consumed", "left", "mailto", "progress", "openedBy", "openedDate", "assignedTo", "assignedDate", "finishedBy", "proofreading", "finishedDate", "canceledBy", "canceledDate", "closedBy", "closedDate", "closedReason", "lastEditedBy", "lastEditedDate", "files"}
 
 	Config[local]["task"]["common"]["customCreateFields"] = []string{"story", "estStarted", "deadline", "mailto", "pri", "estimate"}
 	Config[local]["task"]["common"]["customBatchCreateFields"] = []string{"module", "story", "assignedTo", "estimate", "estStarted", "deadline", "desc", "pri"}
@@ -1206,5 +1206,19 @@ func configInit(local protocol.CountryNo) {
 	Config[local]["testtask"]["datatable"] = map[string]interface{}{
 		"defaultField": []string{"id", "pri", "title", "type", "assignedTo", "lastRunner", "lastRunDate", "lastRunResult", "status", "bugs", "results", "stepNumber", "actions"},
 	}
-
+	Config[local]["charsets"] = make(map[string]map[string]interface{})
+	Config[local]["charsets"]["common"] = map[string]interface{}{
+		"zh-cn": []protocol.HtmlKeyValueStr{
+			{"utf-8", "UTF-8"},
+			{"gbk", "GBK"},
+		},
+		"zh-tw": []protocol.HtmlKeyValueStr{
+			{"utf-8", "UTF-8"},
+			{"big5", "BIG5"},
+		},
+		"en": []protocol.HtmlKeyValueStr{
+			{"utf-8", "UTF-8"},
+			{"GBK", "GBK"},
+		},
+	}
 }

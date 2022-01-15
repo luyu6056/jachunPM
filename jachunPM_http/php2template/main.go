@@ -113,6 +113,8 @@ func main() {
 		str, _ = Preg_replace(`{{js_import \$jsRoot \. '([^']+)'}}`, `{{js_import (strAdd .Config.common.common.jsRoot "$1")}}`, str)
 		str, _ = Preg_replace(`{{if !empty\((\S+?)\)}}`, `{{if ($1)}}`, str)
 		str, _ = Preg_replace(`{{\$this->fetch\('([a-z]+)',\s*'([a-z]+)'\s*\)}}`, `{{fetch . "$1" "$2"}}`, str)
+		str, _ = Preg_replace(`{{\.Lang\.([^.]+?)}}`, `{{.Lang.common.$1}}`, str)
+		str, _ = Preg_replace(`{{foreach\(\s*([\S]+) as ([\S]+)\s*\):}}`, `{{range $2 := $1}}`, str)
 
 		str = strings.ReplaceAll(str, `{{if !isonlybody()}}`, `{{if not $.App.onlybody}}`)
 		str = strings.ReplaceAll(str, `{{if isonlybody()}}`, `{{if $.App.onlybody}}`)
@@ -125,7 +127,7 @@ func main() {
 		str = strings.ReplaceAll(str, `.Lang.comment`, `.Lang.common.comment`)
 		str = strings.ReplaceAll(str, `.Lang.files`, `.Lang.common.files`)
 		str = strings.ReplaceAll(str, `{{html_linkButton .Lang.goback `, `{{html_linkButton . .Lang.common.goback `)
-
+		str = strings.ReplaceAll(str, `{{include '../../common/view/chosen.html.php'}}`, `{{template "chosen.html.html" .}}`)
 		newname := strings.Replace(name, ".php", "", 1)
 		newname = strings.Replace(newname, ".hook", "", 1)
 		os.Remove(newname)

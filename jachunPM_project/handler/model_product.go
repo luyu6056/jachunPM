@@ -80,7 +80,7 @@ func product_insert(data *protocol.MSG_PROJECT_product_insert, in *protocol.Msg)
 		}
 		session.CommitCallback(func() {
 			product_setCache(int32(id))
-			in.ActionCreate("product", int32(id), "opened", "", "", []int32{int32(id)}, nil)
+			in.ActionCreate("product", int32(id), "opened", "", "", []int32{int32(id)}, 0)
 		})
 		session.Commit()
 
@@ -280,7 +280,7 @@ func product_update(data *protocol.MSG_PROJECT_product_update, in *protocol.Msg)
 	   }*/
 	session.CommitCallback(func() {
 		product_setCache(oldProduct.Id)
-		in.ActionCreate("product", oldProduct.Id, "edited", "", "", []int32{oldProduct.Id}, nil)
+		in.ActionCreate("product", oldProduct.Id, "edited", "", "", []int32{oldProduct.Id}, 0)
 	})
 	session.Commit()
 	in.WriteErr(nil)

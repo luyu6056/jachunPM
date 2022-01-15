@@ -37,10 +37,8 @@
                 <tr>
                   <td></td>
                   <td class="form-actions">
-                  {{html_submitButton . .Lang.common.login  ""  "btn btn-primary"}}
-                  {{html_hidden "referer"  .Data.referer}}
+                  {{html_submitButton . .Lang.common.login   "btn btn-primary"  ""}}
                   {{html_a (inlink . "reset") .Lang.user.resetPassword}}
-                  
                   </td>
                 </tr>
               </tbody>
@@ -58,5 +56,7 @@
     </div>
   </div>
 </main>
-
+<script type="text/javascript">
+  var referer={{.Data.referer}}
+</script>
 {{template "footer.lite.html" .}}

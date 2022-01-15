@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func actionModelFuncs() {
+func actionTemplateFuncs() {
 
 	global_Funcs["action_printAction"] = func(data *TemplateData, action *protocol.MSG_LOG_Action, descExt ...string) template.HTML {
 		var desc interface{}
@@ -185,7 +185,7 @@ func action_getList(data *TemplateData, objectType string, objectID int32) (acti
 	if objectType == "project" {
 		out.Where = map[string]interface{}{
 			"ObjectType": []string{"project", "testtask", "build"},
-			"Projects":   []interface{}{mysql.WhereOperatorJSONCONTAINS, objectID},
+			"Project":    objectID,
 		}
 	} else {
 		out.Where = map[string]interface{}{
@@ -215,7 +215,7 @@ func action_getList(data *TemplateData, objectType string, objectID int32) (acti
 		case "linked2project":
 			id, _ := strconv.Atoi(action.Extra)
 			if id > 0 {
-				if project := HostConn.GetProjectById(int32(id)); project != nil {
+				if project := data.getCacheProjectById(int32(id)); project != nil {
 					if hasPriv(data, "project", "story") {
 						action.Extra = html_a(createLink("project", "story", "projectID="+action.Extra), project.Name)
 					} else {
@@ -280,7 +280,7 @@ func action_getList(data *TemplateData, objectType string, objectID int32) (acti
 		case "moved":
 			id, _ := strconv.Atoi(action.Extra)
 			if id > 0 {
-				if project := HostConn.GetProjectById(int32(id)); project != nil {
+				if project := data.getCacheProjectById(int32(id)); project != nil {
 					if hasPriv(data, "project", "task") {
 						action.Extra = html_a(createLink("project", "task", "projectID="+action.Extra), "#"+action.Extra+project.Name)
 					} else {
@@ -295,7 +295,7 @@ func action_getList(data *TemplateData, objectType string, objectID int32) (acti
 		case "unlinkedfromproject":
 			id, _ := strconv.Atoi(action.Extra)
 			if id > 0 {
-				if project := HostConn.GetProjectById(int32(id)); project != nil {
+				if project := data.getCacheProjectById(int32(id)); project != nil {
 					if hasPriv(data, "project", "story") {
 						action.Extra = html_a(createLink("project", "story", "projectID="+action.Extra), "#"+action.Extra+project.Name)
 					} else {
@@ -571,19 +571,15 @@ func action_getList(data *TemplateData, objectType string, objectID int32) (acti
 	}
 	return result.List, nil
 }
-func action_create(data *TemplateData, objectType string, objectID int32, actionType, comment, extra string, products, projects []int32) {
-	//原则上，不应该在http产生actionlog，而是在相应的服务，修改数据库后，session.CommitRollback(func(){进行action_create})
-	msg, _ := data.GetMsg()
-	msg.ActionCreate(objectType, objectID, actionType, comment, extra, products, projects)
-}
 
 const (
 	actionGetDynamicParamAll     = 0
 	actionGetDynamicParamNotzero = -1
+	actionGetDynamicParamNone    = -2
 )
 
 //productID与projectID为0时候为all,-1对应notzero
-func action_getDynamic(data *TemplateData, account int32, period, orderBy string, pager TempLatePage, productID, projectID int32, ext ...string) (res []*protocol.MSG_LOG_transformActions_info, err error) { //date = "", direction = "next"
+func action_getDynamic(data *TemplateData, account int32, period, orderBy string, pager *TempLatePage, productID, projectID int32, ext ...string) (res []*protocol.MSG_LOG_transformActions_info, err error) { //date = "", direction = "next"
 	var begin, end string //查询开始结束日期
 	period = strings.ToLower(period)
 	var condition = make(map[string]interface{})
@@ -629,7 +625,7 @@ func action_getDynamic(data *TemplateData, account int32, period, orderBy string
 		condition["ActorId"] = account
 	}
 
-	if productID > actionGetDynamicParamNotzero {
+	if productID > actionGetDynamicParamNone {
 		if productID == actionGetDynamicParamAll {
 			if !data.User.IsAdmin {
 				var products []int32
@@ -638,56 +634,39 @@ func action_getDynamic(data *TemplateData, account int32, period, orderBy string
 				}
 				condition["Products"] = []interface{}{mysql.WhereOperatorJSONCONTAINS, products}
 			}
+		} else if productID == actionGetDynamicParamNotzero {
+			condition["Products"] = []interface{}{mysql.WhereOperatorRAWNE, "'[]'"} //products!=[]
 		} else {
 			condition["Products"] = []interface{}{mysql.WhereOperatorJSONCONTAINS, []int32{productID}}
 		}
-	} else {
-		condition["Products"] = []interface{}{mysql.WhereOperatorRAWNE, "[]"} //products!=[]
 	}
-	if projectID > actionGetDynamicParamNotzero {
+	if projectID > actionGetDynamicParamNone {
 		if projectID == actionGetDynamicParamAll {
 			if !data.User.IsAdmin {
 				var projects []int32
 				for id := range data.User.AclProjects {
 					projects = append(projects, id)
 				}
-				condition["Projects"] = []interface{}{mysql.WhereOperatorJSONCONTAINS, projects}
+				condition["Project"] = mysql.WhereOperatorIN(projects)
 			}
+		} else if projectID == actionGetDynamicParamNotzero {
+			condition["Project"] = []interface{}{mysql.WhereOperatorNE, "0"} //products!=[]
 		} else {
-			condition["Projects"] = []interface{}{mysql.WhereOperatorJSONCONTAINS, []int32{projectID}}
+			condition["Project"] = projectID
 		}
-	} else {
-		condition["Projects"] = []interface{}{mysql.WhereOperatorRAWNE, "[]"} //Projects!=[]
 	}
 
 	out := protocol.GET_MSG_LOG_Action_transformActions()
 	out.Where = condition
 	out.Order = orderBy
+	out.Page = pager.Page
+	out.Total = pager.Total
+	out.PerPage = pager.PerPage
 	var result *protocol.MSG_LOG_Action_transformActions_result
 	if err = data.SendMsgWaitResultToDefault(out, &result); err != nil {
 		return
 	}
-	/*this->loadModel("doc");
-	  libs = this->doc->getLibs("all");
-	  docs = this->doc->getPrivDocs(array_keys(libs));*/
-
-	//actionCondition = this->getActionCondition();
-	//if(is_array(actionCondition)) return array();
-	/* Get actions.
-	actions = this->dao->select("*")->from(TABLE_ACTION)
-	            ->where(1)
-
-	            ->beginIF(docs and !this->app->user->admin)->andWhere("IF(objectType != "doc", "1=1", objectID " . helper::dbIN(docs) . ")")->fi()
-	            ->beginIF(libs and !this->app->user->admin)->andWhere("IF(objectType != "doclib", "1=1", objectID " . helper::dbIN(array_keys(libs)) . ") ")->fi()
-	            ->beginIF(!empty(actionCondition))->andWhere("(actionCondition)")->fi()
-	            ->orderBy(orderBy)
-	            ->page(pager)
-	            ->fetchAll();
-
-	        if(!actions) return array();
-
-	        this->loadModel("common")->saveQueryCondition(this->dao->get(), "action");
-	        return this->transformActions(actions);;*/
 	out.Put()
+	pager.Total = result.Total
 	return result.List, nil
 }

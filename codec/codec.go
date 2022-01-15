@@ -110,10 +110,36 @@ func (code *Tlscodec) Decode(c gnet.Conn) (data []byte, err error) {
 						stream.headerbuf.Reset()
 						stream.henc = hpack.NewEncoder(&stream.headerbuf)
 						//解析post请求
-						if strings.Contains(stream.content_type,"application/x-www-form-urlencoded"){
-							for _,str:=range strings.Split(stream.In.String(),"&"){
-								if i:=strings.Index(str,"=");i>0{
-									stream.post[str[:i]]=append(stream.post[str[:i]],url.QueryEscape(str[i+1:]))
+						if strings.Contains(stream.content_type, "application/x-www-form-urlencoded") {
+							for _, str := range strings.Split(stream.In.String(), "&") {
+								if i := strings.Index(str, "="); i > 0 {
+									k, err1 := url.QueryUnescape(str[:i])
+									v, err2 := url.QueryUnescape(str[i+1:])
+									if err1 == nil && err2 == nil {
+										stream.post[k] = append(stream.post[k], v)
+									}
+
+								}
+							}
+						}
+						if strings.Contains(stream.content_type, "multipart/form-data") {
+							if i := strings.Index(stream.content_type, "boundary="); i > -1 {
+								for _, str := range strings.Split(stream.In.String(), "--"+stream.content_type[i+9:]+"\r\n") {
+									i := strings.Index(str, "\r\n")
+									if i > -1 {
+										if strings.Contains(str[:i], "Content-Disposition: form-data;") {
+											var key, value string
+											if j := strings.Index(str[:i], `name="`); j > -1 {
+												key, _ = url.QueryUnescape(str[j+6 : i-1])
+											}
+											if j := strings.Index(str[i+4:], "\r\n"); j > -1 {
+												value, _ = url.QueryUnescape(str[i+4 : i+4+j])
+											}
+											if key != "" {
+												stream.post[key] = append(stream.post[key], value)
+											}
+										}
+									}
 								}
 							}
 						}
@@ -145,8 +171,8 @@ func (code *Tlscodec) Decode(c gnet.Conn) (data []byte, err error) {
 						stream.OutContentType = ""
 						stream.OutHeader = map[string]string{}
 						stream.OutCookie = map[string]httpcookie{}
-						stream.content_type =""
-						stream.accept_encoding =""
+						stream.content_type = ""
+						stream.accept_encoding = ""
 					}
 					svr.last_stream_id = stream.Id
 					pos := http2headerlength
@@ -184,9 +210,10 @@ func (code *Tlscodec) Decode(c gnet.Conn) (data []byte, err error) {
 								for _, str := range strings.Split(head.Value[i+1:], "&") {
 									s := strings.Split(str, "=")
 									if len(s) == 2 {
-										v, err := url.QueryUnescape(s[1])
-										if err == nil {
-											stream.query[s[0]] = append(stream.query[s[0]], v)
+										k, err1 := url.QueryUnescape(s[0])
+										v, err2 := url.QueryUnescape(s[1])
+										if err1 == nil && err2 == nil {
+											stream.query[k] = append(stream.query[k], v)
 										}
 									}
 								}
@@ -201,9 +228,11 @@ func (code *Tlscodec) Decode(c gnet.Conn) (data []byte, err error) {
 						case ":method":
 							stream.method = head.Value
 						case "content-type":
-							stream.content_type =head.Value
+							stream.content_type = head.Value
 						case "accept-encoding":
-							stream.accept_encoding =head.Value
+							stream.accept_encoding = head.Value
+						case "referer":
+							stream.referer = head.Value
 						default:
 
 						}

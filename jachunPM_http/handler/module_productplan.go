@@ -172,11 +172,7 @@ func post_productplan_create(data *TemplateData) (e error) {
 	insert.Branch = int32(branch)
 	insert.Product = int32(productID)
 	insert.Parent = int32(parent)
-	msg, err := data.GetMsg()
-	if err != nil {
-		data.ajaxResult(false, err.Error())
-		return
-	}
+
 	desc, newimgids, err := file_descProcessImgURLAnd2Bbcode(data, insert.Desc)
 	if err != nil {
 		data.ajaxResult(false, map[string]string{"desc": err.Error()})
@@ -190,7 +186,7 @@ func post_productplan_create(data *TemplateData) (e error) {
 		}
 	}()
 	var result *protocol.MSG_PROJECT_productplan_insertUpdate_result
-	err = msg.SendMsgWaitResult(0, insert, &result)
+	err = data.SendMsgWaitResultToDefault(insert, &result)
 	if err != nil {
 		data.ajaxResult(false, err.Error())
 		return
@@ -264,5 +260,5 @@ func get_productplan_delete(data *TemplateData) (e error) {
 	}
 	return
 }
-func productplanFuncs() {
+func productplanTemplateFuncs() {
 }

@@ -11,6 +11,7 @@ import (
 var lastflush int64
 
 func HandleTick(t time.Time) {
+
 	var products []*protocol.MSG_PROJECT_product_cache
 	var modules []*protocol.MSG_PROJECT_tree_cache
 	var branchs []*protocol.MSG_PROJECT_branch_info

@@ -9,7 +9,9 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
+	"unsafe"
 
 	"github.com/luyu6056/cache"
 )
@@ -31,13 +33,102 @@ type commonPreAndNext struct {
 	next interface{}
 }
 
+var uuidSeed uint64
 var commoncache = cache.Hget("common", "global")
 
 func hasPriv(data *TemplateData, module, method string, obj ...interface{}) bool {
 
+	if data.User.IsAdmin {
+		return true
+	}
+	if len(obj) > 0 && obj[0] != nil && !hasPrivObj(obj[0], data.User) {
+		return false
+	}
+	menu := module
+	if v, ok := data.Lang["menugroup"][module].(string); ok {
+		menu = v
+	}
+	if menu != "qa" && (data.Lang[menu] == nil || data.Lang[menu]["menu"] == nil) {
+		return true
+	} else if menu == "my" || menu == "index" || module == "true" {
+		return true
+	}
+	if data.User.Priv[module] == nil {
+		return false
+	}
+	return data.User.Priv[module][method]
+}
+
+type eface struct {
+	typ, val unsafe.Pointer
+}
+
+func hasPrivObj(obj interface{}, user *protocol.MSG_USER_INFO_cache) bool {
+	uid := user.Id
+	ptr := (*eface)(unsafe.Pointer(&obj)).val
+	t := reflect.TypeOf(obj)
+	if t.Kind() == reflect.Ptr && t.Elem().Kind() == reflect.Struct {
+		t = t.Elem()
+		if f, ok := t.FieldByName("OpenedBy"); ok {
+			if *(*int32)(unsafe.Pointer(uintptr(ptr) + f.Offset)) == uid {
+				return true
+			}
+		}
+		if f, ok := t.FieldByName("AddedBy"); ok {
+			if *(*int32)(unsafe.Pointer(uintptr(ptr) + f.Offset)) == uid {
+				return true
+			}
+		}
+		if f, ok := t.FieldByName("Uid"); ok {
+			if *(*int32)(unsafe.Pointer(uintptr(ptr) + f.Offset)) == uid {
+				return true
+			}
+		}
+		if f, ok := t.FieldByName("AssignedTo"); ok {
+			if *(*int32)(unsafe.Pointer(uintptr(ptr) + f.Offset)) == uid {
+				return true
+			}
+		}
+		if f, ok := t.FieldByName("FinishedBy"); ok {
+			if *(*int32)(unsafe.Pointer(uintptr(ptr) + f.Offset)) == uid {
+				return true
+			}
+		}
+		if f, ok := t.FieldByName("CanceledBy"); ok {
+			if *(*int32)(unsafe.Pointer(uintptr(ptr) + f.Offset)) == uid {
+				return true
+			}
+		}
+		if f, ok := t.FieldByName("ClosedBy"); ok {
+			if *(*int32)(unsafe.Pointer(uintptr(ptr) + f.Offset)) == uid {
+				return true
+			}
+		}
+		if f, ok := t.FieldByName("LastEditedBy"); ok {
+			if *(*int32)(unsafe.Pointer(uintptr(ptr) + f.Offset)) == uid {
+				return true
+			}
+		}
+	} else if t.Kind() == reflect.Map {
+		v := reflect.ValueOf(obj)
+		r := v.MapRange()
+		for r.Next() {
+			switch r.Key().String() {
+			case "Project":
+				if user.LimitedProjects[(r.Value().Interface().(int32))] {
+					return false
+				}
+			default:
+				libraries.ReleaseLog("hasPrivObj未处理map的key%v,值%+v", r.Key(), r.Value())
+			}
+		}
+	} else {
+		panic("啥玩意")
+		libraries.ReleaseLog("hasPrivObj未处理类型%v,值%+v", t.Kind(), obj)
+	}
 	return true
 }
-func commonModelFuncs() {
+func commonTemplateFuncs() {
 	global_Funcs["log"] = func(i interface{}) string {
 		libraries.DebugLog("%+v", i)
 		return fmt.Sprint(i)
@@ -286,7 +377,7 @@ func commonModelFuncs() {
 	//格式化输出时间戳，允许不输入timestamp，则为当前时间.timestamp可以是time.Time和int int64 int32,string
 	global_Funcs["date"] = func(layout string, timestamp ...interface{}) (res string) {
 		var t time.Time
-		if len(timestamp) == 1 {
+		if len(timestamp) > 0 {
 			switch v := timestamp[0].(type) {
 			case int:
 				t = time.Unix(int64(v), 0)
@@ -307,6 +398,13 @@ func commonModelFuncs() {
 
 		} else {
 			t = time.Now()
+		}
+		if len(timestamp) > 1 {
+			if v, ok := timestamp[1].(string); ok && (strings.ToLower(v) == "normaltime" || strings.ToLower(v) == "normal") {
+				if !t.After(protocol.NORMALTIME) {
+					return ""
+				}
+			}
 		}
 		if layout == "Unix" {
 			return strconv.FormatInt(t.Unix(), 10)
@@ -483,23 +581,28 @@ func commonModelFuncs() {
 	global_Funcs["join"] = func(elems []string, sep string) string {
 		return strings.Join(elems, sep)
 	}
+	global_Funcs["cycle"] = func(data *TemplateData, a, b string) string {
+		if data.Data["cycle_n"] == nil {
+			data.Data["cycle_n"] = 0
+		}
+		data.Data["cycle_n"] = data.Data["cycle_n"].(int) + 1
+		if data.Data["cycle_n"].(int)%2 == 1 {
+			return a
+		}
+		return b
+	}
+	global_Funcs["uniqid"] = func() uint64 {
+		id := atomic.AddUint64(&uuidSeed, 1)
+		return id
+	}
 }
 
 func getModuleMenu(module string, data *TemplateData) (menu []moduleMenu) {
-
+	if v, ok := data.Data["getModuleMenu_"+module].([]moduleMenu); ok {
+		return v
+	}
 	if i, ok := data.Lang[module]["menu"]; ok {
 		for _, v := range i.([]protocol.HtmlMenu) {
-			find := false
-			if data.User != nil {
-				if data.User.IsAdmin {
-					find = true
-				} else {
-					find = data.User.AclMenu[v.Key]
-				}
-			}
-			if !find {
-				continue
-			}
 			l := strings.Split(v.Value["link"], "|")
 			if len(l) > 2 {
 				menuItem := moduleMenu{
@@ -509,6 +612,24 @@ func getModuleMenu(module string, data *TemplateData) (menu []moduleMenu) {
 					Module: l[1],
 					Method: l[2],
 					Class:  v.Value["class"],
+				}
+				//允许访问视图
+				if module == "common" {
+					if v.Key != "my" {
+						find := false
+						if data.User.IsAdmin {
+							find = true
+						} else {
+							find = data.User.AclMenu[v.Key]
+						}
+						if !find {
+							continue
+						}
+					}
+				} else {
+					if !data.User.IsAdmin && (data.User.Priv[menuItem.Module] == nil || !data.User.Priv[menuItem.Module][menuItem.Method]) {
+						continue
+					}
 				}
 				if alias, ok := v.Value["alias"]; ok {
 					menuItem.Alias = strings.Split(alias, ",")
@@ -531,7 +652,15 @@ func getModuleMenu(module string, data *TemplateData) (menu []moduleMenu) {
 
 					}
 				}
+				if module == "common" {
+					_menu := getModuleMenu(v.Key, data)
+					if len(_menu) == 0 {
+						continue
+					}
+					data.Data["getModuleMenu_"+v.Key] = _menu
+				}
 				menu = append(menu, menuItem)
+
 			}
 		}
 	}
@@ -711,7 +840,18 @@ func common_printIcon(data *TemplateData, module, method, vars string, object in
 }
 func common_fetch(oldData *TemplateData, module, method string, varstr ...string) string {
 	path := "/" + module + "/" + method
-	data := getFetchInterface(oldData.ws, path)
+	data := getFetchInterface(oldData.ws, path, oldData.User)
+	if !hasPriv(data, module, method) {
+		moduleName := module
+		methodName := method
+		if v, ok := data.Lang[module]["common"].(string); ok {
+			moduleName = v
+		}
+		if v, ok := data.Lang[module][methodName].(string); ok {
+			methodName = v
+		}
+		return fmt.Sprintf(data.Lang["user"]["error"].(map[string]string)["errorDeny"], moduleName, methodName)
+	}
 	if f, ok := httpHandlerMap["GET"][path]; ok {
 		if len(varstr) > 0 {
 			if len(varstr) == 1 {
@@ -731,8 +871,13 @@ func common_fetch(oldData *TemplateData, module, method string, varstr ...string
 			}
 
 		}
-		f(data)
-		res := string(data.ws.(*CommonFetch).OutBuffer())
+		var res string
+		if err := f(data); err != nil {
+			res = err.Error()
+		} else {
+			res = string(data.ws.(*CommonFetch).OutBuffer())
+		}
+
 		putFetchInterface(data.ws.(*CommonFetch))
 		return res
 	} else {

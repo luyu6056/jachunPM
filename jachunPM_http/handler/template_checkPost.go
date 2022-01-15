@@ -186,7 +186,7 @@ func (data *TemplateData) ajaxCheckPost() bool {
 								return key, data.Lang["project"]["error"].(map[string]string)["NotFound"]
 							}
 							if id != 0 || require {
-								if HostConn.GetProjectById(int32(id)) == nil {
+								if data.getCacheProjectById(int32(id)) == nil {
 									return key, data.Lang["project"]["error"].(map[string]string)["NotFound"]
 								}
 							}

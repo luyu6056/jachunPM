@@ -79,7 +79,7 @@ func Order_product(list []*MSG_PROJECT_product_cache, f func(a, b *MSG_PROJECT_p
 			if a.Order == b.Order {
 				return a.Id < b.Id
 			}
-			return a.Order > b.Order
+			return a.Order < b.Order
 		}
 	}
 	max_len := len(list)
@@ -157,7 +157,7 @@ func Order_tree(list []*MSG_PROJECT_tree_cache, f func(a, b *MSG_PROJECT_tree_ca
 			if a.Order == b.Order {
 				return a.Id < b.Id
 			}
-			return a.Order > b.Order
+			return a.Order < b.Order
 		}
 	}
 	max_len := len(list)
@@ -236,7 +236,7 @@ func Order_project(list []*MSG_PROJECT_project_cache, f func(a, b *MSG_PROJECT_p
 			if a.Order == b.Order {
 				return a.Id < b.Id
 			}
-			return a.Order > b.Order
+			return a.Order < b.Order
 		}
 	}
 	max_len := len(list)
@@ -544,7 +544,7 @@ func Order_branch(list []*MSG_PROJECT_branch_info, f func(a, b *MSG_PROJECT_bran
 			if a.Order == b.Order {
 				return a.Id < b.Id
 			}
-			return a.Order > b.Order
+			return a.Order < b.Order
 		}
 	}
 	max_len := len(list)

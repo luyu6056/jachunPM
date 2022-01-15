@@ -25,9 +25,7 @@ func dail(network, addr string, rpc *RpcClient) (net.Conn, error) {
 
 	return conn, err
 }
-func (*RpcClient) handleRead() {
 
-}
 func (rs *gnetClient) OnOpened(c gnet.Conn) (out []byte, action gnet.Action) {
 
 	return
@@ -51,7 +49,6 @@ func (rs *gnetClient) React(data []byte, c gnet.Conn) (action gnet.Action) {
 				libraries.ReleaseLog("读消息错误%v", err)
 			} else {
 				msg.ReadData()
-
 				rpc.inchan <- msg
 			}
 
@@ -65,7 +62,7 @@ func (rs *gnetClient) React(data []byte, c gnet.Conn) (action gnet.Action) {
 			data.Add = DefaultWindowSize - rpc.window
 			rpc.window = DefaultWindowSize
 			//libraries.DebugLog("增加窗口%d，实际窗口%d", data.Add, rpc.window)
-			rpc.sendStruct.SendMsgToDefault(data)
+			rpc.sendStruct.SendMsgToDefault(nil, data)
 			data.Put()
 		}
 	}

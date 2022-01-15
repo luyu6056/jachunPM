@@ -375,6 +375,7 @@ func (data *MSG_HOST_CACHE_GET_result) read(buf *libraries.MsgBuffer) {
 
 type MSG_HOST_CACHE_GETPATH struct {
 	Path string
+	Names []string
 }
 
 var pool_MSG_HOST_CACHE_GETPATH = sync.Pool{New: func() interface{} { return &MSG_HOST_CACHE_GETPATH{} }}
@@ -389,6 +390,7 @@ func (data *MSG_HOST_CACHE_GETPATH) cmd() int32 {
 
 func (data *MSG_HOST_CACHE_GETPATH) Put() {
 	data.Path = ``
+	data.Names = data.Names[:0]
 	pool_MSG_HOST_CACHE_GETPATH.Put(data)
 }
 func (data *MSG_HOST_CACHE_GETPATH) write(buf *libraries.MsgBuffer) {
@@ -398,6 +400,10 @@ func (data *MSG_HOST_CACHE_GETPATH) write(buf *libraries.MsgBuffer) {
 
 func WRITE_MSG_HOST_CACHE_GETPATH(data *MSG_HOST_CACHE_GETPATH, buf *libraries.MsgBuffer) {
 	WRITE_string(data.Path, buf)
+	WRITE_int(len(data.Names), buf)
+	for _, v := range data.Names{
+		WRITE_string(v, buf)
+	}
 }
 
 func READ_MSG_HOST_CACHE_GETPATH(buf *libraries.MsgBuffer) *MSG_HOST_CACHE_GETPATH {
@@ -408,6 +414,15 @@ func READ_MSG_HOST_CACHE_GETPATH(buf *libraries.MsgBuffer) *MSG_HOST_CACHE_GETPA
 
 func (data *MSG_HOST_CACHE_GETPATH) read(buf *libraries.MsgBuffer) {
 	data.Path = READ_string(buf)
+	Names_len := READ_int(buf)
+	if Names_len>cap(data.Names){
+		data.Names= make([]string, Names_len)
+	}else{
+		data.Names = data.Names[:Names_len]
+	}
+	for i := 0; i < Names_len; i++ {
+		data.Names[i] = READ_string(buf)
+	}
 
 }
 

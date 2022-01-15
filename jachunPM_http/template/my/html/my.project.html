@@ -1,0 +1,62 @@
+{{template "header.html" .}}
+<div id="mainMenu" class="clearfix">
+  <div class="btn-toolbar pull-left">
+    <span class='btn btn-link btn-active-text'><span class='text'>{{.Lang.my.myProject}}</span></span>
+  </div>
+  <div class="btn-toolbar pull-right">
+    {{if common_hasPriv . "project" "create"}}{{html_a (helper_createLink "project"  "create")  (strAdd "<i class='icon-plus'></i> "  .Lang.my.home.createProject) ""  "class='btn btn-primary'" }}{{end}}
+  </div>
+</div>
+<div id="mainContent" class='main-table'>
+  {{if eq (len $.Data.projects) 0}}
+  <div class="table-empty-tip">
+    <p>
+      <span class="text-muted">{{.Lang.project.noProject}}</span>
+      {{- if common_hasPriv "project" "create"}}
+      <span class="text-muted">{{.Lang.common.youCould}}</span>
+      {{html_a (helper_createLink "project"  "create")  (strAdd "<i class='icon icon-plus'></i> "  .Lang.my.home.createProject)  "" "class='btn btn-info'"}}
+      {{- end}}
+    </p>
+  </div>
+  {{else}}
+  <table class="table has-sort-head table-fixed" id='projectList'>
+    <thead>
+      <tr class='text-center'>
+        <th class='w-id'>{{.Lang.common.idAB}}</th>
+        <th class='w-160px text-left'>{{.Lang.project.code}}</th>
+        <th class='c-name text-left'>{{.Lang.project.name}}</th>
+        <th class='c-date'>{{.Lang.project.begin}}</th>
+        <th class='c-date'>{{.Lang.project.end}}</th>
+        <th class='c-status'>{{.Lang.common.statusAB}}</th>
+        <th class='c-user'>{{.Lang.team.role}}</th>
+        <th class='c-date'>{{.Lang.team.join}}</th>
+        <th class='w-110px'>{{.Lang.team.hours}}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range $team := $.Data.teams}}
+      {{- $project := getValue $.Data.projects $team.Root}}
+      {{- $projectLink := helper_createLink "project" "task" "projectID=" $project.Id}}
+      <tr class='text-center'>
+        <td>{{html_a $projectLink  (strAdd $project.Id)}}</td>
+        <td class='text-left'>{{$project.Code}}</td>
+        <td class='text-left'>{{html_a $projectLink  $project.Name}}</td>
+        <td>{{date "2006-01-02" $project.Begin}}</td>
+        <td>{{date "2006-01-02" $project.End}}</td>
+        <td class="c-status">
+          {{if $project.Delay}}
+          <span class="status-project status-delayed"> {{$.Lang.project.delayed}}</span>
+          {{else}}
+          <span class="status-project status-{{$project.Status}}"> {{getValue $.Lang.project.statusList $project.Status}}</span>
+          {{end}}
+        </td>
+        <td>{{$team.Role}}</td>
+        <td>{{date "2006-01-02" $team.Join}}</td>
+        <td>{{$team.Hours}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{end}}
+</div>
+{{template "footer.html" .}}

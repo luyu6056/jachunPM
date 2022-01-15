@@ -1,0 +1,90 @@
+{{template "importJsCss.html" .}}
+{{template "tablesorter.html" .}}
+<div class='dashboard auto-fade-in fade' id='dashboard' data-confirm-remove-block='{{ .Lang.block.confirmRemoveBlock}}'>
+  <div class="row">
+    <div class='col-main'>
+      {{range $index , $block :=$.Data.longBlocks}}
+      <div class='panel block-{{$block.Block}} {{if getValue $block.Params "color"}}panel-{{getValue $block.Params "color"}}{{end}}' id='block{{$block.Id}}' data-id='{{$block.Id}}' data-name='{{$block.Title}}' data-order='{{$block.Order}}' data-url='{{$block.BlockLink}}'>
+        {{$hasHeading := ne $block.Block "welcome"}}
+        {{if $hasHeading}}
+        <div class='panel-heading'>
+          <div class='panel-title'>{{$block.Title}}</div>
+        {{end}}
+          <nav class='panel-actions nav nav-default'>
+            {{- if $block.ActionLink}}<li>{{$block.ActionLink}}</li>{{end}}
+            {{- if $block.MoreLink}}<li>{{html_a $block.MoreLink "<i class='icon icon-more'></i>" ""  (strAdd "title='" $.Lang.common.more "'")}}</li>{{end}}
+            <li class='dropdown'>
+              <a href='javascript:;' data-toggle='dropdown' class='panel-action'><i class='icon icon-ellipsis-v'></i></a>
+              <ul class='dropdown-menu pull-right'>
+                <li><a href='javascript:;' class='refresh-panel'><i class='icon-repeat'></i> {{$.Lang.block.refresh }}</a></li>
+                <li><a data-toggle='modal' href="{{helper_createLink "block" "admin" "id=" $block.Id "&module=" $.Data.module}}" class='edit-block' data-title='{{$block.Title}}' >{{$.Lang.common.edit}}</a></li>
+                {{if and (not $block.Source) (eq $block.Block "html")}}
+                <li><a href="javascript:hiddenBlock({{$index}})" class="hidden-panel">{{$.Lang.block.hidden}}</a></li>
+                {{end}}
+                <li><a href='javascript:deleteBlock({{$index}});' class='remove-panel'>{{$.Lang.block.remove}}</a></li>
+                {{if $.Data.User.IsAdmin}}
+                <li>{{html_a (helper_createLink "block" "close"  "blockID=" $block.Id)  $.Lang.block.closeForever "hiddenwin" (strAdd "class='close-block' onclick=\"return confirm('" $.Lang.block.confirmClose "')\"")}}
+                {{end}}
+              </ul>
+            </li>
+          </nav>
+        {{if $hasHeading}}
+        </div>
+        {{end}}
+        {{block_printBlock $ $block $.Data.module}}
+      </div>
+      {{end}}
+    </div>
+    <div class='col-side'>
+      <div class="panel block-sm block-bug " id="block12" data-id="12" data-name="系统公告" data-order="12" data-url="/zentao/block-printBlock-12-my.html">
+      	<div class="panel-heading">
+      		<div class="panel-title">
+      			系统公告
+      		</div>
+      	</div>
+      	{{$.Data.notice }}
+      </div>
+      {{range $index , $block :=$.Data.shortBlocks}}
+      <div class='panel block-sm block-{{$block.Block}} {{if getValue $block.Params "color"}}panel-{{getValue $block.Params "color"}}{{end}}' id='block{{$block.Id}}' data-id='{{$block.Id}}' data-name='{{$block.Title}}' data-order='{{$block.Order}}' data-url='{{$block.BlockLink}}'>
+        {{$hasHeading := ne $block.Block "welcome"}}
+        {{if $hasHeading}}
+        <div class='panel-heading'>
+          <div class='panel-title'>{{$block.Title}}</div>
+        {{end}}
+          <nav class='panel-actions nav nav-default'>
+            {{- if $block.ActionLink}}<li>{{toHtml $block.ActionLink}}</li>{{end}}
+            {{- if $block.MoreLink}}<li>{{html_a $block.MoreLink "<i class='icon icon-more'></i>" ""  (strAdd "title='" $.Lang.common.more "'")}}</li>{{end}}
+            <li class='dropdown'>
+              <a href='javascript:;' data-toggle='dropdown' class='panel-action'><i class='icon icon-ellipsis-v'></i></a>
+              <ul class='dropdown-menu pull-right'>
+                <li><a href='javascript:;' class='refresh-panel'><i class='icon-repeat'></i> {{$.Lang.block.refresh }}</a></li>
+                <li><a data-toggle='modal' href="{{helper_createLink "block" "admin" "id=" $block.Id "&module=" $.Data.module}}" class='edit-block' data-title='{{$block.Title}}' >{{$.Lang.common.edit}}</a></li>
+                {{if and (not $block.Source) (eq $block.Block "html")}}
+                <li><a href="javascript:hiddenBlock({{$index}})" class="hidden-panel">{{$.Lang.block.hidden}}</a></li>
+                {{end}}
+                <li><a href='javascript:deleteBlock({{$index}});' class='remove-panel'>{{$.Lang.block.remove}}</a></li>
+                {{if $.Data.User.IsAdmin}}
+                <li>{{html_a (helper_createLink "block" "close"  "blockID=" $block.Id)  $.Lang.block.closeForever "hiddenwin" (strAdd "class='close-block' onclick=\"return confirm('" $.Lang.block.confirmClose "')\"")}}
+                {{end}}
+              </ul>
+            </li>
+          </nav>
+        {{if $hasHeading}}
+        </div>
+        {{end}}
+        {{block_printBlock $ $block $.Data.module}}
+      </div>
+      {{end}}
+    </div>
+  </div>
+</div>
+<script>
+config.ordersSaved = '{{.Lang.block.ordersSaved}}';
+config.confirmRemoveBlock = '{{.Lang.block.confirmRemoveBlock}}';
+var module   = '{{$.Data.module}}';
+$('#subHeader #pageActions .btn-toolbar:last').append("{{$.Data.dropmenu}}");
+
+
+
+</script>
+
