@@ -2,9 +2,15 @@ package protocol
 
 import (
 	"errors"
+	"io/ioutil"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/luyu6056/gnet"
 )
+
+const ZstdLevel = zstd.SpeedDefault
+
+var ZstdDict, _ = ioutil.ReadFile("../1.dict")
 
 type RpcCodec struct {
 }
@@ -16,21 +22,23 @@ func (code RpcCodec) Encode(c gnet.Conn, buf []byte) ([]byte, error) {
 }
 
 func (code RpcCodec) Decode(c gnet.Conn) (data []byte, err error) {
-	if c.BufferLength() > 5 {
+	if c.BufferLength() > 4 {
 		data = c.Read()
-		msglen := int(data[0]) | int(data[1])<<8 | int(data[2])<<16 | int(data[3])<<24
-		if len(data) < msglen+5 { //消息长度不够
+		msglen := int(data[0]) | int(data[1])<<8 | int(data[2])<<16 | int(data[3]&127)<<24
+		if len(data) < msglen+4 { //消息长度不够
 			return nil, nil
 		}
-		c.ShiftN(msglen + 5)
+		c.ShiftN(msglen + 4)
 		//解压缩
-		if data[4]>>7 == 1 {
-			ctx := c.Context().(Rpcdecompress)
-			return ctx.Decompress(data[4 : msglen+5]), nil
+		if data[3]>>7 == 1 {
 
+			if ctx, ok := c.Context().(Rpcdecompress); ok {
+				return ctx.Decompress(data[4 : msglen+4]), nil
+			}
 			return nil, ErrRpcContext
 		}
-		return data[4 : msglen+5], nil
+
+		return data[4 : msglen+4], nil
 	}
 	return nil, nil
 }

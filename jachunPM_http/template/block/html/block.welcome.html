@@ -1,0 +1,65 @@
+<style>
+.block-welcome .col-left {width: 25%;}
+.block-welcome .col-left > h4 {margin: 5px 0;line-height: 30px;}
+.block-welcome .col-left .timeline {margin: 10px 0 0;font-size: 12px;}
+.block-welcome .col-right > h4 {font-weight: normal;}
+.block-welcome .col-right > h4 small {display: inline-block;margin-right: 8px;font-size: 14px;}
+.block-welcome .col-right .tiles {padding: 10px 0 0 16px;border-left: 1px solid #e5e8ec;}
+.block-welcome .col-right .tile {width: 20%;}
+.block-welcome .panel-body {padding-top: 15px;}
+.block-welcome .user-notification-icon {position: relative;display: inline-block;margin-left: 5px;}
+.block-welcome .user-notification-icon .label-badge {position: absolute;top: 1px;right: -8px;min-width: 16px;padding: 2px;font-size: 12px;font-weight: normal;}
+.block-welcome.block-sm .col-right {padding: 0;}
+.block-welcome.block-sm .col-right .tiles {border-left: none; padding-left: 0}
+.block-welcome.block-sm .tile-title {font-size: 12px; margin: 0 -10px;}
+</style>
+<div class='panel-move-handler'></div>
+<div class="panel-body conatiner-fluid">
+  <div class="table-row">
+    <!--<div class="col col-left hide-in-sm">
+      <h4>{{printf (getValue .Lang.block.welcomeList $.Data.welcomeType) (or (and .User.Realname .User.Realname) .User.Account)}}</h4>
+      <ul class="timeline timeline-sm">
+      </ul>
+    </div>-->
+    <div class="col col-right">
+    <h4><small class="text-muted">{{date "2006-01-02"}}</small> {{.Lang.block.leftToday}}</h4>
+      <div class="row tiles">
+        <div class="col tile">
+          <div class="tile-title">{{.Lang.block.myTask}}</div>
+          <div class="tile-amount">{{$.Data.tasks}}</div>
+          {{if $.Data.delayTask}}
+          <div class="tile-info">
+          <span class="label label-danger label-outline">{{.Lang.block.delayed}} {{$.Data.delayTask}}</span>
+          </div>
+          {{end}}
+        </div>
+        <div class="col tile">
+          <div class="tile-title">{{.Lang.block.myBug}}</div>
+          <div class="tile-amount">{{$.Data.bugs}}</div>
+          {{if $.Data.delayBug}}
+          <div class="tile-info">
+          <span class="label label-danger label-outline">{{.Lang.block.delayed}} {{$.Data.delayBug}}</span>
+          </div>
+          {{end}}
+        </div>
+        <div class="col tile">
+          <div class="tile-title">{{.Lang.block.myStory}}</div>
+          <div class="tile-amount">{{$.Data.stories}}</div>
+        </div>
+        <div class="col tile">
+          <div class="tile-title">{{.Lang.block.myProject}}</div>
+          <div class="tile-amount">{{$.Data.projects}}</div>
+          {{if $.Data.delayProject}}
+          <div class="tile-info">
+          <span class="label label-danger label-outline">{{.Lang.block.delayed}} {{$.Data.delayProject}}</span>
+          </div>
+          {{end}}
+        </div>
+        <div class="col tile">
+          <div class="tile-title">{{.Lang.block.myProduct}}</div>
+          <div class="tile-amount">{{$.Data.products}}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -38,12 +38,12 @@ type HttpRequest interface {
 	SetCookie(name, value string, max_age uint32)
 	SetHeader(name, value string)
 	StaticHandler() gnet.Action
-	Write(*libraries.MsgBuffer)
-	WriteString(string)
+	Write(*libraries.MsgBuffer) //异步输出，仅可调用一次
+	WriteString(string)         //异步输出，仅可调用一次
 	Redirect(url string)
 	DelSession()
 	Close()
-	RangeDownload(r codec.HttpIoReader, size int64, name string)
+	RangeDownload(r codec.HttpIoReader, size int64, name string) //文件下载用
 }
 
 var httpHandlerMap = map[string]map[string]func(data *TemplateData) error{

@@ -294,14 +294,14 @@ func product_getPairs(data *TemplateData, mode ...string) (res []protocol.HtmlKe
 		if len(mode) == 1 && mode[0] == "noclosed" && p.Status == "closed" {
 			continue
 		}
-		if data.User.Id != 1 && !data.User.AclProducts[p.Id] {
+		if !data.User.IsAdmin && !data.User.AclProducts[p.Id] {
 			continue
 		}
 		res = append(res, protocol.HtmlKeyValueStr{strconv.Itoa(int(p.Id)), p.Name})
 	}
 	return
 }
-func product_setMenu(data *TemplateData, productID, branch int32, extra string) error {
+func product_setMenu(data *TemplateData, productID, branch int32, extra string, getselectHtml ...bool) error {
 	products, err := product_getPairs(data)
 	data.Data["products"] = products
 	if err != nil {
@@ -357,6 +357,9 @@ func product_setMenu(data *TemplateData, productID, branch int32, extra string) 
 		bufpool.Put(buf)
 	}()
 	selectHtml := func() error {
+		if len(getselectHtml) > 0 && getselectHtml[0] {
+			buf.Reset()
+		}
 		//public function select($products, $productID, $currentModule, $currentMethod, $extra = '', $branch = 0, $module = 0, $moduleType = '')
 		//$isMobile = $this->app->viewType == 'mhtml';
 		data.ws.SetCookie("lastProduct", productIDStr, protocol.SessionKeepLoginExpires)
@@ -741,9 +744,12 @@ func product_getStats(data *TemplateData, orderBy string, status string, line in
 	}
 	products = products[(data.Page.Page-1)*data.Page.PerPage : end]
 	var ids = make([]int32, len(products))
+	var sIds = make([]string, len(products))
 	for k, p := range products {
 		ids[k] = p.Id
+		sIds[k] = strconv.Itoa(int(p.Id))
 	}
+
 	getstories := protocol.GET_MSG_PROJECT_product_getStoriesMapBySql()
 	getstories.Field = "product, status, count(status) AS count"
 	getstories.Where = map[string]interface{}{
@@ -781,60 +787,10 @@ func product_getStats(data *TemplateData, orderBy string, status string, line in
 			}
 		}
 	}
-	/*
-	  plans = this->dao->select("product, count(*) AS count")
-	      ->from(TABLE_PRODUCTPLAN)
-	      ->where("deleted")->eq(0)
-	      ->andWhere("product")->in(array_keys(products))
-	      ->andWhere("end")->gt(helper::now())
-	      ->groupBy("product")
-	      ->fetchPairs()
-
-	  releases = this->dao->select("product, count(*) AS count")
-	      ->from(TABLE_RELEASE)
-	      ->where("deleted")->eq(0)
-	      ->andWhere("product")->in(array_keys(products))
-	      ->groupBy("product")
-	      ->fetchPairs()
-
-	  bugs = this->dao->select("product,count(*) AS conut")
-	      ->from(TABLE_BUG)
-	      ->where("deleted")->eq(0)
-	      ->andWhere("product")->in(array_keys(products))
-	      ->groupBy("product")
-	      ->fetchPairs()
-	  unResolved = this->dao->select("product,count(*) AS count")
-	      ->from(TABLE_BUG)
-	      ->where("deleted")->eq(0)
-	      ->andwhere("status")->eq("active")
-	      ->andWhere("product")->in(array_keys(products))
-	      ->groupBy("product")
-	      ->fetchPairs()
-	  assignToNull = this->dao->select("product,count(*) AS count")
-	      ->from(TABLE_BUG)
-	      ->where("deleted")->eq(0)
-	      ->andwhere("assignedTo")->eq("")
-	      ->andWhere("product")->in(array_keys(products))
-	      ->groupBy("product")
-	      ->fetchPairs()
-
-	  stats = array()
-	  foreach(products as key => product)
-	  {
-	      product->stories  = stories[product->id]
-	      product->plans    = isset(plans[product->id])    ? plans[product->id]    : 0
-	      product->releases = isset(releases[product->id]) ? releases[product->id] : 0
-
-	      product->bugs         = isset(bugs[product->id]) ? bugs[product->id] : 0
-	      product->unResolved   = isset(unResolved[product->id]) ? unResolved[product->id] : 0
-	      product->assignToNull = isset(assignToNull[product->id]) ? assignToNull[product->id] : 0
-	      stats[] = product
-	  }
-
-	  return stats*/
 	result = make([]map[string]interface{}, len(products))
 	for k, product := range products {
 		tmp := make(map[string]interface{})
+		tmp["strId"] = strconv.Itoa(int(product.Id))
 		tmp["Id"] = product.Id
 		tmp["Name"] = product.Name
 		tmp["Code"] = product.Code
@@ -852,8 +808,91 @@ func product_getStats(data *TemplateData, orderBy string, status string, line in
 		tmp["Order"] = product.Order
 		tmp["stories"] = stories[product.Id]
 		tmp["isClickableKey"] = "MSG_PROJECT_product_cache_map_isClickable"
+		tmp["plans"] = "0"
+		tmp["releases"] = "0"
+		tmp["bugs"] = "0"
+		tmp["unResolved"] = "0"
+		tmp["assignToNull"] = "0"
+
 		result[k] = tmp
 	}
+	//productplan
+	now := time.Now()
+	strIds := strings.Join(sIds, ",")
+	projectRawSelect := protocol.GET_MSG_PROJECT_doRawSelect()
+	projectRawSelect.Sql = fmt.Sprintf("select product, count(*) AS count from `%s` where deleted=0 and product in (%s) and end > '%s' group by product", "productplan", strIds, now.Format(protocol.TIMEFORMAT_MYSQLTIME))
+	var projectResult *protocol.MSG_PROJECT_doRawSelect_result
+	if err = data.SendMsgWaitResultToDefault(projectRawSelect, &projectResult); err != nil {
+		return
+	}
+	for k, v := range result {
+		for _, row := range projectResult.List {
+			if v["strId"].(string) == row["product"] {
+				result[k]["plans"] = row["count"]
+			}
+		}
+	}
+
+	//releases
+	projectRawSelect.Sql = fmt.Sprintf("select product, count(*) AS count from `%s` where deleted=0 and product in (%s) group by product", "release", strIds)
+	projectResult.List = projectResult.List[:0]
+	if err = data.SendMsgWaitResultToDefault(projectRawSelect, &projectResult); err != nil {
+		return
+	}
+	for k, v := range result {
+		for _, row := range projectResult.List {
+			if v["strId"].(string) == row["product"] {
+				result[k]["releases"] = row["count"]
+			}
+		}
+	}
+	projectRawSelect.Put()
+	projectResult.Put()
+
+	//bugs
+	bugRawSelect := protocol.GET_MSG_TEST_doRawSelect()
+	var bugResult *protocol.MSG_TEST_doRawSelect_result
+	bugRawSelect.Sql = fmt.Sprintf("select product,count(*) AS conut from `%s` where deleted=0 and product in (%s) group by product", "bug", strIds)
+	if err = data.SendMsgWaitResultToDefault(bugRawSelect, &bugResult); err != nil {
+		return
+	}
+	for k, v := range result {
+		for _, row := range projectResult.List {
+			if v["strId"].(string) == row["product"] {
+				result[k]["bugs"] = row["count"]
+			}
+		}
+	}
+
+	//unResolved
+	bugRawSelect.Sql = fmt.Sprintf("select product,count(*) AS conut from `%s` where deleted=0 and status='active' and product in (%s) group by product", "bug", strIds)
+	bugResult.List = bugResult.List[:0]
+	if err = data.SendMsgWaitResultToDefault(bugRawSelect, &bugResult); err != nil {
+		return
+	}
+	for k, v := range result {
+		for _, row := range projectResult.List {
+			if v["strId"].(string) == row["product"] {
+				result[k]["unResolved"] = row["count"]
+			}
+		}
+	}
+
+	//assignToNull
+	bugRawSelect.Sql = fmt.Sprintf("select product,count(*) AS conut from `%s` where deleted=0 and assignedTo=0 and product in (%s) group by product", "bug", strIds)
+	bugResult.List = bugResult.List[:0]
+	if err = data.SendMsgWaitResultToDefault(bugRawSelect, &bugResult); err != nil {
+		return
+	}
+	for k, v := range result {
+		for _, row := range projectResult.List {
+			if v["strId"].(string) == row["product"] {
+				result[k]["assignToNull"] = row["count"]
+			}
+		}
+	}
+	bugRawSelect.Put()
+	bugResult.Put()
 	return
 }
 func product_getList(data *TemplateData, order func(a, b *protocol.MSG_PROJECT_product_cache) bool, status string, limit int, line int32, rootID int32) (result []*protocol.MSG_PROJECT_product_cache, err error) {
@@ -866,9 +905,8 @@ func product_getList(data *TemplateData, order func(a, b *protocol.MSG_PROJECT_p
 	} else {
 		list = []*protocol.MSG_PROJECT_product_cache{HostConn.GetProductById(rootID)}
 	}
-
 	for _, v := range list {
-		if v.Deleted || (line > 0 && v.Line != line) || (data.User.Id != 1 && data.User.AclProducts[v.Id] == false) {
+		if v.Deleted || (line > 0 && v.Line != line) || (!data.User.IsAdmin && data.User.AclProducts[v.Id] == false) {
 			continue
 		}
 		switch status {
@@ -881,7 +919,7 @@ func product_getList(data *TemplateData, order func(a, b *protocol.MSG_PROJECT_p
 				continue
 			}
 		default:
-			if status != "all" {
+			if status != "all" && status != "" {
 				if v.Status != status {
 					continue
 				}

@@ -3,6 +3,7 @@ package protocol
 import (
 	"sync"
 	"libraries"
+	"unsafe"
 	"time"
 )
 
@@ -73,6 +74,10 @@ const (
 	CMD_MSG_USER_userTpl = 282910212
 	CMD_MSG_USER_getExportTemplate = -255305468
 	CMD_MSG_USER_getExportTemplate_result = 1388729604
+	CMD_MSG_USER_block_delectByWhere = 314361604
+	CMD_MSG_USER_config_get = -1715163644
+	CMD_MSG_USER_config_get_result = -230190332
+	CMD_MSG_USER_config_savelist = -39053820
 )
 
 type MSG_USER_GET_LoginSalt struct {
@@ -87,6 +92,10 @@ func GET_MSG_USER_GET_LoginSalt() *MSG_USER_GET_LoginSalt {
 
 func (data *MSG_USER_GET_LoginSalt) cmd() int32 {
 	return CMD_MSG_USER_GET_LoginSalt
+}
+
+func (data *MSG_USER_GET_LoginSalt) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_GET_LoginSalt()))
 }
 
 func (data *MSG_USER_GET_LoginSalt) Put() {
@@ -125,6 +134,10 @@ func GET_MSG_USER_GET_LoginSalt_result() *MSG_USER_GET_LoginSalt_result {
 
 func (data *MSG_USER_GET_LoginSalt_result) cmd() int32 {
 	return CMD_MSG_USER_GET_LoginSalt_result
+}
+
+func (data *MSG_USER_GET_LoginSalt_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_GET_LoginSalt_result()))
 }
 
 func (data *MSG_USER_GET_LoginSalt_result) Put() {
@@ -191,6 +204,10 @@ func GET_MSG_USER_INFO_cache() *MSG_USER_INFO_cache {
 
 func (data *MSG_USER_INFO_cache) cmd() int32 {
 	return CMD_MSG_USER_INFO_cache
+}
+
+func (data *MSG_USER_INFO_cache) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_INFO_cache()))
 }
 
 func (data *MSG_USER_INFO_cache) Put() {
@@ -329,6 +346,10 @@ func (data *MSG_USER_CheckPasswd) cmd() int32 {
 	return CMD_MSG_USER_CheckPasswd
 }
 
+func (data *MSG_USER_CheckPasswd) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_CheckPasswd()))
+}
+
 func (data *MSG_USER_CheckPasswd) Put() {
 	data.UserId = 0
 	data.Name = ``
@@ -375,6 +396,10 @@ func GET_MSG_USER_CheckPasswd_result() *MSG_USER_CheckPasswd_result {
 
 func (data *MSG_USER_CheckPasswd_result) cmd() int32 {
 	return CMD_MSG_USER_CheckPasswd_result
+}
+
+func (data *MSG_USER_CheckPasswd_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_CheckPasswd_result()))
 }
 
 func (data *MSG_USER_CheckPasswd_result) Put() {
@@ -425,6 +450,10 @@ func GET_MSG_USER_Company_cache() *MSG_USER_Company_cache {
 
 func (data *MSG_USER_Company_cache) cmd() int32 {
 	return CMD_MSG_USER_Company_cache
+}
+
+func (data *MSG_USER_Company_cache) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_Company_cache()))
 }
 
 func (data *MSG_USER_Company_cache) Put() {
@@ -511,6 +540,10 @@ func (data *MSG_USER_Dept_cache) cmd() int32 {
 	return CMD_MSG_USER_Dept_cache
 }
 
+func (data *MSG_USER_Dept_cache) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_Dept_cache()))
+}
+
 func (data *MSG_USER_Dept_cache) Put() {
 	data.Id = 0
 	data.Name = ``
@@ -520,9 +553,6 @@ func (data *MSG_USER_Dept_cache) Put() {
 	data.Order = 0
 	data.Manager = 0
 	data.ManagerName = ``
-	for _,v := range data.Children {
-		v.Put()
-	}
 	data.Children = data.Children[:0]
 	pool_MSG_USER_Dept_cache.Put(data)
 }
@@ -598,6 +628,10 @@ func (data *MSG_USER_Dept_getParents) cmd() int32 {
 	return CMD_MSG_USER_Dept_getParents
 }
 
+func (data *MSG_USER_Dept_getParents) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_Dept_getParents()))
+}
+
 func (data *MSG_USER_Dept_getParents) Put() {
 	data.Id = 0
 	pool_MSG_USER_Dept_getParents.Put(data)
@@ -636,10 +670,11 @@ func (data *MSG_USER_Dept_getParents_result) cmd() int32 {
 	return CMD_MSG_USER_Dept_getParents_result
 }
 
+func (data *MSG_USER_Dept_getParents_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_Dept_getParents_result()))
+}
+
 func (data *MSG_USER_Dept_getParents_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	pool_MSG_USER_Dept_getParents_result.Put(data)
 }
@@ -688,6 +723,10 @@ func (data *MSG_USER_Dept_getDataStructure) cmd() int32 {
 	return CMD_MSG_USER_Dept_getDataStructure
 }
 
+func (data *MSG_USER_Dept_getDataStructure) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_Dept_getDataStructure()))
+}
+
 func (data *MSG_USER_Dept_getDataStructure) Put() {
 	data.RootDeptID = 0
 	pool_MSG_USER_Dept_getDataStructure.Put(data)
@@ -726,10 +765,11 @@ func (data *MSG_USER_Dept_getDataStructure_result) cmd() int32 {
 	return CMD_MSG_USER_Dept_getDataStructure_result
 }
 
+func (data *MSG_USER_Dept_getDataStructure_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_Dept_getDataStructure_result()))
+}
+
 func (data *MSG_USER_Dept_getDataStructure_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	pool_MSG_USER_Dept_getDataStructure_result.Put(data)
 }
@@ -778,10 +818,11 @@ func (data *MSG_USER_Dept_update) cmd() int32 {
 	return CMD_MSG_USER_Dept_update
 }
 
+func (data *MSG_USER_Dept_update) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_Dept_update()))
+}
+
 func (data *MSG_USER_Dept_update) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	pool_MSG_USER_Dept_update.Put(data)
 }
@@ -830,6 +871,10 @@ func (data *MSG_USER_Dept_delete) cmd() int32 {
 	return CMD_MSG_USER_Dept_delete
 }
 
+func (data *MSG_USER_Dept_delete) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_Dept_delete()))
+}
+
 func (data *MSG_USER_Dept_delete) Put() {
 	data.DeptId = 0
 	pool_MSG_USER_Dept_delete.Put(data)
@@ -866,6 +911,10 @@ func GET_MSG_USER_Dept_delete_result() *MSG_USER_Dept_delete_result {
 
 func (data *MSG_USER_Dept_delete_result) cmd() int32 {
 	return CMD_MSG_USER_Dept_delete_result
+}
+
+func (data *MSG_USER_Dept_delete_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_Dept_delete_result()))
 }
 
 func (data *MSG_USER_Dept_delete_result) Put() {
@@ -906,6 +955,10 @@ func GET_MSG_USER_Pairs() *MSG_USER_Pairs {
 
 func (data *MSG_USER_Pairs) cmd() int32 {
 	return CMD_MSG_USER_Pairs
+}
+
+func (data *MSG_USER_Pairs) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_Pairs()))
 }
 
 func (data *MSG_USER_Pairs) Put() {
@@ -952,6 +1005,10 @@ func (data *MSG_USER_getDeptUserPairs) cmd() int32 {
 	return CMD_MSG_USER_getDeptUserPairs
 }
 
+func (data *MSG_USER_getDeptUserPairs) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_getDeptUserPairs()))
+}
+
 func (data *MSG_USER_getDeptUserPairs) Put() {
 	data.DeptId = 0
 	pool_MSG_USER_getDeptUserPairs.Put(data)
@@ -990,10 +1047,11 @@ func (data *MSG_USER_getDeptUserPairs_result) cmd() int32 {
 	return CMD_MSG_USER_getDeptUserPairs_result
 }
 
+func (data *MSG_USER_getDeptUserPairs_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_getDeptUserPairs_result()))
+}
+
 func (data *MSG_USER_getDeptUserPairs_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	pool_MSG_USER_getDeptUserPairs_result.Put(data)
 }
@@ -1047,6 +1105,10 @@ func GET_MSG_USER_getCompanyUsers() *MSG_USER_getCompanyUsers {
 
 func (data *MSG_USER_getCompanyUsers) cmd() int32 {
 	return CMD_MSG_USER_getCompanyUsers
+}
+
+func (data *MSG_USER_getCompanyUsers) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_getCompanyUsers()))
 }
 
 func (data *MSG_USER_getCompanyUsers) Put() {
@@ -1109,10 +1171,11 @@ func (data *MSG_USER_getCompanyUsers_result) cmd() int32 {
 	return CMD_MSG_USER_getCompanyUsers_result
 }
 
+func (data *MSG_USER_getCompanyUsers_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_getCompanyUsers_result()))
+}
+
 func (data *MSG_USER_getCompanyUsers_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	data.Total = 0
 	pool_MSG_USER_getCompanyUsers_result.Put(data)
@@ -1170,6 +1233,10 @@ func GET_MSG_USER_Group_cache() *MSG_USER_Group_cache {
 
 func (data *MSG_USER_Group_cache) cmd() int32 {
 	return CMD_MSG_USER_Group_cache
+}
+
+func (data *MSG_USER_Group_cache) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_Group_cache()))
 }
 
 func (data *MSG_USER_Group_cache) Put() {
@@ -1268,6 +1335,10 @@ func (data *MSG_USER_INFO_updateByID) cmd() int32 {
 	return CMD_MSG_USER_INFO_updateByID
 }
 
+func (data *MSG_USER_INFO_updateByID) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_INFO_updateByID()))
+}
+
 func (data *MSG_USER_INFO_updateByID) Put() {
 	data.UserID = 0
 	data.Update = nil
@@ -1309,6 +1380,10 @@ func (data *MSG_USER_CheckAccount) cmd() int32 {
 	return CMD_MSG_USER_CheckAccount
 }
 
+func (data *MSG_USER_CheckAccount) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_CheckAccount()))
+}
+
 func (data *MSG_USER_CheckAccount) Put() {
 	data.Account = ``
 	pool_MSG_USER_CheckAccount.Put(data)
@@ -1345,6 +1420,10 @@ func GET_MSG_USER_CheckAccount_result() *MSG_USER_CheckAccount_result {
 
 func (data *MSG_USER_CheckAccount_result) cmd() int32 {
 	return CMD_MSG_USER_CheckAccount_result
+}
+
+func (data *MSG_USER_CheckAccount_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_CheckAccount_result()))
 }
 
 func (data *MSG_USER_CheckAccount_result) Put() {
@@ -1386,6 +1465,10 @@ func (data *MSG_USER_getPairs) cmd() int32 {
 	return CMD_MSG_USER_getPairs
 }
 
+func (data *MSG_USER_getPairs) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_getPairs()))
+}
+
 func (data *MSG_USER_getPairs) Put() {
 	data.Params = ``
 	data.UsersToAppended = 0
@@ -1425,6 +1508,10 @@ func GET_MSG_USER_getPairs_result() *MSG_USER_getPairs_result {
 
 func (data *MSG_USER_getPairs_result) cmd() int32 {
 	return CMD_MSG_USER_getPairs_result
+}
+
+func (data *MSG_USER_getPairs_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_getPairs_result()))
 }
 
 func (data *MSG_USER_getPairs_result) Put() {
@@ -1477,6 +1564,10 @@ func GET_MSG_USER_updateUserView() *MSG_USER_updateUserView {
 
 func (data *MSG_USER_updateUserView) cmd() int32 {
 	return CMD_MSG_USER_updateUserView
+}
+
+func (data *MSG_USER_updateUserView) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_updateUserView()))
 }
 
 func (data *MSG_USER_updateUserView) Put() {
@@ -1571,6 +1662,10 @@ func (data *MSG_USER_getContactLists) cmd() int32 {
 	return CMD_MSG_USER_getContactLists
 }
 
+func (data *MSG_USER_getContactLists) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_getContactLists()))
+}
+
 func (data *MSG_USER_getContactLists) Put() {
 	data.Uid = 0
 	data.Params = ``
@@ -1610,6 +1705,10 @@ func GET_MSG_USER_getContactLists_result() *MSG_USER_getContactLists_result {
 
 func (data *MSG_USER_getContactLists_result) cmd() int32 {
 	return CMD_MSG_USER_getContactLists_result
+}
+
+func (data *MSG_USER_getContactLists_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_getContactLists_result()))
 }
 
 func (data *MSG_USER_getContactLists_result) Put() {
@@ -1661,6 +1760,10 @@ func (data *MSG_USER_getContactListByUid) cmd() int32 {
 	return CMD_MSG_USER_getContactListByUid
 }
 
+func (data *MSG_USER_getContactListByUid) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_getContactListByUid()))
+}
+
 func (data *MSG_USER_getContactListByUid) Put() {
 	data.Uid = 0
 	pool_MSG_USER_getContactListByUid.Put(data)
@@ -1697,6 +1800,10 @@ func GET_MSG_USER_getContactListByUid_result() *MSG_USER_getContactListByUid_res
 
 func (data *MSG_USER_getContactListByUid_result) cmd() int32 {
 	return CMD_MSG_USER_getContactListByUid_result
+}
+
+func (data *MSG_USER_getContactListByUid_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_getContactListByUid_result()))
 }
 
 func (data *MSG_USER_getContactListByUid_result) Put() {
@@ -1748,6 +1855,10 @@ func (data *MSG_USER_getContactListById) cmd() int32 {
 	return CMD_MSG_USER_getContactListById
 }
 
+func (data *MSG_USER_getContactListById) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_getContactListById()))
+}
+
 func (data *MSG_USER_getContactListById) Put() {
 	data.Id = 0
 	pool_MSG_USER_getContactListById.Put(data)
@@ -1784,6 +1895,10 @@ func GET_MSG_USER_getContactListById_result() *MSG_USER_getContactListById_resul
 
 func (data *MSG_USER_getContactListById_result) cmd() int32 {
 	return CMD_MSG_USER_getContactListById_result
+}
+
+func (data *MSG_USER_getContactListById_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_getContactListById_result()))
 }
 
 func (data *MSG_USER_getContactListById_result) Put() {
@@ -1839,6 +1954,10 @@ func GET_MSG_USER_ContactList() *MSG_USER_ContactList {
 
 func (data *MSG_USER_ContactList) cmd() int32 {
 	return CMD_MSG_USER_ContactList
+}
+
+func (data *MSG_USER_ContactList) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_ContactList()))
 }
 
 func (data *MSG_USER_ContactList) Put() {
@@ -1902,6 +2021,10 @@ func (data *MSG_USER_insertUpdateContactList) cmd() int32 {
 	return CMD_MSG_USER_insertUpdateContactList
 }
 
+func (data *MSG_USER_insertUpdateContactList) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_insertUpdateContactList()))
+}
+
 func (data *MSG_USER_insertUpdateContactList) Put() {
 	if data.Insert != nil {
 		data.Insert.Put()
@@ -1953,6 +2076,10 @@ func (data *MSG_USER_insertUpdateContactList_result) cmd() int32 {
 	return CMD_MSG_USER_insertUpdateContactList_result
 }
 
+func (data *MSG_USER_insertUpdateContactList_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_insertUpdateContactList_result()))
+}
+
 func (data *MSG_USER_insertUpdateContactList_result) Put() {
 	data.Id = 0
 	pool_MSG_USER_insertUpdateContactList_result.Put(data)
@@ -1990,6 +2117,10 @@ func (data *MSG_USER_getGlobalContacts) cmd() int32 {
 	return CMD_MSG_USER_getGlobalContacts
 }
 
+func (data *MSG_USER_getGlobalContacts) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_getGlobalContacts()))
+}
+
 func (data *MSG_USER_getGlobalContacts) Put() {
 	pool_MSG_USER_getGlobalContacts.Put(data)
 }
@@ -2025,10 +2156,11 @@ func (data *MSG_USER_getGlobalContacts_result) cmd() int32 {
 	return CMD_MSG_USER_getGlobalContacts_result
 }
 
+func (data *MSG_USER_getGlobalContacts_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_getGlobalContacts_result()))
+}
+
 func (data *MSG_USER_getGlobalContacts_result) Put() {
-	for _,v := range data.Result {
-		v.Put()
-	}
 	data.Result = data.Result[:0]
 	pool_MSG_USER_getGlobalContacts_result.Put(data)
 }
@@ -2076,6 +2208,10 @@ func GET_MSG_USER_team_getByTypeRoot() *MSG_USER_team_getByTypeRoot {
 
 func (data *MSG_USER_team_getByTypeRoot) cmd() int32 {
 	return CMD_MSG_USER_team_getByTypeRoot
+}
+
+func (data *MSG_USER_team_getByTypeRoot) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_team_getByTypeRoot()))
 }
 
 func (data *MSG_USER_team_getByTypeRoot) Put() {
@@ -2130,10 +2266,11 @@ func (data *MSG_USER_team_getByTypeRoot_result) cmd() int32 {
 	return CMD_MSG_USER_team_getByTypeRoot_result
 }
 
+func (data *MSG_USER_team_getByTypeRoot_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_team_getByTypeRoot_result()))
+}
+
 func (data *MSG_USER_team_getByTypeRoot_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	pool_MSG_USER_team_getByTypeRoot_result.Put(data)
 }
@@ -2180,6 +2317,10 @@ func GET_MSG_USER_team_getByIds() *MSG_USER_team_getByIds {
 
 func (data *MSG_USER_team_getByIds) cmd() int32 {
 	return CMD_MSG_USER_team_getByIds
+}
+
+func (data *MSG_USER_team_getByIds) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_team_getByIds()))
 }
 
 func (data *MSG_USER_team_getByIds) Put() {
@@ -2231,10 +2372,11 @@ func (data *MSG_USER_team_getByIds_result) cmd() int32 {
 	return CMD_MSG_USER_team_getByIds_result
 }
 
+func (data *MSG_USER_team_getByIds_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_team_getByIds_result()))
+}
+
 func (data *MSG_USER_team_getByIds_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	pool_MSG_USER_team_getByIds_result.Put(data)
 }
@@ -2297,6 +2439,10 @@ func GET_MSG_USER_team_info() *MSG_USER_team_info {
 
 func (data *MSG_USER_team_info) cmd() int32 {
 	return CMD_MSG_USER_team_info
+}
+
+func (data *MSG_USER_team_info) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_team_info()))
 }
 
 func (data *MSG_USER_team_info) Put() {
@@ -2385,10 +2531,11 @@ func (data *MSG_USER_team_addByList) cmd() int32 {
 	return CMD_MSG_USER_team_addByList
 }
 
+func (data *MSG_USER_team_addByList) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_team_addByList()))
+}
+
 func (data *MSG_USER_team_addByList) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	pool_MSG_USER_team_addByList.Put(data)
 }
@@ -2436,6 +2583,10 @@ func (data *MSG_USER_Group_getPairs) cmd() int32 {
 	return CMD_MSG_USER_Group_getPairs
 }
 
+func (data *MSG_USER_Group_getPairs) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_Group_getPairs()))
+}
+
 func (data *MSG_USER_Group_getPairs) Put() {
 	pool_MSG_USER_Group_getPairs.Put(data)
 }
@@ -2469,6 +2620,10 @@ func GET_MSG_USER_Group_getPairs_result() *MSG_USER_Group_getPairs_result {
 
 func (data *MSG_USER_Group_getPairs_result) cmd() int32 {
 	return CMD_MSG_USER_Group_getPairs_result
+}
+
+func (data *MSG_USER_Group_getPairs_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_Group_getPairs_result()))
 }
 
 func (data *MSG_USER_Group_getPairs_result) Put() {
@@ -2521,6 +2676,10 @@ func (data *MSG_USER_team_getByTypeUid) cmd() int32 {
 	return CMD_MSG_USER_team_getByTypeUid
 }
 
+func (data *MSG_USER_team_getByTypeUid) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_team_getByTypeUid()))
+}
+
 func (data *MSG_USER_team_getByTypeUid) Put() {
 	data.Type = ``
 	data.Uid = 0
@@ -2562,10 +2721,11 @@ func (data *MSG_USER_team_getByTypeUid_result) cmd() int32 {
 	return CMD_MSG_USER_team_getByTypeUid_result
 }
 
+func (data *MSG_USER_team_getByTypeUid_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_team_getByTypeUid_result()))
+}
+
 func (data *MSG_USER_team_getByTypeUid_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	pool_MSG_USER_team_getByTypeUid_result.Put(data)
 }
@@ -2618,6 +2778,10 @@ func GET_MSG_USER_Userquery_info() *MSG_USER_Userquery_info {
 
 func (data *MSG_USER_Userquery_info) cmd() int32 {
 	return CMD_MSG_USER_Userquery_info
+}
+
+func (data *MSG_USER_Userquery_info) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_Userquery_info()))
 }
 
 func (data *MSG_USER_Userquery_info) Put() {
@@ -2676,6 +2840,10 @@ func (data *MSG_USER_user_getUserqueryByWhere) cmd() int32 {
 	return CMD_MSG_USER_user_getUserqueryByWhere
 }
 
+func (data *MSG_USER_user_getUserqueryByWhere) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_user_getUserqueryByWhere()))
+}
+
 func (data *MSG_USER_user_getUserqueryByWhere) Put() {
 	data.Where = nil
 	pool_MSG_USER_user_getUserqueryByWhere.Put(data)
@@ -2714,10 +2882,11 @@ func (data *MSG_USER_user_getUserqueryByWhere_result) cmd() int32 {
 	return CMD_MSG_USER_user_getUserqueryByWhere_result
 }
 
+func (data *MSG_USER_user_getUserqueryByWhere_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_user_getUserqueryByWhere_result()))
+}
+
 func (data *MSG_USER_user_getUserqueryByWhere_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	pool_MSG_USER_user_getUserqueryByWhere_result.Put(data)
 }
@@ -2767,6 +2936,10 @@ func (data *MSG_USER_team_getMemberPairsByTypeRoot) cmd() int32 {
 	return CMD_MSG_USER_team_getMemberPairsByTypeRoot
 }
 
+func (data *MSG_USER_team_getMemberPairsByTypeRoot) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_team_getMemberPairsByTypeRoot()))
+}
+
 func (data *MSG_USER_team_getMemberPairsByTypeRoot) Put() {
 	data.Type = ``
 	data.Root = 0
@@ -2806,6 +2979,10 @@ func GET_MSG_USER_team_getMemberPairsByTypeRoot_result() *MSG_USER_team_getMembe
 
 func (data *MSG_USER_team_getMemberPairsByTypeRoot_result) cmd() int32 {
 	return CMD_MSG_USER_team_getMemberPairsByTypeRoot_result
+}
+
+func (data *MSG_USER_team_getMemberPairsByTypeRoot_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_team_getMemberPairsByTypeRoot_result()))
 }
 
 func (data *MSG_USER_team_getMemberPairsByTypeRoot_result) Put() {
@@ -2858,6 +3035,10 @@ func (data *MSG_USER_team_updateByWhere) cmd() int32 {
 	return CMD_MSG_USER_team_updateByWhere
 }
 
+func (data *MSG_USER_team_updateByWhere) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_team_updateByWhere()))
+}
+
 func (data *MSG_USER_team_updateByWhere) Put() {
 	data.Where = nil
 	data.Update = nil
@@ -2902,6 +3083,10 @@ func GET_MSG_USER_config_save() *MSG_USER_config_save {
 
 func (data *MSG_USER_config_save) cmd() int32 {
 	return CMD_MSG_USER_config_save
+}
+
+func (data *MSG_USER_config_save) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_config_save()))
 }
 
 func (data *MSG_USER_config_save) Put() {
@@ -2957,6 +3142,10 @@ func (data *MSG_USER_team_delete) cmd() int32 {
 	return CMD_MSG_USER_team_delete
 }
 
+func (data *MSG_USER_team_delete) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_team_delete()))
+}
+
 func (data *MSG_USER_team_delete) Put() {
 	data.Where = nil
 	pool_MSG_USER_team_delete.Put(data)
@@ -2993,6 +3182,10 @@ func GET_MSG_USER_group_update() *MSG_USER_group_update {
 
 func (data *MSG_USER_group_update) cmd() int32 {
 	return CMD_MSG_USER_group_update
+}
+
+func (data *MSG_USER_group_update) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_group_update()))
 }
 
 func (data *MSG_USER_group_update) Put() {
@@ -3046,6 +3239,10 @@ func (data *MSG_USER_team_getTeams2Import) cmd() int32 {
 	return CMD_MSG_USER_team_getTeams2Import
 }
 
+func (data *MSG_USER_team_getTeams2Import) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_team_getTeams2Import()))
+}
+
 func (data *MSG_USER_team_getTeams2Import) Put() {
 	data.ProjectId = 0
 	pool_MSG_USER_team_getTeams2Import.Put(data)
@@ -3082,6 +3279,10 @@ func GET_MSG_USER_team_getTeams2Import_result() *MSG_USER_team_getTeams2Import_r
 
 func (data *MSG_USER_team_getTeams2Import_result) cmd() int32 {
 	return CMD_MSG_USER_team_getTeams2Import_result
+}
+
+func (data *MSG_USER_team_getTeams2Import_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_team_getTeams2Import_result()))
 }
 
 func (data *MSG_USER_team_getTeams2Import_result) Put() {
@@ -3134,11 +3335,12 @@ func (data *MSG_USER_team_projectManageMembers) cmd() int32 {
 	return CMD_MSG_USER_team_projectManageMembers
 }
 
+func (data *MSG_USER_team_projectManageMembers) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_team_projectManageMembers()))
+}
+
 func (data *MSG_USER_team_projectManageMembers) Put() {
 	data.ProjectId = 0
-	for _,v := range data.Update {
-		v.Put()
-	}
 	data.Update = data.Update[:0]
 	pool_MSG_USER_team_projectManageMembers.Put(data)
 }
@@ -3197,6 +3399,10 @@ func GET_MSG_USER_Block_info() *MSG_USER_Block_info {
 
 func (data *MSG_USER_Block_info) cmd() int32 {
 	return CMD_MSG_USER_Block_info
+}
+
+func (data *MSG_USER_Block_info) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_Block_info()))
 }
 
 func (data *MSG_USER_Block_info) Put() {
@@ -3268,6 +3474,10 @@ func (data *MSG_USER_block_getList) cmd() int32 {
 	return CMD_MSG_USER_block_getList
 }
 
+func (data *MSG_USER_block_getList) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_block_getList()))
+}
+
 func (data *MSG_USER_block_getList) Put() {
 	data.Module = ``
 	data.Uid = 0
@@ -3309,10 +3519,11 @@ func (data *MSG_USER_block_getList_result) cmd() int32 {
 	return CMD_MSG_USER_block_getList_result
 }
 
+func (data *MSG_USER_block_getList_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_block_getList_result()))
+}
+
 func (data *MSG_USER_block_getList_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	pool_MSG_USER_block_getList_result.Put(data)
 }
@@ -3362,11 +3573,12 @@ func (data *MSG_USER_block_insertUpdate) cmd() int32 {
 	return CMD_MSG_USER_block_insertUpdate
 }
 
+func (data *MSG_USER_block_insertUpdate) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_block_insertUpdate()))
+}
+
 func (data *MSG_USER_block_insertUpdate) Put() {
 	data.Insert = false
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	pool_MSG_USER_block_insertUpdate.Put(data)
 }
@@ -3420,6 +3632,10 @@ func GET_MSG_USER_userTpl() *MSG_USER_userTpl {
 
 func (data *MSG_USER_userTpl) cmd() int32 {
 	return CMD_MSG_USER_userTpl
+}
+
+func (data *MSG_USER_userTpl) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_userTpl()))
 }
 
 func (data *MSG_USER_userTpl) Put() {
@@ -3476,6 +3692,10 @@ func (data *MSG_USER_getExportTemplate) cmd() int32 {
 	return CMD_MSG_USER_getExportTemplate
 }
 
+func (data *MSG_USER_getExportTemplate) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_getExportTemplate()))
+}
+
 func (data *MSG_USER_getExportTemplate) Put() {
 	data.Module = ``
 	data.Uid = 0
@@ -3517,10 +3737,11 @@ func (data *MSG_USER_getExportTemplate_result) cmd() int32 {
 	return CMD_MSG_USER_getExportTemplate_result
 }
 
+func (data *MSG_USER_getExportTemplate_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_getExportTemplate_result()))
+}
+
 func (data *MSG_USER_getExportTemplate_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	pool_MSG_USER_getExportTemplate_result.Put(data)
 }
@@ -3551,6 +3772,189 @@ func (data *MSG_USER_getExportTemplate_result) read(buf *libraries.MsgBuffer) {
 	}
 	for i := 0; i < List_len; i++ {
 		data.List[i] = READ_MSG_USER_userTpl(buf)
+	}
+
+}
+
+type MSG_USER_block_delectByWhere struct {
+	Where map[string]interface{}
+}
+
+var pool_MSG_USER_block_delectByWhere = sync.Pool{New: func() interface{} { return &MSG_USER_block_delectByWhere{} }}
+
+func GET_MSG_USER_block_delectByWhere() *MSG_USER_block_delectByWhere {
+	return pool_MSG_USER_block_delectByWhere.Get().(*MSG_USER_block_delectByWhere)
+}
+
+func (data *MSG_USER_block_delectByWhere) cmd() int32 {
+	return CMD_MSG_USER_block_delectByWhere
+}
+
+func (data *MSG_USER_block_delectByWhere) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_block_delectByWhere()))
+}
+
+func (data *MSG_USER_block_delectByWhere) Put() {
+	data.Where = nil
+	pool_MSG_USER_block_delectByWhere.Put(data)
+}
+func (data *MSG_USER_block_delectByWhere) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_block_delectByWhere,buf)
+	WRITE_MSG_USER_block_delectByWhere(data, buf)
+}
+
+func WRITE_MSG_USER_block_delectByWhere(data *MSG_USER_block_delectByWhere, buf *libraries.MsgBuffer) {
+	WRITE_map(data.Where,buf)
+}
+
+func READ_MSG_USER_block_delectByWhere(buf *libraries.MsgBuffer) *MSG_USER_block_delectByWhere {
+	data := pool_MSG_USER_block_delectByWhere.Get().(*MSG_USER_block_delectByWhere)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_block_delectByWhere) read(buf *libraries.MsgBuffer) {
+	READ_map(&data.Where,buf)
+
+}
+
+type MSG_USER_config_get struct {
+	Uid int
+	Module string
+}
+
+var pool_MSG_USER_config_get = sync.Pool{New: func() interface{} { return &MSG_USER_config_get{} }}
+
+func GET_MSG_USER_config_get() *MSG_USER_config_get {
+	return pool_MSG_USER_config_get.Get().(*MSG_USER_config_get)
+}
+
+func (data *MSG_USER_config_get) cmd() int32 {
+	return CMD_MSG_USER_config_get
+}
+
+func (data *MSG_USER_config_get) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_config_get()))
+}
+
+func (data *MSG_USER_config_get) Put() {
+	data.Uid = 0
+	data.Module = ``
+	pool_MSG_USER_config_get.Put(data)
+}
+func (data *MSG_USER_config_get) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_config_get,buf)
+	WRITE_MSG_USER_config_get(data, buf)
+}
+
+func WRITE_MSG_USER_config_get(data *MSG_USER_config_get, buf *libraries.MsgBuffer) {
+	WRITE_int(data.Uid, buf)
+	WRITE_string(data.Module, buf)
+}
+
+func READ_MSG_USER_config_get(buf *libraries.MsgBuffer) *MSG_USER_config_get {
+	data := pool_MSG_USER_config_get.Get().(*MSG_USER_config_get)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_config_get) read(buf *libraries.MsgBuffer) {
+	data.Uid = READ_int(buf)
+	data.Module = READ_string(buf)
+
+}
+
+type MSG_USER_config_get_result struct {
+	Config map[string]map[string]string
+}
+
+var pool_MSG_USER_config_get_result = sync.Pool{New: func() interface{} { return &MSG_USER_config_get_result{} }}
+
+func GET_MSG_USER_config_get_result() *MSG_USER_config_get_result {
+	return pool_MSG_USER_config_get_result.Get().(*MSG_USER_config_get_result)
+}
+
+func (data *MSG_USER_config_get_result) cmd() int32 {
+	return CMD_MSG_USER_config_get_result
+}
+
+func (data *MSG_USER_config_get_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_config_get_result()))
+}
+
+func (data *MSG_USER_config_get_result) Put() {
+	data.Config = nil
+	pool_MSG_USER_config_get_result.Put(data)
+}
+func (data *MSG_USER_config_get_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_config_get_result,buf)
+	WRITE_MSG_USER_config_get_result(data, buf)
+}
+
+func WRITE_MSG_USER_config_get_result(data *MSG_USER_config_get_result, buf *libraries.MsgBuffer) {
+	WRITE_map(data.Config,buf)
+}
+
+func READ_MSG_USER_config_get_result(buf *libraries.MsgBuffer) *MSG_USER_config_get_result {
+	data := pool_MSG_USER_config_get_result.Get().(*MSG_USER_config_get_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_config_get_result) read(buf *libraries.MsgBuffer) {
+	READ_map(&data.Config,buf)
+
+}
+
+type MSG_USER_config_savelist struct {
+	List []*MSG_USER_config_save
+}
+
+var pool_MSG_USER_config_savelist = sync.Pool{New: func() interface{} { return &MSG_USER_config_savelist{} }}
+
+func GET_MSG_USER_config_savelist() *MSG_USER_config_savelist {
+	return pool_MSG_USER_config_savelist.Get().(*MSG_USER_config_savelist)
+}
+
+func (data *MSG_USER_config_savelist) cmd() int32 {
+	return CMD_MSG_USER_config_savelist
+}
+
+func (data *MSG_USER_config_savelist) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_USER_config_savelist()))
+}
+
+func (data *MSG_USER_config_savelist) Put() {
+	data.List = data.List[:0]
+	pool_MSG_USER_config_savelist.Put(data)
+}
+func (data *MSG_USER_config_savelist) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_USER_config_savelist,buf)
+	WRITE_MSG_USER_config_savelist(data, buf)
+}
+
+func WRITE_MSG_USER_config_savelist(data *MSG_USER_config_savelist, buf *libraries.MsgBuffer) {
+	WRITE_int(len(data.List), buf)
+	for _, v := range data.List{
+		WRITE_MSG_USER_config_save(v, buf)
+	}
+}
+
+func READ_MSG_USER_config_savelist(buf *libraries.MsgBuffer) *MSG_USER_config_savelist {
+	data := pool_MSG_USER_config_savelist.Get().(*MSG_USER_config_savelist)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_USER_config_savelist) read(buf *libraries.MsgBuffer) {
+	List_len := READ_int(buf)
+	if List_len>cap(data.List){
+		data.List= make([]*MSG_USER_config_save, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
+	for i := 0; i < List_len; i++ {
+		data.List[i] = READ_MSG_USER_config_save(buf)
 	}
 
 }

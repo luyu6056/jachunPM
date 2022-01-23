@@ -1,0 +1,235 @@
+<style>
+.types-line {display: table; padding: 0; margin: 0 auto;}
+.types-line > li {display: table-cell;}
+.types-line > li > div {position: relative; padding: 18px 5px 5px; text-align: center;}
+.types-line > li > div:before {content: ''; display: block; background: #eee;  width: 100%; height: 2px; position: absolute; left: 50%; top: 4px;}
+.types-line > li:last-child > div:before {display: none;}
+.types-line > li > div:after {content: ''; display: block; background: #FFFFFF; box-shadow: 0 2px 4px 0 rgba(170,170,170,0.50), 0 0 5px 0 rgba(0,0,0,0.1); width: 10px; height: 10px; position: absolute; border-radius: 50%; top: 0; left: 50%; margin-left: -2px;}
+.types-line > li > div > small {display: block; color: #A6AAB8;}
+.types-line > li > div > span {display: block; color: #CBD0DB; font-size: 16px;}
+.product-info {position: relative; height: 65px;}
+.product-info + .product-info {margin-top: 10px;}
+.product-info .progress {position: absolute; left: 10px; top: 35px; right: 90px;}
+.product-info .progress-info {position: absolute; left: 8px; top: 10px; width: 180px; font-size: 12px;}
+.product-info .type-info {color: #A6AAB8; text-align: center; position: absolute; right: 0; top: 6px; width: 100px;}
+html[lang="en"] .product-info .type-info {color: #A6AAB8; text-align: center; position: absolute; right: 0; top: 6px; width: 130px;}
+.product-info .type-value,
+.product-info .type-label {font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+.product-info .type-value {font-size: 14px;}
+.product-info .type-value > strong {font-size: 20px; color: #3C4353;}
+.product-info .actions {position: absolute; left: 10px; top: 14px;}
+.block-statistic .panel-body {padding-top: 0}
+.block-statistic .panel-body {padding-top: 0}
+.block-statistic .tile {margin-bottom: 30px;}
+.block-statistic .tile-title {font-size: 18px; color: #A6AAB8;}
+.block-statistic .tile-amount {font-size: 48px; margin-bottom: 10px;}
+.block-statistic .col-nav {border-right: 1px solid #EBF2FB; width: 260px; padding: 0;}
+.block-statistic .nav-secondary > li {position: relative}
+.block-statistic .nav-secondary > li:hover {background: #f5f5f5;}
+.block-statistic .nav-secondary > li > a {font-size: 14px; color: #838A9D; position: relative; box-shadow: none; padding-left: 20px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; transition: all .2s;}
+.block-statistic .nav-secondary > li > a:first-child {padding-right: 36px;}
+.block-statistic .nav-secondary > li.active > a:first-child {color: #3C4353; background: transparent; box-shadow: none;}
+.block-statistic .nav-secondary > li.active > a:first-child:hover,
+.block-statistic .nav-secondary > li.active > a:first-child:focus,
+.block-statistic .nav-secondary > li > a:first-child:hover {box-shadow: none; border-radius: 4px 0 0 4px;}
+.block-statistic .nav-secondary > li.active > a:first-child:before {content: ' '; display: block; left: -1px; top: 10px; bottom: 10px; width: 4px; background: #006af1; position: absolute;}
+.block-statistic .nav-secondary > li > a.btn-view {position: absolute; top: 0; right: 0; bottom: 0; padding: 8px; width: 36px; text-align: center; opacity: 0; background: rgba(0,0,0,.05)}
+.block-statistic .nav-secondary > li.active > a.btn-view {box-shadow: none}
+.block-statistic .nav-secondary > li:hover > a.btn-view {opacity: 1}
+.block-statistic .nav-secondary > li.switch-icon {display: none;}
+.block-statistic.block-sm .panel-body {padding-bottom: 10px; position: relative; padding-top: 45px;}
+.block-statistic.block-sm .panel-body > .table-row,
+.block-statistic.block-sm .panel-body > .table-row > .col {display: block; width: auto;}
+.block-statistic.block-sm .panel-body > .table-row > .tab-content {padding: 0; margin: 0 -5px;}
+.block-statistic.block-sm .tab-pane > .table-row > .col-5 {width: 125px;}
+.block-statistic.block-sm .tab-pane > .table-row > .col-5 > .table-row {padding: 5px 0;}
+.block-statistic.block-sm .col-nav {border-left: none; position: absolute; top: 0; left: 15px; right: 15px; background: #f5f5f5; border-radius: 3px;}
+.block-statistic.block-sm .nav-secondary {display: table; width: 100%; padding: 0; table-layout: fixed;}
+.block-statistic.block-sm .nav-secondary > li {display: none}
+.block-statistic.block-sm .nav-secondary > li.switch-icon,
+.block-statistic.block-sm .nav-secondary > li.active {display: table-cell; width: 100%; text-align: center;}
+.block-statistic.block-sm .nav-secondary > li.active > a:hover {cursor: default; background: none;}
+.block-statistic.block-sm .nav-secondary > li.switch-icon > a:hover {background: rgba(0,0,0,0.07);}
+.block-statistic.block-sm .nav-secondary > li > a {padding: 5px 10px; border-radius: 4px;}
+.block-statistic.block-sm .nav-secondary > li > a:before {display: none;}
+.block-statistic.block-sm .nav-secondary > li.switch-icon {width: 40px;}
+.block-statistic.block-sm .types-line > li > div {padding: 18px 2px 5px;}
+.block-statistic.block-sm .nav-secondary > li.active > a:first-child:before {display: none}
+.block-statistic.block-sm .nav-secondary > li.active > a.btn-view {width: auto; left: 0; right: 0;}
+.block-statistic.block-sm .nav-secondary > li.active > a.btn-view > i {display: none;}
+.block-statistic.block-sm .nav-secondary > li.active > a.btn-view:hover {cursor: pointer; background: rgba(0,0,0,.1)}
+
+.status-count{margin:auto}
+.status-count tr:first-child td:last-child{color:#000;font-weight:bold}
+</style>
+<script>
+{{$blockNavId := (strAdd "nav-"  uniqid)}}
+$(function()
+{
+    var $nav = $('#{{$blockNavId}}');
+    $nav.on('click', '.switch-icon', function(e)
+    {
+        var isPrev = $(this).is('.prev');
+        var $activeItem = $nav.children('.active');
+        var $next = $activeItem[isPrev ? 'prev' : 'next']('li:not(.switch-icon)');
+        if ($next.length) $next.find('a').trigger('click');
+        else $nav.children('li:not(.switch-icon)')[isPrev ? 'last' : 'first']().find('a').trigger('click');
+        e.preventDefault();
+    });
+});
+</script>
+<div class="panel-body">
+  <div class="table-row">
+    {{if eq (len $.Data.products) 0}}
+    <div class="table-empty-tip">
+      <p><span class="text-muted">{{.Lang.block.noData}}</span></p>
+    </div>
+    {{else}}
+    <div class="col col-nav">
+      <ul class="nav nav-stacked nav-secondary scrollbar-hover" id='{{$blockNavId}}'>
+        <li class='switch-icon prev'><a><i class='icon icon-arrow-left'></i></a></li>
+        {{range $k,$product := $.Data.products}}
+        <li {{if eq $k 0}}class='active'{{end}} productID='{{$product.Id}}'>
+          <a href="javascript:;" data-target="#tab{{$product.Code}}" data-toggle="tab" title='{{$product.Name}}'>{{$product.Name}}</a>
+          {{html_a (helper_createLink "product" "browse"  "productID=" $product.Id)  "<i class='icon-arrow-right text-primary'></i>" "" (strAdd "class='btn-view' title='" $.Lang.product.browse "'")}}</li>
+        {{end}}
+        <li class='switch-icon next'><a><i class='icon icon-arrow-right'></i></a></li>
+      </ul>
+    </div>
+    <div class="col tab-content">
+      {{range $k,$product := $.Data.products}}
+      <div class="tab-pane fade {{if eq $k 0}}active{{end}} in" id="tab{{$product.Code}}">
+        <div class="table-row">
+          <div class="col-6 text-middle">
+            <div class="tile">
+              <div class="tile-title">{{$.Lang.story.total}}</div>
+              {{- $storys := getValue $.Data.stories $product.Id}}
+              {{- if $storys}}
+              <div class="tile-amount">{{len $storys}}</div>
+              {{common_printLink $ "product" "browse"  (strAdd "productID=" $product.Id)  (strAdd $.Lang.story.viewAll "<span class='label label-badge label-icon'><i class='icon icon-arrow-right'></i></span>") "" "class='btn btn-primary btn-circle btn-icon-right btn-sm'"}}
+              {{else}}
+              <div class="tile-amount">0</div>
+              {{common_printLink $ "story" "create"  (strAdd "productID=" $product.Id) (strAdd "<span class='label label-badge label-icon'><i class='icon icon-plus'></i></span>" $.Lang.story.create) "" "class='btn btn-primary btn-circle btn-icon-left btn-sm'"}}
+              {{end}}
+            </div>
+            <ul class="types-line">
+              {{range $stage := $.Config.statistic.storyStages}}
+              <li>
+                <div>
+                  <small>{{getValue $.Lang.story.stageList $stage}}</small>
+                  <span>{{or (and $storys (getValue $storys $stage)) "0"}}</span>
+                </div>
+              </li>
+              {{end}}
+            </ul>
+          </div>
+          {{if $storys}}
+          <div class="col-6">
+            <div class="product-info">
+              {{- $plans := getValue $.Data.plans $product.Id}}
+              {{- $totalPlan     := $plans.totalPlan}}
+              {{- $unexpiredPlan := $plans.unexpired}}
+              {{- $unexpiredRate := $plans.unexpiredRate}}
+              {{if $totalPlan}}
+              <div class="progress-info"></div>
+              <div class="progress">
+                <div class="progress-bar" role="progressbar" aria-valuenow="{{$unexpiredRate}}" aria-valuemin="0" aria-valuemax="100" style="width: {{$unexpiredRate}}%"></div>
+              </div>
+              {{else}}
+              <div class="actions">
+                {{common_printLink $ "productplan" "create"  (strAdd "productID=" $product.Id)  (strAdd "<i class='icon icon-plus'></i>" $.Lang.productplan.create) "" "class='btn btn-info'"}}
+              </div>
+              {{end}}
+              <div class="type-info">
+                <div class="type-label">
+                  <table class='status-count'>
+                    <tr>
+                      <td class='text-right'>{{$.Lang.productplan.all}} :</td>
+                      <td class='text-left'>{{$totalPlan}}</td>
+                    </tr>
+                    <tr>
+                      <td class='text-right'>{{$.Lang.productplan.featureBar.browse.unexpired}} :</td>
+                      <td class='text-left'>{{$unexpiredPlan}}</td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="product-info">
+              {{- $projects := getValue $.Data.projects $product.Id}}
+              {{- $totalProject := $projects.all}}
+              {{- $doingProject := $projects.doing}}
+              {{- $delayProject := $projects.delay}}
+              {{- $doingRate    := $projects.doingRate}}
+              {{if $totalProject}}
+              <div class="progress-info">
+                {{if $delayProject}}
+                <i class="icon icon-exclamation-sign text-danger icon-sm"></i> <span class="text-muted">{{$.Lang.project.delayed}}</span> <strong>{{$delayProject}}</strong>
+                {{end}}
+              </div>
+              <div class="progress">
+                <div class="progress-bar" role="progressbar" aria-valuenow="{{$doingRate}}" aria-valuemin="0" aria-valuemax="100" style="width: {{$doingRate}}%"></div>
+              </div>
+              {{else}}
+              <div class="actions">
+                {{common_printLink $ "project" "create" ""  (strAdd "<i class='icon icon-plus'></i>" $.Lang.project.create) "" "class='btn btn-info'"}}
+              </div>
+              {{end}}
+              <div class="type-info">
+                <div class="type-label">
+                  <table class='status-count'>
+                    <tr>
+                      <td class='text-right'>{{$.Lang.project.allProjects}} :</td>
+                      <td class='text-left'>{{$totalProject}}</td>
+                    </tr>
+                    <tr>
+                      <td class='text-right'>{{getValue $.Lang.project.statusList "doing"}} :</td>
+                      <td class='text-left'>{{$doingProject}}</td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="product-info">
+              {{- $releases := getValue $.Data.releases $product.Id}}
+              {{- $totalRelease  := $releases.totalRelease}}
+              {{- $normalRelease := $releases.normal}}
+              {{- $normalRate    := $releases.normalRate}}
+              {{if $totalRelease}}
+              <div class="progress-info">
+                {{if getValue $.Data.lastReleases $product.Id}}
+                <i class="icon icon-check-circle text-success icon-sm"></i> <span class="text-muted">{{$.Lang.release.yesterday}}</span> <strong>{{getValue $.Data.lastReleases $product.Id}}</strong>
+                {{end}}
+              </div>
+              <div class="progress">
+                <div class="progress-bar" role="progressbar" aria-valuenow="{{$normalRate}}" aria-valuemin="0" aria-valuemax="100" style="width: {{$normalRate}}%"></div>
+              </div>
+              {{else}}
+              <div class="actions">
+                {{common_printLink $ "release" "create"  (strAdd "productID=" $product.Id)  (strAdd "<i class='icon icon-plus'></i>" $.Lang.release.create) "" "class='btn btn-info'"}}
+              </div>
+              {{end}}
+              <div class="type-info">
+                <div class="type-label">
+                  <table class='status-count'>
+                    <tr>
+                      <td class='text-right'>{{$.Lang.product.allRelease}} :</td>
+                      <td class='text-left'>{{$totalRelease}}</td>
+                    </tr>
+                    <tr>
+                      <td class='text-right'>{{$.Lang.product.maintain}} :</td>
+                      <td class='text-left'>{{$normalRelease}}</td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          {{end}}
+        </div>
+      </div>
+      {{end}}
+    </div>
+    {{end}}
+  </div>
+</div>

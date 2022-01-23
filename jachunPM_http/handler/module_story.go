@@ -19,6 +19,7 @@ func init() {
 	httpHandlerMap["POST"]["/story/create"] = post_story_create
 	httpHandlerMap["GET"]["/story/view"] = get_story_view
 	httpHandlerMap["GET"]["/story/ajaxGetProjectStories"] = get_story_ajaxGetProjectStories
+
 }
 func get_story_create(data *TemplateData) (err error) {
 	/*var fromObjectIDKey,fromObjectID,fromObjectName,fromObjectAction string
@@ -787,4 +788,23 @@ func get_story_ajaxGetProjectStories(data *TemplateData) (err error) {
 	}
 	data.ws.WriteString(html_select(storyName, stories, data.ws.Query("storyID"), "class=form-control onchange=setStoryRelated("+data.ws.Query("number")+");"))
 	return
+}
+func story_getUserStories(data *TemplateData, uid int32, typ, orderby string, page *TempLatePage) ([]map[string]string, error) {
+	out := protocol.GET_MSG_PROJECT_product_getStoriesMapBySql()
+	out.PerPage = page.PerPage
+	out.Total = page.Total
+	out.Page = page.Page
+	out.Order = orderby
+	out.Field = "*"
+	out.Where = map[string]interface{}{"Deleted": false}
+	if typ != "all" {
+		out.Where[typ] = uid
+	}
+	var result *protocol.MSG_PROJECT_product_getStoriesMapBySql_result
+	if err := data.SendMsgWaitResultToDefault(out, &result); err != nil {
+		return nil, err
+	}
+	page.Total = result.Total
+	out.Put()
+	return result.List, nil
 }

@@ -14,6 +14,7 @@ var Config struct {
 }
 
 func init() {
+
 	data, err := ioutil.ReadFile("./config.json")
 	if err != nil {
 		log.Fatalf("无法读取配置文件config.json,错误%v", err)

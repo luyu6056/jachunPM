@@ -87,7 +87,7 @@ func get_productplan_create(data *TemplateData) (err error) {
 		return
 	}
 	if len(result.Result) > 0 {
-		t, err := time.Parse("2006-01-02", result.Result["End"])
+		t, err := time.ParseInLocation("2006-01-02", result.Result["End"], time.Local)
 		if err != nil {
 			return err
 		}
@@ -163,8 +163,8 @@ func post_productplan_create(data *TemplateData) (e error) {
 	insert.Id = int32(id)
 	insert.Title = data.ws.Post("title")
 	insert.Desc = data.ws.Post("desc")
-	insert.Begin, _ = time.Parse(protocol.TIMEFORMAT_MYSQLDATE, begin)
-	insert.End, _ = time.Parse(protocol.TIMEFORMAT_MYSQLDATE, end)
+	insert.Begin, _ = time.ParseInLocation(protocol.TIMEFORMAT_MYSQLDATE, begin, time.Local)
+	insert.End, _ = time.ParseInLocation(protocol.TIMEFORMAT_MYSQLDATE, end, time.Local)
 	if insert.Begin.Unix() > insert.End.Unix() {
 		data.ajaxResult(false, map[string]string{"begin": data.Lang["productplan"]["error"].(map[string]string)["beginGeEnd"]})
 		return

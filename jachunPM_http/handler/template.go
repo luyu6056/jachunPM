@@ -72,6 +72,7 @@ func loadTemplateFuncs() {
 	taskTemplateFuncs()
 	groupTemplateFuncs()
 	blockTemplateFuncs()
+	attendTemplateFuncs()
 	global_t.Funcs(global_Funcs)
 	copyConfig()
 }
@@ -240,6 +241,22 @@ func templateDataInit(ws HttpRequest, user *protocol.MSG_USER_INFO_cache) (data 
 				data.Config[module] = make(map[string]map[string]interface{})
 			}
 			for section, vv := range v {
+				if data.Config[module][section] == nil {
+					data.Config[module][section] = make(map[string]interface{})
+				}
+				for key, value := range vv {
+					data.Config[module][section][key] = value
+				}
+			}
+		}
+	}
+	if systemConfig := custom_getSystemConfig(); systemConfig != nil {
+		for module, v := range systemConfig {
+			if data.Config[module] == nil {
+				data.Config[module] = make(map[string]map[string]interface{})
+			}
+			for section, vv := range v {
+
 				if data.Config[module][section] == nil {
 					data.Config[module][section] = make(map[string]interface{})
 				}
@@ -467,6 +484,8 @@ func (data *TemplateData) getCacheProjectById(id int32) *protocol.MSG_PROJECT_pr
 	data.Data["project_cache_"+strconv.Itoa(int(id))] = project
 	return project
 }
+
+//执行了BeginTransaction后，data的send消息自动都带上事务
 func (data *TemplateData) BeginTransaction() (session *protocol.MsgDBTransaction, err error) {
 	return data.Msg.BeginTransaction()
 }

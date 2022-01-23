@@ -81,7 +81,6 @@ func get_company_browse(data *TemplateData) (err error) {
 	return
 }
 func getCompanyInfo() protocol.MSG_USER_Company_cache {
-
 	return companyCache
 }
 func get_company_updateCache(data *TemplateData) error {

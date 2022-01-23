@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"libraries"
 	"protocol"
 	"reflect"
@@ -13,6 +14,7 @@ func init() {
 	httpHandlerMap["GET"]["/group/manageView"] = get_group_manageView
 	httpHandlerMap["POST"]["/group/manageView"] = post_group_manageView
 	httpHandlerMap["GET"]["/group/managePriv"] = get_group_managePriv
+	httpHandlerMap["POST"]["/group/managePriv"] = post_group_managePriv
 }
 func groupTemplateFuncs() {
 	global_Funcs["MSG_USER_Group_cache_isClickable"] = func(data *TemplateData, obj interface{}, action string) bool {
@@ -121,6 +123,9 @@ func get_group_manageView(data *TemplateData) (err error) {
 	if err != nil {
 		return
 	}
+	if group == nil {
+		return errors.New(data.Lang["group"]["error"].(map[string]string)["GroupNotFound"])
+	}
 	data.Data["title"] = data.Lang["company"]["common"].(string) + data.Lang["common"]["colon"].(string) + group.Name + data.Lang["common"]["colon"].(string) + data.Lang["group"]["manageView"].(string)
 	data.Data["group"] = group
 	if products, err := product_getAll(data); err != nil {
@@ -167,6 +172,9 @@ func post_group_manageView(data *TemplateData) (err error) {
 	if err != nil {
 		return
 	}
+	if group == nil {
+		return errors.New(data.Lang["group"]["error"].(map[string]string)["GroupNotFound"])
+	}
 	group.Acl = group.Acl[:0]
 	group.AclProjects = group.AclProjects[:0]
 	group.AclProducts = group.AclProducts[:0]
@@ -208,6 +216,9 @@ func get_group_managePriv(data *TemplateData) (err error) {
 		if err != nil {
 			return err
 		}
+		if group == nil {
+			return errors.New(data.Lang["group"]["error"].(map[string]string)["GroupNotFound"])
+		}
 		var commonMenu []protocol.HtmlKeyValueStr
 		for _, menu := range data.Lang["common"]["menu"].([]protocol.HtmlMenu) {
 			name := ""
@@ -216,6 +227,7 @@ func get_group_managePriv(data *TemplateData) (err error) {
 					name = v[:i]
 				}
 			}
+
 			commonMenu = append(commonMenu, protocol.HtmlKeyValueStr{menu.Key, name})
 		}
 		var resource []protocol.HtmlKeyValueInterface
@@ -281,4 +293,46 @@ func group_checkModule(data *TemplateData, menu, moduleName string) bool {
 		}
 	}
 	return true
+}
+func post_group_managePriv(data *TemplateData) (err error) {
+	typ := data.ws.Query("type")
+	groupID, _ := strconv.Atoi(data.ws.Query("param"))
+	data.Data["type"] = typ
+
+	if typ == "byGroup" {
+		group, err := group_getById(data, int32(groupID))
+		if err != nil {
+			data.ajaxResult(false, err.Error())
+			return nil
+		}
+		if group == nil {
+			data.ajaxResult(false, data.Lang["group"]["error"].(map[string]string)["GroupNotFound"])
+			return nil
+		}
+
+		for _, moduleName := range data.Lang["common"]["moduleOrder"].([]string) {
+			if _, ok := data.Lang["resource"][moduleName].([]protocol.HtmlKeyValueStr); ok {
+				delete(group.Priv, moduleName)
+			}
+		}
+		for module, list := range data.ws.GetAllPost() {
+			for _, method := range list {
+				if group.Priv[module] == nil {
+					group.Priv[module] = make(map[string]bool)
+				}
+				//libraries.DebugLog("%s,%s", module, method)
+				group.Priv[module][method] = true
+			}
+		}
+		update := protocol.GET_MSG_USER_group_update()
+		update.Update = group
+		if err = data.SendMsgWaitResultToDefault(update, nil); err != nil {
+			data.ajaxResult(false, err.Error())
+			return nil
+		}
+	} else if typ == "byModule" {
+		return errors.New("byModule未处理")
+	}
+	data.ajaxResult(true, data.Lang["common"]["saveSuccess"], createLink("group", "browse", nil))
+	return nil
 }

@@ -1,0 +1,125 @@
+{{template "header.html" .}}
+  <style>
+  #menuActions{float:right !important; margin-top: -60px !important;}
+  .input-group-required > .required::after, .required-wrapper.required::after {top:12px !important;}
+  .modal-body .table {margin-bottom:0px !important;}
+  </style>
+  {{.Data.featurebar}}
+<div id='menuActions'>
+  {{common_printLink $ "attend" "export" (strAdd "date=" $.Data.currentYear "-" $.Data.currentMonth "&company=" $.Data.company) .Lang.attend.export "" "class='iframe btn btn-primary'"}}
+</div>
+<div class='with-side'>
+  <div class='side'>
+    <div class='panel panel-sm'>
+      <div class='panel-body'>
+        <ul class='tree' data-ride='tree' data-collapsed='true'>
+          {{- range $year := $.Data.yearList}}
+          <li{{if eq $year.Year $.Data.currentYear}} class='active'{{end}}>
+            {{- common_printLink $ "attend" (or (and $.Data.company "company") "department") (strAdd "date=" $year.Year) $year.Year}}
+            <ul>
+              {{- range $month := $year.MonthList}}
+              <li{{if eq $month (strAdd $.Data.currentYear "-" $.Data.currentMonth)}} class='active'{{end}}>
+                {{common_printLink $ "attend" (or (and $.Data.company "company") "department") (strAdd "date=" $month) $month}}
+              </li>
+              {{- end}}
+            </ul>
+          </li>
+          {{- end}}
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class='main'>
+    <div class='panel-heading text-center'>
+      {{$title := $.Data.currentYear}}
+      {{if ne .App.clientLang "en"}}{{$title = (strAdd $title .Lang.common.year)}}{{end}}
+      {{$title = (strAdd $title $.Data.currentMonth)}}
+      {{if ne .App.clientLang "en"}}{{$title = (strAdd $title .Lang.common.month)}}{{end}}
+      <strong>{{$title}}{{.Lang.attend.report}}</strong>
+    </div>
+    <table class='table table-data table-bordered text-center table-fixed'>
+      <thead>
+        <tr class='text-center'>
+          <th rowspan='2' class='w-80px text-middle'>{{.Lang.attend.realname}}</th>
+          <th rowspan='2' class='w-80px text-middle'>{{.Lang.attend.dept}}</th>
+          <th rowspan='2' class='w-80px text-middle'>{{.Lang.attend.role}}</th>
+          <th rowspan='2' class='w-80px text-middle'>{{.Lang.attend.attendanceDays}}</th>
+          <th rowspan='2' class='w-100px text-middle'>{{.Lang.attend.workmin}}</th>
+          <th rowspan='2' class='w-60px'>{{getValue .Lang.attend.statusList "late"}}</th>
+          <th rowspan='2' class='w-100px text-middle'>{{.Lang.attend.lateMin}}</th>
+          <th rowspan='2' class='w-60px'>{{getValue .Lang.attend.statusList "early"}}</th>
+          <th rowspan='2' class='w-100px text-middle'>{{.Lang.attend.earlyMin}}</th>
+          <th rowspan='2' class='w-100px text-middle'>{{.Lang.attend.notSignIn}}</th>
+          <th rowspan='2' class='w-100px text-middle'>{{.Lang.attend.notSignOut}}</th>
+          <th rowspan='2' class='w-60px'>{{getValue .Lang.attend.statusList "absent"}}</th>
+          <th rowspan='2' class='w-60px'>{{.Lang.attend.trip}}</th>
+          <th rowspan='2' class='w-60px'>{{.Lang.attend.egress}}</th>
+          <th colspan='2' class='w-100px text-middle'>{{.Lang.attend.leave}}</th>
+          <th colspan='2' class='w-100px text-middle'>{{.Lang.overtime.common}}</th>
+          {{range $day := .Data.dayList}}
+          <th class='w-150px'>{{$day.Key}}</th>
+          {{end}}
+        </tr>
+        <tr class='text-center'>
+          <th>{{getValue .Lang.leave.typeList "sick"}}</th>
+          <th>{{getValue .Lang.leave.typeList "affairs"}}</th>
+          <th>{{getValue .Lang.overtime.typeList "rest"}}</th>
+          <th>{{getValue .Lang.overtime.typeList "holiday"}}</th>
+          {{- range $week := $.Data.weekDaylist}}
+          <th>{{$week}}</th>
+          {{- end}}
+        </tr>
+      </thead>
+      {{- range $dept , $deptstats := $.Data.statDept}}
+        {{- range $user :=$.Data.users}}
+        {{- $stat := getValue $deptstats $user.Id}}
+        {{if $stat}}
+        <tr>
+          <td class='text-middle'>{{$user.Realname}}</td>
+          <td  class='text-middle'>{{or (and $user.Dept (getValue $.Data.deptList $user.Dept)) ""}}</td>
+          <td class="w-90px" title='{{getValue $.Lang.user.roleList $user.Role}}'>{{getValue $.Lang.user.roleList $user.Role}}</td>
+          <td  class='text-middle'>{{$stat.Actual}}</td>
+          <td  class='text-middle'>{{$stat.Workmin}}</td>
+          <td  class='text-middle'>{{$stat.Late}}</td>
+          <td  class='text-middle'>{{$stat.LateMin}}</td>
+          <td  class='text-middle'>{{$stat.Early}}</td>
+          <td  class='text-middle'>{{$stat.EarlyMin}}</td>
+          <td  class='text-middle'>{{$stat.NotSignIn}}</td>
+          <td  class='text-middle'>{{$stat.NotSignOut}}</td>
+          <td  class='text-middle'>{{$stat.Absent}}</td>
+          <td  class='text-middle'>{{$stat.Trip}}</td>
+          <td  class='text-middle'>{{$stat.Egress}}</td>
+          <td  class='text-middle'>{{$stat.SickLeave}}</td>
+          <td  class='text-middle'>{{$stat.AffairsLeave}}</td>
+          <td  class='text-middle'>{{$stat.RestOvertime}}</td>
+          <td  class='text-middle'>{{$stat.HolidayOvertime}}</td>
+          {{- range $day := $.Data.dayList}}
+            {{- $attend := attend_getStatInfoAttend $stat $day.Value}}{{$title := ""}}
+            {{- if gt (len $attend.HoursList) 0}}
+                {{- range $status,$hours := $attend.HoursList }}
+                    {{- $title = (strAdd $title (getValue $.Lang.attend.statusList $status) $hours "\r\n")}}
+                {{- end}}
+            {{- else}}
+                {{- $title = getValue $.Lang.attend.statusList $attend.Status}}
+            {{- end}}
+            <td class='attend-status attend-{{$attend.Status}}' title='{{$title}}'>
+              {{- if $attend.SignIn}}
+                {{$.Lang.attend.signIn}}:{{$attend.SignIn}}{{if gt $attend.LateMin 0}}({{getValue $.Lang.attend.statusList "late"}}{{$attend.LateMin}}{{$.Lang.attend.m}}){{end}}<br>
+              {{- end}}
+              {{- if $attend.SignOut}}
+                {{$.Lang.attend.signOut}}:{{$attend.SignOut}}{{if gt $attend.EarlyMin 0}}({{getValue $.Lang.attend.statusList "early"}}{{$attend.EarlyMin}}{{$.Lang.attend.m}}){{end}}<br>
+              {{- end}}
+              {{- if gt (strpos "late,early,both,absent,halfAbsent,allAbsent" $attend.Status) -1}}
+                {{getValue $.Lang.attend.statusList $attend.Status}}<br>
+              {{- end}}
+              {{attend_printAttendExtDesc $ $stat $day.Value}}
+            </td>
+          {{end}}
+        </tr>
+        {{end}}
+        {{end}}
+      {{end}}
+    </table>
+  </div>
+</div>
+{{template "footer.html" .}}

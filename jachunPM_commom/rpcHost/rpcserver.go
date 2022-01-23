@@ -57,7 +57,6 @@ func init() {
 		outChan:           rpcServerOutChan[protocol.HostServerNo],
 		startTime:         0,
 		busyTime:          0,
-		ErrNum:            0,
 		Ip:                "",
 		pongTime:          0,
 		status:            0,
@@ -88,8 +87,8 @@ type RpcServer struct {
 	setStatusOpenChan   chan string
 	closeChan           chan int
 	outChan             chan *libraries.MsgBuffer //指定本服务接收的消息
-	startTime, busyTime int64                     //时间统计
-	ErrNum              uint32
+	inChan              chan *protocol.Msg
+	startTime, busyTime int64 //时间统计
 	Ip                  string
 	pongTime            int64
 	status              int
@@ -100,7 +99,7 @@ type RpcServer struct {
 }
 
 func NewRpcServer(c gnet.Conn) *RpcServer {
-	s := &RpcServer{ServerConn: c, Id: -1}
+	s := &RpcServer{ServerConn: c, Id: -1, inChan: make(chan *protocol.Msg, 65535)}
 	return s
 }
 func (svr *RpcServer) SendMsg(msg *protocol.Msg, remote uint16, out protocol.MSG_DATA) {
@@ -114,7 +113,7 @@ func (svr *RpcServer) Start(no uint8, ipport string, window int32, in *protocol.
 	svr.Ip = ipport
 	svr.zstdDecodeBuf1 = &libraries.MsgBuffer{}
 	svr.zstdDecodeBuf2 = &libraries.MsgBuffer{}
-	svr.zstdDecoder, _ = zstd.NewReader(svr.zstdDecodeBuf1)
+	svr.zstdDecoder, _ = zstd.NewReader(svr.zstdDecodeBuf1,zstd.WithDecoderDicts(protocol.ZstdDict))
 	svr.outChan = make(chan *libraries.MsgBuffer, protocol.Rpcmsgnum)
 	svr.closeChan = make(chan int, 1)
 	svr.setStatusOpenChan = make(chan string)
@@ -214,13 +213,13 @@ func (svr *RpcServer) handlerMsgOut(outChan chan *libraries.MsgBuffer) {
 		//busyTime int64 = time.Now().UnixNano()
 		msgNum int
 	)
-	zstdWriter, _ := zstd.NewWriter(zstdbuf,zstd.WithEncoderLevel(zstd.SpeedFastest))
+	zstdWriter, _ := zstd.NewWriter(zstdbuf, zstd.WithEncoderLevel(protocol.ZstdLevel),zstd.WithEncoderDict(protocol.ZstdDict))
 	writeToBuf := func(o *libraries.MsgBuffer) {
 		msglen += o.Len()
 		if compress {
 			zstdWriter.Write(o.Bytes())
 		} else {
-			if msgNum > protocol.CompressMinNum {
+			if msgNum > protocol.CompressMinNum || msglen > protocol.CompressMinLen {
 				compress = true
 				zstdWriter.Reset(zstdbuf)
 				zstdWriter.Write(out.Bytes())
@@ -246,7 +245,7 @@ func (svr *RpcServer) handlerMsgOut(outChan chan *libraries.MsgBuffer) {
 		for i := 0; i < len(c) && i < int(svr.window)-1 && i < protocol.MaxMsgNum; i++ {
 			select {
 			case o1 := <-c:
-				if msglen+o1.Len() > protocol.MaxMsgLen {
+				if msglen+o1.Len() > protocol.MaxOutLen {
 					c <- o1
 					break out
 				}
@@ -269,33 +268,24 @@ func (svr *RpcServer) handlerMsgOut(outChan chan *libraries.MsgBuffer) {
 			//有压缩
 			zstdWriter.Close()
 			msglen = zstdbuf.Len()
-			if msglen > protocol.MaxMsgLen {
-				libraries.ReleaseLog("消息大于最大允许长度,压缩后更长？？？，请检查代码")
+			if msglen > protocol.MaxOutLen {
+				libraries.ReleaseLog("消息大于最大允许长度,压缩后更长？？？")
 				return
 			}
-			b := msgbuf.Make(5 + msglen)
+			b := msgbuf.Make(4 + msglen)
 			b[0] = byte(msglen)
 			b[1] = byte(msglen >> 8)
 			b[2] = byte(msglen >> 16)
-			b[3] = byte(msglen >> 24)
-			b[4] = byte(msgNum) + 1<<7
-			copy(b[5:], zstdbuf.Bytes())
+			b[3] = byte(msglen>>24) + 1<<7
+			copy(b[4:], zstdbuf.Bytes())
 		} else {
 			//无压缩
-			if msglen > protocol.MaxMsgLen {
-				libraries.ReleaseLog("消息大于最大允许长度,前面的限制有错，请重写代码")
-				return
-			}
-			if msglen != out.Len() {
-				libraries.ReleaseLog("msglen计算有误，请检查代码")
-			}
-			b := msgbuf.Make(5 + msglen)
+			b := msgbuf.Make(4 + msglen)
 			b[0] = byte(msglen)
 			b[1] = byte(msglen >> 8)
 			b[2] = byte(msglen >> 16)
 			b[3] = byte(msglen >> 24)
-			b[4] = byte(msgNum)
-			copy(b[5:], out.Bytes())
+			copy(b[4:], out.Bytes())
 		}
 
 		svr.ServerConn.AsyncWrite(msgbuf.Bytes())
@@ -350,10 +340,10 @@ func (svr *RpcServer) handlerMsgOut(outChan chan *libraries.MsgBuffer) {
 }
 func (svr *RpcServer) Decompress(in []byte) (out []byte) {
 	svr.zstdDecodeBuf2.Reset()
-	svr.zstdDecodeBuf2.WriteByte(in[0] - 128)
 	svr.zstdDecodeBuf1.Reset()
-	svr.zstdDecodeBuf1.Write(in[1:])
+	svr.zstdDecodeBuf1.Write(in)
 	svr.zstdDecoder.Reset(svr.zstdDecodeBuf1)
 	io.Copy(svr.zstdDecodeBuf2, svr.zstdDecoder)
+	//libraries.DebugLog("解压前%d,解压后%d,压缩率%d",len(in),svr.zstdDecodeBuf2.Len(),len(in)*100/svr.zstdDecodeBuf2.Len())
 	return svr.zstdDecodeBuf2.Bytes()
 }

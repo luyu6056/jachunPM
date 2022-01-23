@@ -213,7 +213,7 @@ func (data *TemplateData) ajaxCheckPost() bool {
 								}
 
 							case checkTypeDate:
-								_, err := time.Parse(protocol.TIMEFORMAT_MYSQLDATE, v)
+								_, err := time.ParseInLocation(protocol.TIMEFORMAT_MYSQLDATE, v, time.Local)
 								if err != nil {
 									return key, data.Lang["error"]["checkTypeDate"].(string)
 								}

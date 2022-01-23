@@ -3,6 +3,7 @@ package protocol
 import (
 	"sync"
 	"libraries"
+	"unsafe"
 	"time"
 )
 
@@ -49,6 +50,10 @@ func (data *MSG_LOG_Action) cmd() int32 {
 	return CMD_MSG_LOG_Action
 }
 
+func (data *MSG_LOG_Action) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_LOG_Action()))
+}
+
 func (data *MSG_LOG_Action) Put() {
 	data.Id = 0
 	data.ObjectType = ``
@@ -62,9 +67,6 @@ func (data *MSG_LOG_Action) Put() {
 	data.Comment = ``
 	data.Extra = ``
 	data.Read = false
-	for _,v := range data.Historys {
-		v.Put()
-	}
 	data.Historys = data.Historys[:0]
 	data.AppendLink = ``
 	pool_MSG_LOG_Action.Put(data)
@@ -144,6 +146,10 @@ func (data *MSG_LOG_History) cmd() int32 {
 	return CMD_MSG_LOG_History
 }
 
+func (data *MSG_LOG_History) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_LOG_History()))
+}
+
 func (data *MSG_LOG_History) Put() {
 	data.Field = ``
 	data.Old = ``
@@ -199,6 +205,10 @@ func GET_MSG_LOG_Action_Create() *MSG_LOG_Action_Create {
 
 func (data *MSG_LOG_Action_Create) cmd() int32 {
 	return CMD_MSG_LOG_Action_Create
+}
+
+func (data *MSG_LOG_Action_Create) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_LOG_Action_Create()))
 }
 
 func (data *MSG_LOG_Action_Create) Put() {
@@ -271,6 +281,10 @@ func (data *MSG_LOG_Action_Create_result) cmd() int32 {
 	return CMD_MSG_LOG_Action_Create_result
 }
 
+func (data *MSG_LOG_Action_Create_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_LOG_Action_Create_result()))
+}
+
 func (data *MSG_LOG_Action_Create_result) Put() {
 	data.ActionId = 0
 	pool_MSG_LOG_Action_Create_result.Put(data)
@@ -309,6 +323,10 @@ func GET_MSG_LOG_Action_GetByWhereMap() *MSG_LOG_Action_GetByWhereMap {
 
 func (data *MSG_LOG_Action_GetByWhereMap) cmd() int32 {
 	return CMD_MSG_LOG_Action_GetByWhereMap
+}
+
+func (data *MSG_LOG_Action_GetByWhereMap) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_LOG_Action_GetByWhereMap()))
 }
 
 func (data *MSG_LOG_Action_GetByWhereMap) Put() {
@@ -355,6 +373,10 @@ func (data *MSG_LOG_Action_GetByID) cmd() int32 {
 	return CMD_MSG_LOG_Action_GetByID
 }
 
+func (data *MSG_LOG_Action_GetByID) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_LOG_Action_GetByID()))
+}
+
 func (data *MSG_LOG_Action_GetByID) Put() {
 	data.Id = 0
 	pool_MSG_LOG_Action_GetByID.Put(data)
@@ -391,6 +413,10 @@ func GET_MSG_LOG_Action_GetByID_result() *MSG_LOG_Action_GetByID_result {
 
 func (data *MSG_LOG_Action_GetByID_result) cmd() int32 {
 	return CMD_MSG_LOG_Action_GetByID_result
+}
+
+func (data *MSG_LOG_Action_GetByID_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_LOG_Action_GetByID_result()))
 }
 
 func (data *MSG_LOG_Action_GetByID_result) Put() {
@@ -444,10 +470,11 @@ func (data *MSG_LOG_Action_GetByWhereMap_result) cmd() int32 {
 	return CMD_MSG_LOG_Action_GetByWhereMap_result
 }
 
+func (data *MSG_LOG_Action_GetByWhereMap_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_LOG_Action_GetByWhereMap_result()))
+}
+
 func (data *MSG_LOG_Action_GetByWhereMap_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	pool_MSG_LOG_Action_GetByWhereMap_result.Put(data)
 }
@@ -498,6 +525,10 @@ func GET_MSG_LOG_Action_transformActions() *MSG_LOG_Action_transformActions {
 
 func (data *MSG_LOG_Action_transformActions) cmd() int32 {
 	return CMD_MSG_LOG_Action_transformActions
+}
+
+func (data *MSG_LOG_Action_transformActions) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_LOG_Action_transformActions()))
 }
 
 func (data *MSG_LOG_Action_transformActions) Put() {
@@ -551,10 +582,11 @@ func (data *MSG_LOG_Action_transformActions_result) cmd() int32 {
 	return CMD_MSG_LOG_Action_transformActions_result
 }
 
+func (data *MSG_LOG_Action_transformActions_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_LOG_Action_transformActions_result()))
+}
+
 func (data *MSG_LOG_Action_transformActions_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	data.Total = 0
 	pool_MSG_LOG_Action_transformActions_result.Put(data)
@@ -621,6 +653,10 @@ func GET_MSG_LOG_transformActions_info() *MSG_LOG_transformActions_info {
 
 func (data *MSG_LOG_transformActions_info) cmd() int32 {
 	return CMD_MSG_LOG_transformActions_info
+}
+
+func (data *MSG_LOG_transformActions_info) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_LOG_transformActions_info()))
 }
 
 func (data *MSG_LOG_transformActions_info) Put() {
@@ -713,11 +749,12 @@ func (data *MSG_LOG_Action_AddHistory) cmd() int32 {
 	return CMD_MSG_LOG_Action_AddHistory
 }
 
+func (data *MSG_LOG_Action_AddHistory) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_LOG_Action_AddHistory()))
+}
+
 func (data *MSG_LOG_Action_AddHistory) Put() {
 	data.Id = 0
-	for _,v := range data.History {
-		v.Put()
-	}
 	data.History = data.History[:0]
 	pool_MSG_LOG_Action_AddHistory.Put(data)
 }
@@ -767,6 +804,10 @@ func GET_MSG_LOG_Action_set_read() *MSG_LOG_Action_set_read {
 
 func (data *MSG_LOG_Action_set_read) cmd() int32 {
 	return CMD_MSG_LOG_Action_set_read
+}
+
+func (data *MSG_LOG_Action_set_read) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_LOG_Action_set_read()))
 }
 
 func (data *MSG_LOG_Action_set_read) Put() {

@@ -110,8 +110,8 @@ func NewClient(no uint8, hostAddr string, tokenKey string) (*RpcClient, error) {
 	client.sendStruct = &RpclientSend{client}
 	cache.sendStruct = &RpclientSend{cache}
 	client.cache = &RpcCache{Svr: cache.sendStruct}
-	client.decoder, _ = zstd.NewReader(client.decodebuf1)
-	cache.decoder, _ = zstd.NewReader(cache.decodebuf1)
+	client.decoder, _ = zstd.NewReader(client.decodebuf1,zstd.WithDecoderDicts(ZstdDict))
+	cache.decoder, _ = zstd.NewReader(cache.decodebuf1,zstd.WithDecoderDicts(ZstdDict))
 	return client, nil
 }
 func (client *RpcClient) Dial() error {
@@ -149,7 +149,7 @@ func (client *RpcClient) reg() {
 	data.Time = time.Now().Unix()
 	data.Token = libraries.SHA256_S(client.tokenKey + strconv.Itoa(int(data.Time)))
 	data.Window = client.window
-	client.sendStruct.SendMsgToDefault(nil,data)
+	client.sendStruct.SendMsgToDefault(nil, data)
 	data.Put()
 }
 
@@ -172,13 +172,13 @@ func (client *RpcClient) handleWrite() {
 		//busyTime int64 = time.Now().UnixNano()
 		msgNum int
 	)
-	zstdWriter, _ := zstd.NewWriter(zstdbuf,zstd.WithEncoderLevel(zstd.SpeedFastest))
+	zstdWriter, _ := zstd.NewWriter(zstdbuf, zstd.WithEncoderLevel(ZstdLevel),zstd.WithEncoderDict(ZstdDict))
 	writeToBuf := func(o *libraries.MsgBuffer) {
 		msglen += o.Len()
 		if compress {
 			zstdWriter.Write(o.Bytes())
 		} else {
-			if msgNum > CompressMinNum {
+			if msgNum > CompressMinNum || msglen > CompressMinLen {
 				compress = true
 				zstdWriter.Reset(zstdbuf)
 				zstdWriter.Write(out.Bytes())
@@ -201,40 +201,29 @@ func (client *RpcClient) handleWrite() {
 			writeToBuf(o1)
 			o1.Reset()
 			//BufPoolPut(o1)
-
 		}
 		if compress {
 			//有压缩
 			zstdWriter.Close()
 			msglen = zstdbuf.Len()
 			if msglen > MaxOutLen {
-				panic("消息大于最大允许长度,压缩后更长？？？，请检查代码")
+				panic("消息大于最大允许长度,压缩后更长？？？")
 				return
 			}
-			b := msgbuf.Make(5 + msglen)
+			b := msgbuf.Make(4 + msglen)
 			b[0] = byte(msglen)
 			b[1] = byte(msglen >> 8)
 			b[2] = byte(msglen >> 16)
-			b[3] = byte(msglen >> 24)
-			b[4] = byte(msgNum) + 1<<7
-			copy(b[5:], zstdbuf.Bytes())
+			b[3] = byte(msglen>>24) + 1<<7
+			copy(b[4:], zstdbuf.Bytes())
 		} else {
 			//无压缩
-			if msglen > MaxOutLen {
-				panic("消息大于最大允许长度,前面的限制有错，请重写代码")
-				return
-			}
-			if msglen != out.Len() {
-				panic("msglen计算有误，请检查代码")
-				return
-			}
-			b := msgbuf.Make(5 + msglen)
+			b := msgbuf.Make(4 + msglen)
 			b[0] = byte(msglen)
 			b[1] = byte(msglen >> 8)
 			b[2] = byte(msglen >> 16)
 			b[3] = byte(msglen >> 24)
-			b[4] = byte(msgNum)
-			copy(b[5:], out.Bytes())
+			copy(b[4:], out.Bytes())
 		}
 		_, err := client.conn.Write(msgbuf.Bytes())
 
@@ -347,21 +336,21 @@ func (client *RpcClient) runTick() {
 	}
 }
 
-func (client *RpclientSend) SendMsg(msg *Msg,remote uint16, out MSG_DATA) {
-	SendMsg(msg,uint16(client.No)|uint16(client.Id)<<8, remote, out, client.outchan)
+func (client *RpclientSend) SendMsg(msg *Msg, remote uint16, out MSG_DATA) {
+	SendMsg(msg, uint16(client.No)|uint16(client.Id)<<8, remote, out, client.outchan)
 }
 
-func (client *RpclientSend) SendMsgWaitResult(msg *Msg,remote uint16, out MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
-	return SendMsgWaitResult(msg,uint16(client.No)|uint16(client.Id)<<8, remote, out, result, client.outchan, timeout...)
+func (client *RpclientSend) SendMsgWaitResult(msg *Msg, remote uint16, out MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
+	return SendMsgWaitResult(msg, uint16(client.No)|uint16(client.Id)<<8, remote, out, result, client.outchan, timeout...)
 }
 
 //没有remote,msgno,ttl,transactionNo发送
-func (client *RpclientSend) SendMsgToDefault(msg *Msg,out MSG_DATA) {
-	SendMsg(msg,uint16(client.No)|uint16(client.Id)<<8, 0,   out, client.outchan)
+func (client *RpclientSend) SendMsgToDefault(msg *Msg, out MSG_DATA) {
+	SendMsg(msg, uint16(client.No)|uint16(client.Id)<<8, 0, out, client.outchan)
 }
 
-func (client *RpclientSend) SendMsgWaitResultToDefault(msg *Msg,out MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
-	return SendMsgWaitResult(msg,uint16(client.No)|uint16(client.Id)<<8,    0, out, result, client.outchan, timeout...)
+func (client *RpclientSend) SendMsgWaitResultToDefault(msg *Msg, out MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
+	return SendMsgWaitResult(msg, uint16(client.No)|uint16(client.Id)<<8, 0, out, result, client.outchan, timeout...)
 }
 func (client *RpcClient) CacheGet(serverNo uint8, path string, key string, value interface{}) (err error) {
 	b, err := client.cache.Get(key, strconv.Itoa(int(serverNo))+"_"+path)
@@ -421,9 +410,8 @@ func (client *RpcClient) CacheDelPath(path string) error {
 	return client.cache.DelPath(strconv.Itoa(int(client.No)) + "_" + path)
 }
 
-
 func (client *RpcClient) GetMsg() (*Msg, error) {
-	msg := &Msg{ DB: &MsgDB{DB: client.DB}}
+	msg := &Msg{DB: &MsgDB{DB: client.DB}}
 	msg.SetServer(client.sendStruct)
 	return msg, nil
 }
@@ -432,9 +420,6 @@ func (client *RpcClient) SetConfig(lang CountryNo, key string, config map[string
 	return client.cache.Set(key, PATH_CONFIG_CACHE+lang.String(), libraries.JsonMarshal(config), 0)
 }
 func (client *RpcClient) GetUserCacheById(id int32) (user *MSG_USER_INFO_cache) {
-	if id <= 0 {
-		return nil
-	}
 	err := client.CacheGet(UserServerNo, PATH_USER_INFO_CACHE, strconv.Itoa(int(id)), &user)
 	if err != nil {
 		libraries.DebugLog("获取user缓存失败%+v", err)
@@ -495,9 +480,8 @@ func (client *RpcClient) GetProjectById(id int32) (res *MSG_PROJECT_project_cach
 }
 func (client *RpcClient) Decompress(in []byte) (out []byte) {
 	client.decodebuf2.Reset()
-	client.decodebuf2.WriteByte(in[0] - 128)
 	client.decodebuf1.Reset()
-	client.decodebuf1.Write(in[1:])
+	client.decodebuf1.Write(in)
 	client.decoder.Reset(client.decodebuf1)
 	io.Copy(client.decodebuf2, client.decoder)
 	return client.decodebuf2.Bytes()

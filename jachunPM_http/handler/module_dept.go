@@ -501,3 +501,23 @@ func dept_getParents(deptID int32) (deptList []*protocol.MSG_USER_Dept_cache, er
 	}
 	return
 }
+func dept_getPairs(data *TemplateData) (res []protocol.HtmlKeyValueStr, err error) {
+	result, err := HostConn.CacheGetPath(protocol.UserServerNo, protocol.PATH_USER_DEPT_CACHE)
+	if err != nil {
+		return nil, err
+	}
+	buf := protocol.BufPoolGet()
+	for _, b := range result {
+		buf.Reset()
+		buf.Write(b)
+		if v, ok := protocol.READ_MSG_DATA(buf).(*protocol.MSG_USER_Dept_cache); ok {
+			res = append(res, protocol.HtmlKeyValueStr{strconv.Itoa(int(v.Id)), v.Name})
+		}
+	}
+	buf.Reset()
+	protocol.BufPoolPut(buf)
+	protocol.Order_htmlkvStr(res, func(a, b protocol.HtmlKeyValueStr) bool {
+		return a.Key < b.Key
+	})
+	return res, nil
+}

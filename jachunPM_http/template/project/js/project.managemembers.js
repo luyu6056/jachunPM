@@ -8,7 +8,10 @@
  */
 function setRole(account, roleID)
 {
-    role    = roles[account];       // get role according the account.
+    var role;
+    for (r in roles) {
+        if(roles[r].Key==account) role=roles[r].Value;
+    }
     roleOBJ = $('#role' + roleID);  // get role object.
     roleOBJ.val(role)               // set the role.
 }
@@ -38,6 +41,6 @@ function setDeptUsers(obj)
 function choseTeam2Copy(obj)
 {
     team = $(obj).val();
-    link = createLink('project', 'manageMembers', 'projectID=' + projectID + '&team2Import=' + team);
+    link = createLink('project', 'manageMembers', 'projectID=' + projectID + '&team2Import=' + team+ '&dept=' + dept);
     location.href=link;
 }

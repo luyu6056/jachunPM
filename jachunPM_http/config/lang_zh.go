@@ -175,10 +175,10 @@ func LangZH_CNInit() {
 	}
 	Lang[protocol.ZH_CN]["common"]["exportFileTypeList"] = []protocol.HtmlKeyValueStr{
 		{"xlsx", "xlsx"},
-		{"csv", "csv"},
-		{"xml", "xml"},
-		{"html", "html"},
-		{"xls", "xls"},
+		//{"csv", "csv"},
+		//{"xml", "xml"},
+		//{"html", "html"},
+		//{"xls", "xls"},
 	}
 	Lang[protocol.ZH_CN]["common"]["exportTypeList"] = []protocol.HtmlKeyValueStr{
 		{"all", "全部记录"},
@@ -395,7 +395,7 @@ func LangZH_CNInit() {
 		{"release", map[string]string{`link`: `发布|release|browse|productID=%s&branch=%s`, `subModule`: `release`}},
 		{"roadmap", map[string]string{`link`: "路线图|product|roadmap|productID=%s&branch=%s"}},
 		{"project", map[string]string{`link`: Lang[protocol.ZH_CN]["common"]["projectCommon"].(string) + "|product|project|status=all&productID=%s&branch=%s"}},
-		{"dynamic", map[string]string{`link`: "动态|product|dynamic|productID=%s&branch=%s"}},
+		//{"dynamic", map[string]string{`link`: "动态|product|dynamic|productID=%s&branch=%s"}},
 		{"doc", map[string]string{`link`: `文档|doc|objectLibs|type=product&objectID=%s&from=product`, `subModule`: `doc`}},
 		//{"branch", map[string]string{`link`: "@branch@|branch|manage|productID=%s&branch=%s"}},
 		{"module", map[string]string{`link`: "模块|tree|browse|productID=%s&branch=%s&&view=story"}},
@@ -1926,6 +1926,9 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["group"]["create"] = "新增分组"
 	Lang[protocol.ZH_CN]["group"]["browse"] = "浏览分组"
 	Lang[protocol.ZH_CN]["group"]["common"] = "权限分组"
+	Lang[protocol.ZH_CN]["group"]["error"] = map[string]string{
+		"GroupNotFound": "没有找到分组信息，请返回重试",
+	}
 	Lang[protocol.ZH_CN]["group"]["menu"] = Lang[protocol.ZH_CN]["company"]["menu"]
 	Lang[protocol.ZH_CN]["user"] = make(map[string]interface{})
 	Lang[protocol.ZH_CN]["user"]["restore"] = "还原用户"
@@ -2043,7 +2046,7 @@ func LangZH_CNInit() {
 		{"browseUser", map[string]string{`link`: `用户|company|browse`, `subModule`: `user`}},
 		{"dept", map[string]string{`link`: `部门|dept|browse`, `subModule`: `dept`}},
 		{"browseGroup", map[string]string{`link`: `权限|group|browse`, `subModule`: `group`}},
-		{"dynamic", map[string]string{`link`: "动态|company|dynamic|"}},
+		//{"dynamic", map[string]string{`link`: "动态|company|dynamic|"}},
 		{"view", map[string]string{`link`: `公司|company|view`}},
 		{"effort", map[string]string{`link`: `日志|company|effort`, "subModule": `effort`}},
 	}
@@ -2546,7 +2549,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["colorPicker"]["errorTip"] = "不是有效的颜色值"
 	Lang[protocol.ZH_CN]["datepicker"] = make(map[string]interface{})
 	Lang[protocol.ZH_CN]["datepicker"]["monthNames"] = []string{`一月`, `二月`, `三月`, `四月`, `五月`, `六月`, `七月`, `八月`, `九月`, `十月`, `十一月`, `十二月`}
-	Lang[protocol.ZH_CN]["datepicker"]["abbrDayNames"] = []string{`日`, `一`, `二`, `三`, `四`, `五`, `六`}
+	Lang[protocol.ZH_CN]["datepicker"]["abbrDayNames"] = []protocol.HtmlKeyValueStr{{"0", "日"}, {"1", "一"}, {"2", "二"}, {"3", "三"}, {"4", "四"}, {"5", "五"}, {"6", "六"}}
 	Lang[protocol.ZH_CN]["datepicker"]["dayNames"] = []string{`星期日`, `星期一`, `星期二`, `星期三`, `星期四`, `星期五`, `星期六`}
 	Lang[protocol.ZH_CN]["datepicker"]["dpText"] = map[string]string{
 		"TEXT_OR":          "或 ",
@@ -2703,7 +2706,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["attend"]["waitReviews"] = "<strong>%s</strong> 存在未审批的记录，请审批之后再进行统计。"
 	Lang[protocol.ZH_CN]["attend"]["signInClientError"] = "签到失败！已设置只能通过 %s 签到。"
 	Lang[protocol.ZH_CN]["attend"]["s"] = "秒"
-	Lang[protocol.ZH_CN]["attend"]["m"] = "分"
+	Lang[protocol.ZH_CN]["attend"]["m"] = "分钟"
 	Lang[protocol.ZH_CN]["attend"]["h"] = "小时"
 	Lang[protocol.ZH_CN]["attend"]["d"] = "天"
 	Lang[protocol.ZH_CN]["attend"]["setDept"] = "部门设置"
@@ -2737,6 +2740,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["attend"]["rejectReason"] = "拒绝原因"
 	Lang[protocol.ZH_CN]["attend"]["signInClient"] = "签到途径"
 	Lang[protocol.ZH_CN]["attend"]["noAttendUsers"] = "无需考勤者"
+	Lang[protocol.ZH_CN]["attend"]["noAttendDepts"] = "无需考勤的部门"
 	Lang[protocol.ZH_CN]["attend"]["ipList"] = "IP列表"
 	Lang[protocol.ZH_CN]["attend"]["PM"] = "下午"
 	Lang[protocol.ZH_CN]["attend"]["AM"] = "上午"
@@ -3035,46 +3039,46 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["trip"]["browse"] = "外出列表"
 	Lang[protocol.ZH_CN]["trip"]["common"] = "外出"
 	Lang[protocol.ZH_CN]["trip"]["menu"] = Lang[protocol.ZH_CN]["oa"]["menu"]
-	Lang[protocol.ZH_CN]["attend"]["featurebar"] = map[string]interface{}{
-		"personal":     "我的考勤|attend|personal|",
-		"company":      "公司考勤|attend|company|",
-		"detail":       "考勤明细|attend|detail|",
-		"browsereview": "补录审核|attend|browsereview|",
-		"stat":         "统计|attend|stat|",
-		"settings":     map[string]string{`link`: `设置|attend|settings|`},
+	Lang[protocol.ZH_CN]["attend"]["featurebar"] = []protocol.HtmlKeyValueStr{
+		{"personal", "我的考勤|attend|personal|"},
+		{"company", "公司考勤|attend|company|"},
+		{"detail", "考勤明细|attend|detail|"},
+		{"browsereview", "补录审核|attend|browsereview|"},
+		{"stat", "统计|attend|stat|"},
+		{"settings", `设置|attend|settings|`},
 	}
-	Lang[protocol.ZH_CN]["leave"]["featurebar"] = map[string]string{
-		"personal":     "我的请假|leave|personal|",
-		"browseReview": "我的审核|leave|browsereview|",
-		"company":      "所有请假|leave|company|",
-		"setReviewer":  "设置|leave|setReviewer|",
+	Lang[protocol.ZH_CN]["leave"]["featurebar"] = []protocol.HtmlKeyValueStr{
+		{"personal", "我的请假|leave|personal|"},
+		{"browseReview", "我的审核|leave|browsereview|"},
+		{"company", "所有请假|leave|company|"},
+		{"setReviewer", "设置|leave|setReviewer|"},
 	}
-	Lang[protocol.ZH_CN]["makeup"]["featurebar"] = map[string]string{
-		"personal":     "我的补班|makeup|personal|",
-		"browseReview": "我的审核|makeup|browsereview|",
-		"company":      "所有补班|makeup|company|",
-		"setReviewer":  "设置|makeup|setReviewer|",
+	Lang[protocol.ZH_CN]["makeup"]["featurebar"] = []protocol.HtmlKeyValueStr{
+		{"personal", "我的补班|makeup|personal|"},
+		{"browseReview", "我的审核|makeup|browsereview|"},
+		{"company", "所有补班|makeup|company|"},
+		{"setReviewer", "设置|makeup|setReviewer|"},
 	}
-	Lang[protocol.ZH_CN]["overtime"]["featurebar"] = map[string]string{
-		"personal":     "我的加班|overtime|personal|",
-		"browseReview": "我的审核|overtime|browsereview|",
-		"company":      "所有加班|overtime|company|",
-		"setReviewer":  "设置|overtime|setReviewer|",
+	Lang[protocol.ZH_CN]["overtime"]["featurebar"] = []protocol.HtmlKeyValueStr{
+		{"personal", "我的加班|overtime|personal|"},
+		{"browseReview", "我的审核|overtime|browsereview|"},
+		{"company", "所有加班|overtime|company|"},
+		{"setReviewer", "设置|overtime|setReviewer|"},
 	}
-	Lang[protocol.ZH_CN]["lieu"]["featurebar"] = map[string]string{
-		"personal":     "我的调休|lieu|personal|",
-		"browseReview": "我的审核|lieu|browsereview|",
-		"company":      "所有调休|lieu|company|",
-		"setReviewer":  "设置|lieu|setReviewer|",
+	Lang[protocol.ZH_CN]["lieu"]["featurebar"] = []protocol.HtmlKeyValueStr{
+		{"personal", "我的调休|lieu|personal|"},
+		{"browseReview", "我的审核|lieu|browsereview|"},
+		{"company", "所有调休|lieu|company|"},
+		{"setReviewer", "设置|lieu|setReviewer|"},
 	}
-	Lang[protocol.ZH_CN]["holiday"]["featurebar"] = map[string]string{
-		"browse": "所有|holiday|browse|",
+	Lang[protocol.ZH_CN]["holiday"]["featurebar"] = []protocol.HtmlKeyValueStr{
+		{"browse", "所有|holiday|browse|"},
 	}
-	Lang[protocol.ZH_CN]["trip"]["featurebar"] = map[string]string{
-		"personal":     "我的外出|trip|personal|",
-		"company":      "所有外出|trip|company|",
-		"browseReview": "审批|trip|browseReview|",
-		"setReviewer":  "设置|trip|setReviewer|",
+	Lang[protocol.ZH_CN]["trip"]["featurebar"] = []protocol.HtmlKeyValueStr{
+		{"personal", "我的外出|trip|personal|"},
+		{"company", "所有外出|trip|company|"},
+		{"browseReview", "审批|trip|browseReview|"},
+		{"setReviewer", "设置|trip|setReviewer|"},
 	}
 	Lang[protocol.ZH_CN]["ci"]["menuOrder"] = []string{"review"}
 	Lang[protocol.ZH_CN]["repo"]["menuOrder"] = []string{"review"}
@@ -3604,7 +3608,15 @@ func LangZH_CNInit() {
 		"pass":   "通过",
 		"reject": "拒绝",
 	}
-	Lang[protocol.ZH_CN]["attend"]["workingDaysList"] = []string{"周一～周五", "周一～周六", "周一～周日", "周日～周四", "周日～周五"}
+	Lang[protocol.ZH_CN]["attend"]["workingDaysList"] = []protocol.HtmlKeyValueStr{
+		{"1", "周一"},
+		{"2", "周二"},
+		{"3", "周三"},
+		{"4", "周四"},
+		{"5", "周五"},
+		{"6", "周六"},
+		{"7", "周日"},
+	}
 	Lang[protocol.ZH_CN]["attend"]["mustSignOutList"] = map[string]string{
 		"yes": "需要",
 		"no":  "不需要",
@@ -3732,7 +3744,7 @@ func LangZH_CNInit() {
 				},
 			},
 			protocol.HtmlBlock{
-				Title: `指派给我的Bug`,
+				Title: `指派给我的bug`,
 				Block: `bug`,
 				Grid:  4,
 			},
@@ -3766,10 +3778,10 @@ func LangZH_CNInit() {
 			},
 			protocol.HtmlBlock{
 				Title: `欢迎`,
-				Block: `clockinout`,
+				Block: `welcome`,
 				Grid:  8,
 			},
-			protocol.HtmlBlock{
+			/*protocol.HtmlBlock{
 				Title: `最新动态`,
 				Block: `dynamic`,
 				Grid:  4,
@@ -3778,7 +3790,7 @@ func LangZH_CNInit() {
 				Title: `流程图`,
 				Block: `flowchart`,
 				Grid:  8,
-			},
+			},*/
 			protocol.HtmlBlock{
 				Title:  `我的待办`,
 				Block:  `list`,
@@ -3820,10 +3832,14 @@ func LangZH_CNInit() {
 				Source: "product",
 			},
 			protocol.HtmlBlock{
-				Title:  `指派给我的Bug`,
-				Block:  `bug`,
-				Grid:   4,
-				Source: "qa",
+				Title: `指派给我的任务`,
+				Block: `task`,
+				Grid:  4,
+				Params: map[string]string{
+					`num`:     `15`,
+					`orderBy`: `id_desc`,
+					`type`:    `assignedTo`,
+				},
 			},
 		},
 	}
@@ -5399,9 +5415,9 @@ func LangZH_CNInit() {
 		"build":    map[string]string{`link`: "版本|project|build|projectID=%s", `subModule`: `build`},
 		"testtask": "测试单|project|testtask|projectID=%s",
 		"team":     "团队|project|team|projectID=%s",
-		"action":   "动态|project|dynamic|projectID=%s",
-		"view":     "概况|project|view|projectID=%s",
-		"all":      "所有项目|project|all|",
+		//"action":   "动态|project|dynamic|projectID=%s",
+		"view": "概况|project|view|projectID=%s",
+		"all":  "所有项目|project|all|",
 	}
 	Lang[protocol.ZH_CN]["project"]["webMenuOrder"] = []string{"task", "story", "bug", "build", "testtask", "team", "action", "view", "all"}
 	Lang[protocol.ZH_CN]["project"]["charts"] = map[string]interface{}{

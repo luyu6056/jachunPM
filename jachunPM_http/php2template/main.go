@@ -127,7 +127,7 @@ func main() {
 		str = strings.ReplaceAll(str, `.Lang.comment`, `.Lang.common.comment`)
 		str = strings.ReplaceAll(str, `.Lang.files`, `.Lang.common.files`)
 		str = strings.ReplaceAll(str, `{{html_linkButton .Lang.goback `, `{{html_linkButton . .Lang.common.goback `)
-		str = strings.ReplaceAll(str, `{{include '../../common/view/chosen.html.php'}}`, `{{template "chosen.html.html" .}}`)
+		str = strings.ReplaceAll(str, `{{include '../../common/view/chosen.html.php'}}`, `{{template "chosen.html" .}}`)
 		newname := strings.Replace(name, ".php", "", 1)
 		newname = strings.Replace(newname, ".hook", "", 1)
 		os.Remove(newname)

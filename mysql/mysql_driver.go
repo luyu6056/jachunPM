@@ -69,8 +69,8 @@ type MysqlDB struct {
 	loc             *time.Location //database/sql value格式化的时候用到
 	storeEngine     *storeEngine
 	isPing          bool
-	StructKeyColumn map[string]map[string]*Field_struct //结构体成员与Column的关系
-
+	structKeyColumn map[string]map[string]*Field_struct //结构体成员与Column的关系
+	structMake map[string]mysqlQueryMake
 }
 
 type Mysql_Conn struct {

@@ -57,7 +57,7 @@ func task_processTask(task *protocol.MSG_PROJECT_TASK) {
 	/* Delayed or not?. */
 	if task.Status != "done" && task.Status != "cancel" && task.Status != "closed" {
 		if task.Deadline.After(protocol.NORMALTIME) {
-			today, _ := time.Parse("2006-01-02", time.Now().Format("2006-01-02"))
+			today, _ := time.ParseInLocation("2006-01-02", time.Now().Format("2006-01-02"), time.Local)
 			delay := today.Sub(task.Deadline) / time.Second / 86400
 			if delay > 0 {
 				task.Delay = int32(delay)
@@ -171,7 +171,7 @@ func task_create(data *protocol.MSG_PROJECT_task_create, in *protocol.Msg) {
 			if len(children) > 0 {
 				for _, v := range children {
 					childrenIds = append(childrenIds, v.Id)
-					if data.Task.Parent==v.Id{
+					if data.Task.Parent == v.Id {
 						err = protocol.Err_taskHasAncestors.Err()
 						return
 					}
@@ -287,7 +287,7 @@ func task_UpdateTaskEstimate(data *protocol.MSG_PROJECT_task_UpdateTaskEstimate,
 		in.WriteErr(err)
 		return
 	}
-	lastDate, _ := time.Parse("2006-01-02", m["Date"])
+	lastDate, _ := time.ParseInLocation("2006-01-02", m["Date"], time.Local)
 	project := HostConn.GetProjectById(task.Project)
 	var actionID int64
 	for _, estimate := range data.List {
@@ -470,7 +470,7 @@ func task_computeHours4Multiple(oldTask, newTask *db.Task, in *protocol.Msg) (er
 	}
 
 	//if(this->post->status) return currentTask;
-	zeroTime, _ := time.Parse("2006-01-02", "0000-01-01")
+	zeroTime, _ := time.ParseInLocation("2006-01-02", "0000-01-01", time.Local)
 	if newTask.Consumed == 0 {
 		if newTask.Status == "" {
 			newTask.Status = "wait"
@@ -1424,9 +1424,9 @@ func task_examine(data *protocol.MSG_PROJECT_task_examine, in *protocol.Msg) {
 
 	act := "examine"
 	project := HostConn.GetProjectById(data.ProjectId)
-	extra:="未通过"
-	if data.Examine{
-		extra="通过"
+	extra := "未通过"
+	if data.Examine {
+		extra = "通过"
 	}
 	if _, err := in.ActionCreate("task", data.TaskID, act, "", extra, project.Products, project.Id); err != nil {
 		in.WriteErr(err)
@@ -1465,9 +1465,8 @@ func task_cancel(data *protocol.MSG_PROJECT_task_cancel, in *protocol.Msg) {
 	newtask.FinishedDate = protocol.ZEROTIME
 	newtask.CanceledDate = time.Now()
 	newtask.LastEditedDate = time.Now()
-	newtask.CanceledBy=in.GetUserID()
-	newtask.LastEditedBy=in.GetUserID()
-
+	newtask.CanceledBy = in.GetUserID()
+	newtask.LastEditedBy = in.GetUserID()
 
 	if err = session.Table(db.TABLE_TASK).Replace(newtask); err != nil {
 		return
@@ -1501,23 +1500,23 @@ func task_cancel(data *protocol.MSG_PROJECT_task_cancel, in *protocol.Msg) {
 
 	in.WriteErr(nil)
 }
-func task_delete(id int32,in *protocol.Msg)(err error){
-	if _, err = in.DB.Table(db.TABLE_TASK).Where("Id=?", id).Update(map[string]interface{}{"Deleted":true}); err != nil {
+func task_delete(id int32, in *protocol.Msg) (err error) {
+	if _, err = in.DB.Table(db.TABLE_TASK).Where("Id=?", id).Update(map[string]interface{}{"Deleted": true}); err != nil {
 		return
 	}
 	var tasks []*db.Task
-	if err=in.DB.Table(db.TABLE_TASK).Where("Parent=?",id).Prepare().Select(&tasks);err!=nil{
+	if err = in.DB.Table(db.TABLE_TASK).Where("Parent=?", id).Prepare().Select(&tasks); err != nil {
 		return
 	}
-	for _,task:= range tasks{
-		if err= task_delete(task.Id,in);err!=nil{
+	for _, task := range tasks {
+		if err = task_delete(task.Id, in); err != nil {
 			return
 		}
 	}
 	return nil
 }
 
-func task_placeOrder(data *protocol.MSG_PROJECT_task_placeOrder,in *protocol.Msg){
-	_,err:=in.DB.Table(db.TABLE_TASK).Where("Id=?",data.TaskID).Update(map[string]interface{}{"PlaceOrder":data.Action})
+func task_placeOrder(data *protocol.MSG_PROJECT_task_placeOrder, in *protocol.Msg) {
+	_, err := in.DB.Table(db.TABLE_TASK).Where("Id=?", data.TaskID).Update(map[string]interface{}{"PlaceOrder": data.Action})
 	in.WriteErr(err)
 }

@@ -4,9 +4,6 @@ import (
 	"archive/tar"
 	"errors"
 	"fmt"
-	"github.com/luyu6056/cache"
-	"github.com/luyu6056/gnet"
-	"github.com/panjf2000/ants/v2"
 	"io"
 	"jachunPM_commom/db"
 	"libraries"
@@ -22,6 +19,10 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/luyu6056/cache"
+	"github.com/luyu6056/gnet"
+	"github.com/panjf2000/ants/v2"
 )
 
 type transactionOption bool
@@ -127,32 +128,25 @@ func HandlerMsg(data []byte, c gnet.Conn) error {
 		if err := recover(); err != nil {
 			fmt.Println(err)
 			debug.PrintStack()
-			if svr, ok := c.Context().(*RpcServer); ok {
-				atomic.AddUint32(&svr.ErrNum, 1)
-			}
-
 		}
 	}()
 
-	msgnum := data[0]
-	index := 1
-	var n int
+	index := 0
 	for index < len(data) {
-		n++
-		in, l, err := protocol.ReadOneMsgFromBytes(data[index:])
 
+		in, l, err := protocol.ReadOneMsgFromBytes(data[index:])
+		db.ToZstd(data[index:index+l], in.Cmd)
 		index += l
-		in.Addr = c.RemoteAddr().String()
 		if err != nil {
 			return errors.New("读消息出错" + err.Error())
 		} else {
-
-			switch context := c.Context().(type) {
-			case *RpcServer:
+			in.Addr = c.RemoteAddr().String()
+			context := c.Context().(*RpcServer)
+			in.SetServer(context)
+			if context.Id != -1 {
 				if in.Local != uint16(context.ServerNo)|uint16(context.Id)<<8 { //检查local
 					return errors.New(fmt.Sprintf("消息的local来源不对,in.Local%d,local%d", in.Local, uint16(context.ServerNo)|uint16(context.Id)<<8))
 				}
-				in.SetServer(context)
 				if byte(in.GetRemoteID()) == protocol.HostServerNo || (in.GetRemoteID() == 0 && byte(in.Cmd) == protocol.HostServerNo) {
 					if !checkTTL(in) {
 						continue
@@ -165,20 +159,26 @@ func HandlerMsg(data []byte, c gnet.Conn) error {
 				} else {
 					rpcHostMsgInChan <- in
 				}
-			case chan *protocol.Msg:
+			} else {
 				if in.Cmd == protocol.CMD_MSG_HOST_regServer {
 					in.ReadData()
 					data, ok := in.Data.(*protocol.MSG_HOST_regServer)
 					if ok {
 						go func() {
-							newSvr := NewRpcServer(c)
-							newSvr.Start(data.No, data.IpPort, data.Window, in)
-							c.SetContext(newSvr)
+							context.Start(data.No, data.IpPort, data.Window, in)
 							//拉取注册前的消息，推入队列
-							for i := len(context); i > 0; i-- {
-								in := <-context
-								in.SetServer(newSvr)
-								rpcHostMsgInChan <- in
+							for i := len(context.inChan); i > 0; i-- {
+								in := <-context.inChan
+								//in.Local=uint16(context.ServerNo)|uint16(context.Id)<<8
+								if byte(in.GetRemoteID()) == protocol.HostServerNo || (in.GetRemoteID() == 0 && byte(in.Cmd) == protocol.HostServerNo) {
+									in.ReadData()
+									in.DB.DB = db.DB
+									hostAsyncHand.Invoke(in)
+									protocol.BufPoolPut(in.Buf())
+								}else{
+									rpcHostMsgInChan <- in
+								}
+
 							}
 						}()
 
@@ -189,22 +189,16 @@ func HandlerMsg(data []byte, c gnet.Conn) error {
 				} else {
 					//消息推入chan，等注册后再执行
 					select {
-					case context <- in:
+					case context.inChan <- in:
 					default:
 						c.Close()
 						libraries.ReleaseLog("%s服务未注册，缓存已满", c.RemoteAddr().String())
 						return nil
 					}
 				}
-			default:
-				libraries.ReleaseLog("进入未知分支，理论上不可能跑到这里来")
-				c.Close()
-				return nil
+
 			}
 		}
-	}
-	if int(msgnum) != n {
-		libraries.DebugLog("读消息数量错误，请检查协议，消息总量%d,已读%d", msgnum, n)
 	}
 	return nil
 }
@@ -282,11 +276,11 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 		return
 	}
 	var svr *RpcServer
-	if in.Local == protocol.HostServerNo {
-		in.SetServer(Host)
-	} else {
-		svr, _ = in.Svr.(*RpcServer)
-	}
+	//if in.Local == protocol.HostServerNo {
+	//	in.SetServer(Host)
+	//} else {
+	svr, _ = in.Svr.(*RpcServer)
+	//}
 
 	i := in.Data
 	//defer i.Put()  SetMsgQuery里面不能回收，所以不能defer回收
@@ -730,9 +724,9 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 			}
 			insert.Pathname = file.Code + "/" + file.Type + now.Format("/2006/01/02/") + file.Name
 
-			newpath:=filepath+insert.Pathname
-			if runtime.GOOS=="windows"{
-				newpath=strings.ReplaceAll(newpath,"/","\\")
+			newpath := filepath + insert.Pathname
+			if runtime.GOOS == "windows" {
+				newpath = strings.ReplaceAll(newpath, "/", "\\")
 			}
 			dir := _filepath.Dir(newpath)
 			_, err := os.Stat(dir)
@@ -742,9 +736,9 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 			if err := os.Rename(fileTmpPath+file.Name, newpath); err != nil {
 				in.WriteErr(err)
 				for _, i := range insertList {
-					if runtime.GOOS=="windows"{
-						os.Remove(filepath + strings.ReplaceAll(i.Pathname,"/","\\"))
-					}else{
+					if runtime.GOOS == "windows" {
+						os.Remove(filepath + strings.ReplaceAll(i.Pathname, "/", "\\"))
+					} else {
 						os.Remove(filepath + i.Pathname)
 					}
 

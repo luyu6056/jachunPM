@@ -38,8 +38,7 @@ func (rs *gnetClient) OnClosed(c gnet.Conn, err error) (action gnet.Action) {
 }
 func (rs *gnetClient) React(data []byte, c gnet.Conn) (action gnet.Action) {
 	if rpc, ok := c.Context().(*RpcClient); ok {
-		msgnum := data[0]
-		index := 1
+		index := 0
 		var n int
 		for index < len(data) {
 			n++
@@ -53,10 +52,7 @@ func (rs *gnetClient) React(data []byte, c gnet.Conn) (action gnet.Action) {
 			}
 
 		}
-		if n != int(msgnum) {
-			libraries.DebugLog("读消息数量错误，请检查协议，消息总量%d,已读%d", msgnum, n)
-		}
-		rpc.window -= int32(msgnum)
+		rpc.window -= int32(n)
 		if rpc.Status&RpcClientStatuNormal == RpcClientStatuNormal && rpc.window < DefaultWindowSize/2 {
 			data := GET_MSG_HOST_WINDOW_UPDATE()
 			data.Add = DefaultWindowSize - rpc.window

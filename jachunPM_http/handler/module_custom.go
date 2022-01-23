@@ -1,9 +1,12 @@
 package handler
 
 import (
+	"fmt"
 	"jachunPM_http/js"
 	"protocol"
+	"runtime/debug"
 	"strings"
+	"time"
 )
 
 func init() {
@@ -26,7 +29,7 @@ func customTemplateFuncs() {
 
 		return custom_setMenuByConfig(data, allMenu, nil)
 	}
-
+	go reflushSystemUser()
 }
 func custom_mergeFeatureBar(data *TemplateData, module, method string) ([]*protocol.MSG_USER_Userquery_info, error) {
 	queryModule := module
@@ -143,4 +146,27 @@ func custom_ajaxSaveCustomFields(data *TemplateData) (err error) {
 	}
 	data.ws.WriteString(js.Reload("parent"))
 	return nil
+}
+
+var systemCache *protocol.MSG_USER_INFO_cache
+
+func custom_getSystemConfig() map[string]map[string]map[string]string {
+	if systemCache != nil {
+		return systemCache.Config
+	}
+	return nil
+}
+func reflushSystemUser() {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println(err)
+			debug.PrintStack()
+		}
+		time.Sleep(time.Second)
+		go reflushSystemUser()
+	}()
+	for {
+		systemCache = HostConn.GetUserCacheById(protocol.SYSTEMUSER)
+		time.Sleep(time.Second)
+	}
 }

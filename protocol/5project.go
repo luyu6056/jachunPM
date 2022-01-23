@@ -3,6 +3,7 @@ package protocol
 import (
 	"sync"
 	"libraries"
+	"unsafe"
 	"time"
 )
 
@@ -148,6 +149,10 @@ func (data *MSG_PROJECT_tree_getLinePairs) cmd() int32 {
 	return CMD_MSG_PROJECT_tree_getLinePairs
 }
 
+func (data *MSG_PROJECT_tree_getLinePairs) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_tree_getLinePairs()))
+}
+
 func (data *MSG_PROJECT_tree_getLinePairs) Put() {
 	pool_MSG_PROJECT_tree_getLinePairs.Put(data)
 }
@@ -181,6 +186,10 @@ func GET_MSG_PROJECT_tree_getLinePairs_result() *MSG_PROJECT_tree_getLinePairs_r
 
 func (data *MSG_PROJECT_tree_getLinePairs_result) cmd() int32 {
 	return CMD_MSG_PROJECT_tree_getLinePairs_result
+}
+
+func (data *MSG_PROJECT_tree_getLinePairs_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_tree_getLinePairs_result()))
 }
 
 func (data *MSG_PROJECT_tree_getLinePairs_result) Put() {
@@ -251,6 +260,10 @@ func (data *MSG_PROJECT_product_cache) cmd() int32 {
 	return CMD_MSG_PROJECT_product_cache
 }
 
+func (data *MSG_PROJECT_product_cache) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_product_cache()))
+}
+
 func (data *MSG_PROJECT_product_cache) Put() {
 	data.Id = 0
 	data.Name = ``
@@ -271,9 +284,6 @@ func (data *MSG_PROJECT_product_cache) Put() {
 	data.Order = 0
 	data.Deleted = false
 	data.TimeStamp = time.UnixMicro(0)
-	for _,v := range data.Branchs {
-		v.Put()
-	}
 	data.Branchs = data.Branchs[:0]
 	pool_MSG_PROJECT_product_cache.Put(data)
 }
@@ -394,6 +404,10 @@ func (data *MSG_PROJECT_product_insert) cmd() int32 {
 	return CMD_MSG_PROJECT_product_insert
 }
 
+func (data *MSG_PROJECT_product_insert) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_product_insert()))
+}
+
 func (data *MSG_PROJECT_product_insert) Put() {
 	data.DocName = ``
 	if data.Data != nil {
@@ -448,6 +462,10 @@ func (data *MSG_PROJECT_product_insert_result) cmd() int32 {
 	return CMD_MSG_PROJECT_product_insert_result
 }
 
+func (data *MSG_PROJECT_product_insert_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_product_insert_result()))
+}
+
 func (data *MSG_PROJECT_product_insert_result) Put() {
 	data.ID = 0
 	pool_MSG_PROJECT_product_insert_result.Put(data)
@@ -484,6 +502,10 @@ func GET_MSG_PROJECT_product_update() *MSG_PROJECT_product_update {
 
 func (data *MSG_PROJECT_product_update) cmd() int32 {
 	return CMD_MSG_PROJECT_product_update
+}
+
+func (data *MSG_PROJECT_product_update) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_product_update()))
 }
 
 func (data *MSG_PROJECT_product_update) Put() {
@@ -544,6 +566,10 @@ func GET_MSG_PROJECT_product_getStories() *MSG_PROJECT_product_getStories {
 
 func (data *MSG_PROJECT_product_getStories) cmd() int32 {
 	return CMD_MSG_PROJECT_product_getStories
+}
+
+func (data *MSG_PROJECT_product_getStories) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_product_getStories()))
 }
 
 func (data *MSG_PROJECT_product_getStories) Put() {
@@ -612,10 +638,11 @@ func (data *MSG_PROJECT_product_getStories_result) cmd() int32 {
 	return CMD_MSG_PROJECT_product_getStories_result
 }
 
+func (data *MSG_PROJECT_product_getStories_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_product_getStories_result()))
+}
+
 func (data *MSG_PROJECT_product_getStories_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	data.Total = 0
 	pool_MSG_PROJECT_product_getStories_result.Put(data)
@@ -706,6 +733,10 @@ func (data *MSG_PROJECT_story) cmd() int32 {
 	return CMD_MSG_PROJECT_story
 }
 
+func (data *MSG_PROJECT_story) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_story()))
+}
+
 func (data *MSG_PROJECT_story) Put() {
 	data.Id = 0
 	data.Product = 0
@@ -743,18 +774,9 @@ func (data *MSG_PROJECT_story) Put() {
 	data.PlanTitle = ``
 	data.Spec = ``
 	data.Verify = ``
-	for _,v := range data.Stages {
-		v.Put()
-	}
 	data.Stages = data.Stages[:0]
-	for _,v := range data.ExtraStories {
-		v.Put()
-	}
 	data.ExtraStories = data.ExtraStories[:0]
 	data.Projects = data.Projects[:0]
-	for _,v := range data.Tasks {
-		v.Put()
-	}
 	data.Tasks = data.Tasks[:0]
 	pool_MSG_PROJECT_story.Put(data)
 }
@@ -961,6 +983,10 @@ func (data *MSG_PROJECT_tree_cache) cmd() int32 {
 	return CMD_MSG_PROJECT_tree_cache
 }
 
+func (data *MSG_PROJECT_tree_cache) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_tree_cache()))
+}
+
 func (data *MSG_PROJECT_tree_cache) Put() {
 	data.Id = 0
 	data.Root = 0
@@ -1052,6 +1078,10 @@ func (data *MSG_PROJECT_tree_getParents) cmd() int32 {
 	return CMD_MSG_PROJECT_tree_getParents
 }
 
+func (data *MSG_PROJECT_tree_getParents) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_tree_getParents()))
+}
+
 func (data *MSG_PROJECT_tree_getParents) Put() {
 	data.ModuleID = 0
 	pool_MSG_PROJECT_tree_getParents.Put(data)
@@ -1090,10 +1120,11 @@ func (data *MSG_PROJECT_tree_getParents_result) cmd() int32 {
 	return CMD_MSG_PROJECT_tree_getParents_result
 }
 
+func (data *MSG_PROJECT_tree_getParents_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_tree_getParents_result()))
+}
+
 func (data *MSG_PROJECT_tree_getParents_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	pool_MSG_PROJECT_tree_getParents_result.Put(data)
 }
@@ -1144,6 +1175,10 @@ func GET_MSG_PROJECT_branch_info() *MSG_PROJECT_branch_info {
 
 func (data *MSG_PROJECT_branch_info) cmd() int32 {
 	return CMD_MSG_PROJECT_branch_info
+}
+
+func (data *MSG_PROJECT_branch_info) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_branch_info()))
 }
 
 func (data *MSG_PROJECT_branch_info) Put() {
@@ -1199,12 +1234,13 @@ func (data *MSG_PROJECT_tree_manageChild) cmd() int32 {
 	return CMD_MSG_PROJECT_tree_manageChild
 }
 
+func (data *MSG_PROJECT_tree_manageChild) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_tree_manageChild()))
+}
+
 func (data *MSG_PROJECT_tree_manageChild) Put() {
 	data.RootID = 0
 	data.ViewType = ``
-	for _,v := range data.Modules {
-		v.Put()
-	}
 	data.Modules = data.Modules[:0]
 	data.ParentModuleID = 0
 	pool_MSG_PROJECT_tree_manageChild.Put(data)
@@ -1261,6 +1297,10 @@ func (data *MSG_PROJECT_tree_manageChild_result) cmd() int32 {
 	return CMD_MSG_PROJECT_tree_manageChild_result
 }
 
+func (data *MSG_PROJECT_tree_manageChild_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_tree_manageChild_result()))
+}
+
 func (data *MSG_PROJECT_tree_manageChild_result) Put() {
 	data.Result = 0
 	data.Name = ``
@@ -1306,6 +1346,10 @@ func GET_MSG_PROJECT_product_getStoriesMapBySql() *MSG_PROJECT_product_getStorie
 
 func (data *MSG_PROJECT_product_getStoriesMapBySql) cmd() int32 {
 	return CMD_MSG_PROJECT_product_getStoriesMapBySql
+}
+
+func (data *MSG_PROJECT_product_getStoriesMapBySql) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_product_getStoriesMapBySql()))
 }
 
 func (data *MSG_PROJECT_product_getStoriesMapBySql) Put() {
@@ -1365,6 +1409,10 @@ func (data *MSG_PROJECT_product_getStoriesMapBySql_result) cmd() int32 {
 	return CMD_MSG_PROJECT_product_getStoriesMapBySql_result
 }
 
+func (data *MSG_PROJECT_product_getStoriesMapBySql_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_product_getStoriesMapBySql_result()))
+}
+
 func (data *MSG_PROJECT_product_getStoriesMapBySql_result) Put() {
 	data.List = data.List[:0]
 	data.Total = 0
@@ -1417,10 +1465,11 @@ func (data *MSG_PROJECT_tree_updateList) cmd() int32 {
 	return CMD_MSG_PROJECT_tree_updateList
 }
 
+func (data *MSG_PROJECT_tree_updateList) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_tree_updateList()))
+}
+
 func (data *MSG_PROJECT_tree_updateList) Put() {
-	for _,v := range data.Modules {
-		v.Put()
-	}
 	data.Modules = data.Modules[:0]
 	pool_MSG_PROJECT_tree_updateList.Put(data)
 }
@@ -1467,6 +1516,10 @@ func GET_MSG_PROJECT_tree_delete() *MSG_PROJECT_tree_delete {
 
 func (data *MSG_PROJECT_tree_delete) cmd() int32 {
 	return CMD_MSG_PROJECT_tree_delete
+}
+
+func (data *MSG_PROJECT_tree_delete) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_tree_delete()))
 }
 
 func (data *MSG_PROJECT_tree_delete) Put() {
@@ -1519,6 +1572,10 @@ func (data *MSG_PROJECT_productplan_getPairsForStory) cmd() int32 {
 	return CMD_MSG_PROJECT_productplan_getPairsForStory
 }
 
+func (data *MSG_PROJECT_productplan_getPairsForStory) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_productplan_getPairsForStory()))
+}
+
 func (data *MSG_PROJECT_productplan_getPairsForStory) Put() {
 	data.Product = 0
 	data.Branch = 0
@@ -1558,6 +1615,10 @@ func GET_MSG_PROJECT_productplan_getPairsForStory_result() *MSG_PROJECT_productp
 
 func (data *MSG_PROJECT_productplan_getPairsForStory_result) cmd() int32 {
 	return CMD_MSG_PROJECT_productplan_getPairsForStory_result
+}
+
+func (data *MSG_PROJECT_productplan_getPairsForStory_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_productplan_getPairsForStory_result()))
 }
 
 func (data *MSG_PROJECT_productplan_getPairsForStory_result) Put() {
@@ -1614,6 +1675,10 @@ func GET_MSG_PROJECT_productplan_getList() *MSG_PROJECT_productplan_getList {
 
 func (data *MSG_PROJECT_productplan_getList) cmd() int32 {
 	return CMD_MSG_PROJECT_productplan_getList
+}
+
+func (data *MSG_PROJECT_productplan_getList) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_productplan_getList()))
 }
 
 func (data *MSG_PROJECT_productplan_getList) Put() {
@@ -1687,6 +1752,10 @@ func (data *MSG_PROJECT_productplan_getList_result) cmd() int32 {
 	return CMD_MSG_PROJECT_productplan_getList_result
 }
 
+func (data *MSG_PROJECT_productplan_getList_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_productplan_getList_result()))
+}
+
 func (data *MSG_PROJECT_productplan_getList_result) Put() {
 	data.List = data.List[:0]
 	data.Total = 0
@@ -1740,6 +1809,10 @@ func (data *MSG_PROJECT_productplan_getLast) cmd() int32 {
 	return CMD_MSG_PROJECT_productplan_getLast
 }
 
+func (data *MSG_PROJECT_productplan_getLast) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_productplan_getLast()))
+}
+
 func (data *MSG_PROJECT_productplan_getLast) Put() {
 	data.ProductId = 0
 	data.Branch = 0
@@ -1781,6 +1854,10 @@ func (data *MSG_PROJECT_productplan_getLast_result) cmd() int32 {
 	return CMD_MSG_PROJECT_productplan_getLast_result
 }
 
+func (data *MSG_PROJECT_productplan_getLast_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_productplan_getLast_result()))
+}
+
 func (data *MSG_PROJECT_productplan_getLast_result) Put() {
 	data.Result = nil
 	pool_MSG_PROJECT_productplan_getLast_result.Put(data)
@@ -1820,11 +1897,12 @@ func (data *MSG_PROJECT_product_editBranch) cmd() int32 {
 	return CMD_MSG_PROJECT_product_editBranch
 }
 
+func (data *MSG_PROJECT_product_editBranch) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_product_editBranch()))
+}
+
 func (data *MSG_PROJECT_product_editBranch) Put() {
 	data.ProductID = 0
-	for _,v := range data.Branchs {
-		v.Put()
-	}
 	data.Branchs = data.Branchs[:0]
 	pool_MSG_PROJECT_product_editBranch.Put(data)
 }
@@ -1876,6 +1954,10 @@ func (data *MSG_PROJECT_product_deleteBranch) cmd() int32 {
 	return CMD_MSG_PROJECT_product_deleteBranch
 }
 
+func (data *MSG_PROJECT_product_deleteBranch) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_product_deleteBranch()))
+}
+
 func (data *MSG_PROJECT_product_deleteBranch) Put() {
 	data.ProductID = 0
 	data.BranchID = 0
@@ -1917,6 +1999,10 @@ func (data *MSG_PROJECT_product_deleteBranch_result) cmd() int32 {
 	return CMD_MSG_PROJECT_product_deleteBranch_result
 }
 
+func (data *MSG_PROJECT_product_deleteBranch_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_product_deleteBranch_result()))
+}
+
 func (data *MSG_PROJECT_product_deleteBranch_result) Put() {
 	data.Result = 0
 	pool_MSG_PROJECT_product_deleteBranch_result.Put(data)
@@ -1956,6 +2042,10 @@ func GET_MSG_PROJECT_productplan_getPairs() *MSG_PROJECT_productplan_getPairs {
 
 func (data *MSG_PROJECT_productplan_getPairs) cmd() int32 {
 	return CMD_MSG_PROJECT_productplan_getPairs
+}
+
+func (data *MSG_PROJECT_productplan_getPairs) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_productplan_getPairs()))
 }
 
 func (data *MSG_PROJECT_productplan_getPairs) Put() {
@@ -2016,6 +2106,10 @@ func (data *MSG_PROJECT_productplan_getPairs_result) cmd() int32 {
 	return CMD_MSG_PROJECT_productplan_getPairs_result
 }
 
+func (data *MSG_PROJECT_productplan_getPairs_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_productplan_getPairs_result()))
+}
+
 func (data *MSG_PROJECT_productplan_getPairs_result) Put() {
 	data.List = data.List[:0]
 	pool_MSG_PROJECT_productplan_getPairs_result.Put(data)
@@ -2073,6 +2167,10 @@ func GET_MSG_PROJECT_productplan_insertUpdate() *MSG_PROJECT_productplan_insertU
 
 func (data *MSG_PROJECT_productplan_insertUpdate) cmd() int32 {
 	return CMD_MSG_PROJECT_productplan_insertUpdate
+}
+
+func (data *MSG_PROJECT_productplan_insertUpdate) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_productplan_insertUpdate()))
 }
 
 func (data *MSG_PROJECT_productplan_insertUpdate) Put() {
@@ -2155,6 +2253,10 @@ func (data *MSG_PROJECT_productplan_insertUpdate_result) cmd() int32 {
 	return CMD_MSG_PROJECT_productplan_insertUpdate_result
 }
 
+func (data *MSG_PROJECT_productplan_insertUpdate_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_productplan_insertUpdate_result()))
+}
+
 func (data *MSG_PROJECT_productplan_insertUpdate_result) Put() {
 	data.Id = 0
 	data.Result = 0
@@ -2196,6 +2298,10 @@ func GET_MSG_PROJECT_productplan_delete() *MSG_PROJECT_productplan_delete {
 
 func (data *MSG_PROJECT_productplan_delete) cmd() int32 {
 	return CMD_MSG_PROJECT_productplan_delete
+}
+
+func (data *MSG_PROJECT_productplan_delete) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_productplan_delete()))
 }
 
 func (data *MSG_PROJECT_productplan_delete) Put() {
@@ -2258,6 +2364,10 @@ func GET_MSG_PROJECT_stroy_create() *MSG_PROJECT_stroy_create {
 
 func (data *MSG_PROJECT_stroy_create) cmd() int32 {
 	return CMD_MSG_PROJECT_stroy_create
+}
+
+func (data *MSG_PROJECT_stroy_create) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_stroy_create()))
 }
 
 func (data *MSG_PROJECT_stroy_create) Put() {
@@ -2363,6 +2473,10 @@ func (data *MSG_PROJECT_stroy_create_result) cmd() int32 {
 	return CMD_MSG_PROJECT_stroy_create_result
 }
 
+func (data *MSG_PROJECT_stroy_create_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_stroy_create_result()))
+}
+
 func (data *MSG_PROJECT_stroy_create_result) Put() {
 	data.Result = 0
 	pool_MSG_PROJECT_stroy_create_result.Put(data)
@@ -2399,6 +2513,10 @@ func GET_MSG_PROJECT_story_batchGetStoryStage() *MSG_PROJECT_story_batchGetStory
 
 func (data *MSG_PROJECT_story_batchGetStoryStage) cmd() int32 {
 	return CMD_MSG_PROJECT_story_batchGetStoryStage
+}
+
+func (data *MSG_PROJECT_story_batchGetStoryStage) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_story_batchGetStoryStage()))
 }
 
 func (data *MSG_PROJECT_story_batchGetStoryStage) Put() {
@@ -2450,6 +2568,10 @@ func (data *MSG_PROJECT_story_batchGetStoryStage_result) cmd() int32 {
 	return CMD_MSG_PROJECT_story_batchGetStoryStage_result
 }
 
+func (data *MSG_PROJECT_story_batchGetStoryStage_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_story_batchGetStoryStage_result()))
+}
+
 func (data *MSG_PROJECT_story_batchGetStoryStage_result) Put() {
 	data.List = nil
 	pool_MSG_PROJECT_story_batchGetStoryStage_result.Put(data)
@@ -2487,6 +2609,10 @@ func GET_MSG_PROJECT_story_getById() *MSG_PROJECT_story_getById {
 
 func (data *MSG_PROJECT_story_getById) cmd() int32 {
 	return CMD_MSG_PROJECT_story_getById
+}
+
+func (data *MSG_PROJECT_story_getById) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_story_getById()))
 }
 
 func (data *MSG_PROJECT_story_getById) Put() {
@@ -2528,6 +2654,10 @@ func GET_MSG_PROJECT_story_getById_result() *MSG_PROJECT_story_getById_result {
 
 func (data *MSG_PROJECT_story_getById_result) cmd() int32 {
 	return CMD_MSG_PROJECT_story_getById_result
+}
+
+func (data *MSG_PROJECT_story_getById_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_story_getById_result()))
 }
 
 func (data *MSG_PROJECT_story_getById_result) Put() {
@@ -2581,6 +2711,10 @@ func (data *MSG_PROJECT_project_getById) cmd() int32 {
 	return CMD_MSG_PROJECT_project_getById
 }
 
+func (data *MSG_PROJECT_project_getById) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_getById()))
+}
+
 func (data *MSG_PROJECT_project_getById) Put() {
 	data.Id = 0
 	pool_MSG_PROJECT_project_getById.Put(data)
@@ -2617,6 +2751,10 @@ func GET_MSG_PROJECT_project_getById_result() *MSG_PROJECT_project_getById_resul
 
 func (data *MSG_PROJECT_project_getById_result) cmd() int32 {
 	return CMD_MSG_PROJECT_project_getById_result
+}
+
+func (data *MSG_PROJECT_project_getById_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_getById_result()))
 }
 
 func (data *MSG_PROJECT_project_getById_result) Put() {
@@ -2707,6 +2845,10 @@ func (data *MSG_PROJECT_project_cache) cmd() int32 {
 	return CMD_MSG_PROJECT_project_cache
 }
 
+func (data *MSG_PROJECT_project_cache) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_cache()))
+}
+
 func (data *MSG_PROJECT_project_cache) Put() {
 	data.Id = 0
 	data.IsCat = false
@@ -2745,9 +2887,6 @@ func (data *MSG_PROJECT_project_cache) Put() {
 	data.Plans = data.Plans[:0]
 	data.Delay = 0
 	data.Hours = nil
-	for _,v := range data.Teams {
-		v.Put()
-	}
 	data.Teams = data.Teams[:0]
 	pool_MSG_PROJECT_project_cache.Put(data)
 }
@@ -2927,6 +3066,10 @@ func (data *MSG_PROJECT_StoryStage) cmd() int32 {
 	return CMD_MSG_PROJECT_StoryStage
 }
 
+func (data *MSG_PROJECT_StoryStage) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_StoryStage()))
+}
+
 func (data *MSG_PROJECT_StoryStage) Put() {
 	data.Story = 0
 	data.Branch = 0
@@ -3023,6 +3166,10 @@ func (data *MSG_PROJECT_TASK) cmd() int32 {
 	return CMD_MSG_PROJECT_TASK
 }
 
+func (data *MSG_PROJECT_TASK) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_TASK()))
+}
+
 func (data *MSG_PROJECT_TASK) Put() {
 	data.Id = 0
 	data.Ancestor = 0
@@ -3074,13 +3221,7 @@ func (data *MSG_PROJECT_TASK) Put() {
 	data.Branch = 0
 	data.Progress = 0
 	data.Delay = 0
-	for _,v := range data.Children {
-		v.Put()
-	}
 	data.Children = data.Children[:0]
-	for _,v := range data.Grandchildren {
-		v.Put()
-	}
 	data.Grandchildren = data.Grandchildren[:0]
 	data.NeedConfirm = false
 	pool_MSG_PROJECT_TASK.Put(data)
@@ -3267,6 +3408,10 @@ func (data *MSG_PROJECT_productplan_getById) cmd() int32 {
 	return CMD_MSG_PROJECT_productplan_getById
 }
 
+func (data *MSG_PROJECT_productplan_getById) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_productplan_getById()))
+}
+
 func (data *MSG_PROJECT_productplan_getById) Put() {
 	data.Id = 0
 	pool_MSG_PROJECT_productplan_getById.Put(data)
@@ -3303,6 +3448,10 @@ func GET_MSG_PROJECT_productplan_getById_result() *MSG_PROJECT_productplan_getBy
 
 func (data *MSG_PROJECT_productplan_getById_result) cmd() int32 {
 	return CMD_MSG_PROJECT_productplan_getById_result
+}
+
+func (data *MSG_PROJECT_productplan_getById_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_productplan_getById_result()))
 }
 
 func (data *MSG_PROJECT_productplan_getById_result) Put() {
@@ -3364,6 +3513,10 @@ func GET_MSG_PROJECT_productplan() *MSG_PROJECT_productplan {
 
 func (data *MSG_PROJECT_productplan) cmd() int32 {
 	return CMD_MSG_PROJECT_productplan
+}
+
+func (data *MSG_PROJECT_productplan) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_productplan()))
 }
 
 func (data *MSG_PROJECT_productplan) Put() {
@@ -3455,6 +3608,10 @@ func GET_MSG_PROJECT_build() *MSG_PROJECT_build {
 
 func (data *MSG_PROJECT_build) cmd() int32 {
 	return CMD_MSG_PROJECT_build
+}
+
+func (data *MSG_PROJECT_build) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_build()))
 }
 
 func (data *MSG_PROJECT_build) Put() {
@@ -3553,6 +3710,10 @@ func (data *MSG_PROJECT_build_getById) cmd() int32 {
 	return CMD_MSG_PROJECT_build_getById
 }
 
+func (data *MSG_PROJECT_build_getById) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_build_getById()))
+}
+
 func (data *MSG_PROJECT_build_getById) Put() {
 	data.Id = 0
 	pool_MSG_PROJECT_build_getById.Put(data)
@@ -3589,6 +3750,10 @@ func GET_MSG_PROJECT_build_getById_result() *MSG_PROJECT_build_getById_result {
 
 func (data *MSG_PROJECT_build_getById_result) cmd() int32 {
 	return CMD_MSG_PROJECT_build_getById_result
+}
+
+func (data *MSG_PROJECT_build_getById_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_build_getById_result()))
 }
 
 func (data *MSG_PROJECT_build_getById_result) Put() {
@@ -3652,6 +3817,10 @@ func GET_MSG_PROJECT_release() *MSG_PROJECT_release {
 
 func (data *MSG_PROJECT_release) cmd() int32 {
 	return CMD_MSG_PROJECT_release
+}
+
+func (data *MSG_PROJECT_release) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_release()))
 }
 
 func (data *MSG_PROJECT_release) Put() {
@@ -3750,6 +3919,10 @@ func (data *MSG_PROJECT_release_getById) cmd() int32 {
 	return CMD_MSG_PROJECT_release_getById
 }
 
+func (data *MSG_PROJECT_release_getById) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_release_getById()))
+}
+
 func (data *MSG_PROJECT_release_getById) Put() {
 	data.Id = 0
 	pool_MSG_PROJECT_release_getById.Put(data)
@@ -3786,6 +3959,10 @@ func GET_MSG_PROJECT_release_getById_result() *MSG_PROJECT_release_getById_resul
 
 func (data *MSG_PROJECT_release_getById_result) cmd() int32 {
 	return CMD_MSG_PROJECT_release_getById_result
+}
+
+func (data *MSG_PROJECT_release_getById_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_release_getById_result()))
 }
 
 func (data *MSG_PROJECT_release_getById_result) Put() {
@@ -3839,6 +4016,10 @@ func (data *MSG_PROJECT_task_getPairs) cmd() int32 {
 	return CMD_MSG_PROJECT_task_getPairs
 }
 
+func (data *MSG_PROJECT_task_getPairs) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_getPairs()))
+}
+
 func (data *MSG_PROJECT_task_getPairs) Put() {
 	data.Where = nil
 	pool_MSG_PROJECT_task_getPairs.Put(data)
@@ -3875,6 +4056,10 @@ func GET_MSG_PROJECT_task_getPairs_result() *MSG_PROJECT_task_getPairs_result {
 
 func (data *MSG_PROJECT_task_getPairs_result) cmd() int32 {
 	return CMD_MSG_PROJECT_task_getPairs_result
+}
+
+func (data *MSG_PROJECT_task_getPairs_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_getPairs_result()))
 }
 
 func (data *MSG_PROJECT_task_getPairs_result) Put() {
@@ -3930,6 +4115,10 @@ func (data *MSG_PROJECT_task_getListByWhereMap) cmd() int32 {
 	return CMD_MSG_PROJECT_task_getListByWhereMap
 }
 
+func (data *MSG_PROJECT_task_getListByWhereMap) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_getListByWhereMap()))
+}
+
 func (data *MSG_PROJECT_task_getListByWhereMap) Put() {
 	data.Where = nil
 	data.Order = ``
@@ -3981,10 +4170,11 @@ func (data *MSG_PROJECT_task_getListByWhereMap_result) cmd() int32 {
 	return CMD_MSG_PROJECT_task_getListByWhereMap_result
 }
 
+func (data *MSG_PROJECT_task_getListByWhereMap_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_getListByWhereMap_result()))
+}
+
 func (data *MSG_PROJECT_task_getListByWhereMap_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	data.Total = 0
 	pool_MSG_PROJECT_task_getListByWhereMap_result.Put(data)
@@ -4036,6 +4226,10 @@ func (data *MSG_PROJECT_project_getBurn) cmd() int32 {
 	return CMD_MSG_PROJECT_project_getBurn
 }
 
+func (data *MSG_PROJECT_project_getBurn) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_getBurn()))
+}
+
 func (data *MSG_PROJECT_project_getBurn) Put() {
 	data.ProjectIds = data.ProjectIds[:0]
 	pool_MSG_PROJECT_project_getBurn.Put(data)
@@ -4085,10 +4279,11 @@ func (data *MSG_PROJECT_project_getBurn_result) cmd() int32 {
 	return CMD_MSG_PROJECT_project_getBurn_result
 }
 
+func (data *MSG_PROJECT_project_getBurn_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_getBurn_result()))
+}
+
 func (data *MSG_PROJECT_project_getBurn_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	pool_MSG_PROJECT_project_getBurn_result.Put(data)
 }
@@ -4139,6 +4334,10 @@ func GET_MSG_PROJECT_project_Burn_info() *MSG_PROJECT_project_Burn_info {
 
 func (data *MSG_PROJECT_project_Burn_info) cmd() int32 {
 	return CMD_MSG_PROJECT_project_Burn_info
+}
+
+func (data *MSG_PROJECT_project_Burn_info) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_Burn_info()))
 }
 
 func (data *MSG_PROJECT_project_Burn_info) Put() {
@@ -4193,6 +4392,10 @@ func (data *MSG_PROJECT_story_getPlanStories) cmd() int32 {
 	return CMD_MSG_PROJECT_story_getPlanStories
 }
 
+func (data *MSG_PROJECT_story_getPlanStories) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_story_getPlanStories()))
+}
+
 func (data *MSG_PROJECT_story_getPlanStories) Put() {
 	data.PlanID = 0
 	data.Status = ``
@@ -4237,10 +4440,11 @@ func (data *MSG_PROJECT_story_getPlanStories_result) cmd() int32 {
 	return CMD_MSG_PROJECT_story_getPlanStories_result
 }
 
+func (data *MSG_PROJECT_story_getPlanStories_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_story_getPlanStories_result()))
+}
+
 func (data *MSG_PROJECT_story_getPlanStories_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	pool_MSG_PROJECT_story_getPlanStories_result.Put(data)
 }
@@ -4289,6 +4493,10 @@ func GET_MSG_PROJECT_project_linkStory() *MSG_PROJECT_project_linkStory {
 
 func (data *MSG_PROJECT_project_linkStory) cmd() int32 {
 	return CMD_MSG_PROJECT_project_linkStory
+}
+
+func (data *MSG_PROJECT_project_linkStory) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_linkStory()))
 }
 
 func (data *MSG_PROJECT_project_linkStory) Put() {
@@ -4345,6 +4553,10 @@ func GET_MSG_PROJECT_branch_getByProducts() *MSG_PROJECT_branch_getByProducts {
 
 func (data *MSG_PROJECT_branch_getByProducts) cmd() int32 {
 	return CMD_MSG_PROJECT_branch_getByProducts
+}
+
+func (data *MSG_PROJECT_branch_getByProducts) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_branch_getByProducts()))
 }
 
 func (data *MSG_PROJECT_branch_getByProducts) Put() {
@@ -4410,6 +4622,10 @@ func (data *MSG_PROJECT_branch_getByProducts_result) cmd() int32 {
 	return CMD_MSG_PROJECT_branch_getByProducts_result
 }
 
+func (data *MSG_PROJECT_branch_getByProducts_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_branch_getByProducts_result()))
+}
+
 func (data *MSG_PROJECT_branch_getByProducts_result) Put() {
 	data.List = nil
 	pool_MSG_PROJECT_branch_getByProducts_result.Put(data)
@@ -4447,6 +4663,10 @@ func GET_MSG_PROJECT_project_create() *MSG_PROJECT_project_create {
 
 func (data *MSG_PROJECT_project_create) cmd() int32 {
 	return CMD_MSG_PROJECT_project_create
+}
+
+func (data *MSG_PROJECT_project_create) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_create()))
 }
 
 func (data *MSG_PROJECT_project_create) Put() {
@@ -4503,6 +4723,10 @@ func (data *MSG_PROJECT_project_create_result) cmd() int32 {
 	return CMD_MSG_PROJECT_project_create_result
 }
 
+func (data *MSG_PROJECT_project_create_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_create_result()))
+}
+
 func (data *MSG_PROJECT_project_create_result) Put() {
 	data.Id = 0
 	pool_MSG_PROJECT_project_create_result.Put(data)
@@ -4539,6 +4763,10 @@ func GET_MSG_PROJECT_project_statRelatedData() *MSG_PROJECT_project_statRelatedD
 
 func (data *MSG_PROJECT_project_statRelatedData) cmd() int32 {
 	return CMD_MSG_PROJECT_project_statRelatedData
+}
+
+func (data *MSG_PROJECT_project_statRelatedData) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_statRelatedData()))
 }
 
 func (data *MSG_PROJECT_project_statRelatedData) Put() {
@@ -4579,6 +4807,10 @@ func GET_MSG_PROJECT_project_statRelatedData_result() *MSG_PROJECT_project_statR
 
 func (data *MSG_PROJECT_project_statRelatedData_result) cmd() int32 {
 	return CMD_MSG_PROJECT_project_statRelatedData_result
+}
+
+func (data *MSG_PROJECT_project_statRelatedData_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_statRelatedData_result()))
 }
 
 func (data *MSG_PROJECT_project_statRelatedData_result) Put() {
@@ -4623,6 +4855,10 @@ func GET_MSG_PROJECT_story_getPairsByIds() *MSG_PROJECT_story_getPairsByIds {
 
 func (data *MSG_PROJECT_story_getPairsByIds) cmd() int32 {
 	return CMD_MSG_PROJECT_story_getPairsByIds
+}
+
+func (data *MSG_PROJECT_story_getPairsByIds) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_story_getPairsByIds()))
 }
 
 func (data *MSG_PROJECT_story_getPairsByIds) Put() {
@@ -4674,6 +4910,10 @@ func (data *MSG_PROJECT_story_getPairsByIds_result) cmd() int32 {
 	return CMD_MSG_PROJECT_story_getPairsByIds_result
 }
 
+func (data *MSG_PROJECT_story_getPairsByIds_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_story_getPairsByIds_result()))
+}
+
 func (data *MSG_PROJECT_story_getPairsByIds_result) Put() {
 	data.List = data.List[:0]
 	pool_MSG_PROJECT_story_getPairsByIds_result.Put(data)
@@ -4721,6 +4961,10 @@ func GET_MSG_PROJECT_product_getPairsByIds() *MSG_PROJECT_product_getPairsByIds 
 
 func (data *MSG_PROJECT_product_getPairsByIds) cmd() int32 {
 	return CMD_MSG_PROJECT_product_getPairsByIds
+}
+
+func (data *MSG_PROJECT_product_getPairsByIds) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_product_getPairsByIds()))
 }
 
 func (data *MSG_PROJECT_product_getPairsByIds) Put() {
@@ -4772,6 +5016,10 @@ func (data *MSG_PROJECT_product_getPairsByIds_result) cmd() int32 {
 	return CMD_MSG_PROJECT_product_getPairsByIds_result
 }
 
+func (data *MSG_PROJECT_product_getPairsByIds_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_product_getPairsByIds_result()))
+}
+
 func (data *MSG_PROJECT_product_getPairsByIds_result) Put() {
 	data.List = data.List[:0]
 	pool_MSG_PROJECT_product_getPairsByIds_result.Put(data)
@@ -4819,6 +5067,10 @@ func GET_MSG_PROJECT_project_getPairsByIds() *MSG_PROJECT_project_getPairsByIds 
 
 func (data *MSG_PROJECT_project_getPairsByIds) cmd() int32 {
 	return CMD_MSG_PROJECT_project_getPairsByIds
+}
+
+func (data *MSG_PROJECT_project_getPairsByIds) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_getPairsByIds()))
 }
 
 func (data *MSG_PROJECT_project_getPairsByIds) Put() {
@@ -4870,6 +5122,10 @@ func (data *MSG_PROJECT_project_getPairsByIds_result) cmd() int32 {
 	return CMD_MSG_PROJECT_project_getPairsByIds_result
 }
 
+func (data *MSG_PROJECT_project_getPairsByIds_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_getPairsByIds_result()))
+}
+
 func (data *MSG_PROJECT_project_getPairsByIds_result) Put() {
 	data.List = data.List[:0]
 	pool_MSG_PROJECT_project_getPairsByIds_result.Put(data)
@@ -4917,6 +5173,10 @@ func GET_MSG_PROJECT_branch_getPairsByIds() *MSG_PROJECT_branch_getPairsByIds {
 
 func (data *MSG_PROJECT_branch_getPairsByIds) cmd() int32 {
 	return CMD_MSG_PROJECT_branch_getPairsByIds
+}
+
+func (data *MSG_PROJECT_branch_getPairsByIds) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_branch_getPairsByIds()))
 }
 
 func (data *MSG_PROJECT_branch_getPairsByIds) Put() {
@@ -4968,6 +5228,10 @@ func (data *MSG_PROJECT_branch_getPairsByIds_result) cmd() int32 {
 	return CMD_MSG_PROJECT_branch_getPairsByIds_result
 }
 
+func (data *MSG_PROJECT_branch_getPairsByIds_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_branch_getPairsByIds_result()))
+}
+
 func (data *MSG_PROJECT_branch_getPairsByIds_result) Put() {
 	data.List = data.List[:0]
 	pool_MSG_PROJECT_branch_getPairsByIds_result.Put(data)
@@ -5017,6 +5281,10 @@ func (data *MSG_PROJECT_tree_getPairsByIds) cmd() int32 {
 	return CMD_MSG_PROJECT_tree_getPairsByIds
 }
 
+func (data *MSG_PROJECT_tree_getPairsByIds) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_tree_getPairsByIds()))
+}
+
 func (data *MSG_PROJECT_tree_getPairsByIds) Put() {
 	data.Ids = data.Ids[:0]
 	pool_MSG_PROJECT_tree_getPairsByIds.Put(data)
@@ -5064,6 +5332,10 @@ func GET_MSG_PROJECT_tree_getPairsByIds_result() *MSG_PROJECT_tree_getPairsByIds
 
 func (data *MSG_PROJECT_tree_getPairsByIds_result) cmd() int32 {
 	return CMD_MSG_PROJECT_tree_getPairsByIds_result
+}
+
+func (data *MSG_PROJECT_tree_getPairsByIds_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_tree_getPairsByIds_result()))
 }
 
 func (data *MSG_PROJECT_tree_getPairsByIds_result) Put() {
@@ -5116,6 +5388,10 @@ func (data *MSG_PROJECT_project_start) cmd() int32 {
 	return CMD_MSG_PROJECT_project_start
 }
 
+func (data *MSG_PROJECT_project_start) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_start()))
+}
+
 func (data *MSG_PROJECT_project_start) Put() {
 	data.Id = 0
 	data.Comment = ``
@@ -5159,6 +5435,10 @@ func GET_MSG_PROJECT_project_putoff() *MSG_PROJECT_project_putoff {
 
 func (data *MSG_PROJECT_project_putoff) cmd() int32 {
 	return CMD_MSG_PROJECT_project_putoff
+}
+
+func (data *MSG_PROJECT_project_putoff) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_putoff()))
 }
 
 func (data *MSG_PROJECT_project_putoff) Put() {
@@ -5212,6 +5492,10 @@ func (data *MSG_PROJECT_project_suspend) cmd() int32 {
 	return CMD_MSG_PROJECT_project_suspend
 }
 
+func (data *MSG_PROJECT_project_suspend) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_suspend()))
+}
+
 func (data *MSG_PROJECT_project_suspend) Put() {
 	data.Id = 0
 	data.Comment = ``
@@ -5255,6 +5539,10 @@ func GET_MSG_PROJECT_project_activate() *MSG_PROJECT_project_activate {
 
 func (data *MSG_PROJECT_project_activate) cmd() int32 {
 	return CMD_MSG_PROJECT_project_activate
+}
+
+func (data *MSG_PROJECT_project_activate) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_activate()))
 }
 
 func (data *MSG_PROJECT_project_activate) Put() {
@@ -5308,6 +5596,10 @@ func (data *MSG_PROJECT_project_close) cmd() int32 {
 	return CMD_MSG_PROJECT_project_close
 }
 
+func (data *MSG_PROJECT_project_close) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_close()))
+}
+
 func (data *MSG_PROJECT_project_close) Put() {
 	data.Id = 0
 	data.Comment = ``
@@ -5347,6 +5639,10 @@ func GET_MSG_PROJECT_project_delete() *MSG_PROJECT_project_delete {
 
 func (data *MSG_PROJECT_project_delete) cmd() int32 {
 	return CMD_MSG_PROJECT_project_delete
+}
+
+func (data *MSG_PROJECT_project_delete) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_delete()))
 }
 
 func (data *MSG_PROJECT_project_delete) Put() {
@@ -5393,6 +5689,10 @@ func GET_MSG_PROJECT_project_getProjectTasks() *MSG_PROJECT_project_getProjectTa
 
 func (data *MSG_PROJECT_project_getProjectTasks) cmd() int32 {
 	return CMD_MSG_PROJECT_project_getProjectTasks
+}
+
+func (data *MSG_PROJECT_project_getProjectTasks) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_getProjectTasks()))
 }
 
 func (data *MSG_PROJECT_project_getProjectTasks) Put() {
@@ -5473,6 +5773,10 @@ func (data *MSG_PROJECT_project_getProjectTasksByWhere) cmd() int32 {
 	return CMD_MSG_PROJECT_project_getProjectTasksByWhere
 }
 
+func (data *MSG_PROJECT_project_getProjectTasksByWhere) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_getProjectTasksByWhere()))
+}
+
 func (data *MSG_PROJECT_project_getProjectTasksByWhere) Put() {
 	data.Where = ``
 	data.OrderBy = ``
@@ -5527,10 +5831,11 @@ func (data *MSG_PROJECT_project_getProjectTasks_result) cmd() int32 {
 	return CMD_MSG_PROJECT_project_getProjectTasks_result
 }
 
+func (data *MSG_PROJECT_project_getProjectTasks_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_project_getProjectTasks_result()))
+}
+
 func (data *MSG_PROJECT_project_getProjectTasks_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	data.Total = 0
 	pool_MSG_PROJECT_project_getProjectTasks_result.Put(data)
@@ -5583,6 +5888,10 @@ func (data *MSG_PROJECT_tree_getTaskTreeModules) cmd() int32 {
 	return CMD_MSG_PROJECT_tree_getTaskTreeModules
 }
 
+func (data *MSG_PROJECT_tree_getTaskTreeModules) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_tree_getTaskTreeModules()))
+}
+
 func (data *MSG_PROJECT_tree_getTaskTreeModules) Put() {
 	data.ProjectID = 0
 	data.Parent = false
@@ -5624,6 +5933,10 @@ func (data *MSG_PROJECT_tree_getTaskTreeModules_result) cmd() int32 {
 	return CMD_MSG_PROJECT_tree_getTaskTreeModules_result
 }
 
+func (data *MSG_PROJECT_tree_getTaskTreeModules_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_tree_getTaskTreeModules_result()))
+}
+
 func (data *MSG_PROJECT_tree_getTaskTreeModules_result) Put() {
 	data.ProjectModules = nil
 	pool_MSG_PROJECT_tree_getTaskTreeModules_result.Put(data)
@@ -5661,6 +5974,10 @@ func GET_MSG_PROJECT_task_getById() *MSG_PROJECT_task_getById {
 
 func (data *MSG_PROJECT_task_getById) cmd() int32 {
 	return CMD_MSG_PROJECT_task_getById
+}
+
+func (data *MSG_PROJECT_task_getById) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_getById()))
 }
 
 func (data *MSG_PROJECT_task_getById) Put() {
@@ -5702,6 +6019,10 @@ func GET_MSG_PROJECT_task_getById_result() *MSG_PROJECT_task_getById_result {
 
 func (data *MSG_PROJECT_task_getById_result) cmd() int32 {
 	return CMD_MSG_PROJECT_task_getById_result
+}
+
+func (data *MSG_PROJECT_task_getById_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_getById_result()))
 }
 
 func (data *MSG_PROJECT_task_getById_result) Put() {
@@ -5757,6 +6078,10 @@ func GET_MSG_PROJECT_story_getProjectStoryPairs() *MSG_PROJECT_story_getProjectS
 
 func (data *MSG_PROJECT_story_getProjectStoryPairs) cmd() int32 {
 	return CMD_MSG_PROJECT_story_getProjectStoryPairs
+}
+
+func (data *MSG_PROJECT_story_getProjectStoryPairs) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_story_getProjectStoryPairs()))
 }
 
 func (data *MSG_PROJECT_story_getProjectStoryPairs) Put() {
@@ -5820,10 +6145,11 @@ func (data *MSG_PROJECT_story_getProjectStoryPairs_result) cmd() int32 {
 	return CMD_MSG_PROJECT_story_getProjectStoryPairs_result
 }
 
+func (data *MSG_PROJECT_story_getProjectStoryPairs_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_story_getProjectStoryPairs_result()))
+}
+
 func (data *MSG_PROJECT_story_getProjectStoryPairs_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	pool_MSG_PROJECT_story_getProjectStoryPairs_result.Put(data)
 }
@@ -5870,6 +6196,10 @@ func GET_MSG_PROJECT_task_create() *MSG_PROJECT_task_create {
 
 func (data *MSG_PROJECT_task_create) cmd() int32 {
 	return CMD_MSG_PROJECT_task_create
+}
+
+func (data *MSG_PROJECT_task_create) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_create()))
 }
 
 func (data *MSG_PROJECT_task_create) Put() {
@@ -5925,6 +6255,10 @@ func (data *MSG_PROJECT_task_create_result) cmd() int32 {
 	return CMD_MSG_PROJECT_task_create_result
 }
 
+func (data *MSG_PROJECT_task_create_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_create_result()))
+}
+
 func (data *MSG_PROJECT_task_create_result) Put() {
 	data.Id = 0
 	data.Err = 0
@@ -5974,6 +6308,10 @@ func GET_MSG_PROJECT_TaskEstimate() *MSG_PROJECT_TaskEstimate {
 
 func (data *MSG_PROJECT_TaskEstimate) cmd() int32 {
 	return CMD_MSG_PROJECT_TaskEstimate
+}
+
+func (data *MSG_PROJECT_TaskEstimate) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_TaskEstimate()))
 }
 
 func (data *MSG_PROJECT_TaskEstimate) Put() {
@@ -6038,6 +6376,10 @@ func (data *MSG_PROJECT_task_GetTaskEstimateByTaskId) cmd() int32 {
 	return CMD_MSG_PROJECT_task_GetTaskEstimateByTaskId
 }
 
+func (data *MSG_PROJECT_task_GetTaskEstimateByTaskId) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_GetTaskEstimateByTaskId()))
+}
+
 func (data *MSG_PROJECT_task_GetTaskEstimateByTaskId) Put() {
 	data.TaskId = 0
 	pool_MSG_PROJECT_task_GetTaskEstimateByTaskId.Put(data)
@@ -6076,10 +6418,11 @@ func (data *MSG_PROJECT_task_GetTaskEstimateByTaskId_result) cmd() int32 {
 	return CMD_MSG_PROJECT_task_GetTaskEstimateByTaskId_result
 }
 
+func (data *MSG_PROJECT_task_GetTaskEstimateByTaskId_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_GetTaskEstimateByTaskId_result()))
+}
+
 func (data *MSG_PROJECT_task_GetTaskEstimateByTaskId_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	pool_MSG_PROJECT_task_GetTaskEstimateByTaskId_result.Put(data)
 }
@@ -6129,11 +6472,12 @@ func (data *MSG_PROJECT_task_UpdateTaskEstimate) cmd() int32 {
 	return CMD_MSG_PROJECT_task_UpdateTaskEstimate
 }
 
+func (data *MSG_PROJECT_task_UpdateTaskEstimate) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_UpdateTaskEstimate()))
+}
+
 func (data *MSG_PROJECT_task_UpdateTaskEstimate) Put() {
 	data.TaskId = 0
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	pool_MSG_PROJECT_task_UpdateTaskEstimate.Put(data)
 }
@@ -6184,10 +6528,11 @@ func (data *MSG_PROJECT_task_UpdateTaskEstimate_result) cmd() int32 {
 	return CMD_MSG_PROJECT_task_UpdateTaskEstimate_result
 }
 
+func (data *MSG_PROJECT_task_UpdateTaskEstimate_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_UpdateTaskEstimate_result()))
+}
+
 func (data *MSG_PROJECT_task_UpdateTaskEstimate_result) Put() {
-	for _,v := range data.Changes {
-		v.Put()
-	}
 	data.Changes = data.Changes[:0]
 	pool_MSG_PROJECT_task_UpdateTaskEstimate_result.Put(data)
 }
@@ -6241,6 +6586,10 @@ func GET_MSG_PROJECT_story_getProductStories() *MSG_PROJECT_story_getProductStor
 
 func (data *MSG_PROJECT_story_getProductStories) cmd() int32 {
 	return CMD_MSG_PROJECT_story_getProductStories
+}
+
+func (data *MSG_PROJECT_story_getProductStories) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_story_getProductStories()))
 }
 
 func (data *MSG_PROJECT_story_getProductStories) Put() {
@@ -6347,10 +6696,11 @@ func (data *MSG_PROJECT_story_getProductStories_result) cmd() int32 {
 	return CMD_MSG_PROJECT_story_getProductStories_result
 }
 
+func (data *MSG_PROJECT_story_getProductStories_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_story_getProductStories_result()))
+}
+
 func (data *MSG_PROJECT_story_getProductStories_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	data.Total = 0
 	pool_MSG_PROJECT_story_getProductStories_result.Put(data)
@@ -6402,6 +6752,10 @@ func (data *MSG_PROJECT_productplan_getForProducts) cmd() int32 {
 	return CMD_MSG_PROJECT_productplan_getForProducts
 }
 
+func (data *MSG_PROJECT_productplan_getForProducts) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_productplan_getForProducts()))
+}
+
 func (data *MSG_PROJECT_productplan_getForProducts) Put() {
 	data.Products = data.Products[:0]
 	pool_MSG_PROJECT_productplan_getForProducts.Put(data)
@@ -6449,6 +6803,10 @@ func GET_MSG_PROJECT_productplan_getForProducts_result() *MSG_PROJECT_productpla
 
 func (data *MSG_PROJECT_productplan_getForProducts_result) cmd() int32 {
 	return CMD_MSG_PROJECT_productplan_getForProducts_result
+}
+
+func (data *MSG_PROJECT_productplan_getForProducts_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_productplan_getForProducts_result()))
 }
 
 func (data *MSG_PROJECT_productplan_getForProducts_result) Put() {
@@ -6503,6 +6861,10 @@ func (data *MSG_PROJECT_task_assignTo) cmd() int32 {
 	return CMD_MSG_PROJECT_task_assignTo
 }
 
+func (data *MSG_PROJECT_task_assignTo) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_assignTo()))
+}
+
 func (data *MSG_PROJECT_task_assignTo) Put() {
 	data.TaskID = 0
 	data.AssignedTo = 0
@@ -6553,6 +6915,10 @@ func GET_MSG_PROJECT_task_start() *MSG_PROJECT_task_start {
 
 func (data *MSG_PROJECT_task_start) cmd() int32 {
 	return CMD_MSG_PROJECT_task_start
+}
+
+func (data *MSG_PROJECT_task_start) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_start()))
 }
 
 func (data *MSG_PROJECT_task_start) Put() {
@@ -6608,10 +6974,11 @@ func (data *MSG_PROJECT_task_start_result) cmd() int32 {
 	return CMD_MSG_PROJECT_task_start_result
 }
 
+func (data *MSG_PROJECT_task_start_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_start_result()))
+}
+
 func (data *MSG_PROJECT_task_start_result) Put() {
-	for _,v := range data.Changes {
-		v.Put()
-	}
 	data.Changes = data.Changes[:0]
 	pool_MSG_PROJECT_task_start_result.Put(data)
 }
@@ -6663,6 +7030,10 @@ func GET_MSG_PROJECT_task_finish() *MSG_PROJECT_task_finish {
 
 func (data *MSG_PROJECT_task_finish) cmd() int32 {
 	return CMD_MSG_PROJECT_task_finish
+}
+
+func (data *MSG_PROJECT_task_finish) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_finish()))
 }
 
 func (data *MSG_PROJECT_task_finish) Put() {
@@ -6729,10 +7100,11 @@ func (data *MSG_PROJECT_task_finish_result) cmd() int32 {
 	return CMD_MSG_PROJECT_task_finish_result
 }
 
+func (data *MSG_PROJECT_task_finish_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_finish_result()))
+}
+
 func (data *MSG_PROJECT_task_finish_result) Put() {
-	for _,v := range data.Changes {
-		v.Put()
-	}
 	data.Changes = data.Changes[:0]
 	pool_MSG_PROJECT_task_finish_result.Put(data)
 }
@@ -6783,6 +7155,10 @@ func GET_MSG_PROJECT_task_activate() *MSG_PROJECT_task_activate {
 
 func (data *MSG_PROJECT_task_activate) cmd() int32 {
 	return CMD_MSG_PROJECT_task_activate
+}
+
+func (data *MSG_PROJECT_task_activate) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_activate()))
 }
 
 func (data *MSG_PROJECT_task_activate) Put() {
@@ -6847,6 +7223,10 @@ func (data *MSG_PROJECT_task_pause) cmd() int32 {
 	return CMD_MSG_PROJECT_task_pause
 }
 
+func (data *MSG_PROJECT_task_pause) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_pause()))
+}
+
 func (data *MSG_PROJECT_task_pause) Put() {
 	data.TaskID = 0
 	data.Comment = ``
@@ -6888,6 +7268,10 @@ func GET_MSG_PROJECT_task_internalaudit() *MSG_PROJECT_task_internalaudit {
 
 func (data *MSG_PROJECT_task_internalaudit) cmd() int32 {
 	return CMD_MSG_PROJECT_task_internalaudit
+}
+
+func (data *MSG_PROJECT_task_internalaudit) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_internalaudit()))
 }
 
 func (data *MSG_PROJECT_task_internalaudit) Put() {
@@ -6947,6 +7331,10 @@ func (data *MSG_PROJECT_task_proofreading) cmd() int32 {
 	return CMD_MSG_PROJECT_task_proofreading
 }
 
+func (data *MSG_PROJECT_task_proofreading) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_proofreading()))
+}
+
 func (data *MSG_PROJECT_task_proofreading) Put() {
 	data.TaskID = 0
 	data.Comment = ``
@@ -6992,6 +7380,10 @@ func (data *MSG_PROJECT_task_close) cmd() int32 {
 	return CMD_MSG_PROJECT_task_close
 }
 
+func (data *MSG_PROJECT_task_close) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_close()))
+}
+
 func (data *MSG_PROJECT_task_close) Put() {
 	data.TaskID = 0
 	data.Comment = ``
@@ -7032,6 +7424,10 @@ func GET_MSG_PROJECT_task_getStoryTaskCounts() *MSG_PROJECT_task_getStoryTaskCou
 
 func (data *MSG_PROJECT_task_getStoryTaskCounts) cmd() int32 {
 	return CMD_MSG_PROJECT_task_getStoryTaskCounts
+}
+
+func (data *MSG_PROJECT_task_getStoryTaskCounts) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_getStoryTaskCounts()))
 }
 
 func (data *MSG_PROJECT_task_getStoryTaskCounts) Put() {
@@ -7086,6 +7482,10 @@ func (data *MSG_PROJECT_task_getStoryTaskCounts_result) cmd() int32 {
 	return CMD_MSG_PROJECT_task_getStoryTaskCounts_result
 }
 
+func (data *MSG_PROJECT_task_getStoryTaskCounts_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_getStoryTaskCounts_result()))
+}
+
 func (data *MSG_PROJECT_task_getStoryTaskCounts_result) Put() {
 	data.List = nil
 	pool_MSG_PROJECT_task_getStoryTaskCounts_result.Put(data)
@@ -7124,6 +7524,10 @@ func GET_MSG_PROJECT_task_examine() *MSG_PROJECT_task_examine {
 
 func (data *MSG_PROJECT_task_examine) cmd() int32 {
 	return CMD_MSG_PROJECT_task_examine
+}
+
+func (data *MSG_PROJECT_task_examine) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_examine()))
 }
 
 func (data *MSG_PROJECT_task_examine) Put() {
@@ -7171,6 +7575,10 @@ func (data *MSG_PROJECT_task_cancel) cmd() int32 {
 	return CMD_MSG_PROJECT_task_cancel
 }
 
+func (data *MSG_PROJECT_task_cancel) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_cancel()))
+}
+
 func (data *MSG_PROJECT_task_cancel) Put() {
 	data.TaskID = 0
 	data.Comment = ``
@@ -7211,6 +7619,10 @@ func GET_MSG_PROJECT_task_delete() *MSG_PROJECT_task_delete {
 
 func (data *MSG_PROJECT_task_delete) cmd() int32 {
 	return CMD_MSG_PROJECT_task_delete
+}
+
+func (data *MSG_PROJECT_task_delete) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_delete()))
 }
 
 func (data *MSG_PROJECT_task_delete) Put() {
@@ -7255,6 +7667,10 @@ func (data *MSG_PROJECT_task_placeOrder) cmd() int32 {
 	return CMD_MSG_PROJECT_task_placeOrder
 }
 
+func (data *MSG_PROJECT_task_placeOrder) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_task_placeOrder()))
+}
+
 func (data *MSG_PROJECT_task_placeOrder) Put() {
 	data.TaskID = 0
 	data.Action = false
@@ -7295,6 +7711,10 @@ func (data *MSG_PROJECT_getAllprojectProductID) cmd() int32 {
 	return CMD_MSG_PROJECT_getAllprojectProductID
 }
 
+func (data *MSG_PROJECT_getAllprojectProductID) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_getAllprojectProductID()))
+}
+
 func (data *MSG_PROJECT_getAllprojectProductID) Put() {
 	pool_MSG_PROJECT_getAllprojectProductID.Put(data)
 }
@@ -7329,6 +7749,10 @@ func GET_MSG_PROJECT_getAllprojectProductID_result() *MSG_PROJECT_getAllprojectP
 
 func (data *MSG_PROJECT_getAllprojectProductID_result) cmd() int32 {
 	return CMD_MSG_PROJECT_getAllprojectProductID_result
+}
+
+func (data *MSG_PROJECT_getAllprojectProductID_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_getAllprojectProductID_result()))
 }
 
 func (data *MSG_PROJECT_getAllprojectProductID_result) Put() {
@@ -7394,6 +7818,10 @@ func (data *MSG_PROJECT_doRawSelect) cmd() int32 {
 	return CMD_MSG_PROJECT_doRawSelect
 }
 
+func (data *MSG_PROJECT_doRawSelect) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_doRawSelect()))
+}
+
 func (data *MSG_PROJECT_doRawSelect) Put() {
 	data.Sql = ``
 	pool_MSG_PROJECT_doRawSelect.Put(data)
@@ -7430,6 +7858,10 @@ func GET_MSG_PROJECT_doRawSelect_result() *MSG_PROJECT_doRawSelect_result {
 
 func (data *MSG_PROJECT_doRawSelect_result) cmd() int32 {
 	return CMD_MSG_PROJECT_doRawSelect_result
+}
+
+func (data *MSG_PROJECT_doRawSelect_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_doRawSelect_result()))
 }
 
 func (data *MSG_PROJECT_doRawSelect_result) Put() {
@@ -7480,6 +7912,10 @@ func GET_MSG_PROJECT_updateCache() *MSG_PROJECT_updateCache {
 
 func (data *MSG_PROJECT_updateCache) cmd() int32 {
 	return CMD_MSG_PROJECT_updateCache
+}
+
+func (data *MSG_PROJECT_updateCache) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_PROJECT_updateCache()))
 }
 
 func (data *MSG_PROJECT_updateCache) Put() {

@@ -14,7 +14,8 @@ var rows_pool = sync.Pool{New: func() interface{} {
 type Field_struct struct {
 	Offset              uintptr
 	ColumnName, KeyName string
-	Field_t             reflect.Type
+
+	Field_t reflect.Type
 }
 type MysqlRows struct {
 	Buffer, Buffer2 *MsgBuffer
@@ -52,11 +53,13 @@ func (row *MysqlRows) Columns(mysql *Mysql_Conn) (columns []MysqlColumn, err err
 			return
 		}
 		pos += msglen
+
 		// Database [len coded string]
 		msglen, err = ReadLength_Coded_Slice(data[pos:], &pos)
 		if err != nil {
 			return
 		}
+
 		pos += msglen
 		// Table [len coded string]
 		msglen, err = ReadLength_Coded_Slice(data[pos:], &pos)
@@ -94,8 +97,8 @@ func (row *MysqlRows) Columns(mysql *Mysql_Conn) (columns []MysqlColumn, err err
 			columns[index].decimals = data[pos+3]
 		}
 		index++
-	}
 
+	}
 	//libraries.DEBUG(row.Buffer.Bytes())
 	if err != nil {
 		return
@@ -107,6 +110,7 @@ func (row *MysqlRows) Columns(mysql *Mysql_Conn) (columns []MysqlColumn, err err
 		row.result_len++
 		row.msg_len = append(row.msg_len, len(data))
 	}
+
 	return columns, err
 }
 

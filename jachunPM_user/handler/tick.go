@@ -87,7 +87,7 @@ func HandleTick(t time.Time) {
 
 	//同步缓存
 	for _, user := range users {
-		user_setCache(user)
+		user_updateCacheById(user.Id)
 	}
 
 	if company != nil {

@@ -605,7 +605,7 @@ func get_task_assignTo(data *TemplateData) (err error) {
 		return
 	}
 
-	templateOut("task.assignTo.html", data)
+	templateOut("task.assignto.html", data)
 	return nil
 }
 func post_task_assignTo(data *TemplateData) (err error) {
@@ -1070,13 +1070,13 @@ func task_createEdit(data *TemplateData, task *protocol.MSG_PROJECT_TASK) (proto
 			task.Desc = value[0]
 		case "estStarted":
 			if value[0] != "" {
-				task.EstStarted, _ = time.Parse(protocol.TIMEFORMAT_MYSQLDATE, value[0])
+				task.EstStarted, _ = time.ParseInLocation(protocol.TIMEFORMAT_MYSQLDATE, value[0], time.Local)
 
 			}
 
 		case "deadline":
 			if value[0] != "" {
-				task.Deadline, _ = time.Parse(protocol.TIMEFORMAT_MYSQLDATE, value[0])
+				task.Deadline, _ = time.ParseInLocation(protocol.TIMEFORMAT_MYSQLDATE, value[0], time.Local)
 
 			}
 		case "mailto":
@@ -1108,7 +1108,7 @@ func task_createEdit(data *TemplateData, task *protocol.MSG_PROJECT_TASK) (proto
 			task.Parent = int32(parent)
 		case "realStarted":
 			if value[0] != "" {
-				task.RealStarted, _ = time.Parse(protocol.TIMEFORMAT_MYSQLDATE, value[0])
+				task.RealStarted, _ = time.ParseInLocation(protocol.TIMEFORMAT_MYSQLDATE, value[0], time.Local)
 			}
 
 		case "estimate":
@@ -1120,21 +1120,21 @@ func task_createEdit(data *TemplateData, task *protocol.MSG_PROJECT_TASK) (proto
 			task.FinishedBy = int32(id)
 		case "finishedDate":
 			if value[0] != "" {
-				task.FinishedDate, _ = time.Parse(protocol.TIMEFORMAT_MYSQLDATE, value[0])
+				task.FinishedDate, _ = time.ParseInLocation(protocol.TIMEFORMAT_MYSQLDATE, value[0], time.Local)
 			}
 		case "canceledBy":
 			id, _ := strconv.Atoi(value[0])
 			task.CanceledBy = int32(id)
 		case "canceledDate":
 			if value[0] != "" {
-				task.CanceledDate, _ = time.Parse(protocol.TIMEFORMAT_MYSQLDATE, value[0])
+				task.CanceledDate, _ = time.ParseInLocation(protocol.TIMEFORMAT_MYSQLDATE, value[0], time.Local)
 			}
 		case "closedBy":
 			id, _ := strconv.Atoi(value[0])
 			task.ClosedBy = int32(id)
 		case "closedDate":
 			if value[0] != "" {
-				task.ClosedDate, _ = time.Parse(protocol.TIMEFORMAT_MYSQLDATE, value[0])
+				task.ClosedDate, _ = time.ParseInLocation(protocol.TIMEFORMAT_MYSQLDATE, value[0], time.Local)
 			}
 		case "closedReason":
 			task.ClosedReason = value[0]
@@ -1392,7 +1392,7 @@ func post_task_recordEstimate(data *TemplateData) (err error) {
 		estimate.Task = int32(taskID)
 		estimate.Uid = data.User.Id
 		estimate.Account = data.User.Account
-		estimate.Date, err = time.Parse("2006-01-02", date)
+		estimate.Date, err = time.ParseInLocation("2006-01-02", date, time.Local)
 		left, err := strconv.ParseFloat(data.ws.Post("left["+key+"]"), 64)
 		if err != nil {
 			data.ws.WriteString(js.Alert(data.Lang["task"]["error"].(map[string]string)["leftNumber"]))
@@ -1556,7 +1556,7 @@ func post_task_start(data *TemplateData) (err error) {
 	out := protocol.GET_MSG_PROJECT_task_start()
 	out.TaskID = int32(taskID)
 	out.Consumed, _ = strconv.ParseFloat(data.ws.Post("consumed"), 64)
-	if out.RealStarted, err = time.Parse("2006-01-02", data.ws.Post("realStarted")); err != nil {
+	if out.RealStarted, err = time.ParseInLocation("2006-01-02", data.ws.Post("realStarted"), time.Local); err != nil {
 		data.ws.WriteString(js.Error(data.Lang["task"]["error"].(map[string]string)["RealStartedErr"]))
 		return dataErrAlreadyOut
 	}
@@ -1638,7 +1638,7 @@ func post_task_finish(data *TemplateData) (err error) {
 		data.ws.WriteString(js.Error(data.Lang["task"]["error"].(map[string]string)["consumedNumber"]))
 		return dataErrAlreadyOut
 	}
-	if out.FinishedDate, err = time.Parse("2006-01-02", data.ws.Post("finishedDate")); err != nil {
+	if out.FinishedDate, err = time.ParseInLocation("2006-01-02", data.ws.Post("finishedDate"), time.Local); err != nil {
 		data.ws.WriteString(js.Error(data.Lang["task"]["error"].(map[string]string)["finishedDateErr"]))
 		return dataErrAlreadyOut
 	}
@@ -2078,7 +2078,7 @@ func post_task_batchCreate(data *TemplateData) (err error) {
 				task.EstStarted = protocol.ZEROTIME
 			}
 		} else {
-			if task.EstStarted, err = time.Parse("2006-01-02", estStarted); err != nil {
+			if task.EstStarted, err = time.ParseInLocation("2006-01-02", estStarted, time.Local); err != nil {
 
 				return errors.New(data.Lang["task"]["error"].(map[string]string)["estStarted"])
 			}
@@ -2090,7 +2090,7 @@ func post_task_batchCreate(data *TemplateData) (err error) {
 				task.Deadline = protocol.ZEROTIME
 			}
 		} else {
-			if task.Deadline, err = time.Parse("2006-01-02", deadline); err != nil {
+			if task.Deadline, err = time.ParseInLocation("2006-01-02", deadline, time.Local); err != nil {
 
 				return errors.New(data.Lang["task"]["error"].(map[string]string)["deadline"])
 			}

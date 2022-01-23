@@ -547,7 +547,7 @@ func project_getProjectTasks(data *protocol.MSG_PROJECT_project_getProjectTasks,
 		for _, s := range storys {
 			storyIds = append(storyIds, strconv.Itoa(int(s.Id)))
 		}
-		where["productRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t1`.`Module` in (" + strings.Join(treeIds, ",") + ") or `t1`.`Story` in (" + strings.Join(storyIds, ",") + ")"}
+		where["productRaw"] = mysql.WhereOperatorRaw("`t1`.`Module` in (" + strings.Join(treeIds, ",") + ") or `t1`.`Story` in (" + strings.Join(storyIds, ",") + ")")
 	}
 	if data.ModuleID != 0 {
 		where["t1.Module"] = tree_getAllChildId(data.ModuleID)
@@ -571,14 +571,14 @@ func project_getProjectTasks(data *protocol.MSG_PROJECT_project_getProjectTasks,
 		if len(ids) == 0 {
 			ids = []string{"0"}
 		}
-		where["myinvolvedRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t1`.`Id` in (" + strings.Join(ids, ",") + ") or `t1`.`AssignedTo` = " + strconv.Itoa(int(in.GetUserID())) + " or `t1`.`Finishedby` = " + strconv.Itoa(int(in.GetUserID()))}
+		where["myinvolvedRaw"] = mysql.WhereOperatorRaw("`t1`.`Id` in (" + strings.Join(ids, ",") + ") or `t1`.`AssignedTo` = " + strconv.Itoa(int(in.GetUserID())) + " or `t1`.`Finishedby` = " + strconv.Itoa(int(in.GetUserID())))
 		out.Put()
 		result.Put()
 	case "undone":
-		where["undoneRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t1`.`Status` = 'wait' or `t1`.`Status` = 'doing'"}
+		where["undoneRaw"] =mysql.WhereOperatorRaw( "`t1`.`Status` = 'wait' or `t1`.`Status` = 'doing'")
 		where["t1.Parent"] = []interface{}{mysql.WhereOperatorLT, 1}
 	case "needconfirm":
-		where["needconfirmRaw"] = []interface{}{mysql.WhereOperatorRAW, "`t2`.`version` > `t1`.`storyVersion` and `t2`.`Status` = 'active'"}
+		where["needconfirmRaw"] = mysql.WhereOperatorRaw("`t2`.`version` > `t1`.`storyVersion` and `t2`.`Status` = 'active'")
 	case "openedBy":
 		where["t1.OpenedBy"] = in.GetUserID()
 	case "closedBy":

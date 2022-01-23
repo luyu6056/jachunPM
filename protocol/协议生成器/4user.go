@@ -338,3 +338,18 @@ type MSG_USER_getExportTemplate struct {
 type MSG_USER_getExportTemplate_result struct {
 	List []*MSG_USER_userTpl
 }
+type MSG_USER_block_delectByWhere struct {
+	Where map[string]interface{}
+}
+
+type MSG_USER_config_get struct {
+	Uid    int
+	Module string
+}
+type MSG_USER_config_get_result struct {
+	Config map[string]map[string]string
+}
+
+type MSG_USER_config_savelist struct {
+	List []*MSG_USER_config_save
+}

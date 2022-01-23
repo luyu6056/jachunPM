@@ -26,7 +26,6 @@ const (
 	WhereOperatorNOTLIKE      = "notlike"
 	WhereOperatorMATCH        = "match"
 	WhereOperatorJSONCONTAINS = "JSON_CONTAINS" //传入切片或者单个int string，则被当成JSON_ARRAY[]类查询，传入map则被当成JSON_OBJECT{}进行查询
-	WhereOperatorRAW          = "raw"           //只接受string，不进行任何转义处理
 	WhereOperatorRAWEQ        = "raweq"
 	WhereOperatorRAWNE        = "rawne"
 )
@@ -741,7 +740,7 @@ func (this *Mysql_Build) _where_interface(key string, value interface{}) error {
 				}
 				this.buffer.Write([]byte{41, 41}) //))
 			}
-		case WhereOperatorRAW:
+		case "raw":
 			if str, ok := value.([]interface{})[1].(string); ok {
 				this.buffer.WriteByte(40)
 				this.buffer.WriteString(str)
@@ -787,6 +786,7 @@ func (this *Mysql_Build) Field(field string) *Mysql_Build {
 func (this *Mysql_Build) Order(order string) *Mysql_Build {
 	if order != `` && this.err == nil {
 		order = strings.Replace(strings.ToLower(order), `order by`, ``, -1)
+		order = strings.Trim(order, "`")
 		//为项目管理系统添加的
 		var orders []string
 		for _, o := range strings.Split(order, ",") {
@@ -1041,7 +1041,7 @@ func (this *Mysql_Build) Insert(i interface{}) (id int64, err error) {
 	this.buffer.Write([]byte{32, 83, 69, 84, 32})
 	switch r.Kind() {
 	case reflect.Struct:
-		fieldColumnMap := this.db.StructKeyColumn[r.Name()]
+		fieldColumnMap := this.db.structKeyColumn[r.Name()]
 		if fieldColumnMap == nil {
 			return 0, errors.New("Insert未初始化的struct 名称 " + r.Name())
 		}
@@ -1106,7 +1106,7 @@ func (this *Mysql_Build) Replace(i interface{}) (err error) {
 	this.buffer.Write([]byte{32, 83, 69, 84, 32})
 	switch r.Kind() {
 	case reflect.Struct:
-		fieldColumnMap := this.db.StructKeyColumn[r.Name()]
+		fieldColumnMap := this.db.structKeyColumn[r.Name()]
 		if fieldColumnMap == nil {
 			return errors.New("Replace未初始化的struct 名称 " + r.Name())
 		}
@@ -1187,7 +1187,7 @@ func (this *Mysql_Build) InsertAll(i interface{}) (res bool, err error) {
 		}
 		switch t.Kind() {
 		case reflect.Struct:
-			fieldColumnMap := this.db.StructKeyColumn[t.Name()]
+			fieldColumnMap := this.db.structKeyColumn[t.Name()]
 			if fieldColumnMap == nil {
 				return false, errors.New("InsertAll未初始化的struct 名称 " + r.Name())
 			}
@@ -1275,7 +1275,7 @@ func (this *Mysql_Build) ReplaceAll(i interface{}) (res bool, err error) {
 		}
 		switch t.Kind() {
 		case reflect.Struct:
-			fieldColumnMap := this.db.StructKeyColumn[t.Name()]
+			fieldColumnMap := this.db.structKeyColumn[t.Name()]
 			if fieldColumnMap == nil {
 				return false, errors.New("ReplaceAll未初始化的struct 名称 " + t.Name())
 			}

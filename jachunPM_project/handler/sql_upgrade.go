@@ -169,7 +169,7 @@ func mysqlUpgrade() {
 			en=len(tasks_insert)
 		}
 
-		_, err = HostConn.DB.Table(db.TABLE_TASK).InsertAll(tasks_insert[i:en])
+		_, err = HostConn.DB.Table(db.TABLE_TASK).ReplaceAll(tasks_insert[i:en])
 		libraries.DebugLog("插入task %d-%d 条，错误 %v", i,en, err)
 	}
 

@@ -1,0 +1,30 @@
+.panel .no-padding{padding: 0px;}
+
+td .attend-normal   {color: #38B03F;}
+td .attend-rest     {color: #3280fc;}
+td .attend-leave    {color: #9E9E9E;}
+td .attend-lieu     {color: #9E9E9E;}
+td .attend-overtime {color: #006600;}
+td .attend-makeup   {color: #006600;}
+td .attend-trip     {color: #8666B8;}
+td .attend-egress   {color: #8666B8;}
+
+.attend-late   {color: #EA644A;}
+.attend-early  {color: #FF8A65;}
+.attend-both [class^=attend]   {color: #FF5722;}
+.attend-absent [class^=attend] {color: #F1A325;}
+.attend-rest [class^=attend]   {color: #3280FC;}
+
+table .otherMonth {background: #f0f0f0; color: #9e9e9e}
+table tr:last-child th ,table tr:last-child td{border-bottom: none;}
+
+td > .dropdown{height: 100%; line-height: 100%;}
+a, a:hover {text-decoration: none !important;}
+
+td.attend-actions{overflow: visible !important;}
+.main .row .col-xs-4 .panel .table th{border-bottom: 1px solid #ddd; color: #000;}
+.main .row .col-xs-4 .panel .table tr.otherMonth{background: none;}
+.main .row .col-xs-4 .panel .table td{height: 32px; border-bottom: none; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;}
+.main .row .col-xs-4 .panel .table td .dropdown{padding-top: 3px;}
+.main .row .col-xs-4 .panel .table thead tr:nth-of-type(1) th:nth-of-type(1){width: 85px !important;}
+.main .row .col-xs-4 .panel .table thead tr:nth-of-type(1) th:nth-of-type(2){width: 45px !important;}

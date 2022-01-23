@@ -1,0 +1,116 @@
+{{template "header.html" .}}
+  <style>
+  #menuActions{float:right !important; margin-top: -60px !important;}
+  .input-group-required > .required::after, .required-wrapper.required::after {top:12px !important;}
+  .modal-body .table {margin-bottom:0px !important;}
+  </style>
+  {{$.Data.featurebar}}
+
+<div class='with-side'>
+  <div class='side'>
+    <div class='panel panel-sm'>
+      <div class='panel-body'>
+        <ul class='tree' data-ride='tree' data-collapsed='true'>
+          {{range $year := $.Data.yearList}}
+          <li{{if eq $year.Year $.Data.currentYear}} class='active'{{end}}>
+            {{common_printLink $ "attend" "personal" (strAdd "date=" $year.Year) $year.Year}}
+            <ul>
+              {{range $month := $year.MonthList}}
+              <li{{if and (eq $year.Year $.Data.currentYear) (eq $month (strAdd $.Data.currentYear "-" $.Data.currentMonth))}} class='active'{{end}}>
+              {{common_printLink $ "attend" "personal" (strAdd "date=" $month) $month}}
+              </li>
+              {{end}}
+            </ul>
+          </li>
+          {{end}}
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class='main'>
+    <div class='row'>
+      {{range $weekindex,$week := $.Data.weekList}}
+      <div class='col-xs-4'>
+        <div class='panel'>
+          <div class='panel-body no-padding'>
+            <table class="table table-data text-center table-fixed">
+              <thead>
+                <tr class='text-center'>
+                  <th class='w-80px'>{{getValue $.Lang.attend.weeks $weekindex}}</th>
+                  <th class='w-40px'>{{$.Lang.attend.dayName}}</th>
+                  <th title='{{$.Lang.attend.signIn}}'>{{$.Lang.attend.signIn}}</th>
+                  <th title='{{$.Lang.attend.signOut}}'>{{$.Lang.attend.signOut}}</th>
+                  <th class='w-100px'>{{$.Lang.common.actions}}/{{$.Lang.attend.status}}</th>
+                </tr>
+              </thead>
+              {{- range $key,$date := $week}}
+              {{- $attend := $date.Value}}
+              {{- $status := $attend.Status}}
+              {{- $reason := $attend.Reason}}
+              {{- $reviewStatus := or (and $attend.ReviewStatus $attend.ReviewStatus) ""}}
+              <tr class="text-middle attend-{{$status}}{{if ne (date "01" $attend.Date) $.Data.currentMonth}} otherMonth{{end}}" >
+                <td title='{{getValue $.Lang.attend.statusList $status}}'>{{date "2006-01-02" $attend.Date}} </td>
+                <td title='{{getValue $.Lang.attend.statusList $status}}'>{{getValue $.Lang.datepicker.abbrDayNames $date.Key}}</td>
+                <td class='attend-signin{{if gt $attend.LateMin 0}} attend-late' title='{{getValue $.Lang.attend.statusList "late"}}{{$attend.LateMin}}{{$.Lang.attend.m}}'{{else}}'{{end}}>{{$attend.SignIn}}</td>
+                <td class='attend-signout{{if gt $attend.EarlyMin 0}} attend-early' title='{{getValue $.Lang.attend.statusList "early"}}{{$attend.EarlyMin}}{{$.Lang.attend.m}}'{{else}}'{{end}}>{{$attend.SignOut}}</td>
+                <td class='attend-actions'>
+                  {{- $leave    := or (and (eq $reason "leave") $.Lang.attend.leaved) $.Lang.attend.leave}}
+                  {{- $makeup   := or (and (eq $reason "makeup") $.Lang.attend.makeuped) $.Lang.attend.makeup}}
+                  {{- $overtime := or (and (eq $reason "overtime") $.Lang.attend.overtimed) $.Lang.attend.overtime}}
+                  {{- $lieu     := or (and (eq $reason "lieu") $.Lang.attend.lieud) $.Lang.attend.lieu}}
+                  {{- $trip     := or (and (eq $reason "trip") $.Lang.attend.triped) $.Lang.attend.trip}}
+                  {{- $egress   := or (and (eq $reason "egress") $.Lang.attend.egress) $.Lang.attend.egress}}
+                  {{- if or (gt (len $attend.HoursList) 0) (eq $status "allAbsent") (eq $status "halfAbsent")}}
+                  {{- $index := 1}}{{ $statusLabel := ""}}
+                  {{- if or (eq $status "allAbsent") (eq $status "halfAbsent")}}{{$statusLabel = getValue $.Lang.attend.statusList $status}}{{end}}
+                  {{- range $status , $hours := $attend.HoursList}}
+                      {{- if gt $index  1}}{{$statusLabel = strAdd $statusLabel "<br/>"}}{{end}}
+                      {{- $statusLabel = strAdd $statusLabel (attend_printHour $ $hours $status) }}
+                      {{- $index = intsub $index 1}}
+                  {{- end}}
+                  <div class='dropdown text-left'>
+                    <a href='javascript:;' data-toggle='dropdown'>
+                      <span class='attend-{{$status}}'>{{$statusLabel}}</span>
+                      <span class='caret'></span>
+                    </a>
+                    <ul role='menu' class='dropdown-menu'>
+                      <li>{{html_a (helper_createLink "attend" "edit" (date "date=2006-01-02" $attend.Date)) $.Lang.attend.edit "data-toggle='modal' data-width='500px'"}}</li>
+                    </ul>
+                  </div>
+                  {{- else if eq (strpos ",rest,normal," $status) -1}}
+                  {{- if or (eq $reviewStatus "wait") (gt (strpos ",late,early,both," $status) -1)}}
+                  {{html_a (helper_createLink "attend" "edit" (date "date=2006-01-02" $attend.Date)) (strAdd $.Lang.attend.edit (or (and $reviewStatus (strAdd "-" (getValue $.Lang.attend.reviewStatusList $reviewStatus))) "")) "data-toggle='modal' data-width='500px'"}}
+                  {{- else}}
+                  <div class='dropdown'>
+                    <a href='javascript:;' data-toggle='dropdown'>{{$.Lang.common.actions}}<span class='caret'></span></a>
+                    <ul role='menu' class='dropdown-menu'>
+                      {{- if or (not $reason) (eq $reason "normal")}}{{common_printLink $ "attend" "edit" (date "date=2006-01-02" $attend.Date) $.Lang.attend.edit "" "data-toggle='modal' data-width='500px'" "" "" "li"}}{{end}}
+                      {{- if or (not $reason) (eq $reason "leave")}}{{common_printLink $ "leave" "create" (date "date=2006-01-02" $attend.Date) $leave "" "data-toggle='modal' data-width='700px'" "" "" "li"}}{{end}}
+                      {{- if or (not $reason) (eq $reason "makeup")}}{{common_printLink $ "makeup" "create" (date "date=2006-01-02" $attend.Date) $makeup "" "data-toggle='modal' data-width='700px'" "" "" "li"}}{{end}}
+                      {{- if or (not $reason) (eq $reason "overtime")}}{{common_printLink $ "overtime" "create" (date "date=2006-01-02" $attend.Date) $overtime "" "data-toggle='modal' data-width='700px'" "" "" "li"}}{{end}}
+                      <!--{{- if or (not $reason) (eq $reason "lieu")}}{{common_printLink $ "lieu" "create" (date "2006-01-02" $attend.Date) $lieu "" "data-toggle='modal' data-width='700px'" "" "" "li"}}{{end}}-->
+                      {{- if or (not $reason) (eq $reason "trip")}}{{common_printLink $ "trip" "create" (date "date=2006-01-02" $attend.Date) $trip "" "data-toggle='modal' data-width='700px'" "" "" "li"}}{{end}}
+                      {{- if or (not $reason) (eq $reason "egress")}}{{common_printLink $ "egress" "create" (date "date=2006-01-02" $attend.Date) $egress "" "data-toggle='modal' data-width='700px'" "" "" "li"}}{{end}}
+                    </ul>
+                  </div>
+                  {{- end}}
+                  {{- else if eq $status "rest"}}
+                  <span class='attend-{{$status}}'>
+                    {{common_printLink $ "overtime" "create" (date "date=2006-01-02" $attend.Date) $.Lang.attend.overtime "data-toggle='modal' data-width='700px'"}}
+                  </span>
+                  {{- else if eq $status "normal"}} 
+                  <span class='attend-{{$status}}'>{{getValue $.Lang.attend.statusList $status}}</span>
+                  {{- end}}
+                </td>
+              </tr>
+
+            {{end}}
+            </table>
+          </div>
+        </div>
+      </div>
+      {{end}}
+    </div>
+  </div>
+</div>
+{{template "footer.html" .}}

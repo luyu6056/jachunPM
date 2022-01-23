@@ -48,8 +48,11 @@ const (
 	interfaceTypeMsi //map[string]interface{}
 	interfaceTypeKVs //HtmlKeyValueStr
 	interfaceTypeKVi //HtmlKeyValueInterface
+	//协议自带类型
+	interfaceTypeCMD
 	//深度遍历反射类型
 	interfaceTypeM //map
+	interfaceTypeS //slice
 )
 
 func WRITE_int8(data int8, buf *libraries.MsgBuffer) {
@@ -303,11 +306,26 @@ func WRITE_any(i interface{}, buf *libraries.MsgBuffer) {
 		}
 	default:
 		r := reflect.ValueOf(i)
-		if r.Kind() == reflect.Map {
+		switch r.Kind() {
+		case reflect.Map:
 			WRITE_int8(interfaceTypeM, buf)
 			WRITE_map(i, buf)
 			return
+		case reflect.Slice:
+			WRITE_int8(interfaceTypeS, buf)
+			WRITE_int(r.Len(), buf)
+			for i := 0; i < r.Len(); i++ {
+				WRITE_any(r.Index(i).Interface(), buf)
+			}
+			return
+		case reflect.Ptr:
+			if v, ok := i.(MSG_DATA); ok {
+				WRITE_int8(interfaceTypeCMD, buf)
+				v.write(buf)
+				return
+			}
 		}
+
 		panic("WRITE_any未设置类型" + fmt.Sprintf("%T", v))
 	}
 
@@ -704,6 +722,22 @@ func read_any_result(buf *libraries.MsgBuffer, r_t ...reflect.Type) interface{} 
 			r.SetMapIndex(reflect.ValueOf(read_any_result(buf)), reflect.ValueOf(read_any_result(buf, r.Type().Elem())))
 		}
 		return r.Interface()
+	case interfaceTypeS:
+		if len(r_t) == 0 {
+			panic(fmt.Sprintf("read_any_result interfaceTypeS 未传入Type"))
+		}
+		l := READ_int(buf)
+		r := reflect.MakeSlice(r_t[0], l, l)
+		for i := 0; i < l; i++ {
+			r.Index(i).Set(reflect.ValueOf(read_any_result(buf, r_t[0].Elem())))
+		}
+	case interfaceTypeCMD:
+		cmd := READ_int32(buf)
+		if v, ok := readAnyFuncMap[cmd]; ok {
+			return v(buf)
+		} else {
+			panic(fmt.Sprintf("read_any_result无法识别cmd号%v", cmd))
+		}
 	default:
 		panic(fmt.Sprintf("read_any_result未处理类型%v", t))
 	}
@@ -792,5 +826,13 @@ func READ_HtmlKeyValueInterface(buf *libraries.MsgBuffer) HtmlKeyValueInterface 
 	return HtmlKeyValueInterface{
 		Key:   READ_string(buf),
 		Value: read_any_result(buf),
+	}
+}
+
+var readAnyFuncMap = make(map[int32]func(*libraries.MsgBuffer) MSG_DATA)
+
+func init() {
+	for k, v := range cmdMapFunc {
+		readAnyFuncMap[k] = v
 	}
 }

@@ -331,20 +331,16 @@ Retry:
 		return nil
 	}
 
-	if field_m = db.StructKeyColumn[type_struct.Name()]; field_m == nil {
+	if field_m = db.structKeyColumn[type_struct.Name()]; field_m == nil {
 		return errors.New("query未初始化的struct 名称 " + type_struct.Name())
 	}
-
+	makef := db.structMake[type_struct.Name()]
 	var field_struct *Field_struct
 	var uint_ptr, offset uintptr
 
 	if is_struct {
 		offset = 0
-		if is_ptr {
-			if *(*uintptr)(unsafe.Pointer(ref_ptr)) == 0 {
-				*(*uintptr)(ref_ptr) = reflect.New(type_struct).Pointer()
-			}
-		}
+		makef.SetUintptr(uintptr(ref_ptr))
 		row.msg_len = row.msg_len[:1]
 	} else {
 		if header.Len < row.result_len {
@@ -369,10 +365,7 @@ Retry:
 		for index, mglen := range row.msg_len {
 			uint_ptr = uintptr(ref_ptr) + offset*uintptr(index)
 			if is_ptr {
-				if *(*uintptr)(unsafe.Pointer(uint_ptr)) == 0 {
-					//obj_v.Index(index).Set(reflect.New(obj_v.Type().Elem()))
-					*((*uintptr)(unsafe.Pointer(uint_ptr))) = reflect.New(type_struct).Pointer()
-				}
+				makef.SetUintptr(uint_ptr)
 				uint_ptr = *(*uintptr)(unsafe.Pointer(uint_ptr)) //获取指针真正的地址
 			}
 
@@ -451,22 +444,28 @@ Retry:
 						}
 					default:
 						field := reflect.NewAt(field_struct.Field_t, unsafe.Pointer(uint_ptr+field_struct.Offset))
-						jsoniter.Unmarshal(row.buffer, field.Interface())
+						if string(row.buffer) != "{}" {
+							jsoniter.Unmarshal(row.buffer, field.Interface())
+						}
 
 					}
 
 				case reflect.Slice, reflect.Map:
 					field := reflect.NewAt(field_struct.Field_t, unsafe.Pointer(uint_ptr+field_struct.Offset))
-					jsoniter.Unmarshal(row.buffer, field.Interface())
+					if string(row.buffer) != "{}" {
+						jsoniter.Unmarshal(row.buffer, field.Interface())
+					}
 				case reflect.Ptr:
 					if *(*string)(unsafe.Pointer(&row.buffer)) != "NULL" {
 						if len(row.buffer) == 0 || (len(row.buffer) == 1 && row.buffer[0] == 0xC0) {
 							continue
 						}
 						field := reflect.New(field_struct.Field_t.Elem())
-						err := jsoniter.Unmarshal(row.buffer, field.Interface())
-						if err == nil {
-							*((*uintptr)(unsafe.Pointer(uint_ptr + field_struct.Offset))) = field.Pointer()
+						if string(row.buffer) != "{}" {
+							err := jsoniter.Unmarshal(row.buffer, field.Interface())
+							if err == nil {
+								*((*uintptr)(unsafe.Pointer(uint_ptr + field_struct.Offset))) = field.Pointer()
+							}
 						}
 					}
 				}
@@ -479,10 +478,7 @@ Retry:
 		for index, msglen := range row.msg_len {
 			uint_ptr = uintptr(ref_ptr) + offset*uintptr(index)
 			if is_ptr {
-				if *(*uintptr)(unsafe.Pointer(uint_ptr)) == 0 {
-					//obj_v.Index(index).Set(reflect.New(obj_v.Type().Elem()))
-					*((*uintptr)(unsafe.Pointer(uint_ptr))) = reflect.New(type_struct).Pointer()
-				}
+				makef.SetUintptr(uint_ptr)
 				uint_ptr = *(*uintptr)(unsafe.Pointer(uint_ptr)) //获取指针真正的地址
 			}
 
@@ -699,8 +695,7 @@ Retry:
 							*((*time.Time)(unsafe.Pointer(uint_ptr + field_struct.Offset))), e = time.ParseInLocation("2006-01-02", str, row.conn.loc)
 						}
 					case kind == reflect.Ptr:
-						if str != "NULL" {
-
+						if str != "NULL" && str != "{}" {
 							field := reflect.New(field_struct.Field_t.Elem())
 							err = jsoniter.Unmarshal([]byte(str), field.Interface())
 							if err == nil {
@@ -709,7 +704,9 @@ Retry:
 						}
 					default:
 						field := reflect.NewAt(field_struct.Field_t, unsafe.Pointer(uint_ptr+field_struct.Offset))
-						err = jsoniter.Unmarshal([]byte(str), field.Interface())
+						if str != "NULL" && str != "{}" {
+							err = jsoniter.Unmarshal([]byte(str), field.Interface())
+						}
 					}
 					if err != nil {
 						return errors.New("字段" + string(column.name) + ",原始值:" + str + "   json解析错误:" + err.Error())
@@ -915,7 +912,8 @@ func Open(dsn string) (*MysqlDB, error) {
 		}
 	}
 	db := mysql_open(str[0][1], str[0][2], str[0][5], str[0][6], charset, mysqlLoc, nil)
-	db.StructKeyColumn = make(map[string]map[string]*Field_struct)
+	db.structKeyColumn = make(map[string]map[string]*Field_struct)
+	db.structMake = make(map[string]mysqlQueryMake)
 	return db, nil
 
 }
@@ -926,7 +924,7 @@ func (db *MysqlDB) StoreEngine(storeEngine string) *MysqlDB {
 func (db *MysqlDB) Regsiter(i ...interface{}) {
 	for _, v := range i {
 		r := reflect.TypeOf(v).Elem()
-		db.StructKeyColumn[r.Name()] = make(map[string]*Field_struct)
+		db.structKeyColumn[r.Name()] = make(map[string]*Field_struct)
 		for i := 0; i < r.NumField(); i++ {
 			field := r.Field(i)
 			tag := field.Tag.Get("db")
@@ -936,7 +934,7 @@ func (db *MysqlDB) Regsiter(i ...interface{}) {
 
 			ColumnName := field.Name
 			KeyName := Getkey(field.Name)
-			db.StructKeyColumn[r.Name()][field.Name] = &Field_struct{
+			db.structKeyColumn[r.Name()][field.Name] = &Field_struct{
 				ColumnName: ColumnName,
 				KeyName:    KeyName,
 				Offset:     field.Offset,
@@ -944,9 +942,27 @@ func (db *MysqlDB) Regsiter(i ...interface{}) {
 			}
 
 		}
+		if j, ok := v.(mysqlQueryMake); ok {
+			db.structMake[r.Name()] = j
+		} else {
+			db.structMake[r.Name()] = &MysqlQueryMake{t: r}
+		}
 	}
-
 }
+
+type mysqlQueryMake interface {
+	SetUintptr(uintptr)
+}
+type MysqlQueryMake struct {
+	t reflect.Type
+}
+
+func (m *MysqlQueryMake) SetUintptr(in uintptr)  {
+	if *(*uintptr)(unsafe.Pointer(in)) == 0 {
+		*(*uintptr)(unsafe.Pointer(in)) = reflect.New(m.t).Pointer()
+	}
+}
+
 func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 
 	var default_engine string
@@ -1189,11 +1205,47 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 							}
 						default:
 							buf.WriteString("json")
-							default_str = " DEFAULT '[]'"
+							default_str = " DEFAULT '{}'"
 						}
 					default:
-						buf.WriteString("json")
-						default_str = " DEFAULT '[]'"
+						if sc, _ := Preg_match_result(`type:(varchar\(\d+\))`, tag, 1); len(sc) > 0 {
+							buf.WriteString(sc[0][1])
+							if default_str == "" {
+								default_str = " DEFAULT ''"
+							}
+							break
+						}
+						if sc, _ := Preg_match_result(`type:(char\(\d+\))`, tag, 1); len(sc) > 0 {
+							buf.WriteString(sc[0][1])
+							if default_str == "" {
+								default_str = " DEFAULT ''"
+							}
+							break
+						}
+
+						is_text = true
+						switch {
+						case strings.Contains(tag, `type:mediumtext`):
+							buf.WriteString("mediumtext")
+						case strings.Contains(tag, `type:longtext`):
+							buf.WriteString("longtext")
+						case strings.Contains(tag, `type:tinytext`):
+							buf.WriteString("tinytext")
+						case strings.Contains(tag, `type:text`):
+							buf.WriteString("text")
+						case strings.Contains(tag, `type:blob`):
+							buf.WriteString("blob")
+						case strings.Contains(tag, `type:mediumblob`):
+							buf.WriteString("mediumblob")
+						case strings.Contains(tag, `type:tinyblob`):
+							buf.WriteString("tinyblob")
+						case strings.Contains(tag, `type:longblob`):
+							buf.WriteString("blob")
+						default:
+							buf.WriteString("json")
+							default_str = " DEFAULT '{}'"
+						}
+
 					}
 					if is_pk {
 						buf.WriteString(" NOT NULL")
@@ -1616,7 +1668,7 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 
 						}
 						if sql_str[1] == "json" || varchar_str == "json" {
-							default_str = "[]"
+							default_str = "{}"
 						}
 						if strings.Trim(sql_str[3], "'") != default_str {
 							is_change = 24
@@ -1721,12 +1773,12 @@ func (db *MysqlDB) Sync2(i ...interface{}) (errs []error) {
 							default:
 								is_text = false
 								sql_str[1] = "json"
-								sql_str[3] = "Default '[]'"
+								sql_str[3] = "Default '{}'"
 							}
 						default:
 							is_text = false
 							sql_str[1] = "json"
-							sql_str[3] = "Default '[]'"
+							sql_str[3] = "Default '{}'"
 						}
 						if strings.Contains(tag, "auto_increment") {
 							if !strings.Contains(value["Extra"], "auto_increment") {
@@ -1920,7 +1972,7 @@ func Getkey(str_i interface{}) string {
 	switch v := str_i.(type) {
 	case string:
 		switch strings.ToLower(v) {
-		case "group", "join", "on", "key", "select", "update", "where", "limit", "order", "insert", "into", "set", "left", "desc", "read":
+		case "group", "join", "on", "key", "select", "update", "where", "limit", "order", "insert", "into", "set", "left", "desc", "read", "from", "to":
 			return "`" + v + "`"
 		default:
 			return v
@@ -2003,7 +2055,7 @@ func marsha1Tostring(i interface{}) (str string) {
 		}
 	case reflect.Slice:
 		if r.Len() == 0 {
-			return "'[]'"
+			return "'{}'"
 		}
 	}
 
@@ -2080,7 +2132,7 @@ func GetvaluefromPtr(ptr uintptr, field reflect.StructField) string {
 			}
 		case reflect.Slice:
 			if i.Elem().Len() == 0 {
-				return "'[]'"
+				return "'{}'"
 			}
 		}
 		return "'" + value_srp.Replace(JsonMarshalString(i.Elem().Interface())) + "'"

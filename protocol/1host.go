@@ -3,6 +3,7 @@ package protocol
 import (
 	"sync"
 	"libraries"
+	"unsafe"
 	"time"
 )
 
@@ -68,6 +69,10 @@ func (data *MSG_HOST_regServer) cmd() int32 {
 	return CMD_MSG_HOST_regServer
 }
 
+func (data *MSG_HOST_regServer) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_regServer()))
+}
+
 func (data *MSG_HOST_regServer) Put() {
 	data.No = 0
 	data.IpPort = ``
@@ -118,6 +123,10 @@ func (data *MSG_HOST_regServer_result) cmd() int32 {
 	return CMD_MSG_HOST_regServer_result
 }
 
+func (data *MSG_HOST_regServer_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_regServer_result()))
+}
+
 func (data *MSG_HOST_regServer_result) Put() {
 	data.Id = 0
 	pool_MSG_HOST_regServer_result.Put(data)
@@ -155,6 +164,10 @@ func (data *MSG_HOST_StartTicker) cmd() int32 {
 	return CMD_MSG_HOST_StartTicker
 }
 
+func (data *MSG_HOST_StartTicker) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_StartTicker()))
+}
+
 func (data *MSG_HOST_StartTicker) Put() {
 	pool_MSG_HOST_StartTicker.Put(data)
 }
@@ -188,6 +201,10 @@ func GET_MSG_HOST_PING() *MSG_HOST_PING {
 
 func (data *MSG_HOST_PING) cmd() int32 {
 	return CMD_MSG_HOST_PING
+}
+
+func (data *MSG_HOST_PING) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_PING()))
 }
 
 func (data *MSG_HOST_PING) Put() {
@@ -228,6 +245,10 @@ func (data *MSG_HOST_PONG) cmd() int32 {
 	return CMD_MSG_HOST_PONG
 }
 
+func (data *MSG_HOST_PONG) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_PONG()))
+}
+
 func (data *MSG_HOST_PONG) Put() {
 	data.Rand = 0
 	pool_MSG_HOST_PONG.Put(data)
@@ -264,6 +285,10 @@ func GET_MSG_HOST_WINDOW_UPDATE() *MSG_HOST_WINDOW_UPDATE {
 
 func (data *MSG_HOST_WINDOW_UPDATE) cmd() int32 {
 	return CMD_MSG_HOST_WINDOW_UPDATE
+}
+
+func (data *MSG_HOST_WINDOW_UPDATE) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_WINDOW_UPDATE()))
 }
 
 func (data *MSG_HOST_WINDOW_UPDATE) Put() {
@@ -303,6 +328,10 @@ func GET_MSG_HOST_CACHE_GET() *MSG_HOST_CACHE_GET {
 
 func (data *MSG_HOST_CACHE_GET) cmd() int32 {
 	return CMD_MSG_HOST_CACHE_GET
+}
+
+func (data *MSG_HOST_CACHE_GET) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_CACHE_GET()))
 }
 
 func (data *MSG_HOST_CACHE_GET) Put() {
@@ -346,6 +375,10 @@ func (data *MSG_HOST_CACHE_GET_result) cmd() int32 {
 	return CMD_MSG_HOST_CACHE_GET_result
 }
 
+func (data *MSG_HOST_CACHE_GET_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_CACHE_GET_result()))
+}
+
 func (data *MSG_HOST_CACHE_GET_result) Put() {
 	data.Value = data.Value[:0]
 	pool_MSG_HOST_CACHE_GET_result.Put(data)
@@ -386,6 +419,10 @@ func GET_MSG_HOST_CACHE_GETPATH() *MSG_HOST_CACHE_GETPATH {
 
 func (data *MSG_HOST_CACHE_GETPATH) cmd() int32 {
 	return CMD_MSG_HOST_CACHE_GETPATH
+}
+
+func (data *MSG_HOST_CACHE_GETPATH) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_CACHE_GETPATH()))
 }
 
 func (data *MSG_HOST_CACHE_GETPATH) Put() {
@@ -440,6 +477,10 @@ func (data *MSG_HOST_CACHE_GETPATH_result) cmd() int32 {
 	return CMD_MSG_HOST_CACHE_GETPATH_result
 }
 
+func (data *MSG_HOST_CACHE_GETPATH_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_CACHE_GETPATH_result()))
+}
+
 func (data *MSG_HOST_CACHE_GETPATH_result) Put() {
 	data.Value = data.Value[:0]
 	pool_MSG_HOST_CACHE_GETPATH_result.Put(data)
@@ -489,6 +530,10 @@ func GET_MSG_HOST_CACHE_SET() *MSG_HOST_CACHE_SET {
 
 func (data *MSG_HOST_CACHE_SET) cmd() int32 {
 	return CMD_MSG_HOST_CACHE_SET
+}
+
+func (data *MSG_HOST_CACHE_SET) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_CACHE_SET()))
 }
 
 func (data *MSG_HOST_CACHE_SET) Put() {
@@ -542,6 +587,10 @@ func (data *MSG_HOST_CACHE_DEL) cmd() int32 {
 	return CMD_MSG_HOST_CACHE_DEL
 }
 
+func (data *MSG_HOST_CACHE_DEL) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_CACHE_DEL()))
+}
+
 func (data *MSG_HOST_CACHE_DEL) Put() {
 	data.Path = ``
 	data.Name = ``
@@ -583,6 +632,10 @@ func (data *MSG_HOST_CACHE_DelPath) cmd() int32 {
 	return CMD_MSG_HOST_CACHE_DelPath
 }
 
+func (data *MSG_HOST_CACHE_DelPath) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_CACHE_DelPath()))
+}
+
 func (data *MSG_HOST_CACHE_DelPath) Put() {
 	data.Path = ``
 	pool_MSG_HOST_CACHE_DelPath.Put(data)
@@ -619,6 +672,10 @@ func GET_MSG_HOST_GET_Msgno() *MSG_HOST_GET_Msgno {
 
 func (data *MSG_HOST_GET_Msgno) cmd() int32 {
 	return CMD_MSG_HOST_GET_Msgno
+}
+
+func (data *MSG_HOST_GET_Msgno) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_GET_Msgno()))
 }
 
 func (data *MSG_HOST_GET_Msgno) Put() {
@@ -659,6 +716,10 @@ func (data *MSG_HOST_GET_Msgno_result) cmd() int32 {
 	return CMD_MSG_HOST_GET_Msgno_result
 }
 
+func (data *MSG_HOST_GET_Msgno_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_GET_Msgno_result()))
+}
+
 func (data *MSG_HOST_GET_Msgno_result) Put() {
 	data.Msgno = 0
 	pool_MSG_HOST_GET_Msgno_result.Put(data)
@@ -696,6 +757,10 @@ func GET_MSG_HOST_QueryErr() *MSG_HOST_QueryErr {
 
 func (data *MSG_HOST_QueryErr) cmd() int32 {
 	return CMD_MSG_HOST_QueryErr
+}
+
+func (data *MSG_HOST_QueryErr) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_QueryErr()))
 }
 
 func (data *MSG_HOST_QueryErr) Put() {
@@ -742,6 +807,10 @@ func (data *MSG_HOST_ResetWindow) cmd() int32 {
 	return CMD_MSG_HOST_ResetWindow
 }
 
+func (data *MSG_HOST_ResetWindow) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_ResetWindow()))
+}
+
 func (data *MSG_HOST_ResetWindow) Put() {
 	data.Window = 0
 	pool_MSG_HOST_ResetWindow.Put(data)
@@ -785,6 +854,10 @@ func GET_MSG_FILE_upload() *MSG_FILE_upload {
 
 func (data *MSG_FILE_upload) cmd() int32 {
 	return CMD_MSG_FILE_upload
+}
+
+func (data *MSG_FILE_upload) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_FILE_upload()))
 }
 
 func (data *MSG_FILE_upload) Put() {
@@ -849,6 +922,10 @@ func (data *MSG_FILE_upload_result) cmd() int32 {
 	return CMD_MSG_FILE_upload_result
 }
 
+func (data *MSG_FILE_upload_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_FILE_upload_result()))
+}
+
 func (data *MSG_FILE_upload_result) Put() {
 	data.FileID = 0
 	pool_MSG_FILE_upload_result.Put(data)
@@ -886,6 +963,10 @@ func GET_MSG_FILE_getByID() *MSG_FILE_getByID {
 
 func (data *MSG_FILE_getByID) cmd() int32 {
 	return CMD_MSG_FILE_getByID
+}
+
+func (data *MSG_FILE_getByID) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_FILE_getByID()))
 }
 
 func (data *MSG_FILE_getByID) Put() {
@@ -934,6 +1015,10 @@ func GET_MSG_FILE_getByID_result() *MSG_FILE_getByID_result {
 
 func (data *MSG_FILE_getByID_result) cmd() int32 {
 	return CMD_MSG_FILE_getByID_result
+}
+
+func (data *MSG_FILE_getByID_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_FILE_getByID_result()))
 }
 
 func (data *MSG_FILE_getByID_result) Put() {
@@ -996,6 +1081,10 @@ func (data *MSG_FILE_updateMapByWhere) cmd() int32 {
 	return CMD_MSG_FILE_updateMapByWhere
 }
 
+func (data *MSG_FILE_updateMapByWhere) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_FILE_updateMapByWhere()))
+}
+
 func (data *MSG_FILE_updateMapByWhere) Put() {
 	data.Where = nil
 	data.Update = nil
@@ -1037,6 +1126,10 @@ func (data *MSG_FILE_DeleteByID) cmd() int32 {
 	return CMD_MSG_FILE_DeleteByID
 }
 
+func (data *MSG_FILE_DeleteByID) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_FILE_DeleteByID()))
+}
+
 func (data *MSG_FILE_DeleteByID) Put() {
 	data.FileID = 0
 	pool_MSG_FILE_DeleteByID.Put(data)
@@ -1073,6 +1166,10 @@ func GET_MSG_HOST_BeginTransaction() *MSG_HOST_BeginTransaction {
 
 func (data *MSG_HOST_BeginTransaction) cmd() int32 {
 	return CMD_MSG_HOST_BeginTransaction
+}
+
+func (data *MSG_HOST_BeginTransaction) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_BeginTransaction()))
 }
 
 func (data *MSG_HOST_BeginTransaction) Put() {
@@ -1113,6 +1210,10 @@ func (data *MSG_HOST_BeginTransaction_result) cmd() int32 {
 	return CMD_MSG_HOST_BeginTransaction_result
 }
 
+func (data *MSG_HOST_BeginTransaction_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_BeginTransaction_result()))
+}
+
 func (data *MSG_HOST_BeginTransaction_result) Put() {
 	data.TransactionNo = 0
 	pool_MSG_HOST_BeginTransaction_result.Put(data)
@@ -1149,6 +1250,10 @@ func GET_MSG_HOST_Transaction_Commit() *MSG_HOST_Transaction_Commit {
 
 func (data *MSG_HOST_Transaction_Commit) cmd() int32 {
 	return CMD_MSG_HOST_Transaction_Commit
+}
+
+func (data *MSG_HOST_Transaction_Commit) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_Transaction_Commit()))
 }
 
 func (data *MSG_HOST_Transaction_Commit) Put() {
@@ -1189,6 +1294,10 @@ func (data *MSG_HOST_Transaction_RollBack) cmd() int32 {
 	return CMD_MSG_HOST_Transaction_RollBack
 }
 
+func (data *MSG_HOST_Transaction_RollBack) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_Transaction_RollBack()))
+}
+
 func (data *MSG_HOST_Transaction_RollBack) Put() {
 	data.No = 0
 	pool_MSG_HOST_Transaction_RollBack.Put(data)
@@ -1225,6 +1334,10 @@ func GET_MSG_HOST_Transaction_Check() *MSG_HOST_Transaction_Check {
 
 func (data *MSG_HOST_Transaction_Check) cmd() int32 {
 	return CMD_MSG_HOST_Transaction_Check
+}
+
+func (data *MSG_HOST_Transaction_Check) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_Transaction_Check()))
 }
 
 func (data *MSG_HOST_Transaction_Check) Put() {
@@ -1264,6 +1377,10 @@ func GET_MSG_FILE_getByObject() *MSG_FILE_getByObject {
 
 func (data *MSG_FILE_getByObject) cmd() int32 {
 	return CMD_MSG_FILE_getByObject
+}
+
+func (data *MSG_FILE_getByObject) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_FILE_getByObject()))
 }
 
 func (data *MSG_FILE_getByObject) Put() {
@@ -1307,10 +1424,11 @@ func (data *MSG_FILE_getByObject_result) cmd() int32 {
 	return CMD_MSG_FILE_getByObject_result
 }
 
+func (data *MSG_FILE_getByObject_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_FILE_getByObject_result()))
+}
+
 func (data *MSG_FILE_getByObject_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	pool_MSG_FILE_getByObject_result.Put(data)
 }
@@ -1358,6 +1476,10 @@ func (data *MSG_HOST_GET_MsgUserId) cmd() int32 {
 	return CMD_MSG_HOST_GET_MsgUserId
 }
 
+func (data *MSG_HOST_GET_MsgUserId) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_GET_MsgUserId()))
+}
+
 func (data *MSG_HOST_GET_MsgUserId) Put() {
 	pool_MSG_HOST_GET_MsgUserId.Put(data)
 }
@@ -1391,6 +1513,10 @@ func GET_MSG_HOST_GET_MsgUserId_result() *MSG_HOST_GET_MsgUserId_result {
 
 func (data *MSG_HOST_GET_MsgUserId_result) cmd() int32 {
 	return CMD_MSG_HOST_GET_MsgUserId_result
+}
+
+func (data *MSG_HOST_GET_MsgUserId_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_GET_MsgUserId_result()))
 }
 
 func (data *MSG_HOST_GET_MsgUserId_result) Put() {
@@ -1432,6 +1558,10 @@ func GET_MSG_FILE_uploadTmp() *MSG_FILE_uploadTmp {
 
 func (data *MSG_FILE_uploadTmp) cmd() int32 {
 	return CMD_MSG_FILE_uploadTmp
+}
+
+func (data *MSG_FILE_uploadTmp) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_FILE_uploadTmp()))
 }
 
 func (data *MSG_FILE_uploadTmp) Put() {
@@ -1486,6 +1616,10 @@ func (data *MSG_FILE_RangeDown) cmd() int32 {
 	return CMD_MSG_FILE_RangeDown
 }
 
+func (data *MSG_FILE_RangeDown) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_FILE_RangeDown()))
+}
+
 func (data *MSG_FILE_RangeDown) Put() {
 	data.FileID = 0
 	data.Start = 0
@@ -1530,6 +1664,10 @@ func (data *MSG_FILE_RangeDown_result) cmd() int32 {
 	return CMD_MSG_FILE_RangeDown_result
 }
 
+func (data *MSG_FILE_RangeDown_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_FILE_RangeDown_result()))
+}
+
 func (data *MSG_FILE_RangeDown_result) Put() {
 	data.Byte = data.Byte[:0]
 	pool_MSG_FILE_RangeDown_result.Put(data)
@@ -1571,10 +1709,11 @@ func (data *MSG_FILE_updateTmp) cmd() int32 {
 	return CMD_MSG_FILE_updateTmp
 }
 
+func (data *MSG_FILE_updateTmp) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_FILE_updateTmp()))
+}
+
 func (data *MSG_FILE_updateTmp) Put() {
-	for _,v := range data.Files {
-		v.Put()
-	}
 	data.Files = data.Files[:0]
 	pool_MSG_FILE_updateTmp.Put(data)
 }
@@ -1624,6 +1763,10 @@ func (data *MSG_FILE_edit) cmd() int32 {
 	return CMD_MSG_FILE_edit
 }
 
+func (data *MSG_FILE_edit) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_FILE_edit()))
+}
+
 func (data *MSG_FILE_edit) Put() {
 	data.FileID = 0
 	data.Name = ``
@@ -1666,6 +1809,10 @@ func GET_MSG_FILE_getByWhere() *MSG_FILE_getByWhere {
 
 func (data *MSG_FILE_getByWhere) cmd() int32 {
 	return CMD_MSG_FILE_getByWhere
+}
+
+func (data *MSG_FILE_getByWhere) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_FILE_getByWhere()))
 }
 
 func (data *MSG_FILE_getByWhere) Put() {
@@ -1716,10 +1863,11 @@ func (data *MSG_FILE_getByWhere_result) cmd() int32 {
 	return CMD_MSG_FILE_getByWhere_result
 }
 
+func (data *MSG_FILE_getByWhere_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_FILE_getByWhere_result()))
+}
+
 func (data *MSG_FILE_getByWhere_result) Put() {
-	for _,v := range data.List {
-		v.Put()
-	}
 	data.List = data.List[:0]
 	data.Total = 0
 	pool_MSG_FILE_getByWhere_result.Put(data)
@@ -1771,6 +1919,10 @@ func (data *MSG_FILE_download_byIds) cmd() int32 {
 	return CMD_MSG_FILE_download_byIds
 }
 
+func (data *MSG_FILE_download_byIds) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_FILE_download_byIds()))
+}
+
 func (data *MSG_FILE_download_byIds) Put() {
 	data.Ids = data.Ids[:0]
 	pool_MSG_FILE_download_byIds.Put(data)
@@ -1818,6 +1970,10 @@ func GET_MSG_FILE_download_byIds_result() *MSG_FILE_download_byIds_result {
 
 func (data *MSG_FILE_download_byIds_result) cmd() int32 {
 	return CMD_MSG_FILE_download_byIds_result
+}
+
+func (data *MSG_FILE_download_byIds_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_FILE_download_byIds_result()))
 }
 
 func (data *MSG_FILE_download_byIds_result) Put() {

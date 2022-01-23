@@ -564,21 +564,23 @@ func project_setMenu(data *TemplateData, projectID, buildID int32, extra string)
 			}
 		}
 		if !find {
-			data.ws.WriteString(js.Alert(data.Lang["project"]["error"].(map[string]string)["NotFound"]))
+			out := js.Alert(data.Lang["project"]["error"].(map[string]string)["NotFound"])
 			if strings.Contains(data.ws.Referer(), "/user/login") {
-				data.ws.WriteString(js.Location(createLink("project", "index", nil), ""))
+				out += js.Location(createLink("project", "index", nil), "")
 			} else {
-				data.ws.WriteString(js.Location("back", ""))
+				out += js.Location("back", "")
 			}
+			data.ws.WriteString(out)
 			return dataErrAlreadyOut
 		}
 		if data.User.Id != 1 && !data.User.AclProjects[projectID] {
-			data.ws.WriteString(js.Alert(data.Lang["project"]["accessDenied"].(string)))
+			out := js.Alert(data.Lang["project"]["accessDenied"].(string))
 			if strings.Contains(data.ws.Referer(), "/user/login") {
-				data.ws.WriteString(js.Location(createLink("project", "index", nil), ""))
+				out += js.Location(createLink("project", "index", nil), "")
 			} else {
-				data.ws.WriteString(js.Location("back", ""))
+				out += js.Location("back", "")
 			}
+			data.ws.WriteString(out)
 			return dataErrAlreadyOut
 		}
 
@@ -777,14 +779,14 @@ func project_saveState(data *TemplateData, projectID int32) (int32, error) {
 			data.ws.Session().Set("project", projects[0].Key)
 		}
 		if projectID > 0 {
-			data.ws.WriteString(js.Alert(data.Lang["project"]["accessDenied"].(string)))
+			out := js.Alert(data.Lang["project"]["accessDenied"].(string))
 
 			if strings.Contains(data.ws.Path(), createLink("user", "login", nil)) {
-				js.Location(createLink("my", "index", nil), "self")
+				out += js.Location(createLink("my", "index", nil), "self")
 			} else {
-				js.Location("back", "self")
+				out += js.Location("back", "self")
 			}
-
+			data.ws.WriteString(out)
 			return 0, dataErrAlreadyOut
 		}
 	}
@@ -897,13 +899,13 @@ func post_project_create(data *TemplateData) (err error) {
 		case "code":
 			project.Code = value[0]
 		case "begin":
-			project.Begin, err = time.Parse(protocol.TIMEFORMAT_MYSQLDATE, value[0])
+			project.Begin, err = time.ParseInLocation(protocol.TIMEFORMAT_MYSQLDATE, value[0], time.Local)
 			if err != nil {
 				data.ajaxResult(false, map[string]string{"begin": data.Lang["project"]["error"].(map[string]string)["beginTime"]}, "")
 				return nil
 			}
 		case "end":
-			project.End, err = time.Parse(protocol.TIMEFORMAT_MYSQLDATE, value[0])
+			project.End, err = time.ParseInLocation(protocol.TIMEFORMAT_MYSQLDATE, value[0], time.Local)
 			if err != nil {
 				data.ajaxResult(false, map[string]string{"begin": data.Lang["project"]["error"].(map[string]string)["endTime"]}, "")
 				return nil
@@ -1472,10 +1474,12 @@ func post_project_start(data *TemplateData) (err error) {
 	out.Id = project.Id
 	out.Comment = data.ws.Post("comment")
 	err = data.SendMsgWaitResultToDefault(out, nil)
+	var outStr string
 	if err != nil {
-		data.ws.WriteString(js.Error(err.Error()))
+		outStr = js.Error(err.Error())
 	}
-	data.ws.WriteString(js.Reload("parent.parent"))
+	outStr += js.Reload("parent.parent")
+	data.ws.WriteString(outStr)
 	return nil
 }
 func get_project_putoff(data *TemplateData) (err error) {
@@ -1508,11 +1512,11 @@ func post_project_putoff(data *TemplateData) (err error) {
 		return nil
 	}
 	out := protocol.GET_MSG_PROJECT_project_putoff()
-	if out.Begin, err = time.Parse("2006-01-02", data.ws.Post("begin")); err != nil {
+	if out.Begin, err = time.ParseInLocation("2006-01-02", data.ws.Post("begin"), time.Local); err != nil {
 		data.ws.WriteString(js.Error(data.Lang["project"]["error"].(map[string]string)["beginTime"]))
 		return nil
 	}
-	if out.End, err = time.Parse("2006-01-02", data.ws.Post("end")); err != nil {
+	if out.End, err = time.ParseInLocation("2006-01-02", data.ws.Post("end"), time.Local); err != nil {
 		data.ws.WriteString(js.Error(data.Lang["project"]["error"].(map[string]string)["endTime"]))
 		return nil
 	}
@@ -1573,9 +1577,9 @@ func get_project_activate(data *TemplateData) (err error) {
 		return err
 	}
 
-	newBegin, _ := time.Parse("2006-01-02", time.Now().Format("2006-01-02"))
-	begin, _ := time.Parse("2006-01-02", project.Begin.Format("2006-01-02"))
-	newEnd, _ := time.Parse("2006-01-02", project.End.Format("2006-01-02"))
+	newBegin, _ := time.ParseInLocation("2006-01-02", time.Now().Format("2006-01-02"), time.Local)
+	begin, _ := time.ParseInLocation("2006-01-02", project.Begin.Format("2006-01-02"), time.Local)
+	newEnd, _ := time.ParseInLocation("2006-01-02", project.End.Format("2006-01-02"), time.Local)
 	newEnd = newEnd.Add(newBegin.Sub(begin))
 	data.Data["newBegin"] = newBegin
 	data.Data["newEnd"] = newEnd
@@ -1602,11 +1606,11 @@ func post_project_activate(data *TemplateData) (err error) {
 	out.Comment = data.ws.Post("comment")
 	out.ReadjustTask = data.ws.Post("readjustTask") == "1"
 	if data.ws.Post("readjustTime") == "1" {
-		if out.Begin, err = time.Parse("2006-01-02", data.ws.Post("begin")); err != nil {
+		if out.Begin, err = time.ParseInLocation("2006-01-02", data.ws.Post("begin"), time.Local); err != nil {
 			data.ws.WriteString(js.Error(data.Lang["project"]["error"].(map[string]string)["beginTime"]))
 			return nil
 		}
-		if out.End, err = time.Parse("2006-01-02", data.ws.Post("end")); err != nil {
+		if out.End, err = time.ParseInLocation("2006-01-02", data.ws.Post("end"), time.Local); err != nil {
 			data.ws.WriteString(js.Error(data.Lang["project"]["error"].(map[string]string)["endTime"]))
 			return nil
 		}
@@ -2048,8 +2052,9 @@ func get_project_linkStory(data *TemplateData) (err error) {
 		return
 	}
 	if len(products) == 0 {
-		data.ws.WriteString(js.Alert(data.Lang["project"]["errorNoLinkedProducts"].(string)))
-		data.ws.WriteString(js.Location(createLink("project", "manageproducts", []interface{}{"projectID=", projectID})))
+		out := js.Alert(data.Lang["project"]["errorNoLinkedProducts"].(string))
+		out += js.Location(createLink("project", "manageproducts", []interface{}{"projectID=", projectID}))
+		data.ws.WriteString(out)
 		return
 	}
 

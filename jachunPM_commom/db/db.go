@@ -28,6 +28,7 @@ func Init() {
 	}
 	errs := DB.StoreEngine("MyRocks").Sync2(
 		new(Log_msg),
+		new(ZstdMsg),
 	)
 	errs = append(errs, DB.StoreEngine("Innodb").Sync2(
 		new(File),
@@ -36,6 +37,20 @@ func Init() {
 		log.Fatalf("数据库启动失败%v", errs)
 	}
 	go UpdatedbInit()
+
+	/*go func() {
+		for {
+
+			var zstd []*ZstdMsg
+			DB.Table("zstd").Limit(0).Select(&zstd)
+			for _, v := range zstd {
+
+				ioutil.WriteFile("./db/zstd/"+v.Sha, v.Msg, 0666)
+			}
+
+		}
+	}()*/
+
 }
 
 type Log_msg struct {
@@ -72,4 +87,15 @@ type File struct {
 
 func (*File) TableName() string {
 	return TABLE_FILE
+}
+
+type ZstdMsg struct {
+	Sha  string `db:"pk"`
+	Cmd  int32  `db:index`
+	Name string
+	Msg  []byte `db:"type:mediumblob"`
+}
+
+func (*ZstdMsg) TableName() string {
+	return "zstd"
 }

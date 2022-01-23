@@ -29,9 +29,12 @@ func mysqlUpgrade() {
 		u.Salt = "2909941e479e5b177372ca62223e108975cabc6719732523d4f0a82176da343c"
 		uids = append(uids, u.Id)
 	}
+	rows=append(rows,&db.User{Id: protocol.SYSTEMUSER, Realname: "系统缓存",Account: "systemConfig",Password: "-", Salt: "-",Deleted: true})
+
 	_, err = HostConn.DB.Table(db.TABLE_USER).InsertAll(rows)
 	//_, err = HostConn.DB.Table(db.TABLE_TASK).InsertAll(tasks_insert)
 	libraries.DebugLog("插入User %d 条，错误 %v", len(rows), err)
+
 	HostConn.DB.Table(db.TABLE_TEAM).Where().Delete()
 	var teams []*db.Team
 	err = HostConn.DB.Table("zt_team").Field("`Id`,`Root`,`Type`,`Account`,`Role`,`Limited`,`Join`,`Days`,`Hours`,`Estimate`,`Consumed`,`Left`,`Order`").Limit(0).Select(&teams)
@@ -125,5 +128,5 @@ func mysqlUpgrade() {
 	libraries.DebugLog("成功同步user信息")
 }
 func init() {
-	//go time.AfterFunc(time.Second*5, mysqlUpgrade)
+	//time.AfterFunc(time.Second*5, mysqlUpgrade)
 }

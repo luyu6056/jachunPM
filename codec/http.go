@@ -437,9 +437,9 @@ func (req *Request) decodeQueryPost() {
 	}
 }
 func (req *Request) addquery(name, value string) {
-	for _, v := range req.queryS {
+	for k, v := range req.queryS {
 		if v.key == name {
-			v.value = append(v.value, value)
+			req.queryS[k].value = append(req.queryS[k].value, value)
 			return
 		}
 	}
@@ -457,9 +457,9 @@ func (req *Request) addquery(name, value string) {
 	}
 }
 func (req *Request) addpost(name, value string) {
-	for _, v := range req.postS {
+	for k, v := range req.postS {
 		if v.key == name {
-			v.value = append(v.value, value)
+			req.postS[k].value = append(req.postS[k].value, value)
 			return
 		}
 	}

@@ -30,9 +30,7 @@ func group_update(data *protocol.MSG_USER_group_update, in *protocol.Msg) {
 		in.WriteErr(err)
 		return
 	}
-	if err = in.DB.Table(db.TABLE_GROUP).Replace(data.Update); err != nil {
-		in.WriteErr(err)
-		return
-	}
+	err = in.DB.Table(db.TABLE_GROUP).Replace(data.Update)
 	updateUserView(nil, []int32{data.Update.Id}, nil, nil, in)
+	in.WriteErr(err)
 }

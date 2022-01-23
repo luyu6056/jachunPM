@@ -70,7 +70,7 @@ func main() {
 	h := "\n" //换行符
 
 	out := new(bytes.Buffer)
-	for serverid, name := range []string{"", "1host.go", "", "3log.go", "4user.go", "5project.go", "6test.go"} {
+	for serverid, name := range []string{"", "1host.go", "", "3log.go", "4user.go", "5project.go", "6test.go", "7oa.go"} {
 		func() {
 			name = BASE_ROOT_PATH + DS + name
 			b, err := ioutil.ReadFile(name)
@@ -114,7 +114,7 @@ func main() {
 				r = append(r, _struct)
 			}
 			out.Reset()
-			out.WriteString("package protocol\n\nimport (\n	\"sync\"\n	\"libraries\"\n")
+			out.WriteString("package protocol\n\nimport (\n	\"sync\"\n	\"libraries\"\n	\"unsafe\"\n")
 			if strings.Contains(str, "time.Time") {
 				out.WriteString("	\"time\"\n")
 			}
@@ -178,9 +178,13 @@ func main() {
 				out.WriteString(_struct.name)
 				out.WriteString("\n}\n\nfunc (data *")
 				out.WriteString(_struct.name)
+				out.WriteString(") SetUintptr(in uintptr) {\n	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_")
+				out.WriteString(_struct.name)
+				out.WriteString("()))\n}\n\nfunc (data *")
+				out.WriteString(_struct.name)
 				out.WriteString(") Put() {\n")
 				for _, f := range _struct.field {
-					if strings.Contains(f.typ, "*") {
+					if f.typ[0:1] == "*" {
 						if f.typ[:2] == "[]" {
 
 							out.WriteString("	for _,v := range data.")

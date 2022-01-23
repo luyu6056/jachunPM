@@ -15,3 +15,8 @@ func WhereOperatorIN(i interface{}) []interface{} { //"in"
 func UpdateValueRaw(rawstr string) []string {
 	return []string{"exp", rawstr}
 }
+
+//不进行任何转义
+func WhereOperatorRaw(where string) []interface{} {
+	return []interface{}{"raw", where}
+}

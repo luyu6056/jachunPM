@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	MaxOutLen               = 2<<32 - 1
+	MaxOutLen               = 2<<31 - 1
 	MsgHeadLen              = 4 + 2 + 2 + 2 + 4 + 4 + 4 + 3 //不包含cmd
 	MaxMsgLen               = 2<<24 - 1 - MsgHeadLen
 	MaxMsgNum               = 127
@@ -15,6 +15,7 @@ const (
 	Rpcmsgnum               = 200       //缓冲消息数
 	MaxReconnectNum         = 0         //重试次数,0无限制
 	CompressMinNum          = 5         //最小压缩消息数
+	CompressMinLen          = 4096      //最小压缩长度
 	DefaultWindowSize       = 20        //默认窗口值，为msg消息数量，窗口值允许为负值
 	RpcTickDefaultTime      = 1         //单位秒
 	MsgTimeOut              = 60        //单位秒
@@ -26,8 +27,9 @@ var ZEROTIME, _ = time.Parse("2006-01-02", "0000-01-01")
 var NORMALTIME, _ = time.Parse("2006-01-02", "2010-01-01")
 
 const (
-	ADMINUSER = 1
-	CLOSEUSER = -1
+	ADMINUSER  = 1
+	CLOSEUSER  = -1
+	SYSTEMUSER = -2 //在config用到
 )
 
 var buf_pool = sync.Pool{New: func() interface{} {
@@ -127,3 +129,8 @@ var CMD_NO_CHECK_TTL = map[int32]int{
 	CMD_MSG_FILE_RangeDown:        0,
 	CMD_MSG_FILE_RangeDown_result: 0,
 }
+
+const (
+	AttendAM = -1
+	AttendPM = -2
+)

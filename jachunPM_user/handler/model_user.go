@@ -190,8 +190,9 @@ func user_updateMap(where map[string]interface{}, update map[string]interface{})
 	return err
 }
 func user_updateCacheById(uid int32) {
-	user, _ := getUserInfoByID(uid)
-	if user != nil {
+	if user, err := getUserInfoByID(uid);err!=nil{
+		libraries.DebugLog("%+v",err)
+	}else if user != nil {
 		user_setCache(user)
 	}
 }
@@ -262,8 +263,7 @@ func user_setCache(user *db.User) {
 func user_insertMap(insert map[string]interface{}) error {
 	id, err := HostConn.DB.Table(db.TABLE_USER).Insert(insert)
 	if id > 0 {
-		user, _ := getUserInfoByID(int32(id))
-		user_setCache(user)
+		user_updateCacheById(int32(id))
 	}
 	return err
 }

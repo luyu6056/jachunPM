@@ -3,7 +3,6 @@ package handler
 import (
 	"libraries"
 	"protocol"
-	"reflect"
 )
 
 var HostConn *protocol.RpcClient
@@ -135,8 +134,18 @@ func Handler(in *protocol.Msg) {
 	case *protocol.MSG_USER_block_getList:
 		block_getList(data, in)
 	case *protocol.MSG_USER_getExportTemplate:
-		user_getExportTemplate(data,in)
+		user_getExportTemplate(data, in)
+	case *protocol.MSG_USER_block_delectByWhere:
+		block_delectByWhere(data, in)
+	case *protocol.MSG_USER_config_get:
+		config_get(data, in)
+	case *protocol.MSG_USER_config_savelist:
+		config_savelist(data,in)
 	default:
-		libraries.ReleaseLog("未设置消息%s处理", reflect.TypeOf(data).Elem().Name())
+		if v, ok := protocol.CmdToName[in.Cmd]; ok {
+			libraries.ReleaseLog("未设置消息CMD%s处理", v)
+		} else {
+			libraries.ReleaseLog("未设置消息CMD%d处理", in.Cmd)
+		}
 	}
 }

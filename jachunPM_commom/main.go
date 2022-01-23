@@ -35,7 +35,7 @@ func main() {
 	go http.ListenAndServe("0.0.0.0:8100", nil)
 	rpcSvr := &rpcServer{addr: config.Config.ListenRpc}
 
-	gnet.Serve(rpcSvr, rpcSvr.addr, gnet.WithLoopNum(runtime.NumCPU()*2), gnet.WithCodec(&protocol.RpcCodec{}), gnet.WithReusePort(false), gnet.WithOutbuf(256), gnet.WithMultiOut(true), gnet.WithTCPNoDelay(true))
+	gnet.Serve(rpcSvr, rpcSvr.addr, gnet.WithLoopNum(runtime.NumCPU()), gnet.WithCodec(&protocol.RpcCodec{}), gnet.WithReusePort(false), gnet.WithOutbuf(256), gnet.WithMultiOut(true), gnet.WithTCPNoDelay(true))
 }
 
 func (rs *rpcServer) OnInitComplete(srv gnet.Server) (action gnet.Action) {
@@ -43,9 +43,9 @@ func (rs *rpcServer) OnInitComplete(srv gnet.Server) (action gnet.Action) {
 	return
 }
 func (rs *rpcServer) OnOpened(c gnet.Conn) (out []byte, action gnet.Action) {
-	c.SetContext(make(chan *protocol.Msg, 65535)) //装载未注册消息
+	c.SetContext(rpcHost.NewRpcServer(c)) //装载未注册消息
 	time.AfterFunc(time.Second*10, func() {
-		if _, ok := c.Context().(*rpcHost.RpcServer); !ok {
+		if  v,ok:=c.Context().(*rpcHost.RpcServer);ok && v.Id==-1 {
 			c.Close()
 		}
 	})
@@ -55,8 +55,6 @@ func (rs *rpcServer) OnClosed(c gnet.Conn, err error) (action gnet.Action) {
 	switch svr := c.Context().(type) {
 	case *rpcHost.RpcServer:
 		svr.Close()
-	case chan *protocol.Msg:
-		close(svr)
 	}
 	c.SetContext(nil)
 	return gnet.None

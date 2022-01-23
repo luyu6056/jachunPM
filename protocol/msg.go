@@ -231,20 +231,13 @@ func (m *Msg) LoadConfig(key string) (res map[string]map[string]interface{}, err
 		return
 	}
 	err = libraries.JsonUnmarshal(b, &res)
+	
 	return res, err
 }
 
 //解析具体某个值
 func (m *Msg) LoadConfigToValue(key, key1, key2 string, value interface{}) error {
-	b, err := m.cache.Get(key, PATH_CONFIG_CACHE+m.lang.String())
-	if err != nil {
-		return err
-	}
-	if len(b) == 0 {
-		return nil
-	}
-	var res map[string]map[string]interface{}
-	err = libraries.JsonUnmarshal(b, &res)
+	res,err:=m.LoadConfig(key)
 	if err != nil {
 		return err
 	}

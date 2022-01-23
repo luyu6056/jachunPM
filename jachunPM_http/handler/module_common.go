@@ -7,6 +7,7 @@ import (
 	"libraries"
 	"protocol"
 	"reflect"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -839,6 +840,13 @@ func common_printIcon(data *TemplateData, module, method, vars string, object in
 	return ""
 }
 func common_fetch(oldData *TemplateData, module, method string, varstr ...string) string {
+	defer func() {
+		if err := recover(); err != nil {
+			debug.PrintStack()
+			fmt.Println(err)
+			panic(err)
+		}
+	}()
 	path := "/" + module + "/" + method
 	data := getFetchInterface(oldData.ws, path, oldData.User)
 	if !hasPriv(data, module, method) {
@@ -904,6 +912,9 @@ func common_getValue(i, key interface{}) interface{} {
 			}
 		}
 		return nil
+	case map[string]string:
+		k := libraries.I2S(key)
+		return r[k]
 	}
 	r := reflect.ValueOf(i)
 	for r.Kind() == reflect.Ptr {
@@ -916,7 +927,7 @@ func common_getValue(i, key interface{}) interface{} {
 	if r.Type().Kind() == reflect.Map {
 		value := r.MapIndex(k)
 		if value.Kind() == reflect.Invalid {
-			return nil
+			return ""
 		}
 		return value.Interface()
 	} else if r.Type().Kind() == reflect.Slice {
@@ -933,28 +944,57 @@ func common_getValue(i, key interface{}) interface{} {
 	}
 	return nil
 }
-func common_printLink(data *TemplateData, module, method string, v ...string) string {
+func common_printLink(data *TemplateData, module, method string, v ...string) string { //$vars = '', $label='', $target = '', $misc = ''
 	var (
-		vars   string
-		label  string
-		target string
-		misc   string
+		vars string
+		typ  string
 	)
 	if len(v) > 0 {
 		vars = v[0]
 	}
-	if len(v) > 1 {
-		label = v[1]
+	if len(v) > 5 && v[5] == "true" {
+		if vars == "" {
+			vars = "onlybody=yes"
+		} else {
+			vars += "&onlybody=yes"
+		}
 	}
-	if len(v) > 2 {
-		target = v[2]
-	}
-	if len(v) > 3 {
-		misc = v[3]
+	if len(v) > 6 {
+		typ = v[6]
 	}
 	if !hasPriv(data, module, method) {
 		return ""
 	}
+	buf := bufpool.Get().(*libraries.MsgBuffer)
+	if typ == "li" {
+		buf.WriteString("<li><a href='")
+	} else {
+		buf.WriteString("<a href='")
+	}
 
-	return html_a(createLink(module, method, vars), label, target, misc)
+	href := createLink(module, method, vars)
+	buf.WriteString(href)
+	buf.WriteString("' ")
+	if len(v) > 3 && v[3] != "" {
+		buf.WriteString(v[3])
+	}
+	if len(v) > 2 && v[2] != "_self" && v[2] != "" {
+		buf.WriteString(" target='" + v[2])
+		buf.WriteString("'")
+	}
+	buf.WriteString(">")
+	if len(v) > 1 && v[1] != "" {
+		buf.WriteString(v[1])
+	} else {
+		buf.WriteString(href)
+	}
+	if typ == "li" {
+		buf.WriteString("</a></li>")
+	} else {
+		buf.WriteString("</a>")
+	}
+	res := buf.String()
+	buf.Reset()
+	bufpool.Put(buf)
+	return res
 }

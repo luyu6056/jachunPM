@@ -13,6 +13,7 @@ replace github.com/luyu6056/gnet => ../gnet
 replace protocol => ../protocol
 
 require (
+	github.com/luyu6056/cache v1.1.4
 	github.com/luyu6056/gnet v1.3.2 // indirect
 	libraries v0.0.0-00010101000000-000000000000
 	mysql v0.0.0-00010101000000-000000000000

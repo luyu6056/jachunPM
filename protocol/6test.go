@@ -3,6 +3,7 @@ package protocol
 import (
 	"sync"
 	"libraries"
+	"unsafe"
 	"time"
 )
 
@@ -54,6 +55,10 @@ func GET_MSG_TEST_testsuite_info() *MSG_TEST_testsuite_info {
 
 func (data *MSG_TEST_testsuite_info) cmd() int32 {
 	return CMD_MSG_TEST_testsuite_info
+}
+
+func (data *MSG_TEST_testsuite_info) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_testsuite_info()))
 }
 
 func (data *MSG_TEST_testsuite_info) Put() {
@@ -127,6 +132,10 @@ func (data *MSG_TEST_testsuite_getById) cmd() int32 {
 	return CMD_MSG_TEST_testsuite_getById
 }
 
+func (data *MSG_TEST_testsuite_getById) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_testsuite_getById()))
+}
+
 func (data *MSG_TEST_testsuite_getById) Put() {
 	data.Id = 0
 	pool_MSG_TEST_testsuite_getById.Put(data)
@@ -163,6 +172,10 @@ func GET_MSG_TEST_testsuite_getById_result() *MSG_TEST_testsuite_getById_result 
 
 func (data *MSG_TEST_testsuite_getById_result) cmd() int32 {
 	return CMD_MSG_TEST_testsuite_getById_result
+}
+
+func (data *MSG_TEST_testsuite_getById_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_testsuite_getById_result()))
 }
 
 func (data *MSG_TEST_testsuite_getById_result) Put() {
@@ -216,6 +229,10 @@ func (data *MSG_TEST_bug_getCount) cmd() int32 {
 	return CMD_MSG_TEST_bug_getCount
 }
 
+func (data *MSG_TEST_bug_getCount) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_bug_getCount()))
+}
+
 func (data *MSG_TEST_bug_getCount) Put() {
 	data.Where = nil
 	pool_MSG_TEST_bug_getCount.Put(data)
@@ -252,6 +269,10 @@ func GET_MSG_TEST_buf_getCount_result() *MSG_TEST_buf_getCount_result {
 
 func (data *MSG_TEST_buf_getCount_result) cmd() int32 {
 	return CMD_MSG_TEST_buf_getCount_result
+}
+
+func (data *MSG_TEST_buf_getCount_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_buf_getCount_result()))
 }
 
 func (data *MSG_TEST_buf_getCount_result) Put() {
@@ -292,6 +313,10 @@ func (data *MSG_TEST_product_deleteBranch_check) cmd() int32 {
 	return CMD_MSG_TEST_product_deleteBranch_check
 }
 
+func (data *MSG_TEST_product_deleteBranch_check) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_product_deleteBranch_check()))
+}
+
 func (data *MSG_TEST_product_deleteBranch_check) Put() {
 	data.BranchID = 0
 	pool_MSG_TEST_product_deleteBranch_check.Put(data)
@@ -328,6 +353,10 @@ func GET_MSG_TEST_product_deleteBranch_result() *MSG_TEST_product_deleteBranch_r
 
 func (data *MSG_TEST_product_deleteBranch_result) cmd() int32 {
 	return CMD_MSG_TEST_product_deleteBranch_result
+}
+
+func (data *MSG_TEST_product_deleteBranch_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_product_deleteBranch_result()))
 }
 
 func (data *MSG_TEST_product_deleteBranch_result) Put() {
@@ -367,6 +396,10 @@ func GET_MSG_TEST_bug_updateMapById() *MSG_TEST_bug_updateMapById {
 
 func (data *MSG_TEST_bug_updateMapById) cmd() int32 {
 	return CMD_MSG_TEST_bug_updateMapById
+}
+
+func (data *MSG_TEST_bug_updateMapById) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_bug_updateMapById()))
 }
 
 func (data *MSG_TEST_bug_updateMapById) Put() {
@@ -410,6 +443,10 @@ func (data *MSG_TEST_testtask_getById) cmd() int32 {
 	return CMD_MSG_TEST_testtask_getById
 }
 
+func (data *MSG_TEST_testtask_getById) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_testtask_getById()))
+}
+
 func (data *MSG_TEST_testtask_getById) Put() {
 	data.Id = 0
 	pool_MSG_TEST_testtask_getById.Put(data)
@@ -446,6 +483,10 @@ func GET_MSG_TEST_testtask_getById_result() *MSG_TEST_testtask_getById_result {
 
 func (data *MSG_TEST_testtask_getById_result) cmd() int32 {
 	return CMD_MSG_TEST_testtask_getById_result
+}
+
+func (data *MSG_TEST_testtask_getById_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_testtask_getById_result()))
 }
 
 func (data *MSG_TEST_testtask_getById_result) Put() {
@@ -511,6 +552,10 @@ func GET_MSG_TEST_Testtask_info() *MSG_TEST_Testtask_info {
 
 func (data *MSG_TEST_Testtask_info) cmd() int32 {
 	return CMD_MSG_TEST_Testtask_info
+}
+
+func (data *MSG_TEST_Testtask_info) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_Testtask_info()))
 }
 
 func (data *MSG_TEST_Testtask_info) Put() {
@@ -604,6 +649,10 @@ func (data *MSG_TEST_bug_getPairs) cmd() int32 {
 	return CMD_MSG_TEST_bug_getPairs
 }
 
+func (data *MSG_TEST_bug_getPairs) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_bug_getPairs()))
+}
+
 func (data *MSG_TEST_bug_getPairs) Put() {
 	data.Where = nil
 	pool_MSG_TEST_bug_getPairs.Put(data)
@@ -640,6 +689,10 @@ func GET_MSG_TEST_bug_getPairs_result() *MSG_TEST_bug_getPairs_result {
 
 func (data *MSG_TEST_bug_getPairs_result) cmd() int32 {
 	return CMD_MSG_TEST_bug_getPairs_result
+}
+
+func (data *MSG_TEST_bug_getPairs_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_bug_getPairs_result()))
 }
 
 func (data *MSG_TEST_bug_getPairs_result) Put() {
@@ -691,6 +744,10 @@ func (data *MSG_TEST_bug_getCountByWhere) cmd() int32 {
 	return CMD_MSG_TEST_bug_getCountByWhere
 }
 
+func (data *MSG_TEST_bug_getCountByWhere) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_bug_getCountByWhere()))
+}
+
 func (data *MSG_TEST_bug_getCountByWhere) Put() {
 	data.Where = nil
 	pool_MSG_TEST_bug_getCountByWhere.Put(data)
@@ -727,6 +784,10 @@ func GET_MSG_TEST_bug_getCountByWhere_result() *MSG_TEST_bug_getCountByWhere_res
 
 func (data *MSG_TEST_bug_getCountByWhere_result) cmd() int32 {
 	return CMD_MSG_TEST_bug_getCountByWhere_result
+}
+
+func (data *MSG_TEST_bug_getCountByWhere_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_bug_getCountByWhere_result()))
 }
 
 func (data *MSG_TEST_bug_getCountByWhere_result) Put() {
@@ -767,6 +828,10 @@ func (data *MSG_TEST_bug_getById) cmd() int32 {
 	return CMD_MSG_TEST_bug_getById
 }
 
+func (data *MSG_TEST_bug_getById) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_bug_getById()))
+}
+
 func (data *MSG_TEST_bug_getById) Put() {
 	data.Id = 0
 	pool_MSG_TEST_bug_getById.Put(data)
@@ -803,6 +868,10 @@ func GET_MSG_TEST_bug_getById_result() *MSG_TEST_bug_getById_result {
 
 func (data *MSG_TEST_bug_getById_result) cmd() int32 {
 	return CMD_MSG_TEST_bug_getById_result
+}
+
+func (data *MSG_TEST_bug_getById_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_bug_getById_result()))
 }
 
 func (data *MSG_TEST_bug_getById_result) Put() {
@@ -901,6 +970,10 @@ func GET_MSG_TEST_bug() *MSG_TEST_bug {
 
 func (data *MSG_TEST_bug) cmd() int32 {
 	return CMD_MSG_TEST_bug
+}
+
+func (data *MSG_TEST_bug) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_bug()))
 }
 
 func (data *MSG_TEST_bug) Put() {
@@ -1105,6 +1178,10 @@ func (data *MSG_TEST_CASE_getTaskCasePairs) cmd() int32 {
 	return CMD_MSG_TEST_CASE_getTaskCasePairs
 }
 
+func (data *MSG_TEST_CASE_getTaskCasePairs) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_CASE_getTaskCasePairs()))
+}
+
 func (data *MSG_TEST_CASE_getTaskCasePairs) Put() {
 	data.Story = 0
 	data.StoryVersion = 0
@@ -1144,6 +1221,10 @@ func GET_MSG_TEST_CASE_getTaskCasePairs_result() *MSG_TEST_CASE_getTaskCasePairs
 
 func (data *MSG_TEST_CASE_getTaskCasePairs_result) cmd() int32 {
 	return CMD_MSG_TEST_CASE_getTaskCasePairs_result
+}
+
+func (data *MSG_TEST_CASE_getTaskCasePairs_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_CASE_getTaskCasePairs_result()))
 }
 
 func (data *MSG_TEST_CASE_getTaskCasePairs_result) Put() {
@@ -1195,6 +1276,10 @@ func (data *MSG_TEST_doRawSelect) cmd() int32 {
 	return CMD_MSG_TEST_doRawSelect
 }
 
+func (data *MSG_TEST_doRawSelect) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_doRawSelect()))
+}
+
 func (data *MSG_TEST_doRawSelect) Put() {
 	data.Sql = ``
 	pool_MSG_TEST_doRawSelect.Put(data)
@@ -1231,6 +1316,10 @@ func GET_MSG_TEST_doRawSelect_result() *MSG_TEST_doRawSelect_result {
 
 func (data *MSG_TEST_doRawSelect_result) cmd() int32 {
 	return CMD_MSG_TEST_doRawSelect_result
+}
+
+func (data *MSG_TEST_doRawSelect_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_TEST_doRawSelect_result()))
 }
 
 func (data *MSG_TEST_doRawSelect_result) Put() {
