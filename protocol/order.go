@@ -1,5 +1,10 @@
 package protocol
 
+import (
+	"libraries"
+	"sort"
+)
+
 //无需定义接口的排序发方法
 func Order_dept(list []*MSG_USER_Dept_cache, f func(a, b *MSG_USER_Dept_cache) bool) {
 	max_len := len(list)
@@ -914,4 +919,69 @@ func Order_attend(list []*MSG_OA_attend_info, f func(a, b *MSG_OA_attend_info) b
 			copy(list, tmp)
 		}
 	}
+}
+
+type UserPinyin struct {
+	GBKName []byte
+	User    *MSG_USER_INFO_cache
+}
+type UserPinyinList []UserPinyin
+
+func Order_User_Pinyin(list []*MSG_USER_INFO_cache) {
+	var tmp UserPinyinList = make([]UserPinyin, len(list))
+	for k, v := range list {
+		name := v.Realname
+		if name == "" {
+			name = v.Account
+		}
+		tmp[k].GBKName, _ = libraries.Utf8ToGbk([]byte(name))
+		tmp[k].User = v
+	}
+	sort.Sort(tmp)
+	for k, v := range tmp {
+		list[k] = v.User
+	}
+}
+func (list UserPinyinList) Len() int {
+	return len(list)
+}
+func (list UserPinyinList) Less(i, j int) bool {
+	a := list[i].GBKName
+	b := list[j].GBKName
+	blen := len(b)
+	for idx, chr := range a {
+		if idx > blen-1 {
+			return false
+		}
+		if chr != b[idx] {
+			return chr < b[idx]
+		}
+	}
+	return true
+}
+func (list UserPinyinList) Swap(i, j int) {
+	list[i], list[j] = list[j], list[i]
+}
+func Order_Pinyin(i,j string,asc bool) bool{
+	a,_ := libraries.Utf8ToGbk(libraries.Str2bytes(i))
+	b,_ := libraries.Utf8ToGbk(libraries.Str2bytes(j))
+	blen := len(b)
+	for idx, chr := range a {
+		if idx > blen-1 {
+			if asc{
+				return false
+			}else{
+				return  true
+			}
+
+		}
+		if chr != b[idx] {
+			if asc {
+				return chr < b[idx]
+			}else{
+				return chr  > b[idx]
+			}
+		}
+	}
+	return true
 }

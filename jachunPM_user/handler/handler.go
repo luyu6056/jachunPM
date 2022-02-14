@@ -1,13 +1,12 @@
 package handler
 
 import (
-	"libraries"
 	"protocol"
 )
 
 var HostConn *protocol.RpcClient
 
-func Handler(in *protocol.Msg) {
+func Handler(in *protocol.Msg) bool {
 
 	switch data := in.Data.(type) {
 	case *protocol.MSG_USER_GET_LoginSalt:
@@ -18,7 +17,7 @@ func Handler(in *protocol.Msg) {
 		res, err := dept_getDataStructure(data.RootDeptID)
 		if err != nil {
 			in.WriteErr(err)
-			return
+			return true
 		}
 		out := protocol.GET_MSG_USER_Dept_getDataStructure_result()
 		out.List = res
@@ -30,7 +29,7 @@ func Handler(in *protocol.Msg) {
 		list, err := dept_getDeptUserPairs(data.DeptId)
 		if err != nil {
 			in.WriteErr(err)
-			return
+			return true
 		}
 		out := protocol.GET_MSG_USER_getDeptUserPairs_result()
 		out.List = list
@@ -57,7 +56,7 @@ func Handler(in *protocol.Msg) {
 		users, err := user_getUserInfo(map[string]interface{}{"account": data.Account})
 		if err != nil {
 			in.WriteErr(err)
-			return
+			return true
 		}
 		out := protocol.GET_MSG_USER_CheckAccount_result()
 		if len(users) == 0 {
@@ -71,7 +70,7 @@ func Handler(in *protocol.Msg) {
 		list, err := user_getPairs(data.Params, data.UsersToAppended, in)
 		if err != nil {
 			in.WriteErr(err)
-			return
+			return true
 		}
 		out := protocol.GET_MSG_USER_getPairs_result()
 		out.List = list
@@ -91,7 +90,7 @@ func Handler(in *protocol.Msg) {
 		list, err := user_getGlobalContacts()
 		if err != nil {
 			in.WriteErr(err)
-			return
+			return true
 		}
 		out := protocol.GET_MSG_USER_getGlobalContacts_result()
 		for _, v := range list {
@@ -140,12 +139,9 @@ func Handler(in *protocol.Msg) {
 	case *protocol.MSG_USER_config_get:
 		config_get(data, in)
 	case *protocol.MSG_USER_config_savelist:
-		config_savelist(data,in)
+		config_savelist(data, in)
 	default:
-		if v, ok := protocol.CmdToName[in.Cmd]; ok {
-			libraries.ReleaseLog("未设置消息CMD%s处理", v)
-		} else {
-			libraries.ReleaseLog("未设置消息CMD%d处理", in.Cmd)
-		}
+		return false
 	}
+	return true
 }

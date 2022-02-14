@@ -74,12 +74,12 @@
                       <span class='caret'></span>
                     </a>
                     <ul role='menu' class='dropdown-menu'>
-                      <li>{{html_a (helper_createLink "attend" "edit" (date "date=2006-01-02" $attend.Date)) $.Lang.attend.edit "data-toggle='modal' data-width='500px'"}}</li>
+                      <li>{{html_a (helper_createLink "attend" "edit" (date "date=2006-01-02" $attend.Date)) $.Lang.attend.edit "" "data-toggle='modal' data-width='500px'"}}</li>
                     </ul>
                   </div>
                   {{- else if eq (strpos ",rest,normal," $status) -1}}
-                  {{- if or (eq $reviewStatus "wait") (gt (strpos ",late,early,both," $status) -1)}}
-                  {{html_a (helper_createLink "attend" "edit" (date "date=2006-01-02" $attend.Date)) (strAdd $.Lang.attend.edit (or (and $reviewStatus (strAdd "-" (getValue $.Lang.attend.reviewStatusList $reviewStatus))) "")) "data-toggle='modal' data-width='500px'"}}
+                  {{- if or (eq $reviewStatus "wait") (eq $reviewStatus "reject") (gt (strpos ",late,early,both," $status) -1)}}
+                  {{html_a (helper_createLink "attend" "edit" (date "date=2006-01-02" $attend.Date)) (strAdd $.Lang.attend.edit (or (and $reviewStatus (strAdd "-" (getValue $.Lang.attend.reviewStatusList $reviewStatus))) "")) "" "data-toggle='modal' data-width='500px'"}}
                   {{- else}}
                   <div class='dropdown'>
                     <a href='javascript:;' data-toggle='dropdown'>{{$.Lang.common.actions}}<span class='caret'></span></a>
@@ -96,7 +96,7 @@
                   {{- end}}
                   {{- else if eq $status "rest"}}
                   <span class='attend-{{$status}}'>
-                    {{common_printLink $ "overtime" "create" (date "date=2006-01-02" $attend.Date) $.Lang.attend.overtime "data-toggle='modal' data-width='700px'"}}
+                    {{common_printLink $ "overtime" "create" (date "date=2006-01-02" $attend.Date) $.Lang.attend.overtime "" "data-toggle='modal' data-width='700px'"}}
                   </span>
                   {{- else if eq $status "normal"}} 
                   <span class='attend-{{$status}}'>{{getValue $.Lang.attend.statusList $status}}</span>

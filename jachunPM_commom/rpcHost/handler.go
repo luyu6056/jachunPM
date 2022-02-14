@@ -133,13 +133,12 @@ func HandlerMsg(data []byte, c gnet.Conn) error {
 
 	index := 0
 	for index < len(data) {
-
 		in, l, err := protocol.ReadOneMsgFromBytes(data[index:])
-		db.ToZstd(data[index:index+l], in.Cmd)
 		index += l
 		if err != nil {
 			return errors.New("读消息出错" + err.Error())
 		} else {
+			db.ToZstd(data[index-l:index], in.Cmd)
 			in.Addr = c.RemoteAddr().String()
 			context := c.Context().(*RpcServer)
 			in.SetServer(context)
@@ -157,6 +156,7 @@ func HandlerMsg(data []byte, c gnet.Conn) error {
 					//hostAsyncHand是异步执行，如果有需要同步的需要在这里进行处理
 					protocol.BufPoolPut(in.Buf())
 				} else {
+
 					rpcHostMsgInChan <- in
 				}
 			} else {

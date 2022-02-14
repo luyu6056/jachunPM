@@ -20,11 +20,24 @@ const (
 	CMD_MSG_OA_attend_statAttendExt = -24900345
 	CMD_MSG_OA_attend_statAbsentExt = -772908025
 	CMD_MSG_OA_attend_statMarkExt = 240008455
+	CMD_MSG_OA_attend_detail = 51933959
+	CMD_MSG_OA_attend_detail_result = 1269700359
+	CMD_MSG_OA_attend_detail_info = -303346681
+	CMD_MSG_OA_attend_getWaitAttends = 688567815
+	CMD_MSG_OA_attend_getWaitAttends_result = -1362504441
+	CMD_MSG_OA_attend_getByDate = -491480313
+	CMD_MSG_OA_attend_update = -1254409977
+	CMD_MSG_OA_attend_getById = -137135097
+	CMD_MSG_OA_attend_getbyId_result = 897630727
+	CMD_MSG_OA_attend_getStat = 1464099079
+	CMD_MSG_OA_attend_getStat_result = 1812515847
+	CMD_MSG_OA_attend_checkWaitReviews = -1444460281
+	CMD_MSG_OA_attend_checkWaitReviews_result = 657436679
 )
 
 type MSG_OA_attend_getByAccount struct {
-	Uid int32
-	StartDate time.Time
+	Uids []int32
+	BeginDate time.Time
 	EndDate time.Time
 }
 
@@ -43,8 +56,8 @@ func (data *MSG_OA_attend_getByAccount) SetUintptr(in uintptr) {
 }
 
 func (data *MSG_OA_attend_getByAccount) Put() {
-	data.Uid = 0
-	data.StartDate = time.UnixMicro(0)
+	data.Uids = data.Uids[:0]
+	data.BeginDate = time.UnixMicro(0)
 	data.EndDate = time.UnixMicro(0)
 	pool_MSG_OA_attend_getByAccount.Put(data)
 }
@@ -54,8 +67,11 @@ func (data *MSG_OA_attend_getByAccount) write(buf *libraries.MsgBuffer) {
 }
 
 func WRITE_MSG_OA_attend_getByAccount(data *MSG_OA_attend_getByAccount, buf *libraries.MsgBuffer) {
-	WRITE_int32(data.Uid, buf)
-	WRITE_int64(data.StartDate.UnixMicro(), buf)
+	WRITE_int(len(data.Uids), buf)
+	for _, v := range data.Uids{
+		WRITE_int32(v, buf)
+	}
+	WRITE_int64(data.BeginDate.UnixMicro(), buf)
 	WRITE_int64(data.EndDate.UnixMicro(), buf)
 }
 
@@ -66,8 +82,16 @@ func READ_MSG_OA_attend_getByAccount(buf *libraries.MsgBuffer) *MSG_OA_attend_ge
 }
 
 func (data *MSG_OA_attend_getByAccount) read(buf *libraries.MsgBuffer) {
-	data.Uid = READ_int32(buf)
-	data.StartDate = time.UnixMicro(READ_int64(buf))
+	Uids_len := READ_int(buf)
+	if Uids_len>cap(data.Uids){
+		data.Uids= make([]int32, Uids_len)
+	}else{
+		data.Uids = data.Uids[:Uids_len]
+	}
+	for i := 0; i < Uids_len; i++ {
+		data.Uids[i] = READ_int32(buf)
+	}
+	data.BeginDate = time.UnixMicro(READ_int64(buf))
 	data.EndDate = time.UnixMicro(READ_int64(buf))
 
 }
@@ -304,7 +328,8 @@ type MSG_OA_attend_info struct {
 	Reason string
 	Desc string
 	ReviewStatus string
-	ReviewedBy string
+	ReviewedBy int32
+	RejectDesc string
 	ReviewedDate time.Time
 	EarlyMin int32
 	LateMin int32
@@ -341,7 +366,8 @@ func (data *MSG_OA_attend_info) Put() {
 	data.Reason = ``
 	data.Desc = ``
 	data.ReviewStatus = ``
-	data.ReviewedBy = ``
+	data.ReviewedBy = 0
+	data.RejectDesc = ``
 	data.ReviewedDate = time.UnixMicro(0)
 	data.EarlyMin = 0
 	data.LateMin = 0
@@ -369,7 +395,8 @@ func WRITE_MSG_OA_attend_info(data *MSG_OA_attend_info, buf *libraries.MsgBuffer
 	WRITE_string(data.Reason, buf)
 	WRITE_string(data.Desc, buf)
 	WRITE_string(data.ReviewStatus, buf)
-	WRITE_string(data.ReviewedBy, buf)
+	WRITE_int32(data.ReviewedBy, buf)
+	WRITE_string(data.RejectDesc, buf)
 	WRITE_int64(data.ReviewedDate.UnixMicro(), buf)
 	WRITE_int32(data.EarlyMin, buf)
 	WRITE_int32(data.LateMin, buf)
@@ -398,7 +425,8 @@ func (data *MSG_OA_attend_info) read(buf *libraries.MsgBuffer) {
 	data.Reason = READ_string(buf)
 	data.Desc = READ_string(buf)
 	data.ReviewStatus = READ_string(buf)
-	data.ReviewedBy = READ_string(buf)
+	data.ReviewedBy = READ_int32(buf)
+	data.RejectDesc = READ_string(buf)
 	data.ReviewedDate = time.UnixMicro(READ_int64(buf))
 	data.EarlyMin = READ_int32(buf)
 	data.LateMin = READ_int32(buf)
@@ -813,6 +841,719 @@ func (data *MSG_OA_attend_statMarkExt) read(buf *libraries.MsgBuffer) {
 	data.Start = READ_int8(buf)
 	data.Finish = READ_int8(buf)
 	data.Days = READ_int(buf)
+
+}
+
+type MSG_OA_attend_detail struct {
+	BeginDate time.Time
+	EndDate time.Time
+	User []int32
+}
+
+var pool_MSG_OA_attend_detail = sync.Pool{New: func() interface{} { return &MSG_OA_attend_detail{} }}
+
+func GET_MSG_OA_attend_detail() *MSG_OA_attend_detail {
+	return pool_MSG_OA_attend_detail.Get().(*MSG_OA_attend_detail)
+}
+
+func (data *MSG_OA_attend_detail) cmd() int32 {
+	return CMD_MSG_OA_attend_detail
+}
+
+func (data *MSG_OA_attend_detail) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_OA_attend_detail()))
+}
+
+func (data *MSG_OA_attend_detail) Put() {
+	data.BeginDate = time.UnixMicro(0)
+	data.EndDate = time.UnixMicro(0)
+	data.User = data.User[:0]
+	pool_MSG_OA_attend_detail.Put(data)
+}
+func (data *MSG_OA_attend_detail) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_OA_attend_detail,buf)
+	WRITE_MSG_OA_attend_detail(data, buf)
+}
+
+func WRITE_MSG_OA_attend_detail(data *MSG_OA_attend_detail, buf *libraries.MsgBuffer) {
+	WRITE_int64(data.BeginDate.UnixMicro(), buf)
+	WRITE_int64(data.EndDate.UnixMicro(), buf)
+	WRITE_int(len(data.User), buf)
+	for _, v := range data.User{
+		WRITE_int32(v, buf)
+	}
+}
+
+func READ_MSG_OA_attend_detail(buf *libraries.MsgBuffer) *MSG_OA_attend_detail {
+	data := pool_MSG_OA_attend_detail.Get().(*MSG_OA_attend_detail)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_OA_attend_detail) read(buf *libraries.MsgBuffer) {
+	data.BeginDate = time.UnixMicro(READ_int64(buf))
+	data.EndDate = time.UnixMicro(READ_int64(buf))
+	User_len := READ_int(buf)
+	if User_len>cap(data.User){
+		data.User= make([]int32, User_len)
+	}else{
+		data.User = data.User[:User_len]
+	}
+	for i := 0; i < User_len; i++ {
+		data.User[i] = READ_int32(buf)
+	}
+
+}
+
+type MSG_OA_attend_detail_result struct {
+	List []*MSG_OA_attend_detail_info
+}
+
+var pool_MSG_OA_attend_detail_result = sync.Pool{New: func() interface{} { return &MSG_OA_attend_detail_result{} }}
+
+func GET_MSG_OA_attend_detail_result() *MSG_OA_attend_detail_result {
+	return pool_MSG_OA_attend_detail_result.Get().(*MSG_OA_attend_detail_result)
+}
+
+func (data *MSG_OA_attend_detail_result) cmd() int32 {
+	return CMD_MSG_OA_attend_detail_result
+}
+
+func (data *MSG_OA_attend_detail_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_OA_attend_detail_result()))
+}
+
+func (data *MSG_OA_attend_detail_result) Put() {
+	data.List = data.List[:0]
+	pool_MSG_OA_attend_detail_result.Put(data)
+}
+func (data *MSG_OA_attend_detail_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_OA_attend_detail_result,buf)
+	WRITE_MSG_OA_attend_detail_result(data, buf)
+}
+
+func WRITE_MSG_OA_attend_detail_result(data *MSG_OA_attend_detail_result, buf *libraries.MsgBuffer) {
+	WRITE_int(len(data.List), buf)
+	for _, v := range data.List{
+		WRITE_MSG_OA_attend_detail_info(v, buf)
+	}
+}
+
+func READ_MSG_OA_attend_detail_result(buf *libraries.MsgBuffer) *MSG_OA_attend_detail_result {
+	data := pool_MSG_OA_attend_detail_result.Get().(*MSG_OA_attend_detail_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_OA_attend_detail_result) read(buf *libraries.MsgBuffer) {
+	List_len := READ_int(buf)
+	if List_len>cap(data.List){
+		data.List= make([]*MSG_OA_attend_detail_info, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
+	for i := 0; i < List_len; i++ {
+		data.List[i] = READ_MSG_OA_attend_detail_info(buf)
+	}
+
+}
+
+type MSG_OA_attend_detail_info struct {
+	Dept string
+	Realname string
+	Date time.Time
+	DayName int
+	Status string
+	Desc string
+	SignIn string
+	SignOut string
+	EarlyMin int32
+	LateMin int32
+	IP string
+	HoursList map[string]float32
+}
+
+var pool_MSG_OA_attend_detail_info = sync.Pool{New: func() interface{} { return &MSG_OA_attend_detail_info{} }}
+
+func GET_MSG_OA_attend_detail_info() *MSG_OA_attend_detail_info {
+	return pool_MSG_OA_attend_detail_info.Get().(*MSG_OA_attend_detail_info)
+}
+
+func (data *MSG_OA_attend_detail_info) cmd() int32 {
+	return CMD_MSG_OA_attend_detail_info
+}
+
+func (data *MSG_OA_attend_detail_info) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_OA_attend_detail_info()))
+}
+
+func (data *MSG_OA_attend_detail_info) Put() {
+	data.Dept = ``
+	data.Realname = ``
+	data.Date = time.UnixMicro(0)
+	data.DayName = 0
+	data.Status = ``
+	data.Desc = ``
+	data.SignIn = ``
+	data.SignOut = ``
+	data.EarlyMin = 0
+	data.LateMin = 0
+	data.IP = ``
+	data.HoursList = nil
+	pool_MSG_OA_attend_detail_info.Put(data)
+}
+func (data *MSG_OA_attend_detail_info) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_OA_attend_detail_info,buf)
+	WRITE_MSG_OA_attend_detail_info(data, buf)
+}
+
+func WRITE_MSG_OA_attend_detail_info(data *MSG_OA_attend_detail_info, buf *libraries.MsgBuffer) {
+	WRITE_string(data.Dept, buf)
+	WRITE_string(data.Realname, buf)
+	WRITE_int64(data.Date.UnixMicro(), buf)
+	WRITE_int(data.DayName, buf)
+	WRITE_string(data.Status, buf)
+	WRITE_string(data.Desc, buf)
+	WRITE_string(data.SignIn, buf)
+	WRITE_string(data.SignOut, buf)
+	WRITE_int32(data.EarlyMin, buf)
+	WRITE_int32(data.LateMin, buf)
+	WRITE_string(data.IP, buf)
+	WRITE_map(data.HoursList,buf)
+}
+
+func READ_MSG_OA_attend_detail_info(buf *libraries.MsgBuffer) *MSG_OA_attend_detail_info {
+	data := pool_MSG_OA_attend_detail_info.Get().(*MSG_OA_attend_detail_info)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_OA_attend_detail_info) read(buf *libraries.MsgBuffer) {
+	data.Dept = READ_string(buf)
+	data.Realname = READ_string(buf)
+	data.Date = time.UnixMicro(READ_int64(buf))
+	data.DayName = READ_int(buf)
+	data.Status = READ_string(buf)
+	data.Desc = READ_string(buf)
+	data.SignIn = READ_string(buf)
+	data.SignOut = READ_string(buf)
+	data.EarlyMin = READ_int32(buf)
+	data.LateMin = READ_int32(buf)
+	data.IP = READ_string(buf)
+	READ_map(&data.HoursList,buf)
+
+}
+
+type MSG_OA_attend_getWaitAttends struct {
+	Users []int32
+}
+
+var pool_MSG_OA_attend_getWaitAttends = sync.Pool{New: func() interface{} { return &MSG_OA_attend_getWaitAttends{} }}
+
+func GET_MSG_OA_attend_getWaitAttends() *MSG_OA_attend_getWaitAttends {
+	return pool_MSG_OA_attend_getWaitAttends.Get().(*MSG_OA_attend_getWaitAttends)
+}
+
+func (data *MSG_OA_attend_getWaitAttends) cmd() int32 {
+	return CMD_MSG_OA_attend_getWaitAttends
+}
+
+func (data *MSG_OA_attend_getWaitAttends) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_OA_attend_getWaitAttends()))
+}
+
+func (data *MSG_OA_attend_getWaitAttends) Put() {
+	data.Users = data.Users[:0]
+	pool_MSG_OA_attend_getWaitAttends.Put(data)
+}
+func (data *MSG_OA_attend_getWaitAttends) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_OA_attend_getWaitAttends,buf)
+	WRITE_MSG_OA_attend_getWaitAttends(data, buf)
+}
+
+func WRITE_MSG_OA_attend_getWaitAttends(data *MSG_OA_attend_getWaitAttends, buf *libraries.MsgBuffer) {
+	WRITE_int(len(data.Users), buf)
+	for _, v := range data.Users{
+		WRITE_int32(v, buf)
+	}
+}
+
+func READ_MSG_OA_attend_getWaitAttends(buf *libraries.MsgBuffer) *MSG_OA_attend_getWaitAttends {
+	data := pool_MSG_OA_attend_getWaitAttends.Get().(*MSG_OA_attend_getWaitAttends)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_OA_attend_getWaitAttends) read(buf *libraries.MsgBuffer) {
+	Users_len := READ_int(buf)
+	if Users_len>cap(data.Users){
+		data.Users= make([]int32, Users_len)
+	}else{
+		data.Users = data.Users[:Users_len]
+	}
+	for i := 0; i < Users_len; i++ {
+		data.Users[i] = READ_int32(buf)
+	}
+
+}
+
+type MSG_OA_attend_getWaitAttends_result struct {
+	List []*MSG_OA_attend_info
+}
+
+var pool_MSG_OA_attend_getWaitAttends_result = sync.Pool{New: func() interface{} { return &MSG_OA_attend_getWaitAttends_result{} }}
+
+func GET_MSG_OA_attend_getWaitAttends_result() *MSG_OA_attend_getWaitAttends_result {
+	return pool_MSG_OA_attend_getWaitAttends_result.Get().(*MSG_OA_attend_getWaitAttends_result)
+}
+
+func (data *MSG_OA_attend_getWaitAttends_result) cmd() int32 {
+	return CMD_MSG_OA_attend_getWaitAttends_result
+}
+
+func (data *MSG_OA_attend_getWaitAttends_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_OA_attend_getWaitAttends_result()))
+}
+
+func (data *MSG_OA_attend_getWaitAttends_result) Put() {
+	data.List = data.List[:0]
+	pool_MSG_OA_attend_getWaitAttends_result.Put(data)
+}
+func (data *MSG_OA_attend_getWaitAttends_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_OA_attend_getWaitAttends_result,buf)
+	WRITE_MSG_OA_attend_getWaitAttends_result(data, buf)
+}
+
+func WRITE_MSG_OA_attend_getWaitAttends_result(data *MSG_OA_attend_getWaitAttends_result, buf *libraries.MsgBuffer) {
+	WRITE_int(len(data.List), buf)
+	for _, v := range data.List{
+		WRITE_MSG_OA_attend_info(v, buf)
+	}
+}
+
+func READ_MSG_OA_attend_getWaitAttends_result(buf *libraries.MsgBuffer) *MSG_OA_attend_getWaitAttends_result {
+	data := pool_MSG_OA_attend_getWaitAttends_result.Get().(*MSG_OA_attend_getWaitAttends_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_OA_attend_getWaitAttends_result) read(buf *libraries.MsgBuffer) {
+	List_len := READ_int(buf)
+	if List_len>cap(data.List){
+		data.List= make([]*MSG_OA_attend_info, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
+	for i := 0; i < List_len; i++ {
+		data.List[i] = READ_MSG_OA_attend_info(buf)
+	}
+
+}
+
+type MSG_OA_attend_getByDate struct {
+	Uid int32
+	Date time.Time
+}
+
+var pool_MSG_OA_attend_getByDate = sync.Pool{New: func() interface{} { return &MSG_OA_attend_getByDate{} }}
+
+func GET_MSG_OA_attend_getByDate() *MSG_OA_attend_getByDate {
+	return pool_MSG_OA_attend_getByDate.Get().(*MSG_OA_attend_getByDate)
+}
+
+func (data *MSG_OA_attend_getByDate) cmd() int32 {
+	return CMD_MSG_OA_attend_getByDate
+}
+
+func (data *MSG_OA_attend_getByDate) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_OA_attend_getByDate()))
+}
+
+func (data *MSG_OA_attend_getByDate) Put() {
+	data.Uid = 0
+	data.Date = time.UnixMicro(0)
+	pool_MSG_OA_attend_getByDate.Put(data)
+}
+func (data *MSG_OA_attend_getByDate) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_OA_attend_getByDate,buf)
+	WRITE_MSG_OA_attend_getByDate(data, buf)
+}
+
+func WRITE_MSG_OA_attend_getByDate(data *MSG_OA_attend_getByDate, buf *libraries.MsgBuffer) {
+	WRITE_int32(data.Uid, buf)
+	WRITE_int64(data.Date.UnixMicro(), buf)
+}
+
+func READ_MSG_OA_attend_getByDate(buf *libraries.MsgBuffer) *MSG_OA_attend_getByDate {
+	data := pool_MSG_OA_attend_getByDate.Get().(*MSG_OA_attend_getByDate)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_OA_attend_getByDate) read(buf *libraries.MsgBuffer) {
+	data.Uid = READ_int32(buf)
+	data.Date = time.UnixMicro(READ_int64(buf))
+
+}
+
+type MSG_OA_attend_update struct {
+	Uid int32
+	Date time.Time
+	ManualIn time.Time
+	ManualOut time.Time
+	Desc string
+	ReviewStatus string
+	Reason string
+	ReviewedBy int32
+	RejectDesc string
+}
+
+var pool_MSG_OA_attend_update = sync.Pool{New: func() interface{} { return &MSG_OA_attend_update{} }}
+
+func GET_MSG_OA_attend_update() *MSG_OA_attend_update {
+	return pool_MSG_OA_attend_update.Get().(*MSG_OA_attend_update)
+}
+
+func (data *MSG_OA_attend_update) cmd() int32 {
+	return CMD_MSG_OA_attend_update
+}
+
+func (data *MSG_OA_attend_update) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_OA_attend_update()))
+}
+
+func (data *MSG_OA_attend_update) Put() {
+	data.Uid = 0
+	data.Date = time.UnixMicro(0)
+	data.ManualIn = time.UnixMicro(0)
+	data.ManualOut = time.UnixMicro(0)
+	data.Desc = ``
+	data.ReviewStatus = ``
+	data.Reason = ``
+	data.ReviewedBy = 0
+	data.RejectDesc = ``
+	pool_MSG_OA_attend_update.Put(data)
+}
+func (data *MSG_OA_attend_update) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_OA_attend_update,buf)
+	WRITE_MSG_OA_attend_update(data, buf)
+}
+
+func WRITE_MSG_OA_attend_update(data *MSG_OA_attend_update, buf *libraries.MsgBuffer) {
+	WRITE_int32(data.Uid, buf)
+	WRITE_int64(data.Date.UnixMicro(), buf)
+	WRITE_int64(data.ManualIn.UnixMicro(), buf)
+	WRITE_int64(data.ManualOut.UnixMicro(), buf)
+	WRITE_string(data.Desc, buf)
+	WRITE_string(data.ReviewStatus, buf)
+	WRITE_string(data.Reason, buf)
+	WRITE_int32(data.ReviewedBy, buf)
+	WRITE_string(data.RejectDesc, buf)
+}
+
+func READ_MSG_OA_attend_update(buf *libraries.MsgBuffer) *MSG_OA_attend_update {
+	data := pool_MSG_OA_attend_update.Get().(*MSG_OA_attend_update)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_OA_attend_update) read(buf *libraries.MsgBuffer) {
+	data.Uid = READ_int32(buf)
+	data.Date = time.UnixMicro(READ_int64(buf))
+	data.ManualIn = time.UnixMicro(READ_int64(buf))
+	data.ManualOut = time.UnixMicro(READ_int64(buf))
+	data.Desc = READ_string(buf)
+	data.ReviewStatus = READ_string(buf)
+	data.Reason = READ_string(buf)
+	data.ReviewedBy = READ_int32(buf)
+	data.RejectDesc = READ_string(buf)
+
+}
+
+type MSG_OA_attend_getById struct {
+	Id int32
+}
+
+var pool_MSG_OA_attend_getById = sync.Pool{New: func() interface{} { return &MSG_OA_attend_getById{} }}
+
+func GET_MSG_OA_attend_getById() *MSG_OA_attend_getById {
+	return pool_MSG_OA_attend_getById.Get().(*MSG_OA_attend_getById)
+}
+
+func (data *MSG_OA_attend_getById) cmd() int32 {
+	return CMD_MSG_OA_attend_getById
+}
+
+func (data *MSG_OA_attend_getById) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_OA_attend_getById()))
+}
+
+func (data *MSG_OA_attend_getById) Put() {
+	data.Id = 0
+	pool_MSG_OA_attend_getById.Put(data)
+}
+func (data *MSG_OA_attend_getById) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_OA_attend_getById,buf)
+	WRITE_MSG_OA_attend_getById(data, buf)
+}
+
+func WRITE_MSG_OA_attend_getById(data *MSG_OA_attend_getById, buf *libraries.MsgBuffer) {
+	WRITE_int32(data.Id, buf)
+}
+
+func READ_MSG_OA_attend_getById(buf *libraries.MsgBuffer) *MSG_OA_attend_getById {
+	data := pool_MSG_OA_attend_getById.Get().(*MSG_OA_attend_getById)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_OA_attend_getById) read(buf *libraries.MsgBuffer) {
+	data.Id = READ_int32(buf)
+
+}
+
+type MSG_OA_attend_getbyId_result struct {
+	Info *MSG_OA_attend_info
+}
+
+var pool_MSG_OA_attend_getbyId_result = sync.Pool{New: func() interface{} { return &MSG_OA_attend_getbyId_result{} }}
+
+func GET_MSG_OA_attend_getbyId_result() *MSG_OA_attend_getbyId_result {
+	return pool_MSG_OA_attend_getbyId_result.Get().(*MSG_OA_attend_getbyId_result)
+}
+
+func (data *MSG_OA_attend_getbyId_result) cmd() int32 {
+	return CMD_MSG_OA_attend_getbyId_result
+}
+
+func (data *MSG_OA_attend_getbyId_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_OA_attend_getbyId_result()))
+}
+
+func (data *MSG_OA_attend_getbyId_result) Put() {
+	if data.Info != nil {
+		data.Info.Put()
+		data.Info = nil
+	}
+	pool_MSG_OA_attend_getbyId_result.Put(data)
+}
+func (data *MSG_OA_attend_getbyId_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_OA_attend_getbyId_result,buf)
+	WRITE_MSG_OA_attend_getbyId_result(data, buf)
+}
+
+func WRITE_MSG_OA_attend_getbyId_result(data *MSG_OA_attend_getbyId_result, buf *libraries.MsgBuffer) {
+	if data.Info == nil {
+		WRITE_int8(0, buf)
+	} else {
+		WRITE_int8(1, buf)
+		WRITE_MSG_OA_attend_info(data.Info, buf)
+	}
+}
+
+func READ_MSG_OA_attend_getbyId_result(buf *libraries.MsgBuffer) *MSG_OA_attend_getbyId_result {
+	data := pool_MSG_OA_attend_getbyId_result.Get().(*MSG_OA_attend_getbyId_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_OA_attend_getbyId_result) read(buf *libraries.MsgBuffer) {
+	Info_len := int(READ_int8(buf))
+	if Info_len == 1 {
+		data.Info = READ_MSG_OA_attend_info(buf)
+	}else{
+		data.Info = nil
+	}
+
+}
+
+type MSG_OA_attend_getStat struct {
+	Month time.Time
+}
+
+var pool_MSG_OA_attend_getStat = sync.Pool{New: func() interface{} { return &MSG_OA_attend_getStat{} }}
+
+func GET_MSG_OA_attend_getStat() *MSG_OA_attend_getStat {
+	return pool_MSG_OA_attend_getStat.Get().(*MSG_OA_attend_getStat)
+}
+
+func (data *MSG_OA_attend_getStat) cmd() int32 {
+	return CMD_MSG_OA_attend_getStat
+}
+
+func (data *MSG_OA_attend_getStat) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_OA_attend_getStat()))
+}
+
+func (data *MSG_OA_attend_getStat) Put() {
+	data.Month = time.UnixMicro(0)
+	pool_MSG_OA_attend_getStat.Put(data)
+}
+func (data *MSG_OA_attend_getStat) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_OA_attend_getStat,buf)
+	WRITE_MSG_OA_attend_getStat(data, buf)
+}
+
+func WRITE_MSG_OA_attend_getStat(data *MSG_OA_attend_getStat, buf *libraries.MsgBuffer) {
+	WRITE_int64(data.Month.UnixMicro(), buf)
+}
+
+func READ_MSG_OA_attend_getStat(buf *libraries.MsgBuffer) *MSG_OA_attend_getStat {
+	data := pool_MSG_OA_attend_getStat.Get().(*MSG_OA_attend_getStat)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_OA_attend_getStat) read(buf *libraries.MsgBuffer) {
+	data.Month = time.UnixMicro(READ_int64(buf))
+
+}
+
+type MSG_OA_attend_getStat_result struct {
+	List []map[string]string
+}
+
+var pool_MSG_OA_attend_getStat_result = sync.Pool{New: func() interface{} { return &MSG_OA_attend_getStat_result{} }}
+
+func GET_MSG_OA_attend_getStat_result() *MSG_OA_attend_getStat_result {
+	return pool_MSG_OA_attend_getStat_result.Get().(*MSG_OA_attend_getStat_result)
+}
+
+func (data *MSG_OA_attend_getStat_result) cmd() int32 {
+	return CMD_MSG_OA_attend_getStat_result
+}
+
+func (data *MSG_OA_attend_getStat_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_OA_attend_getStat_result()))
+}
+
+func (data *MSG_OA_attend_getStat_result) Put() {
+	data.List = data.List[:0]
+	pool_MSG_OA_attend_getStat_result.Put(data)
+}
+func (data *MSG_OA_attend_getStat_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_OA_attend_getStat_result,buf)
+	WRITE_MSG_OA_attend_getStat_result(data, buf)
+}
+
+func WRITE_MSG_OA_attend_getStat_result(data *MSG_OA_attend_getStat_result, buf *libraries.MsgBuffer) {
+	WRITE_int(len(data.List), buf)
+	for _, v := range data.List{
+		WRITE_any(v, buf)
+	}
+}
+
+func READ_MSG_OA_attend_getStat_result(buf *libraries.MsgBuffer) *MSG_OA_attend_getStat_result {
+	data := pool_MSG_OA_attend_getStat_result.Get().(*MSG_OA_attend_getStat_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_OA_attend_getStat_result) read(buf *libraries.MsgBuffer) {
+	List_len := READ_int(buf)
+	if List_len>cap(data.List){
+		data.List= make([]map[string]string, List_len)
+	}else{
+		data.List = data.List[:List_len]
+	}
+	for i := 0; i < List_len; i++ {
+		READ_any(&data.List[i], buf)
+	}
+
+}
+
+type MSG_OA_attend_checkWaitReviews struct {
+	Month time.Time
+}
+
+var pool_MSG_OA_attend_checkWaitReviews = sync.Pool{New: func() interface{} { return &MSG_OA_attend_checkWaitReviews{} }}
+
+func GET_MSG_OA_attend_checkWaitReviews() *MSG_OA_attend_checkWaitReviews {
+	return pool_MSG_OA_attend_checkWaitReviews.Get().(*MSG_OA_attend_checkWaitReviews)
+}
+
+func (data *MSG_OA_attend_checkWaitReviews) cmd() int32 {
+	return CMD_MSG_OA_attend_checkWaitReviews
+}
+
+func (data *MSG_OA_attend_checkWaitReviews) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_OA_attend_checkWaitReviews()))
+}
+
+func (data *MSG_OA_attend_checkWaitReviews) Put() {
+	data.Month = time.UnixMicro(0)
+	pool_MSG_OA_attend_checkWaitReviews.Put(data)
+}
+func (data *MSG_OA_attend_checkWaitReviews) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_OA_attend_checkWaitReviews,buf)
+	WRITE_MSG_OA_attend_checkWaitReviews(data, buf)
+}
+
+func WRITE_MSG_OA_attend_checkWaitReviews(data *MSG_OA_attend_checkWaitReviews, buf *libraries.MsgBuffer) {
+	WRITE_int64(data.Month.UnixMicro(), buf)
+}
+
+func READ_MSG_OA_attend_checkWaitReviews(buf *libraries.MsgBuffer) *MSG_OA_attend_checkWaitReviews {
+	data := pool_MSG_OA_attend_checkWaitReviews.Get().(*MSG_OA_attend_checkWaitReviews)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_OA_attend_checkWaitReviews) read(buf *libraries.MsgBuffer) {
+	data.Month = time.UnixMicro(READ_int64(buf))
+
+}
+
+type MSG_OA_attend_checkWaitReviews_result struct {
+	WaitReviews []string
+}
+
+var pool_MSG_OA_attend_checkWaitReviews_result = sync.Pool{New: func() interface{} { return &MSG_OA_attend_checkWaitReviews_result{} }}
+
+func GET_MSG_OA_attend_checkWaitReviews_result() *MSG_OA_attend_checkWaitReviews_result {
+	return pool_MSG_OA_attend_checkWaitReviews_result.Get().(*MSG_OA_attend_checkWaitReviews_result)
+}
+
+func (data *MSG_OA_attend_checkWaitReviews_result) cmd() int32 {
+	return CMD_MSG_OA_attend_checkWaitReviews_result
+}
+
+func (data *MSG_OA_attend_checkWaitReviews_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_OA_attend_checkWaitReviews_result()))
+}
+
+func (data *MSG_OA_attend_checkWaitReviews_result) Put() {
+	data.WaitReviews = data.WaitReviews[:0]
+	pool_MSG_OA_attend_checkWaitReviews_result.Put(data)
+}
+func (data *MSG_OA_attend_checkWaitReviews_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_OA_attend_checkWaitReviews_result,buf)
+	WRITE_MSG_OA_attend_checkWaitReviews_result(data, buf)
+}
+
+func WRITE_MSG_OA_attend_checkWaitReviews_result(data *MSG_OA_attend_checkWaitReviews_result, buf *libraries.MsgBuffer) {
+	WRITE_int(len(data.WaitReviews), buf)
+	for _, v := range data.WaitReviews{
+		WRITE_string(v, buf)
+	}
+}
+
+func READ_MSG_OA_attend_checkWaitReviews_result(buf *libraries.MsgBuffer) *MSG_OA_attend_checkWaitReviews_result {
+	data := pool_MSG_OA_attend_checkWaitReviews_result.Get().(*MSG_OA_attend_checkWaitReviews_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_OA_attend_checkWaitReviews_result) read(buf *libraries.MsgBuffer) {
+	WaitReviews_len := READ_int(buf)
+	if WaitReviews_len>cap(data.WaitReviews){
+		data.WaitReviews= make([]string, WaitReviews_len)
+	}else{
+		data.WaitReviews = data.WaitReviews[:WaitReviews_len]
+	}
+	for i := 0; i < WaitReviews_len; i++ {
+		data.WaitReviews[i] = READ_string(buf)
+	}
 
 }
 

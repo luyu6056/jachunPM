@@ -17,10 +17,10 @@ type HostServer struct {
 var Host HostServer
 
 func (HostServer) SendMsg(msg *protocol.Msg, remote uint16, out protocol.MSG_DATA) {
-	protocol.SendMsg(msg, protocol.HostServerNo, remote, out, rpcServerOutChan[protocol.HostServerNo])
+	protocol.SendMsg(msg, protocol.HostServerNo, remote, out, rpcHostMsgInChan, rpcServerOutChan[protocol.HostServerNo])
 }
 func (HostServer) SendMsgWaitResult(msg *protocol.Msg, remote uint16, out protocol.MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
-	return protocol.SendMsgWaitResult(msg, protocol.HostServerNo, remote, out, result, rpcServerOutChan[protocol.HostServerNo], timeout...)
+	return protocol.SendMsgWaitResult(msg, protocol.HostServerNo, remote, out, result, rpcHostMsgInChan, rpcServerOutChan[protocol.HostServerNo], timeout...)
 }
 
 func GetMsg() *protocol.Msg {
@@ -44,7 +44,7 @@ func (HostServer) GetUserCacheById(id int32) (user *protocol.MSG_USER_INFO_cache
 			buf.Write(b[4:])
 			user = protocol.READ_MSG_USER_INFO_cache(buf)
 		} else {
-			return nil, errors.New("消息不够长，不足以读取一条缓存")
+			return nil, errors.New("获取userCache失败，消息不够长，不足以读取一条缓存")
 		}
 	}
 	return

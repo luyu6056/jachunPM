@@ -30,6 +30,8 @@ import (
 
 	"github.com/dlclark/regexp2"
 	"github.com/klauspost/compress/gzip"
+	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/transform"
 	//"path/filepath"
 	//
 )
@@ -1565,4 +1567,21 @@ func CopyMap(r reflect.Value) (newMap reflect.Value) {
 		return
 	}
 	return r
+}
+func GbkToUtf8(s []byte) ([]byte, error) {
+	reader := transform.NewReader(bytes.NewReader(s), simplifiedchinese.GBK.NewDecoder())
+	d, e := ioutil.ReadAll(reader)
+	if e != nil {
+		return nil, e
+	}
+	return d, nil
+}
+
+func Utf8ToGbk(s []byte) ([]byte, error) {
+	reader := transform.NewReader(bytes.NewReader(s), simplifiedchinese.GBK.NewEncoder())
+	d, e := ioutil.ReadAll(reader)
+	if e != nil {
+		return nil, e
+	}
+	return d, nil
 }

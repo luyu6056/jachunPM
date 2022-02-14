@@ -1,7 +1,6 @@
 package rpcHost
 
 import (
-	"io"
 	"jachunPM_commom/db"
 	"libraries"
 	"os"
@@ -10,7 +9,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/klauspost/compress/zstd"
 	"github.com/luyu6056/gnet"
 )
 
@@ -44,14 +42,15 @@ func init() {
 	for i := uint8(0); i < protocol.MaxServerNoNum; i++ {
 		rpcServerOutChan[i] = make(chan *libraries.MsgBuffer, protocol.Rpcmsgnum)
 	}
+	buf1 := make([]byte, 65536)
+	buf2 := make([]byte, 65536)
 	rpcServerIdList[protocol.HostServerNo] = make([]*RpcServer, 1)
 	rpcServerIdList[protocol.HostServerNo][0] = &RpcServer{ //common服务器
 		ServerNo:          protocol.HostServerNo,
 		Id:                0,
 		ServerConn:        nil,
-		zstdDecoder:       nil,
-		zstdDecodeBuf1:    nil,
-		zstdDecodeBuf2:    nil,
+		encodebuf:         &buf1,
+		decodebuf:         &buf2,
 		setStatusOpenChan: nil,
 		closeChan:         nil,
 		outChan:           rpcServerOutChan[protocol.HostServerNo],
@@ -78,11 +77,10 @@ func MsgnoInit() {
 }
 
 type RpcServer struct {
-	ServerNo                       uint8 //服务序号
-	Id                             int16 //服务Id，有效值0-255
-	ServerConn                     gnet.Conn
-	zstdDecoder                    *zstd.Decoder        //codec解压相关
-	zstdDecodeBuf1, zstdDecodeBuf2 *libraries.MsgBuffer //codec解压相关
+	ServerNo             uint8 //服务序号
+	Id                   int16 //服务Id，有效值0-255
+	ServerConn           gnet.Conn
+	encodebuf, decodebuf *[]byte //codec解压相关
 
 	setStatusOpenChan   chan string
 	closeChan           chan int
@@ -99,21 +97,20 @@ type RpcServer struct {
 }
 
 func NewRpcServer(c gnet.Conn) *RpcServer {
-	s := &RpcServer{ServerConn: c, Id: -1, inChan: make(chan *protocol.Msg, 65535)}
+	buf1 := make([]byte, 65536)
+	buf2 := make([]byte, 65536)
+	s := &RpcServer{ServerConn: c, Id: -1, inChan: make(chan *protocol.Msg, 65535), encodebuf: &buf1, decodebuf: &buf2}
 	return s
 }
 func (svr *RpcServer) SendMsg(msg *protocol.Msg, remote uint16, out protocol.MSG_DATA) {
-	protocol.SendMsg(msg, protocol.HostServerNo, remote, out, rpcServerOutChan[protocol.HostServerNo])
+	protocol.SendMsg(msg, protocol.HostServerNo, remote, out, rpcHostMsgInChan, rpcServerOutChan[protocol.HostServerNo])
 }
 func (svr *RpcServer) SendMsgWaitResult(msg *protocol.Msg, remote uint16, out protocol.MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
-	return protocol.SendMsgWaitResult(msg, protocol.HostServerNo, remote, out, result, rpcServerOutChan[protocol.HostServerNo], timeout...)
+	return protocol.SendMsgWaitResult(msg, protocol.HostServerNo, remote, out, result, rpcHostMsgInChan, rpcServerOutChan[protocol.HostServerNo], timeout...)
 }
 func (svr *RpcServer) Start(no uint8, ipport string, window int32, in *protocol.Msg) {
 	svr.ServerNo = no
 	svr.Ip = ipport
-	svr.zstdDecodeBuf1 = &libraries.MsgBuffer{}
-	svr.zstdDecodeBuf2 = &libraries.MsgBuffer{}
-	svr.zstdDecoder, _ = zstd.NewReader(svr.zstdDecodeBuf1,zstd.WithDecoderDicts(protocol.ZstdDict))
 	svr.outChan = make(chan *libraries.MsgBuffer, protocol.Rpcmsgnum)
 	svr.closeChan = make(chan int, 1)
 	svr.setStatusOpenChan = make(chan string)
@@ -151,6 +148,12 @@ func (svr *RpcServer) Start(no uint8, ipport string, window int32, in *protocol.
 	data.Id = uint8(svr.Id)
 	svr.SendMsg(in, svr.local, data)
 	data.Put()
+}
+func (svr *RpcServer) EncodeBuf() (out *[]byte) {
+	return svr.encodebuf
+}
+func (svr *RpcServer) DecodeBuf() (out *[]byte) {
+	return svr.decodebuf
 }
 
 func (svr *RpcServer) Close() {
@@ -205,90 +208,73 @@ func (svr *RpcServer) handlerMsgOut(outChan chan *libraries.MsgBuffer) {
 		}
 	}()
 	var (
-		out      = &libraries.MsgBuffer{}
-		msgbuf   = &libraries.MsgBuffer{}
-		zstdbuf  = &libraries.MsgBuffer{}
-		compress bool
-		msglen   int
+		out    = make([]byte, 65536)
+		msglen int
 		//busyTime int64 = time.Now().UnixNano()
 		msgNum int
 	)
-	zstdWriter, _ := zstd.NewWriter(zstdbuf, zstd.WithEncoderLevel(protocol.ZstdLevel),zstd.WithEncoderDict(protocol.ZstdDict))
+
 	writeToBuf := func(o *libraries.MsgBuffer) {
 		msglen += o.Len()
-		if compress {
-			zstdWriter.Write(o.Bytes())
-		} else {
-			if msgNum > protocol.CompressMinNum || msglen > protocol.CompressMinLen {
-				compress = true
-				zstdWriter.Reset(zstdbuf)
-				zstdWriter.Write(out.Bytes())
-				out.Reset()
-				zstdWriter.Write(o.Bytes())
-			} else {
-				out.Write(o.Bytes())
-			}
-		}
+		out = append(out, o.Bytes()...)
+		msgNum++
 	}
-	write := func(o *libraries.MsgBuffer, c chan *libraries.MsgBuffer) {
-
-		compress = false
-		out.Reset()
-		msgbuf.Reset()
-		zstdbuf.Reset()
+	write := func(o *libraries.MsgBuffer) {
+		out = out[:0]
 		msglen = 0
+		msgNum = 0
 		writeToBuf(o)
 		o.Reset()
 		protocol.BufPoolPut(o)
-		msgNum = 1
-	out:
-		for i := 0; i < len(c) && i < int(svr.window)-1 && i < protocol.MaxMsgNum; i++ {
-			select {
-			case o1 := <-c:
-				if msglen+o1.Len() > protocol.MaxOutLen {
-					c <- o1
-					break out
+	outS:
+		switch svr.status {
+		case rpcStatusOpen:
+			for msgNum < int(svr.window/2) {
+				select {
+				case o1 := <-svr.outChan:
+					if msglen+o1.Len() > protocol.MaxOutLen {
+						svr.outChan <- o1
+						break outS
+					}
+					writeToBuf(o1)
+					o1.Reset()
+					protocol.BufPoolPut(o1)
+				case o2 := <-outChan:
+					if msglen+o2.Len() > protocol.MaxOutLen {
+						outChan <- o2
+						break outS
+					}
+					writeToBuf(o2)
+					o2.Reset()
+					protocol.BufPoolPut(o2)
+				default:
+					break outS
 				}
-				msgNum++
-				writeToBuf(o1)
-				o1.Reset()
-				protocol.BufPoolPut(o1)
-			default:
 			}
-
+		case rpcStatusHalfOpen:
+			for {
+				select {
+				case o1 := <-svr.outChan:
+					if msglen+o1.Len() > protocol.MaxOutLen {
+						svr.outChan <- o1
+						break outS
+					}
+					writeToBuf(o1)
+					o1.Reset()
+					protocol.BufPoolPut(o1)
+				default:
+					break outS
+				}
+			}
 		}
 
-		atomic.AddInt32(&svr.window, -1*int32(msgNum))
 		//窗口控制熔断
-		if svr.window <= 0 {
+		if atomic.AddInt32(&svr.window, -1*int32(msgNum)) <= 0 {
 			libraries.DebugLog("服务%v，ID%v，因窗口不够，进入半开状态", svr.ServerNo, svr.Id)
 			svr.status = rpcStatusHalfOpen
 		}
-		if compress {
-			//有压缩
-			zstdWriter.Close()
-			msglen = zstdbuf.Len()
-			if msglen > protocol.MaxOutLen {
-				libraries.ReleaseLog("消息大于最大允许长度,压缩后更长？？？")
-				return
-			}
-			b := msgbuf.Make(4 + msglen)
-			b[0] = byte(msglen)
-			b[1] = byte(msglen >> 8)
-			b[2] = byte(msglen >> 16)
-			b[3] = byte(msglen>>24) + 1<<7
-			copy(b[4:], zstdbuf.Bytes())
-		} else {
-			//无压缩
-			b := msgbuf.Make(4 + msglen)
-			b[0] = byte(msglen)
-			b[1] = byte(msglen >> 8)
-			b[2] = byte(msglen >> 16)
-			b[3] = byte(msglen >> 24)
-			copy(b[4:], out.Bytes())
-		}
-
-		svr.ServerConn.AsyncWrite(msgbuf.Bytes())
+		//libraries.DebugLog("%v窗口 %d", svr.ServerNo, svr.window)
+		svr.ServerConn.AsyncWrite(out)
 
 	}
 	ping := func(now time.Time) {
@@ -305,14 +291,13 @@ func (svr *RpcServer) handlerMsgOut(outChan chan *libraries.MsgBuffer) {
 	}
 	pingTick := time.NewTicker(rpcPingTime)
 	for {
-
 		switch svr.status {
 		case rpcStatusOpen:
 			select {
 			case o := <-svr.outChan:
-				write(o, svr.outChan)
+				write(o)
 			case o := <-outChan:
-				write(o, outChan)
+				write(o)
 			case <-svr.closeChan:
 				return
 			case now := <-pingTick.C:
@@ -322,7 +307,7 @@ func (svr *RpcServer) handlerMsgOut(outChan chan *libraries.MsgBuffer) {
 			//半开状态，只处理指定了本服务的消息
 			select {
 			case o := <-svr.outChan:
-				write(o, svr.outChan)
+				write(o)
 			case reason := <-svr.setStatusOpenChan:
 				//由半开恢复到正常状态
 				libraries.DebugLog("服务%v，ID%v，%s，进入正常状态", svr.ServerNo, svr.Id, reason)
@@ -337,13 +322,4 @@ func (svr *RpcServer) handlerMsgOut(outChan chan *libraries.MsgBuffer) {
 		}
 
 	}
-}
-func (svr *RpcServer) Decompress(in []byte) (out []byte) {
-	svr.zstdDecodeBuf2.Reset()
-	svr.zstdDecodeBuf1.Reset()
-	svr.zstdDecodeBuf1.Write(in)
-	svr.zstdDecoder.Reset(svr.zstdDecodeBuf1)
-	io.Copy(svr.zstdDecodeBuf2, svr.zstdDecoder)
-	//libraries.DebugLog("解压前%d,解压后%d,压缩率%d",len(in),svr.zstdDecodeBuf2.Len(),len(in)*100/svr.zstdDecodeBuf2.Len())
-	return svr.zstdDecodeBuf2.Bytes()
 }

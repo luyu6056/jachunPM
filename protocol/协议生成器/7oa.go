@@ -3,8 +3,8 @@ package main
 import "time"
 
 type MSG_OA_attend_getByAccount struct {
-	Uid       int32
-	StartDate time.Time
+	Uids      []int32
+	BeginDate time.Time
 	EndDate   time.Time
 }
 type MSG_OA_attend_getByAccount_result struct {
@@ -37,7 +37,8 @@ type MSG_OA_attend_info struct {
 	Reason       string
 	Desc         string
 	ReviewStatus string
-	ReviewedBy   string
+	ReviewedBy   int32
+	RejectDesc   string
 	ReviewedDate time.Time
 	EarlyMin     int32
 	LateMin      int32
@@ -96,4 +97,68 @@ type MSG_OA_attend_statMarkExt struct {
 	Start  int8
 	Finish int8
 	Days   int
+}
+type MSG_OA_attend_detail struct {
+	BeginDate time.Time
+	EndDate   time.Time
+	User      []int32
+}
+type MSG_OA_attend_detail_result struct {
+	List []*MSG_OA_attend_detail_info
+}
+type MSG_OA_attend_detail_info struct {
+	Dept      string
+	Realname  string
+	Date      time.Time
+	DayName   int
+	Status    string
+	Desc      string
+	SignIn    string
+	SignOut   string
+	EarlyMin  int32
+	LateMin   int32
+	IP        string
+	HoursList map[string]float32
+}
+type MSG_OA_attend_getWaitAttends struct {
+	Users []int32
+}
+
+type MSG_OA_attend_getWaitAttends_result struct {
+	List []*MSG_OA_attend_info
+}
+
+type MSG_OA_attend_getByDate struct {
+	Uid  int32
+	Date time.Time
+}
+type MSG_OA_attend_update struct {
+	Uid          int32
+	Date         time.Time
+	ManualIn     time.Time
+	ManualOut    time.Time
+	Desc         string
+	ReviewStatus string
+	Reason       string
+	ReviewedBy   int32
+	RejectDesc   string
+}
+
+type MSG_OA_attend_getById struct {
+	Id int32
+}
+type MSG_OA_attend_getbyId_result struct {
+	Info *MSG_OA_attend_info
+}
+type MSG_OA_attend_getStat struct {
+	Month time.Time
+}
+type MSG_OA_attend_getStat_result struct {
+	List []map[string]string
+}
+type MSG_OA_attend_checkWaitReviews struct {
+	Month time.Time
+}
+type MSG_OA_attend_checkWaitReviews_result struct {
+	WaitReviews []string
 }

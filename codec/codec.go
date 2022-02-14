@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"libraries"
 	"net/url"
 	"strings"
 	"sync/atomic"
@@ -83,7 +82,7 @@ func (code *Tlscodec) Decode(c gnet.Conn) (data []byte, err error) {
 					padding := 0
 					if svr.InHeader.Flags&http2FlagDataPadded == http2FlagDataPadded {
 						padding = int(data[pos])
-						//libraries.DEBUG("设置了padded", padding)
+						//DebugLog("设置了padded", padding)
 						pos++
 					}
 					stream.In.Write(data[pos : svr.InHeader.Length+http2headerlength-padding])
@@ -179,17 +178,17 @@ func (code *Tlscodec) Decode(c gnet.Conn) (data []byte, err error) {
 					padding := 0
 					if svr.InHeader.Flags&http2FlagHeadersPadded == http2FlagHeadersPadded {
 						padding = int(data[pos])
-						//libraries.DEBUG("设置了padded", padding)
+						//DebugLog("设置了padded", padding)
 						pos++
 					}
 					if svr.InHeader.Flags&http2FlagHeadersPriority == http2FlagHeadersPriority {
-						//libraries.DEBUG("设置了Priority", buf[pos:pos+5]) 暂不处理
+						//DebugLog("设置了Priority", buf[pos:pos+5]) 暂不处理
 						pos += 5
 					}
 					if svr.InHeader.Flags&http2FlagHeadersEndHeaders == http2FlagHeadersEndHeaders {
-						//libraries.DEBUG("设置了endheader")
+						//DebugLog("设置了endheader")
 					} else {
-						libraries.DebugLog("有continue")
+						DebugLog("有continue")
 					}
 					stream.OUT_WINDOW_SIZE = svr.Setting.SETTINGS_INITIAL_WINDOW_SIZE
 					stream.IN_WINDOW_SIZE = http2initialWindowSize
@@ -344,15 +343,15 @@ func (code *Tlscodec) Decode(c gnet.Conn) (data []byte, err error) {
 					err_code := uint32(data[http2headerlength+4])<<24 | uint32(data[http2headerlength+5])<<16 | uint32(data[http2headerlength+6])<<8 | uint32(data[http2headerlength+7])
 					if err_code > 0 {
 						errmsg := fmt.Sprintf("收到GoAway错误，流: %d, 错误码: %d %s,补充信息: %s", last_stream_id, err_code, http2errCodeName[http2ErrCode(err_code)], data[http2headerlength+8:http2headerlength+svr.InHeader.Length])
-						libraries.DebugLog(errmsg)
+
 						return nil, errors.New(errmsg)
 					} else {
-						//libraries.DEBUG("关闭")
+						//DebugLog("关闭")
 					}
 					return nil, io.EOF
 
 				default:
-					libraries.DebugLog("未处理类型%v", svr.InHeader.Type)
+					DebugLog("未处理类型%v", svr.InHeader.Type)
 				}
 			}
 			//除了header其他类型合并到一起发送，通常一个tls帧能发送完
@@ -361,9 +360,11 @@ func (code *Tlscodec) Decode(c gnet.Conn) (data []byte, err error) {
 			}
 			return nil, nil
 		case *Httpserver:
-			shift, data, err := svr.Request.Parsereq(data)
+
+			shift, d, err := svr.WorkRequest.Parsereq(data)
 			c.ShiftN(shift)
-			return data, err
+			return d, err
+
 		case nil:
 			if len(data) < 24 {
 				return nil, nil
@@ -376,16 +377,10 @@ func (code *Tlscodec) Decode(c gnet.Conn) (data []byte, err error) {
 				c.ShiftN(24)
 				return code.Decode(c)
 			default:
-				http := Httppool.Get().(*Httpserver)
-				http.c = c
-				http.Recovery()
-				if code.Config != nil {
-					http.Request.IsHttps = true
-				}
-				c.SetContext(http)
+				c.SetContext(NewHttpServer(c, code.Config != nil))
 				return code.Decode(c)
 			}
 		}
 	}
-	return nil, nil
+	return nil, err
 }

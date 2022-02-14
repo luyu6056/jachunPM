@@ -135,14 +135,9 @@ func get_file_tmpimg(data *TemplateData) (err error) {
 			return nil
 		}
 	}
-	buf := bufpool.Get().(*libraries.MsgBuffer)
-	defer func() {
-		buf.Reset()
-		bufpool.Put(buf)
-	}()
-	buf.Write(b)
+
 	data.ws.SetContentType("image/" + ext)
-	data.ws.Write(buf)
+	data.ws.Write(b)
 	//data.ws.WriteString(img.Load_str("img"))
 	return
 }
@@ -217,11 +212,7 @@ func get_file_read(data *TemplateData) (err error) {
 			}
 		}
 		data.ws.SetContentType("image/" + result.Ext)
-		buf := bufpool.Get().(*libraries.MsgBuffer)
-		buf.Write(r.Byte)
-		data.ws.Write(buf)
-		buf.Reset()
-		bufpool.Put(buf)
+		data.ws.Write(r.Byte)
 		getByte.Put()
 		r.Put()
 	} else {
@@ -447,6 +438,9 @@ func (f *fileRangeDown) Seek(offset int64, whence int) (ret int64, err error) {
 	f.offset = offset
 	return offset, nil
 }
+func (f *fileRangeDown) Close() error {
+	return nil
+}
 func get_file_edit(data *TemplateData) (err error) {
 	out := protocol.GET_MSG_FILE_getByID()
 	out.FileID, _ = strconv.ParseInt(data.ws.Query("fileID"), 10, 64)
@@ -655,15 +649,14 @@ func file_export2xlsx(data *TemplateData, filename string, fields []protocol.Htm
 	if maxFileNum > 0 {
 		f.SetColWidth("Sheet1", file_getxlsAxis(fileIndex, -1), file_getxlsAxis(fileIndex+maxFileNum, -1), 35)
 	}
-	buf := bufpool.Get().(*libraries.MsgBuffer)
-	buf.Reset()
+	buf := &libraries.MsgBuffer{}
 	if err = f.Write(buf); err != nil {
 		return
 	}
 	data.ws.SetContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	//data.ws.Write(buf.Bytes())
 	data.ws.RangeDownload(&fileRangeDown{data: data, size: int64(buf.Len()), buf: buf}, int64(buf.Len()), filename+".xlsx")
-	buf.Reset()
-	bufpool.Put(buf)
+
 	return
 }
 

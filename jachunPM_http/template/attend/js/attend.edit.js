@@ -1,7 +1,6 @@
 $(document).ready(function()
 {
-    var s = ',leave,makeup,overtime,lieu,trip,egress,allAbsent,halfAbsent,';
-    if(status == 'normal' || (reason && s.indexOf(',' + status + ',') == -1 ))
+    if(status == 'wait')
     {
         $('.editMode').hide();
         $('.viewMode').show();

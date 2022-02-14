@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"jachunPM_http/js"
-	"libraries"
 	"protocol"
 	"runtime/debug"
 	"strings"
@@ -38,8 +37,8 @@ type HttpRequest interface {
 	SetCookie(name, value string, max_age uint32)
 	SetHeader(name, value string)
 	StaticHandler() gnet.Action
-	Write(*libraries.MsgBuffer) //异步输出，仅可调用一次
-	WriteString(string)         //异步输出，仅可调用一次
+	Write([]byte)       //异步输出，仅可调用一次
+	WriteString(string) //异步输出，仅可调用一次
 	Redirect(url string)
 	DelSession()
 	Close()

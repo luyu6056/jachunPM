@@ -1,0 +1,93 @@
+{{template "header.html" .}}
+  <style>
+  #menuActions{float:right !important; margin-top: -60px !important;}
+  .input-group-required > .required::after, .required-wrapper.required::after {top:12px !important;}
+  .modal-body .table {margin-bottom:0px !important;}
+  </style>
+  {{$.Data.featurebar}}
+
+{{template "chosen.html" .}}
+{{template "datepicker.html" .}}
+
+<div id='menuActions'>
+  {{common_printLink . "attend" "exportDetail" (strAdd "begin=" (date "2006-01-02" $.Data.beginDate) "&end=" (date "2006-01-02" $.Data.endDate)) .Lang.attend.export "" "class='iframe btn btn-primary'"}}
+</div>
+<div class='with-side'>
+  <div class='side'>
+    <div class='panel'>
+      <div class='panel-heading'><strong>{{$.Data.currentYear}}{{if ne .App.ClientLang "en"}}{{.Lang.common.year}}{{end}}{{.Lang.attend.detail}}</strong></div>
+      <div class='panel-body'>
+        {{- range $month := $.Data.monthlist}}
+            {{- $class := or (and (eq $month $.Data.currentMonth) "class='btn btn-mini btn-primary'") "class='btn btn-mini'"}}
+            <div class='col-xs-3 monthDIV'>{{html_a (helper_createLink "attend" "detail" "date=" $.Data.currentYear "-" $month) (strAdd $month (or (and (ne $.App.ClientLang "en") $.Lang.common.month)) "") "" $class}}</div>
+        {{- end}}
+      </div>
+    </div>
+    <div class='panel'>
+      <div class='panel-heading'><strong>{{.Lang.attend.search}}</strong></div>
+      <div class='panel-body'>
+        <form id='searchForm' method='post' action='{{helper_createLink "attend" "detail"}}'>
+          <div class='form-group'>
+            <div class='input-group'>
+              <span class='input-group-addon'>{{.Lang.user.dept}}</span>
+              {{html_select "deptID"  $.Data.deptList  $.Data.deptID  "class='form-control chosen'"}}
+            </div>
+          </div>
+          <div class='form-group'>
+            <div class='input-group'>
+              <span class='input-group-addon'>{{.Lang.attend.user}}</span>
+              {{html_select "userID"  $.Data.userList  $.Data.userID  "class='form-control chosen'"}}
+            </div>
+          </div>
+          <div class='form-group'>
+            <div class='input-group'>
+              <span class='input-group-addon'>{{.Lang.attend.begin}}</span>
+              {{html_input "begin"  (date "2006-01-02" $.Data.beginDate) "class='form-control form-date'"}}
+            </div>
+          </div>
+          <div class='form-group'>
+            <div class='input-group'>
+              <span class='input-group-addon'>{{.Lang.attend.end}}</span>
+              {{html_input "end"  (date "2006-01-02" $.Data.endDate)  "class='form-control form-date'"}}
+            </div>
+          </div>
+          <div class='form-group'>{{html_submitButton . .Lang.attend.search}}</div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class='main'>
+    <div class='panel'>
+      <div class='panel-heading text-center'>
+        <strong>{{$.Data.fileName}}</strong>
+      </div>
+      <table class='table table-data table-bordered text-center table-fixedHeader'>
+        <thead>
+          <tr class='text-center'>
+            <th>{{.Lang.user.dept}}</th>
+            <th>{{.Lang.attend.user}}</th>
+            <th>{{.Lang.attend.date}}</th>
+            <th>{{.Lang.attend.dayName}}</th>
+            <th>{{.Lang.attend.status}}</th>
+            <th>{{.Lang.attend.clockIn}}</th>
+            <th>{{.Lang.attend.clockOut}}</th>
+            <th>{{.Lang.attend.ip}}</th>
+          </tr>
+        </thead>
+        {{range $attend := $.Data.attends}}
+        <tr>
+          <td>{{$attend.Dept}}</td>
+          <td>{{$attend.Realname}}</td>
+          <td>{{date "2006-01-02" $attend.Date}}</td>
+          <td>{{index $.Lang.datepicker.dayNames $attend.DayName}}</td>
+          <td>{{attend_detail_printStatus $ $attend}}</td>
+          <td>{{$attend.SignIn}}</td>
+          <td>{{$attend.SignOut}}</td>
+          <td>{{$attend.IP}}</td>
+        </tr>
+        {{end}}
+      </table>
+    </div>
+  </div>
+</div>
+{{template "footer.html" .}}

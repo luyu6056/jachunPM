@@ -19,13 +19,13 @@ func attend_getByAccount(data *protocol.MSG_OA_attend_getByAccount, in *protocol
 		return
 	}
 	where := map[string]interface{}{
-		"Uid": data.Uid,
+		"Uid": data.Uids,
 	}
 	if v, ok := config["custom"]["beginDate"]; ok && v != "" {
 		where["beginDateRaw"] = mysql.WhereOperatorRaw(fmt.Sprintf("`date` > '%s'", v))
 	}
-	if !data.StartDate.IsZero() {
-		where["StartDateRaw"] = mysql.WhereOperatorRaw(fmt.Sprintf("`date` >= '%s'", data.StartDate.Format(protocol.TIMEFORMAT_MYSQLDATE)))
+	if !data.BeginDate.IsZero() {
+		where["BeginDateRaw"] = mysql.WhereOperatorRaw(fmt.Sprintf("`date` >= '%s'", data.BeginDate.Format(protocol.TIMEFORMAT_MYSQLDATE)))
 	}
 	if !data.EndDate.IsZero() {
 		where["EndDateRaw"] = mysql.WhereOperatorRaw(fmt.Sprintf("`date` <= '%s'", data.EndDate.Format(protocol.TIMEFORMAT_MYSQLDATE)))
@@ -35,16 +35,18 @@ func attend_getByAccount(data *protocol.MSG_OA_attend_getByAccount, in *protocol
 		in.WriteErr(err)
 		return
 	}
-	if out.List, err = attend_fixUserAttendList(config, out.List, data.StartDate, data.EndDate, data.Uid); err != nil {
+
+	if out.List, err = attend_fixUserAttendList(config, out.List, data.BeginDate, data.EndDate, data.Uids); err != nil {
 		in.WriteErr(err)
 		return
 	}
+
 	if err = attend_processAttendList(config, out.List); err != nil {
 		in.WriteErr(err)
 		return
 	}
 
-	if err = attend_processHours(config, out.List, data.StartDate); err != nil {
+	if err = attend_processHours(config, out.List, data.BeginDate); err != nil {
 		in.WriteErr(err)
 		return
 	}
@@ -53,33 +55,39 @@ func attend_getByAccount(data *protocol.MSG_OA_attend_getByAccount, in *protocol
 }
 
 //进来的list必须按date从小到大排列
-func attend_fixUserAttendList(config map[string]map[string]string, list []*protocol.MSG_OA_attend_info, startDate, endDate time.Time, uid int32) (res []*protocol.MSG_OA_attend_info, err error) {
-	if !startDate.IsZero() && !endDate.IsZero() {
-		for i := startDate; i.Unix() <= endDate.Unix(); i = i.AddDate(0, 0, 1) {
-			find := false
-			for _, attend := range list {
-				if attend.Date == i {
-					find = true
-					break
+func attend_fixUserAttendList(config map[string]map[string]string, list []*protocol.MSG_OA_attend_info, beginDate, endDate time.Time, uids []int32) (res []*protocol.MSG_OA_attend_info, err error) {
+	for _, uid := range uids {
+		var userAttend []*protocol.MSG_OA_attend_info
+		if !beginDate.IsZero() && !endDate.IsZero() {
+			for i := beginDate; i.Unix() <= endDate.Unix(); i = i.AddDate(0, 0, 1) {
+				find := false
+				for _, attend := range list {
+					if attend.Date == i && attend.Uid == uid {
+						find = true
+						userAttend = append(userAttend, attend)
+						break
+					}
 				}
-			}
-			if !find {
-				attend := protocol.GET_MSG_OA_attend_info()
-				attend.Uid = uid
-				attend.Date = i
-				attend.SignIn = "00:00:00"
-				attend.SignOut = "00:00:00"
-				attend.ManualIn = "00:00:00"
-				attend.ManualOut = "00:00:00"
-				if attend.Status, err = attend_computeStatus(attend, config); err != nil {
-					return
+				//libraries.DebugLog("%+v",find)
+				if !find {
+					attend := protocol.GET_MSG_OA_attend_info()
+					attend.Uid = uid
+					attend.Date = i
+					attend.SignIn = "00:00:00"
+					attend.SignOut = "00:00:00"
+					attend.ManualIn = "00:00:00"
+					attend.ManualOut = "00:00:00"
+					if attend.Status, err = attend_computeStatus(attend, config); err != nil {
+						return
+					}
+					userAttend = append(userAttend, attend)
 				}
-				list = append(list, attend)
 			}
 		}
+		protocol.Order_attend(userAttend, nil)
+		res = append(res, userAttend...)
 	}
-	protocol.Order_attend(list, nil)
-	return list, nil
+	return res, nil
 }
 
 func attend_computeStatus(attend *protocol.MSG_OA_attend_info, config map[string]map[string]string) (string, error) {
@@ -180,13 +188,13 @@ func attend_processAttend(config map[string]map[string]string, attend *protocol.
 	}
 	return nil
 }
-func attend_processHours(config map[string]map[string]string, attends []*protocol.MSG_OA_attend_info, startDate time.Time) (err error) {
+func attend_processHours(config map[string]map[string]string, attends []*protocol.MSG_OA_attend_info, beginDate time.Time) (err error) {
 	var uids = make([]int32, len(attends))
 	for k, attend := range attends {
 		uids[k] = attend.Uid
 	}
-	year := startDate.Format("2006")
-	date := startDate.Format("2006-01-%")
+	year := beginDate.Format("2006")
+	date := beginDate.Format("2006-01-%")
 	var leaveList []*db.Leave
 	if err = HostConn.DB.Table(db.TABLE_LEAVE).Where(map[string]interface{}{
 		"CreatedBy": uids,
@@ -383,15 +391,15 @@ func attend_computeStat(data *protocol.MSG_OA_attend_computeStat, in *protocol.M
 		in.WriteErr(err)
 		return
 	}
-	var startDate, endDate time.Time
+	var beginDate, endDate time.Time
 	if data.Month != "" {
-		if startDate, err = time.ParseInLocation("2006-01-02", fmt.Sprintf("%s-%s-01", data.Year, data.Month), time.Local); err != nil {
+		if beginDate, err = time.ParseInLocation("2006-01-02", fmt.Sprintf("%s-%s-01", data.Year, data.Month), time.Local); err != nil {
 			in.WriteErr(err)
 			return
 		}
-		endDate = startDate.AddDate(0, 1, -1)
+		endDate = beginDate.AddDate(0, 1, -1)
 	} else {
-		if startDate, err = time.ParseInLocation("2006-01-02", fmt.Sprintf("%s-01-01", data.Year), time.Local); err != nil {
+		if beginDate, err = time.ParseInLocation("2006-01-02", fmt.Sprintf("%s-01-01", data.Year), time.Local); err != nil {
 			in.WriteErr(err)
 			return
 		}
@@ -401,10 +409,10 @@ func attend_computeStat(data *protocol.MSG_OA_attend_computeStat, in *protocol.M
 		}
 	}
 	//computeWorkingDates
-	beginDate, _ := time.ParseInLocation("2006-01-02", config["custom"]["beginDate"], time.Local)
+	beginAttendDate, _ := time.ParseInLocation("2006-01-02", config["custom"]["beginDate"], time.Local)
 	var workingDays = make(map[time.Time]bool)
-	for i := startDate; i.Unix() <= endDate.Unix(); i = i.AddDate(0, 0, 1) {
-		if beginDate.After(i) {
+	for i := beginDate; i.Unix() <= endDate.Unix(); i = i.AddDate(0, 0, 1) {
+		if beginAttendDate.After(i) {
 			continue
 		}
 		if ok, err := attend_isRestDay(i, config); err != nil {
@@ -444,45 +452,45 @@ outcontinue:
 		}
 		out.Stat[uid] = stat
 	}
-	if out.Stat, err = attend_computeTripStat(out.Stat, data.Uids, startDate, endDate, config); err != nil {
+	if out.Stat, err = attend_computeTripStat(out.Stat, data.Uids, beginDate, endDate, config); err != nil {
 		in.WriteErr(err)
 		return
 	}
-	if out.Stat, err = attend_computeLeaveStat(out.Stat, data.Uids, startDate, endDate, config); err != nil {
+	if out.Stat, err = attend_computeLeaveStat(out.Stat, data.Uids, beginDate, endDate, config); err != nil {
 		in.WriteErr(err)
 		return
 	}
-	//out.Stat = attend_computeLieuStat(out.Stat, data.Uids, startDate, endDate, config)
-	//out.Stat = attend_computeMakeupStat(out.Stat, data.Uids, startDate, endDate, config)
-	if out.Stat, err = attend_computeOvertimeStat(out.Stat, data.Uids, startDate, endDate, config); err != nil {
+	//out.Stat = attend_computeLieuStat(out.Stat, data.Uids, beginDate, endDate, config)
+	//out.Stat = attend_computeMakeupStat(out.Stat, data.Uids, beginDate, endDate, config)
+	if out.Stat, err = attend_computeOvertimeStat(out.Stat, data.Uids, beginDate, endDate, config); err != nil {
 		in.WriteErr(err)
 		return
 	}
-	if out.Stat, err = attend_computeAttendStat(out.Stat, data.Uids, startDate, endDate, config); err != nil {
+	if out.Stat, err = attend_computeAttendStat(out.Stat, data.Uids, beginDate, endDate, config); err != nil {
 		in.WriteErr(err)
 		return
 	}
 	in.SendResult(out)
 	out.Put()
 }
-func attend_computeTripStat(stat map[int32]*protocol.MSG_OA_attend_statInfo, uids []int32, startDate, endDate time.Time, config map[string]map[string]string) (res map[int32]*protocol.MSG_OA_attend_statInfo, err error) {
+func attend_computeTripStat(stat map[int32]*protocol.MSG_OA_attend_statInfo, uids []int32, beginDate, endDate time.Time, config map[string]map[string]string) (res map[int32]*protocol.MSG_OA_attend_statInfo, err error) {
 	var tripList []*db.Trip
 	if err = HostConn.DB.Table(db.TABLE_TRIP).Where(map[string]interface{}{
 		"CreatedBy": uids,
-		"date":      mysql.WhereOperatorRaw(fmt.Sprintf("(End >= '%s' and  Begin <= '%s')", startDate.Format(protocol.TIMEFORMAT_MYSQLDATE), endDate.Format(protocol.TIMEFORMAT_MYSQLDATE))),
+		"date":      mysql.WhereOperatorRaw(fmt.Sprintf("(End >= '%s' and  Begin <= '%s')", beginDate.Format(protocol.TIMEFORMAT_MYSQLDATE), endDate.Format(protocol.TIMEFORMAT_MYSQLDATE))),
 		"Status":    "pass",
 	}).Order("Begin,End").Select(&tripList); err != nil {
 		return
 	}
 	for _, trip := range tripList {
 		trip.Day = 0 //重算时间
-		if startDate.After(trip.Begin) {
+		if beginDate.After(trip.Begin) {
 			if trip.Finish == 1 {
 				trip.Day = 0.5
 			} else {
 				trip.Day = 1
 			}
-			for i := startDate; trip.End.After(i); i = i.AddDate(0, 0, 1) {
+			for i := beginDate; trip.End.After(i); i = i.AddDate(0, 0, 1) {
 				if ok, err := attend_isRestDay(i, config); err != nil {
 					return nil, err
 				} else if !ok {
@@ -514,7 +522,7 @@ func attend_computeTripStat(stat map[int32]*protocol.MSG_OA_attend_statInfo, uid
 		}
 
 		for i := trip.Begin; i.Unix() <= trip.End.Unix(); i = i.AddDate(0, 0, 1) {
-			if startDate.After(i) || i.After(endDate) {
+			if beginDate.After(i) || i.After(endDate) {
 				continue
 			}
 			key := i.Unix()
@@ -577,8 +585,8 @@ func attend_computeTripStat(stat map[int32]*protocol.MSG_OA_attend_statInfo, uid
 			}
 		}
 		//添加导出备注
-		if startDate.After(trip.Begin) {
-			trip.Begin = startDate
+		if beginDate.After(trip.Begin) {
+			trip.Begin = beginDate
 			trip.Start = 1
 		}
 		if trip.End.After(endDate) {
@@ -590,24 +598,24 @@ func attend_computeTripStat(stat map[int32]*protocol.MSG_OA_attend_statInfo, uid
 	return stat, nil
 }
 
-func attend_computeLeaveStat(stat map[int32]*protocol.MSG_OA_attend_statInfo, uids []int32, startDate, endDate time.Time, config map[string]map[string]string) (res map[int32]*protocol.MSG_OA_attend_statInfo, err error) {
+func attend_computeLeaveStat(stat map[int32]*protocol.MSG_OA_attend_statInfo, uids []int32, beginDate, endDate time.Time, config map[string]map[string]string) (res map[int32]*protocol.MSG_OA_attend_statInfo, err error) {
 	var leaveList []*db.Trip
 	if err = HostConn.DB.Table(db.TABLE_LEAVE).Where(map[string]interface{}{
 		"CreatedBy": uids,
-		"date":      mysql.WhereOperatorRaw(fmt.Sprintf("(End >= '%s' and  Begin <= '%s')", startDate.Format(protocol.TIMEFORMAT_MYSQLDATE), endDate.Format(protocol.TIMEFORMAT_MYSQLDATE))),
+		"date":      mysql.WhereOperatorRaw(fmt.Sprintf("(End >= '%s' and  Begin <= '%s')", beginDate.Format(protocol.TIMEFORMAT_MYSQLDATE), endDate.Format(protocol.TIMEFORMAT_MYSQLDATE))),
 		"Status":    "pass",
 	}).Order("Begin,End").Select(&leaveList); err != nil {
 		return
 	}
 	for _, leave := range leaveList {
 		leave.Day = 0 //重算时间
-		if startDate.After(leave.Begin) {
+		if beginDate.After(leave.Begin) {
 			if leave.Finish == 1 {
 				leave.Day = 0.5
 			} else {
 				leave.Day = 1
 			}
-			for i := startDate; leave.End.After(i); i = i.AddDate(0, 0, 1) {
+			for i := beginDate; leave.End.After(i); i = i.AddDate(0, 0, 1) {
 				if ok, err := attend_isRestDay(i, config); err != nil {
 					return nil, err
 				} else if !ok {
@@ -653,7 +661,7 @@ func attend_computeLeaveStat(stat map[int32]*protocol.MSG_OA_attend_statInfo, ui
 		}
 
 		for i := leave.Begin; i.Unix() <= leave.End.Unix(); i = i.AddDate(0, 0, 1) {
-			if startDate.After(i) || i.After(endDate) {
+			if beginDate.After(i) || i.After(endDate) {
 				continue
 			}
 			key := i.Unix()
@@ -716,8 +724,8 @@ func attend_computeLeaveStat(stat map[int32]*protocol.MSG_OA_attend_statInfo, ui
 			}
 		}
 		//添加导出备注
-		if startDate.After(leave.Begin) {
-			leave.Begin = startDate
+		if beginDate.After(leave.Begin) {
+			leave.Begin = beginDate
 			leave.Start = 1
 		}
 		if leave.End.After(endDate) {
@@ -729,11 +737,11 @@ func attend_computeLeaveStat(stat map[int32]*protocol.MSG_OA_attend_statInfo, ui
 	return stat, nil
 }
 
-func attend_computeOvertimeStat(stat map[int32]*protocol.MSG_OA_attend_statInfo, uids []int32, startDate, endDate time.Time, config map[string]map[string]string) (res map[int32]*protocol.MSG_OA_attend_statInfo, err error) {
+func attend_computeOvertimeStat(stat map[int32]*protocol.MSG_OA_attend_statInfo, uids []int32, beginDate, endDate time.Time, config map[string]map[string]string) (res map[int32]*protocol.MSG_OA_attend_statInfo, err error) {
 	var overtimeList []*db.Trip
 	if err = HostConn.DB.Table(db.TABLE_OVERTIME).Where(map[string]interface{}{
 		"CreatedBy": uids,
-		"date":      mysql.WhereOperatorRaw(fmt.Sprintf("(End >= '%s' and  Begin <= '%s')", startDate.Format(protocol.TIMEFORMAT_MYSQLDATE), endDate.Format(protocol.TIMEFORMAT_MYSQLDATE))),
+		"date":      mysql.WhereOperatorRaw(fmt.Sprintf("(End >= '%s' and  Begin <= '%s')", beginDate.Format(protocol.TIMEFORMAT_MYSQLDATE), endDate.Format(protocol.TIMEFORMAT_MYSQLDATE))),
 		"Status":    "pass",
 	}).Order("Begin,End").Select(&overtimeList); err != nil {
 		return
@@ -753,12 +761,12 @@ func attend_computeOvertimeStat(stat map[int32]*protocol.MSG_OA_attend_statInfo,
 	return stat, nil
 }
 
-func attend_computeAttendStat(stat map[int32]*protocol.MSG_OA_attend_statInfo, uids []int32, startDate, endDate time.Time, config map[string]map[string]string) (res map[int32]*protocol.MSG_OA_attend_statInfo, err error) {
+func attend_computeAttendStat(stat map[int32]*protocol.MSG_OA_attend_statInfo, uids []int32, beginDate, endDate time.Time, config map[string]map[string]string) (res map[int32]*protocol.MSG_OA_attend_statInfo, err error) {
 
 	var attendList []*protocol.MSG_OA_attend_info
 	if err = HostConn.DB.Table(db.TABLE_ATTEND).Where(map[string]interface{}{
 		"Uid":  uids,
-		"date": mysql.WhereOperatorRaw(fmt.Sprintf("(Date >= '%s' and  Date <= '%s')", startDate.Format(protocol.TIMEFORMAT_MYSQLDATE), endDate.Format(protocol.TIMEFORMAT_MYSQLDATE))),
+		"date": mysql.WhereOperatorRaw(fmt.Sprintf("(Date >= '%s' and  Date <= '%s')", beginDate.Format(protocol.TIMEFORMAT_MYSQLDATE), endDate.Format(protocol.TIMEFORMAT_MYSQLDATE))),
 	}).Order("Date").Select(&attendList); err != nil {
 		return
 	}
@@ -829,4 +837,175 @@ func attend_computeAttendStat(stat map[int32]*protocol.MSG_OA_attend_statInfo, u
 
 	}
 	return stat, nil
+}
+func attend_detail(data *protocol.MSG_OA_attend_detail, in *protocol.Msg) {
+	getByAccount := protocol.GET_MSG_OA_attend_getByAccount()
+	getByAccount.Uids = data.User
+	getByAccount.BeginDate = data.BeginDate
+	getByAccount.EndDate = data.EndDate
+	var getByAccountResult *protocol.MSG_OA_attend_getByAccount_result
+	if err := in.SendMsgWaitResult(HostConn.Local(), getByAccount, &getByAccountResult); err != nil {
+		in.WriteErr(err)
+		return
+	}
+	users := HostConn.GetUserCacheByIds(data.User)
+	out := protocol.GET_MSG_OA_attend_detail_result()
+	var deptM = make(map[int32]*protocol.MSG_USER_Dept_cache)
+	for _, v := range getByAccountResult.List {
+		var user *protocol.MSG_USER_INFO_cache
+		for _, u := range users {
+			if v.Uid == u.Id {
+				user = u
+			}
+		}
+		if user == nil {
+			continue
+		}
+		detail := protocol.GET_MSG_OA_attend_detail_info()
+		dept, ok := deptM[user.Dept]
+		if !ok {
+			deptM[user.Dept], _ = HostConn.GetdeptCacheById(user.Dept)
+			dept = deptM[user.Dept]
+		}
+		if dept != nil {
+			detail.Dept = dept.Name
+		}
+		detail.Realname = user.Realname
+		if detail.Realname == "" {
+			detail.Realname = user.Account
+		}
+		detail.Date = v.Date
+		detail.Status = v.Status
+		detail.SignIn = v.SignIn
+		detail.SignOut = v.SignOut
+		detail.DayName = int(detail.Date.Weekday())
+		detail.HoursList = v.HoursList
+		detail.EarlyMin = v.EarlyMin
+		detail.LateMin = v.LateMin
+		detail.IP = v.Ip
+		out.List = append(out.List, detail)
+	}
+
+	in.SendResult(out)
+	out.Put()
+	getByAccountResult.Put()
+	getByAccount.Put()
+}
+func attend_getWaitAttends(data *protocol.MSG_OA_attend_getWaitAttends, in *protocol.Msg) {
+	out := protocol.GET_MSG_OA_attend_getWaitAttends_result()
+	if err := in.DB.Table(db.TABLE_ATTEND).Where(map[string]interface{}{"ReviewStatus": "wait", "Uid": data.Users}).Select(&out.List); err != nil {
+		in.WriteErr(err)
+		return
+	}
+	in.SendResult(out)
+	out.Put()
+}
+func attend_getByDate(config map[string]map[string]string, date time.Time, uid int32) (attend *protocol.MSG_OA_attend_info, err error) {
+	if err = HostConn.DB.Table(db.TABLE_ATTEND).Prepare().Where("Date=? and Uid =?", date.Format(protocol.TIMEFORMAT_MYSQLDATE), uid).Find(&attend); err != nil {
+		return
+	}
+	if attend == nil {
+		attend = protocol.GET_MSG_OA_attend_info()
+		attend.Uid = uid
+		attend.Date = date
+		attend.SignIn = "00:00:00"
+		attend.SignOut = "00:00:00"
+		if attend.Status, err = attend_computeStatus(attend, config); err != nil {
+			return
+		}
+	}
+	err = attend_processAttend(config, attend)
+	return
+}
+
+func attend_update(data *protocol.MSG_OA_attend_update, in *protocol.Msg) {
+	var oldAttend, newAttend *protocol.MSG_OA_attend_info
+	err := in.DB.Table(db.TABLE_ATTEND).Where("Date=? and Uid =?", data.Date.Format(protocol.TIMEFORMAT_MYSQLDATE), data.Uid).Select(&oldAttend)
+	if err != nil {
+		in.WriteErr(err)
+		return
+	}
+	session, err := in.BeginTransaction()
+	if err != nil {
+		in.WriteErr(err)
+		return
+	}
+	defer func() {
+		if err != nil {
+			session.Rollback()
+		} else {
+			session.Commit()
+		}
+		in.WriteErr(err)
+	}()
+	if oldAttend == nil {
+		newAttend = &protocol.MSG_OA_attend_info{
+			Date:   data.Date,
+			Uid:    data.Uid,
+			Status: "absent",
+		}
+		if user := HostConn.GetUserCacheById(data.Uid); user != nil {
+			newAttend.Account = user.Account
+		}
+	} else {
+		if err = protocol.CopyObj(oldAttend, &newAttend); err != nil {
+			return
+		}
+	}
+	newAttend.ReviewStatus = data.ReviewStatus
+	newAttend.ReviewedBy = data.ReviewedBy
+	newAttend.Reason = data.Reason
+	newAttend.ReviewedDate = time.Now()
+	newAttend.RejectDesc = data.RejectDesc
+
+	if data.ManualIn.After(protocol.NORMALTIME) {
+		newAttend.ManualIn = data.ManualIn.Format("15:04:05")
+	} else {
+		newAttend.ManualIn = ""
+	}
+	if data.ManualOut.After(protocol.NORMALTIME) {
+		newAttend.ManualOut = data.ManualOut.Format("15:04:05")
+	} else {
+		newAttend.ManualOut = ""
+	}
+	if newAttend.ReviewStatus == "pass" && newAttend.ManualIn != "" && newAttend.ManualOut != "" {
+		newAttend.SignIn = newAttend.ManualIn
+		newAttend.SignOut = newAttend.ManualOut
+		config, e := attend_LoadConfig(in)
+		if e != nil {
+			err = e
+			return
+		}
+		if newAttend.Status, err = attend_computeStatus(newAttend, config); err != nil {
+			return
+		}
+	}
+	if oldAttend == nil {
+		var id int64
+		if id, err = session.Table(db.TABLE_ATTEND).Insert(newAttend); err != nil {
+			return
+		}
+		if _, err = in.ActionCreate("attend", int32(id), "ReviewStatus", data.ReviewStatus, strconv.Itoa(int(data.Uid)), nil, 0); err != nil {
+			return
+		}
+	} else {
+		if err = session.Table(db.TABLE_ATTEND).Replace(newAttend); err != nil {
+			return
+		}
+		var actionID int64
+		if actionID, err = in.ActionCreate("attend", oldAttend.Id, "ReviewStatus", data.ReviewStatus, strconv.Itoa(int(data.Uid)), nil, 0); err != nil {
+			return
+		}
+		_, err = in.ActionLogHistory(actionID, oldAttend, newAttend)
+	}
+
+}
+func attend_getById(data *protocol.MSG_OA_attend_getById, in *protocol.Msg) {
+	out := protocol.GET_MSG_OA_attend_getbyId_result()
+	if err := in.DB.Table(db.TABLE_ATTEND).Prepare().Where("Id=?", data.Id).Find(&out.Info); err != nil {
+		in.WriteErr(err)
+		return
+	}
+	in.SendResult(out)
+	out.Put()
 }

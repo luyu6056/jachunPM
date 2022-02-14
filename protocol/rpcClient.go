@@ -3,7 +3,6 @@ package protocol
 import (
 	"errors"
 	"fmt"
-	"io"
 	"libraries"
 	"mysql"
 	"net"
@@ -14,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/klauspost/compress/zstd"
 	"github.com/luyu6056/cache"
 )
 
@@ -42,45 +40,46 @@ var (
 )
 
 type RpcClient struct {
-	No                     uint8     //服务no
-	Id                     uint8     //服务自身id
-	CloseChan              chan bool //只允许在Close()里面发起chan
-	HandleMsg              func(*Msg)
-	Addr                   string
-	Status                 int
-	IsMaster               bool //主服务器，维护host的cache
-	DB                     *mysql.MysqlDB
-	inchan                 chan *Msg
-	outchan                chan *libraries.MsgBuffer
-	conn                   net.Conn
-	reconnect              chan []byte
-	waitshutdown           sync.WaitGroup
-	window                 int32 //接收窗口
-	tokenKey               string
-	cache                  *RpcCache
-	tick                   *time.Ticker
-	handleTick             func(time.Time)
-	sendStruct             *RpclientSend
-	decodebuf1, decodebuf2 *libraries.MsgBuffer
-	decoder                *zstd.Decoder
+	No                   uint8           //服务no
+	Id                   uint8           //服务自身id
+	CloseChan            chan bool       //只允许在Close()里面发起chan
+	HandleMsg            func(*Msg) bool //找到路由返回true，没找到false，以便于进行下一步操作
+	Addr                 string
+	Status               int
+	IsMaster             bool //主服务器，维护host的cache
+	DB                   *mysql.MysqlDB
+	inchan               chan *Msg
+	outchan              chan *libraries.MsgBuffer
+	conn                 net.Conn
+	reconnect            chan []byte
+	waitshutdown         sync.WaitGroup
+	window               int32 //接收窗口
+	tokenKey             string
+	cache                *RpcCache
+	tick                 *time.Ticker
+	handleTick           func(time.Time)
+	sendStruct           *RpclientSend
+	encodebuf, decodebuf *[]byte
 }
 
 func NewClient(no uint8, hostAddr string, tokenKey string) (*RpcClient, error) {
-
+	buf1 := make([]byte, 65536)
+	buf2 := make([]byte, 65536)
+	buf3 := make([]byte, 65536)
+	buf4 := make([]byte, 65536)
 	client := &RpcClient{
 		inchan:    make(chan *Msg, rpcHanleMsgNum*4),
 		outchan:   make(chan *libraries.MsgBuffer, Rpcmsgnum),
 		CloseChan: make(chan bool, 1),
 		reconnect: make(chan []byte, Rpcmsgnum),
-
-		No:         no,
-		Addr:       hostAddr,
-		window:     DefaultWindowSize,
-		Status:     RpcClientStatuShutdown,
-		tokenKey:   tokenKey,
-		tick:       time.NewTicker(RpcTickDefaultTime * time.Second),
-		decodebuf1: new(libraries.MsgBuffer),
-		decodebuf2: new(libraries.MsgBuffer),
+		No:        no,
+		Addr:      hostAddr,
+		window:    DefaultWindowSize,
+		Status:    RpcClientStatuShutdown,
+		tokenKey:  tokenKey,
+		tick:      time.NewTicker(RpcTickDefaultTime * time.Second),
+		encodebuf: &buf1,
+		decodebuf: &buf2,
 	}
 	cache := &RpcClient{
 		inchan:    make(chan *Msg, rpcHanleMsgNum),
@@ -88,15 +87,15 @@ func NewClient(no uint8, hostAddr string, tokenKey string) (*RpcClient, error) {
 		CloseChan: make(chan bool, 1),
 		reconnect: make(chan []byte, Rpcmsgnum),
 
-		No:         no + 128,
-		Addr:       hostAddr,
-		window:     DefaultWindowSize,
-		Status:     RpcClientStatuShutdown,
-		tokenKey:   tokenKey,
-		tick:       time.NewTicker(RpcTickDefaultTime * time.Second),
-		HandleMsg:  HandleCache,
-		decodebuf1: new(libraries.MsgBuffer),
-		decodebuf2: new(libraries.MsgBuffer),
+		No:        no + 128,
+		Addr:      hostAddr,
+		window:    DefaultWindowSize,
+		Status:    RpcClientStatuShutdown,
+		tokenKey:  tokenKey,
+		tick:      time.NewTicker(RpcTickDefaultTime * time.Second),
+		HandleMsg: HandleCache,
+		encodebuf: &buf3,
+		decodebuf: &buf4,
 	}
 	err := client.Dial()
 	if err != nil {
@@ -110,8 +109,6 @@ func NewClient(no uint8, hostAddr string, tokenKey string) (*RpcClient, error) {
 	client.sendStruct = &RpclientSend{client}
 	cache.sendStruct = &RpclientSend{cache}
 	client.cache = &RpcCache{Svr: cache.sendStruct}
-	client.decoder, _ = zstd.NewReader(client.decodebuf1,zstd.WithDecoderDicts(ZstdDict))
-	cache.decoder, _ = zstd.NewReader(cache.decodebuf1,zstd.WithDecoderDicts(ZstdDict))
 	return client, nil
 }
 func (client *RpcClient) Dial() error {
@@ -152,7 +149,16 @@ func (client *RpcClient) reg() {
 	client.sendStruct.SendMsgToDefault(nil, data)
 	data.Put()
 }
+func (client *RpcClient) Local() uint16 {
+	return uint16(client.No) | uint16(client.Id)<<8
+}
 
+func (client *RpcClient) EncodeBuf() (out *[]byte) {
+	return client.encodebuf
+}
+func (client *RpcClient) DecodeBuf() (out *[]byte) {
+	return client.decodebuf
+}
 func (client *RpcClient) handleWrite() {
 	defer func() {
 		if err := recover(); err != nil {
@@ -164,89 +170,46 @@ func (client *RpcClient) handleWrite() {
 		}
 	}()
 	var (
-		out      = &libraries.MsgBuffer{}
-		msgbuf   = &libraries.MsgBuffer{}
-		zstdbuf  = &libraries.MsgBuffer{}
-		compress bool
-		msglen   int
+		out    = &libraries.MsgBuffer{}
+		msglen int
 		//busyTime int64 = time.Now().UnixNano()
-		msgNum int
+
 	)
-	zstdWriter, _ := zstd.NewWriter(zstdbuf, zstd.WithEncoderLevel(ZstdLevel),zstd.WithEncoderDict(ZstdDict))
+
 	writeToBuf := func(o *libraries.MsgBuffer) {
 		msglen += o.Len()
-		if compress {
-			zstdWriter.Write(o.Bytes())
-		} else {
-			if msgNum > CompressMinNum || msglen > CompressMinLen {
-				compress = true
-				zstdWriter.Reset(zstdbuf)
-				zstdWriter.Write(out.Bytes())
-				out.Reset()
-				zstdWriter.Write(o.Bytes())
-			} else {
-				out.Write(o.Bytes())
-			}
-		}
+		out.Write(o.Bytes())
 	}
 	writeAllMsg := func() {
-
-		for i := 0; i < len(client.outchan) && i < MaxMsgNum-1; i++ {
-			o1 := <-client.outchan
-			if msglen+o1.Len() > MaxOutLen {
-				client.outchan <- o1
-				break
-			}
-			msgNum++
-			writeToBuf(o1)
-			o1.Reset()
-			//BufPoolPut(o1)
-		}
-		if compress {
-			//有压缩
-			zstdWriter.Close()
-			msglen = zstdbuf.Len()
-			if msglen > MaxOutLen {
-				panic("消息大于最大允许长度,压缩后更长？？？")
+		for {
+			select {
+			case o1 := <-client.outchan:
+				if msglen+o1.Len() > MaxOutLen {
+					client.outchan <- o1
+					break
+				}
+				writeToBuf(o1)
+				o1.Reset()
+				BufPoolPut(o1)
+			default:
+				if _, err := client.conn.Write(out.Bytes()); err != nil {
+					libraries.ReleaseLog("正常消息，发消息错误%v", err)
+					data := make([]byte, out.Len())
+					copy(data, out.Bytes())
+					client.reconnect <- data
+				}
 				return
 			}
-			b := msgbuf.Make(4 + msglen)
-			b[0] = byte(msglen)
-			b[1] = byte(msglen >> 8)
-			b[2] = byte(msglen >> 16)
-			b[3] = byte(msglen>>24) + 1<<7
-			copy(b[4:], zstdbuf.Bytes())
-		} else {
-			//无压缩
-			b := msgbuf.Make(4 + msglen)
-			b[0] = byte(msglen)
-			b[1] = byte(msglen >> 8)
-			b[2] = byte(msglen >> 16)
-			b[3] = byte(msglen >> 24)
-			copy(b[4:], out.Bytes())
-		}
-		_, err := client.conn.Write(msgbuf.Bytes())
-
-		if err != nil {
-			libraries.ReleaseLog("正常消息，发消息错误%v", err)
-			data := make([]byte, msgbuf.Len())
-			copy(data, msgbuf.Bytes())
-			client.reconnect <- data
 		}
 	}
 	for {
 		select {
 		case o := <-client.outchan:
-			compress = false
 			out.Reset()
-			msgbuf.Reset()
-			zstdbuf.Reset()
 			msglen = 0
 			writeToBuf(o)
-			msgNum = 1
 			o.Reset()
-			//BufPoolPut(o)
-
+			BufPoolPut(o)
 			writeAllMsg()
 		case data := <-client.reconnect: //重连
 			client.tick.Stop()
@@ -337,20 +300,20 @@ func (client *RpcClient) runTick() {
 }
 
 func (client *RpclientSend) SendMsg(msg *Msg, remote uint16, out MSG_DATA) {
-	SendMsg(msg, uint16(client.No)|uint16(client.Id)<<8, remote, out, client.outchan)
+	SendMsg(msg, client.Local(), remote, out, client.inchan, client.outchan)
 }
 
 func (client *RpclientSend) SendMsgWaitResult(msg *Msg, remote uint16, out MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
-	return SendMsgWaitResult(msg, uint16(client.No)|uint16(client.Id)<<8, remote, out, result, client.outchan, timeout...)
+	return SendMsgWaitResult(msg, client.Local(), remote, out, result, client.inchan, client.outchan, timeout...)
 }
 
 //没有remote,msgno,ttl,transactionNo发送
 func (client *RpclientSend) SendMsgToDefault(msg *Msg, out MSG_DATA) {
-	SendMsg(msg, uint16(client.No)|uint16(client.Id)<<8, 0, out, client.outchan)
+	SendMsg(msg, client.Local(), 0, out, client.inchan, client.outchan)
 }
 
 func (client *RpclientSend) SendMsgWaitResultToDefault(msg *Msg, out MSG_DATA, result interface{}, timeout ...time.Duration) (err error) {
-	return SendMsgWaitResult(msg, uint16(client.No)|uint16(client.Id)<<8, 0, out, result, client.outchan, timeout...)
+	return SendMsgWaitResult(msg, client.Local(), 0, out, result, client.inchan, client.outchan, timeout...)
 }
 func (client *RpcClient) CacheGet(serverNo uint8, path string, key string, value interface{}) (err error) {
 	b, err := client.cache.Get(key, strconv.Itoa(int(serverNo))+"_"+path)
@@ -385,7 +348,7 @@ func (client *RpcClient) CacheGet(serverNo uint8, path string, key string, value
 		}
 		return errors.New("找不到反序列化方法或者cmd值不对")
 	} else {
-		return errors.New("消息不够长，不足以读取一条缓存")
+		return errors.New("CacheGet消息不够长，不足以读取一条缓存")
 	}
 	return err
 }
@@ -468,6 +431,12 @@ func (client *RpcClient) GetProductById(productID int32) (res *MSG_PROJECT_produ
 	}
 	return
 }
+func (client *RpcClient) GetdeptCacheById(deptId int32) (deptinfo *MSG_USER_Dept_cache, err error) {
+	if err = client.CacheGet(UserServerNo, PATH_USER_DEPT_CACHE, strconv.Itoa(int(deptId)), &deptinfo); err != nil {
+		err = errors.New(fmt.Sprintf("无法获取dept id%d的缓存,%+v", deptId, err))
+	}
+	return
+}
 func (client *RpcClient) SetTickHand(f func(time.Time)) {
 	client.handleTick = f
 }
@@ -478,14 +447,7 @@ func (client *RpcClient) GetProjectById(id int32) (res *MSG_PROJECT_project_cach
 	}
 	return
 }
-func (client *RpcClient) Decompress(in []byte) (out []byte) {
-	client.decodebuf2.Reset()
-	client.decodebuf1.Reset()
-	client.decodebuf1.Write(in)
-	client.decoder.Reset(client.decodebuf1)
-	io.Copy(client.decodebuf2, client.decoder)
-	return client.decodebuf2.Bytes()
-}
+
 func (client *RpcClient) handleMsg() {
 
 	defer func() {
@@ -500,11 +462,8 @@ func (client *RpcClient) handleMsg() {
 		select {
 		case msg := <-client.inchan:
 			msg.DB.DB = client.DB
-
 			i := msg.Data
-
 			msg.SetServer(client.sendStruct)
-
 			switch data := i.(type) {
 			case *MSG_HOST_regServer_result:
 				if client.Status&RpcClientStatuShutdown == RpcClientStatuShutdown {
@@ -532,14 +491,22 @@ func (client *RpcClient) handleMsg() {
 			case *MSG_HOST_Transaction_RollBack:
 				MsgTransactionRollBack(data)
 			default:
-				if SetMsgQuery(msg) {
-					//这里不能回收
-					continue
-				} else {
-					client.HandleMsg(msg)
+				if !client.HandleMsg(msg) {
+					if SetMsgQuery(msg) {
+						//这里不能回收
+						continue
+					} else {
+						if v, ok := CmdToName[msg.Cmd]; ok {
+							libraries.ReleaseLog("未设置消息CMD%s处理", v)
+						} else {
+							libraries.ReleaseLog("未设置消息CMD%d处理", msg.Cmd)
+						}
+					}
 				}
 			}
-			i.Put()
+			if i != nil {
+				i.Put()
+			}
 			BufPoolPut(msg.buf)
 		case <-client.CloseChan:
 			client.CloseChan <- true

@@ -62,8 +62,9 @@ type Attend struct {
 	ManualOut    string    `db:"type:time;not null"`
 	Reason       string    `db:"type:varchar(30)"`
 	Desc         string    `db:"type:text"`
-	ReviewStatus string    `db:"type:varchar(30)"`
-	ReviewedBy   string    `db:"type:varchar(30)"`
+	ReviewStatus string    `db:"type:varchar(30);index"`
+	ReviewedBy   int32
+	RejectDesc   string    `db:"type:varchar(255)"`
 	ReviewedDate time.Time `db:"not null"`
 	EarlyMin     int32     `db:"null"`
 	LateMin      int32     `db:"null"`

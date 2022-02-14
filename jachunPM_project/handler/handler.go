@@ -2,13 +2,12 @@ package handler
 
 import (
 	"jachunPM_project/db"
-	"libraries"
 	"protocol"
 )
 
 var HostConn *protocol.RpcClient
 
-func Handler(in *protocol.Msg) {
+func Handler(in *protocol.Msg) bool {
 
 	switch data := in.Data.(type) {
 	case *protocol.MSG_PROJECT_tree_getLinePairs:
@@ -134,7 +133,7 @@ func Handler(in *protocol.Msg) {
 		out.List, err = story_getProductStories(data.Products, data.Branches, data.ModuleID, data.Status, data.Sort, data.Page, data.PerPage, &data.Total)
 		if err != nil {
 			in.WriteErr(err)
-			return
+			return true
 		}
 		out.Total = data.Total
 		in.SendResult(out)
@@ -143,7 +142,7 @@ func Handler(in *protocol.Msg) {
 		list, err := productplan_getForProducts(data.Products, in)
 		if err != nil {
 			in.WriteErr(err)
-			return
+			return true
 		}
 		out := protocol.GET_MSG_PROJECT_productplan_getForProducts_result()
 		out.List = list
@@ -181,12 +180,12 @@ func Handler(in *protocol.Msg) {
 		err := in.DB.Table(db.TABLE_PROJECT).Limit(0).Select(&project)
 		if err != nil {
 			in.WriteErr(err)
-			return
+			return true
 		}
 		err = in.DB.Table(db.TABLE_PRODUCTPLAN).Limit(0).Select(&product)
 		if err != nil {
 			in.WriteErr(err)
-			return
+			return true
 		}
 		out := protocol.GET_MSG_PROJECT_getAllprojectProductID_result()
 		for _, v := range project {
@@ -216,10 +215,7 @@ func Handler(in *protocol.Msg) {
 			}
 		}
 	default:
-		if v, ok := protocol.CmdToName[in.Cmd]; ok {
-			libraries.ReleaseLog("未设置消息CMD%s处理", v)
-		} else {
-			libraries.ReleaseLog("未设置消息CMD%d处理", in.Cmd)
-		}
+		return false
 	}
+	return true
 }

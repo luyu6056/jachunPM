@@ -357,7 +357,7 @@ func get_dept_delete(data *TemplateData) (err error) {
 }
 func get_dept_edit(data *TemplateData) (err error) {
 	deptid, _ := strconv.Atoi(data.ws.Query("deptid"))
-	deptinfo, err := dept_getCacheById(int32(deptid))
+	deptinfo, err := HostConn.GetdeptCacheById(int32(deptid))
 	if err != nil || deptinfo == nil {
 		data.ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrDeptInfoDeptID"], deptid) + js.Reload("parent"))
 		return nil
@@ -377,12 +377,13 @@ func get_dept_edit(data *TemplateData) (err error) {
 		users = append(users, protocol.HtmlKeyValueStr{strconv.Itoa(int(v.Id)), v.Realname})
 	}
 	data.Data["users"] = users
+	data.Data["optionMenu"], err = dept_getOptionMenu(0)
 	templateOut("dept.edit.html", data)
 	return
 }
 func post_dept_edit(data *TemplateData) (err error) {
 	deptid, _ := strconv.Atoi(data.ws.Query("deptid"))
-	deptinfo, err := dept_getCacheById(int32(deptid))
+	deptinfo, err := HostConn.GetdeptCacheById(int32(deptid))
 	if err != nil || deptinfo == nil {
 		data.ws.WriteString(js.Alert(data.Lang["dept"]["error"].(map[string]string)["ErrDeptInfoDeptID"], deptid) + js.Reload("parent"))
 		return nil
@@ -416,10 +417,7 @@ func post_dept_edit(data *TemplateData) (err error) {
 	data.ws.WriteString(js.Alert(data.Lang["dept"]["successSave"].(string)) + js.Reload("parent"))
 	return nil
 }
-func dept_getCacheById(deptId int32) (deptinfo *protocol.MSG_USER_Dept_cache, err error) {
-	err = HostConn.CacheGet(protocol.UserServerNo, protocol.PATH_USER_DEPT_CACHE, strconv.Itoa(int(deptId)), &deptinfo)
-	return
-}
+
 func dept_getOptionMenu(rootDeptID int32) ([]protocol.HtmlKeyValueStr, error) {
 	deptlist, err := dept_getTree(rootDeptID)
 	if err != nil {
@@ -502,22 +500,55 @@ func dept_getParents(deptID int32) (deptList []*protocol.MSG_USER_Dept_cache, er
 	return
 }
 func dept_getPairs(data *TemplateData) (res []protocol.HtmlKeyValueStr, err error) {
-	result, err := HostConn.CacheGetPath(protocol.UserServerNo, protocol.PATH_USER_DEPT_CACHE)
+	result, err := dept_getAll(data)
 	if err != nil {
 		return nil, err
 	}
-	buf := protocol.BufPoolGet()
-	for _, b := range result {
+	for _, v := range result {
+		res = append(res, protocol.HtmlKeyValueStr{strconv.Itoa(int(v.Id)), v.Name})
+	}
+	return res, nil
+}
+func dept_getAll(data *TemplateData) (list []*protocol.MSG_USER_Dept_cache, err error) {
+	if data.Data["dept_all_cache"] != nil {
+		return data.Data["dept_all_cache"].([]*protocol.MSG_USER_Dept_cache), nil
+	}
+	res, err := HostConn.CacheGetPath(protocol.UserServerNo, protocol.PATH_USER_DEPT_CACHE)
+	if err != nil {
+		return nil, err
+	}
+	buf := bufpool.Get().(*libraries.MsgBuffer)
+	for _, b := range res {
 		buf.Reset()
 		buf.Write(b)
 		if v, ok := protocol.READ_MSG_DATA(buf).(*protocol.MSG_USER_Dept_cache); ok {
-			res = append(res, protocol.HtmlKeyValueStr{strconv.Itoa(int(v.Id)), v.Name})
+			list = append(list, v)
 		}
 	}
 	buf.Reset()
-	protocol.BufPoolPut(buf)
-	protocol.Order_htmlkvStr(res, func(a, b protocol.HtmlKeyValueStr) bool {
-		return a.Key < b.Key
-	})
-	return res, nil
+	bufpool.Put(buf)
+	if len(list) > 0 {
+		protocol.Order_dept(list, func(a, b *protocol.MSG_USER_Dept_cache) bool { return a.Order < b.Order })
+	}
+	data.Data["dept_all_cache"] = list
+	return
+}
+func dept_getDeptManagedByMe(uid int32) ([]int32, error) {
+	res, err := HostConn.CacheGetPath(protocol.UserServerNo, protocol.PATH_USER_DEPT_CACHE)
+	if err != nil {
+		return nil, err
+	}
+	var deptIds []int32
+	buf := bufpool.Get().(*libraries.MsgBuffer)
+	for _, b := range res {
+		buf.Reset()
+		buf.Write(b)
+		if v, ok := protocol.READ_MSG_DATA(buf).(*protocol.MSG_USER_Dept_cache); ok && v.Manager == uid {
+			deptIds = append(deptIds, v.Id)
+			v.Put()
+		}
+	}
+	buf.Reset()
+	bufpool.Put(buf)
+	return deptIds, nil
 }

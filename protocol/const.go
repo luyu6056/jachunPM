@@ -10,7 +10,6 @@ const (
 	MaxOutLen               = 2<<31 - 1
 	MsgHeadLen              = 4 + 2 + 2 + 2 + 4 + 4 + 4 + 3 //不包含cmd
 	MaxMsgLen               = 2<<24 - 1 - MsgHeadLen
-	MaxMsgNum               = 127
 	MaxMsgTtl               = 1000      //目前只允许查询1000次
 	Rpcmsgnum               = 200       //缓冲消息数
 	MaxReconnectNum         = 0         //重试次数,0无限制
@@ -30,6 +29,7 @@ const (
 	ADMINUSER  = 1
 	CLOSEUSER  = -1
 	SYSTEMUSER = -2 //在config用到
+	DEPTManager=-3//考勤用
 )
 
 var buf_pool = sync.Pool{New: func() interface{} {

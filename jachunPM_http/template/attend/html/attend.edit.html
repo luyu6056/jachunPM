@@ -1,0 +1,73 @@
+{{template "header.modal.html" .}}
+{{template "datepicker.html" .}}
+{{$attend := .Data.attend}}
+<div class='panel-body'>
+  <form id='ajaxForm' method='post' action='{{helper_createLink "attend" "edit" "date=" (date "2006-01-02" $.Data.date)}}'>
+    <table class='table table-form table-condensed'>
+      {{if $attend.ReviewStatus}}
+      <tr>
+        <th>{{.Lang.attend.reviewStatus}}</th>
+        <td>{{getValue .Lang.attend.reviewStatusList $attend.ReviewStatus}} {{if $attend.ReviewedBy}}{{getValue $.Data.user $attend.ReviewedBy}} {{date "2006-01-02 15:04" $attend.ReviewedDate "normaltime"}}{{end}}</td>
+      </tr>
+      {{- if eq $attend.ReviewStatus "reject"}}
+      <tr>
+         <th>{{.Lang.attend.rejectReason}}</th>
+         <td>{{$attend.RejectDesc}}</td>
+      </tr>
+      {{- end}}
+      {{- end}}
+      <tr>
+        <th class='w-80px'>{{.Lang.attend.date}}</th>
+        <td>{{dayName $ $attend.Date}}</td>
+      </tr> 
+    </table>
+    <table class='table table-form table-condensed editMode'>
+      
+      {{if gt (strpos ",early,late,both,halfAbsent,allAbsent,absent,leave,makeup,overtime,lieu,trip,egress," $attend.Status) -1}}
+      <tr id='trIn'>
+        <th>{{.Lang.attend.manualIn}}</th>
+        <td>{{html_input "manualIn" (or (and $attend.ManualIn $attend.ManualIn) .Config.attend.custom.signInLimit) "class='form-control form-time'"}}</td>
+      </tr>
+      {{end}}
+      {{if and (or (gt (strpos "early,both,halfAbsent,allAbsent,absent" $attend.Status) -1) (gt (strpos "leave,makeup,overtime,lieu,trip,egress" $attend.Status) -1)) (gt (date "2006-01-02") (date "2006-01-02" $attend.Date))}}
+      <tr id='trOut'>
+        <th>{{.Lang.attend.manualOut}}</th>
+        <td>{{html_input "manualOut" (or (and $attend.ManualOut $attend.ManualOut) .Config.attend.custom.signOutLimit) "class='form-control form-time'"}}</td>
+      </tr> 
+      {{end}}
+      <tr>
+        <th class='w-80px'>{{.Lang.attend.desc}}</th>
+        <td>{{html_textarea "desc"  $attend.Desc  "class='form-control'"}}</td>
+      </tr> 
+      <tr><th></th><td>{{html_submitButton .}}</td></tr>
+    </table>
+    <table class='table table-form table-condensed viewMode'>
+      {{if gt (strpos "late,both,absent" $attend.Status) -1}}
+      <tr id='trIn'>
+        <th>{{.Lang.attend.manualIn}}</th>
+        <td>{{$attend.ManualIn}}</td>
+      </tr>
+      {{end}}
+      {{if gt (strpos "early,both,absent" $attend.Status) -1}}
+      <tr id='trOut'>
+        <th>{{.Lang.attend.manualOut}}</th>
+        <td>{{$attend.ManualOut}}</td>
+      </tr> 
+      {{end}}
+      <tr>
+        <th class='w-80px'>{{.Lang.attend.desc}}</th>
+        <td>{{$attend.Desc}}</td>
+      </tr> 
+      {{if eq $attend.ReviewStatus "wait"}}
+      <tr><th></th><td clospan='3'>{{html_commonButton .Lang.common.edit "btn btn-primary edit"}}
+        {{html_a "javascript:;" .Lang.attend.cancel "" (strAdd "onclick=\"setFormAction('" (helper_createLink "attend" "cancel" "date=" (date "2006-01-02" $.Data.date)) "','hiddenwin')\" class='btn btn-primary edit'")}}
+      </td></tr>
+      {{end}}
+    </table>
+  </form>
+</div>
+{{template "footer.modal.html" .}}
+<script type="text/javascript">
+  var status={{$attend.ReviewStatus}},
+      reason={{$attend.Reason}};
+</script>

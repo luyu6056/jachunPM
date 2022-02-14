@@ -1,0 +1,61 @@
+{{template "header.html" .}}
+  <style>
+  #menuActions{float:right !important; margin-top: -60px !important;}
+  .input-group-required > .required::after, .required-wrapper.required::after {top:12px !important;}
+  .modal-body .table {margin-bottom:0px !important;}
+  </style>
+    {{$.Data.featurebar}}
+
+{{$batchReview := common_hasPriv . "attend" "batchReview"}}
+<div class='panel'>
+  {{if $batchReview}}
+  <form id='batchReviewForm' method='post' action='{{helper_createLink "attend" "batchReview" "status=pass"}}'>
+  {{end}}
+    <table class='table table-hover table-striped table-sorter table-data table-fixed text-center'>
+      <thead>
+        <tr class='text-center'>
+          <th class='w-80px'>{{.Lang.attend.id}}</th>
+          <th class='w-100px'>{{.Lang.user.dept}}</th>
+          <th class='w-100px'>{{.Lang.attend.account}}</th>
+          <th class='w-100px'>{{.Lang.attend.date}}</th>
+          <th class='w-80px'>{{.Lang.attend.manualIn}}</th>
+          <th class='w-80px'>{{.Lang.attend.manualOut}}</th>
+          <th class='w-100px'>{{.Lang.attend.reason}}</th>
+          <th>{{.Lang.attend.desc}}</th>
+          <th class='w-100px'>{{.Lang.attend.status}}</th>
+          <th class='w-100px'>{{.Lang.common.actions}}</th>
+        </tr>
+      </thead>
+      {{range $attend := $.Data.attends}}
+      {{$user := index $.Data.users $attend.Uid}}
+      <tr>
+        <td>
+          {{if $batchReview}}
+          <label class='checkbox-inline'><input type='checkbox' name='attendIDList[]' value='{{$attend.Id}}'/> {{$attend.Id}}</label>
+          {{else}}
+          {{$attend.Id}}
+          {{end}}
+        </td>
+        <td>{{getValue $.Data.deptList $user.Dept}}</td>
+        <td>{{$user.Realname}}</td>
+        <td>{{date "2006-01-02" $attend.Date}}</td>
+        <td>{{substr $attend.ManualIn 0 5}}</td>
+        <td>{{substr $attend.ManualOut 0 5}}</td>
+        <td>{{getValue $.Lang.attend.reasonList $attend.Reason}}</td>
+        <td>{{$attend.Desc}}</td>
+        <td>{{getValue $.Lang.attend.statusList $attend.Status}}</td>
+        <td>
+          {{common_printLink $ "attend" "review" (strAdd "attendID=" $attend.Id "&status=pass")   $.Lang.attend.reviewStatusList.pass  "" "class='pass'"}}
+          {{common_printLink $ "attend" "reject" (strAdd "attendID=" $attend.Id) $.Lang.attend.reviewStatusList.reject "" "data-toggle='modal'"}}
+        </td>
+      </tr>
+      {{end}}
+    </table>
+  {{if $batchReview}}
+  </form>
+  {{end}}
+</div>
+{{template "footer.html" .}}
+<script type="text/javascript">
+  var confirmReview={{.Lang.attend.confirmReview}};
+</script>

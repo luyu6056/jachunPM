@@ -2,3 +2,4 @@
 .with-side .main{padding-left: 260px !important;}
 .monthDIV {margin-bottom: 5px;}
 a.chosen-single{border-radius: 0px 4px 4px 0px !important;}
+.side .panel:first-child .panel-body{height:80px;}

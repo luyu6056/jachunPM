@@ -100,8 +100,11 @@ func (f *CommonFetch) SetHeader(name, value string) {
 func (f *CommonFetch) StaticHandler() gnet.Action {
 	return gnet.None
 }
-func (f *CommonFetch) Write(b *libraries.MsgBuffer) {
+func (f *CommonFetch) WriteBuf(b *libraries.MsgBuffer) {
 	f.buf.Write(b.Bytes())
+}
+func (f *CommonFetch) Write(b []byte) {
+	f.buf.Write(b)
 }
 func (f *CommonFetch) WriteString(s string) {
 	f.buf.WriteString(s)

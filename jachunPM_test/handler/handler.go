@@ -2,14 +2,13 @@ package handler
 
 import (
 	"jachunPM_test/db"
-	"libraries"
 	"protocol"
 	"strconv"
 )
 
 var HostConn *protocol.RpcClient
 
-func Handler(in *protocol.Msg) {
+func Handler(in *protocol.Msg) bool {
 	switch data := in.Data.(type) {
 	case *protocol.MSG_TEST_bug_getCount:
 		c, err := in.DB.Table(db.TABLE_BUG).Where(data.Where).Count()
@@ -36,7 +35,7 @@ func Handler(in *protocol.Msg) {
 		}()
 		if c > 0 || err != nil {
 			out.Result = protocol.Err_ProjectBranchCanNotDelete_BUG
-			return
+			return true
 		}
 		//$bug     = $this->dao->select('id')->from(TABLE_BUG)->where('branch')->eq($branchID)->andWhere('deleted')->eq(0)->limit(1)->fetch();
 		// $case    = $this->dao->select('id')->from(TABLE_CASE)->where('branch')->eq($branchID)->andWhere('deleted')->eq(0)->limit(1)->fetch();
@@ -61,10 +60,7 @@ func Handler(in *protocol.Msg) {
 			in.SendResult(out)
 		}
 	default:
-		if v, ok := protocol.CmdToName[in.Cmd]; ok {
-			libraries.ReleaseLog("未设置消息CMD%s处理", v)
-		} else {
-			libraries.ReleaseLog("未设置消息CMD%d处理", in.Cmd)
-		}
+		return false
 	}
+	return true
 }

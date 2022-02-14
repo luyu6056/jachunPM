@@ -2,14 +2,16 @@ package codec
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/binary"
 	"errors"
-	"libraries"
 	"net/url"
 	"regexp"
 
 	"github.com/klauspost/compress/gzip"
 	"github.com/luyu6056/cache"
+	"github.com/luyu6056/tls"
 
 	"fmt"
 	"hash/crc32"
@@ -51,18 +53,18 @@ type Http2server struct {
 	Origin string
 }
 type Http2stream struct {
-	Out, Out2                       *libraries.MsgBuffer
+	Out, Out2                       *tls.MsgBuffer
 	Headers                         []hpack.HeaderField
-	In                              *libraries.MsgBuffer
+	In                              *tls.MsgBuffer
 	Id                              uint32
 	IN_WINDOW_SIZE, OUT_WINDOW_SIZE int32
 	sendch                          chan int8
 	svr                             *Http2server
 	close                           int8
 	henc                            *hpack.Encoder
-	headerbuf                       libraries.MsgBuffer
+	headerbuf                       tls.MsgBuffer
 	data                            *bytes.Reader
-	compressbuf                     *libraries.MsgBuffer
+	compressbuf                     *tls.MsgBuffer
 	query                           map[string][]string
 	cookie                          map[string]string
 	post                            map[string][]string
@@ -254,7 +256,7 @@ var Http2pool = sync.Pool{New: func() interface{} {
 	hs.ReadPool, _ = ants.NewPool(http2MaxConcurrentStreams)
 	hs.SendPool, _ = ants.NewPool(http2MaxConcurrentStreams)
 	hs.Streams = make([]*Http2stream, http2MaxConcurrentStreams)
-	hs.Streams[0] = &Http2stream{sendch: make(chan int8), Out: &libraries.MsgBuffer{}}
+	hs.Streams[0] = &Http2stream{sendch: make(chan int8), Out: &tls.MsgBuffer{}}
 	hs.ReadMetaHeaders = hpack.NewDecoder(http2initialHeaderTableSize, nil)
 	hs.Streams[0].svr = hs
 	//hs.Request.Header = make(map[string]string)
@@ -288,10 +290,10 @@ func (h2s *Http2server) connError(code http2ErrCode) error {
 }
 
 var stream_pool = sync.Pool{New: func() interface{} {
-	hs := &Http2stream{Out: &libraries.MsgBuffer{}, Out2: &libraries.MsgBuffer{}, In: libraries.NewBuffer(0)}
+	hs := &Http2stream{Out: &tls.MsgBuffer{}, Out2: &tls.MsgBuffer{}, In: tls.NewBuffer(0)}
 	hs.sendch = make(chan int8)
 	hs.data = &bytes.Reader{}
-	hs.compressbuf = &libraries.MsgBuffer{}
+	hs.compressbuf = &tls.MsgBuffer{}
 	return hs
 }}
 
@@ -375,7 +377,7 @@ type file_cache struct {
 }
 
 var h2_context_pool = sync.Pool{New: func() interface{} {
-	return &Context{Buf: new(libraries.MsgBuffer), In: new(libraries.MsgBuffer), In2: new(libraries.MsgBuffer)}
+	return &Context{Buf: new(tls.MsgBuffer), In: new(tls.MsgBuffer), In2: new(tls.MsgBuffer)}
 }}
 
 func (stream *Http2stream) StaticHandler() (action gnet.Action) {
@@ -724,7 +726,7 @@ func init() {
 					}
 				}
 			case err := <-httpWatcher.Errors:
-				libraries.ReleaseLog("error:%v", err)
+				DebugLog("error:%v", err)
 			}
 		}
 	}()
@@ -790,8 +792,7 @@ func (cache *file_cache) Check(filename string) (error, *file_cache) {
 		f_cache.content_type = "application/octet-stream"
 	}
 	if f_cache.iscompress {
-		buf := msgbufpool.Get().(*libraries.MsgBuffer)
-		defer msgbufpool.Put(buf)
+		buf := &tls.MsgBuffer{}
 		buf.Reset()
 		w := CompressNoContextTakeover(buf, 6)
 		w.Write(f_cache.file)
@@ -911,7 +912,7 @@ func (stream *Http2stream) OutErr(err error) {
 			return
 		}
 	}
-	buf := &libraries.MsgBuffer{}
+	buf := &tls.MsgBuffer{}
 	buf.WriteString(err.Error())
 	stream.henc.WriteField(headerField_status500)
 	stream.henc.WriteField(hpack.HeaderField{Name: "content-length", Value: strconv.Itoa(buf.Len())})
@@ -941,7 +942,8 @@ func (stream *Http2stream) Session() *cache.Hashvalue {
 			for has {
 				b := make([]byte, 8)
 				binary.LittleEndian.PutUint64(b, atomic.AddUint64(&sessionID, 1))
-				sessionIdKey = strings.TrimRight(libraries.SHA256_URL_BASE64(strconv.FormatInt(time.Now().UnixNano(), 10)+string(b)), "=")
+				sha := sha256.Sum256(Str2bytes(strconv.FormatInt(time.Now().UnixNano(), 10) + string(b)))
+				sessionIdKey = strings.TrimRight(base64.URLEncoding.EncodeToString(sha[:]), "=")
 				_, has = cache.Has(sessionIdKey, "session")
 			}
 			stream.SetCookie("sessionID", sessionIdKey, 7*86400)
@@ -973,9 +975,9 @@ func (stream *Http2stream) URI() string {
 func (stream *Http2stream) Referer() string {
 	return stream.referer
 }
-func (stream *Http2stream) Write(b *libraries.MsgBuffer) {
+func (stream *Http2stream) Write(b []byte) {
 
-	if stream.outCode != 0 && httpCode(stream.outCode).String() != "" {
+	if stream.outCode != 0 && httpCode(stream.outCode).Bytes() != nil {
 		stream.henc.WriteField(hpack.HeaderField{Name: ":status", Value: strconv.Itoa(stream.outCode)})
 	} else {
 		stream.henc.WriteField(hpack.HeaderField{Name: ":status", Value: "200"})
@@ -987,24 +989,10 @@ func (stream *Http2stream) Write(b *libraries.MsgBuffer) {
 		stream.henc.WriteField(headerField_content_type_html)
 
 	}
-	stream.writeFrame(b, b.Len())
+	stream.Out2.Reset()
+	stream.Out2.Write(b)
+	stream.writeFrame(stream.Out2, stream.Out2.Len())
 }
 func (stream *Http2stream) WriteString(str string) {
-	stream.Out2.Reset()
-	stream.Out2.WriteString(str)
-
-	if stream.outCode != 0 && httpCode(stream.outCode).String() != "" {
-		stream.henc.WriteField(hpack.HeaderField{Name: ":status", Value: strconv.Itoa(stream.outCode)})
-	} else {
-		stream.henc.WriteField(hpack.HeaderField{Name: ":status", Value: "200"})
-	}
-	stream.henc.WriteField(headerField_nocache)
-	if stream.OutContentType != "" {
-		stream.henc.WriteField(hpack.HeaderField{Name: "content-type", Value: "stream.OutContentType"})
-
-	} else {
-		stream.henc.WriteField(headerField_content_type_html)
-
-	}
-	stream.writeFrame(stream.Out2, stream.Out2.Len())
+	stream.Write(Str2bytes(str))
 }

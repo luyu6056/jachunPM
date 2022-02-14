@@ -164,11 +164,13 @@ func (m *Msg) SendMsgWaitResult(remote uint16, out MSG_DATA, result interface{},
 
 //原路返回
 func (m *Msg) SendResult(out MSG_DATA) {
+
 	m.Svr.SendMsg(m, m.Local, out)
 }
 
 //原路返回err
 func (m *Msg) WriteErr(err error) {
+
 	data := GET_MSG_HOST_QueryErr()
 	if m.QueryID == 0 {
 		//libraries.DebugLog("返回queryID=0的err%v", err)
@@ -231,13 +233,13 @@ func (m *Msg) LoadConfig(key string) (res map[string]map[string]interface{}, err
 		return
 	}
 	err = libraries.JsonUnmarshal(b, &res)
-	
+
 	return res, err
 }
 
 //解析具体某个值
 func (m *Msg) LoadConfigToValue(key, key1, key2 string, value interface{}) error {
-	res,err:=m.LoadConfig(key)
+	res, err := m.LoadConfig(key)
 	if err != nil {
 		return err
 	}
@@ -255,7 +257,7 @@ func MSG_DATA_Write(data MSG_DATA, buf *libraries.MsgBuffer) {
 }
 
 //result可以传入nil，但是返回非MSG_HOST_QueryErr就会报错
-func SendMsgWaitResult(msg *Msg, local, remote uint16, out MSG_DATA, result interface{}, outchan chan *libraries.MsgBuffer, timeout ...time.Duration) (err error) {
+func SendMsgWaitResult(msg *Msg, local, remote uint16, out MSG_DATA, result interface{}, inchan chan *Msg, outchan chan *libraries.MsgBuffer, timeout ...time.Duration) (err error) {
 	resultchan := make(chan *Msg, 1)
 	rpcClientQueryLock.Lock()
 	var queryId uint32
@@ -326,7 +328,14 @@ func SendMsgWaitResult(msg *Msg, local, remote uint16, out MSG_DATA, result inte
 		b[MsgHeadLen-3] = byte(msglen)
 		b[MsgHeadLen-2] = byte(msglen >> 8)
 		b[MsgHeadLen-1] = byte(msglen >> 16)
-		outchan <- buf
+		if remote != 0 && remote == local {
+			msg, _ = ReadOneMsg(buf)
+			msg.ReadData()
+			inchan <- msg
+		} else {
+			outchan <- buf
+		}
+
 	}
 
 	checkAndSetResult := func(resultmsg RpcQueryResult) error {
@@ -363,6 +372,7 @@ func SendMsgWaitResult(msg *Msg, local, remote uint16, out MSG_DATA, result inte
 				return errors.New(fmt.Sprintf("实际返回的结果为MSG_HOST_QueryErr,与请求的%s不相符", r1.Type().Elem().Elem().Name()))
 			}
 		}
+
 		return checkAndSetResult(in.Data)
 	case <-time.After(_timeout):
 		rpcClientQueryLock.Lock()
@@ -403,7 +413,7 @@ func SetMsgQuery(in *Msg) bool {
 	return true
 
 }
-func SendMsg(msg *Msg, local, remote uint16, out MSG_DATA, outchan chan *libraries.MsgBuffer) {
+func SendMsg(msg *Msg, local, remote uint16, out MSG_DATA, inchan chan *Msg,outchan chan *libraries.MsgBuffer) {
 
 	buf := BufPoolGet()
 	b := buf.Make(MsgHeadLen)
@@ -459,7 +469,14 @@ func SendMsg(msg *Msg, local, remote uint16, out MSG_DATA, outchan chan *librari
 		b[MsgHeadLen-3] = byte(msglen)
 		b[MsgHeadLen-2] = byte(msglen >> 8)
 		b[MsgHeadLen-1] = byte(msglen >> 16)
-		outchan <- buf
+		if remote != 0 && remote == local {
+
+			msg, _ = ReadOneMsg(buf)
+			msg.ReadData()
+			inchan <- msg
+		} else {
+			outchan <- buf
+		}
 	}
 }
 

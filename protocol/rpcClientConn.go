@@ -53,6 +53,7 @@ func (rs *gnetClient) React(data []byte, c gnet.Conn) (action gnet.Action) {
 
 		}
 		rpc.window -= int32(n)
+		//libraries.DebugLog("%v实际窗口%d", rpc.Local(), rpc.window)
 		if rpc.Status&RpcClientStatuNormal == RpcClientStatuNormal && rpc.window < DefaultWindowSize/2 {
 			data := GET_MSG_HOST_WINDOW_UPDATE()
 			data.Add = DefaultWindowSize - rpc.window

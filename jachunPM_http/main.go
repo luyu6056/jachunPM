@@ -16,6 +16,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/panjf2000/ants/v2"
+
 	"codec"
 
 	"github.com/luyu6056/cache"
@@ -104,7 +106,7 @@ func main() {
 		}()*/
 	}
 
-	log.Fatal(gnet.Serve(svr, svr.addr, gnet.WithLoopNum(runtime.NumCPU()), gnet.WithTCPKeepAlive(time.Second*600), gnet.WithCodec(&codec.Tlscodec{}), gnet.WithReusePort(true), gnet.WithOutbuf(128), gnet.WithTls(tlsconfig), gnet.WithMultiOut(false)), gnet.WithTCPNoDelay(true))
+	log.Fatal(gnet.Serve(svr, svr.addr, gnet.WithLoopNum(runtime.NumCPU()), gnet.WithTCPKeepAlive(time.Second*600), gnet.WithCodec(&codec.Tlscodec{}), gnet.WithReusePort(true), gnet.WithOutbuf(128), gnet.WithTls(tlsconfig), gnet.WithMultiOut(false), gnet.WithTCPNoDelay(true)))
 }
 func (hs *httpServer) OnInitComplete(srv gnet.Server) (action gnet.Action) {
 	libraries.DebugLog("httpserver started on %s (loops: %d)", hs.addr, srv.NumEventLoop)
@@ -128,7 +130,7 @@ func (hs *httpServer) OnClosed(c gnet.Conn, err error) (action gnet.Action) {
 
 	case *codec.Httpserver:
 		svr.Close()
-		codec.Httppool.Put(svr)
+
 	case *codec.Http2server:
 		if err == gnet.ErrServerShutdown {
 			svr.Close()
@@ -143,16 +145,26 @@ func (hs *httpServer) OnClosed(c gnet.Conn, err error) (action gnet.Action) {
 	return
 }
 
+var reactPool, _ = ants.NewPool(runtime.NumCPU() * 2)
+
 func (hs *httpServer) React(data []byte, c gnet.Conn) (action gnet.Action) {
-	b := time.Now()
 	switch svr := c.Context().(type) {
 	case *codec.Httpserver:
-		action = handler.HttpHandler(svr)
-		if svr.Request.Connection == "close" {
-			action = gnet.Close
+		if data == nil {
+			svr.Wake()
+		} else {
+			req := svr.WorkRequest
+			reactPool.Submit(func() {
+				if handler.HttpHandler(req) == gnet.Shutdown {
+					svr.Close()
+				}
+				req.Wake()
+			})
+			svr.WorkRequest = codec.NewRequest(svr)
 		}
-		libraries.DebugLog("%s花费%v", svr.URI(), time.Since(b))
-		svr.Recovery()
+
+		//req.Httpfinish()
+		//req.Recovery()
 		return
 	case *codec.WSconn:
 
@@ -160,9 +172,8 @@ func (hs *httpServer) React(data []byte, c gnet.Conn) (action gnet.Action) {
 		//获取当前帧
 		stream := svr.WorkStream
 		//异步执行
-		svr.SendPool.Submit(func() {
-			action = handler.HttpHandler(stream)
-			if action == gnet.Shutdown {
+		reactPool.Submit(func() {
+			if handler.HttpHandler(stream) == gnet.Shutdown {
 				svr.Close()
 			}
 		})

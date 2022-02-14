@@ -1,0 +1,33 @@
+{{if .App.isAjaxRequest}}
+    </div>
+  </div>
+</div>
+<script>
+$(function()
+{
+    var options = 
+    {
+        language: '{{.App.ClientLang}}',
+        weekStart: 1,
+        todayBtn:  1,
+        autoclose: 1,
+        todayHighlight: 1,
+        startView: 2,
+        forceParse: 0,
+        showMeridian: 1,
+        format: 'yyyy-mm-dd hh:ii'
+    }
+
+    $('.form-datetime').datetimepicker(options);
+    $('.form-date').datetimepicker($.extend(options, {minView: 2, format: 'yyyy-mm-dd'}));
+    $('.form-time').datetimepicker($.extend(options, {eleClass: 'only-pick-time', startView: 1, minView: 0, maxView: 1, format: 'hh:ii'}));
+    $('.form-month').datetimepicker($.extend(options, {startView: 3, minView: 3, format: 'yyyy-mm'}));
+    $('.chosen').chosen();
+    $.ajaxForm('#ajaxForm');
+});
+{{getTemplateJs .App.TemplateName}}
+</script>
+
+{{else}}
+{{template "footer.html" .}}
+{{end}}

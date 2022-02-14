@@ -1,0 +1,15 @@
+{{template "header.modal.html" .}}
+{{template "kindeditor.html" .}}
+<form method='post' id='ajaxForm' action='{{helper_createLink "attend" "reject" "attendID=" $.Data.attendID}}'>
+  <table class='table table-form'>
+    <tr>
+      <th class='w-80px text-middle'>{{.Lang.attend.rejectReason}}</th>
+      <td>{{html_textarea "comment" ""  "class='form-control'"}}</td>
+    </tr>
+    <tr>
+      <th></th>
+      <td>{{html_submitButton .}}</td>
+    </tr>
+  </table>
+</form>
+{{template "footer.modal.html" .}}

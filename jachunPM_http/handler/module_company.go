@@ -29,7 +29,7 @@ func get_company_browse(data *TemplateData) (err error) {
 		}
 	}
 	if deptID > 0 {
-		deptinfo, err := dept_getCacheById(int32(deptID))
+		deptinfo, err := HostConn.GetdeptCacheById(int32(deptID))
 		if err != nil {
 			return err
 		}

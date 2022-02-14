@@ -270,6 +270,7 @@ func templateDataInit(ws HttpRequest, user *protocol.MSG_USER_INFO_cache) (data 
 	if strings.Contains(data.ws.Header("Accept"), "application/json") || strings.Contains(data.ws.Header("accept"), "application/json") {
 		data.Ajax = true
 	}
+	data.App["isAjaxRequest"] = data.isajax()
 	data.App["ClientLangString"] = clientLang.String()
 	data.App["company"] = getCompanyInfo()
 	data.App["langTheme"] = data.Config["common"]["common"]["themeRoot"].(string) + "lang/" + string(clientLang) + ".css"
@@ -299,7 +300,7 @@ func templateOut(name string, data *TemplateData) {
 	if err != nil {
 		data.outErr(err)
 	} else {
-		data.ws.Write(buf)
+		data.ws.Write(buf.Bytes())
 	}
 
 }
@@ -359,7 +360,7 @@ func (data *TemplateData) outErr(err error) {
 		if e != nil {
 			libraries.ReleaseLog("%+v", e)
 		} else {
-			data.ws.Write(buf)
+			data.ws.Write(buf.Bytes())
 		}
 	}
 

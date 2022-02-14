@@ -66,7 +66,7 @@ func mysqlUpgrade() {
 			Reason:       v.Reason,
 			Desc:         v.Desc,
 			ReviewStatus: v.ReviewStatus,
-			ReviewedBy:   v.ReviewedBy,
+
 			ReviewedDate: v.ReviewedDate,
 			EarlyMin:     v.EarlyMin,
 			LateMin:      v.LateMin,
@@ -75,6 +75,11 @@ func mysqlUpgrade() {
 			if kv.Value == v.Account {
 				if id, _ := strconv.Atoi(kv.Key); id > 0 {
 					a.Uid = int32(id)
+				}
+			}
+			if kv.Value == v.ReviewedBy {
+				if id, _ := strconv.Atoi(kv.Key); id > 0 {
+					a.ReviewedBy = int32(id)
 				}
 			}
 		}

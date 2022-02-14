@@ -1136,7 +1136,7 @@ func get_tree_ajaxGetOptionMenu(data *TemplateData) (err error) {
 			}
 		}
 
-		data.ws.Write(buf)
+		data.ws.Write(buf.Bytes())
 		buf.Reset()
 		bufpool.Put(buf)
 	}

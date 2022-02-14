@@ -415,6 +415,39 @@ func commonTemplateFuncs() {
 		}
 		return t.Format(layout)
 	}
+	global_Funcs["dayName"] = func(data *TemplateData, timestamp ...interface{}) (res string) {
+		var t time.Time
+		if len(timestamp) > 0 {
+			switch v := timestamp[0].(type) {
+			case int:
+				t = time.Unix(int64(v), 0)
+			case int32:
+				t = time.Unix(int64(v), 0)
+			case int64:
+				t = time.Unix(v, 0)
+			case time.Time:
+				t = v
+			case string:
+				if v == "" || v == "today" || v == "now" {
+					t = time.Now()
+				} else {
+					i, _ := strconv.Atoi(v)
+					t = time.Unix(int64(i), 0)
+				}
+			}
+
+		} else {
+			t = time.Now()
+		}
+		if len(timestamp) > 1 {
+			if v, ok := timestamp[1].(string); ok && (strings.ToLower(v) == "normaltime" || strings.ToLower(v) == "normal") {
+				if !t.After(protocol.NORMALTIME) {
+					return ""
+				}
+			}
+		}
+		return data.Lang["datepicker"]["dayNames"].([]string)[t.Weekday()]
+	}
 	//num正值+负值-,如(5 -2)或(5,2,-1)，均可输出[5,4]
 	global_Funcs["genlist"] = func(star, num interface{}, setpExt ...int) []int {
 		n, _ := strconv.Atoi(fmt.Sprint(num))

@@ -1,0 +1,19 @@
+{{if .App.isAjaxRequest}}
+{{- $currentConfig := (getValue (getValue .Config .App.moduleName) .App.methodName)}}
+{{- if getValue $currentConfig "requiredFields"}}
+<script> config.requiredFields={{getValue $currentConfig "requiredFields"}};</script>
+{{- end}}
+<style>
+#ajaxForm .table tr:first-child td:nth-child(3){width:5px;}
+</style>
+<div class="modal-dialog" style="width:700px;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <button type='button' class='close' data-dismiss='modal' aria-hidden='true'>&times;</button>
+      <strong class="modal-title">{{.Data.title}}</strong>
+      {{if .Data.subtitle}}<label class='text-important'>{{.Data.subtitle}}</label>{{end}}
+    </div>
+    <div class="modal-body">
+{{else}}
+{{template "header.html" .}}
+{{end}}

@@ -53,6 +53,7 @@ func Init() *mysql.MysqlDB {
 		&protocol.MSG_USER_Group_cache{},
 		&protocol.MSG_USER_Block_info{},
 		&protocol.MSG_USER_getExportTemplate{},
+		&protocol.MSG_USER_Pairs{},
 	)
 	return db
 }

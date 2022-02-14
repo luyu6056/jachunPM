@@ -2709,6 +2709,7 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["attend"]["m"] = "分钟"
 	Lang[protocol.ZH_CN]["attend"]["h"] = "小时"
 	Lang[protocol.ZH_CN]["attend"]["d"] = "天"
+	Lang[protocol.ZH_CN]["attend"]["to"] = "至"
 	Lang[protocol.ZH_CN]["attend"]["setDept"] = "部门设置"
 	Lang[protocol.ZH_CN]["attend"]["setManager"] = "部门经理设置"
 	Lang[protocol.ZH_CN]["attend"]["personalSettings"] = "个人考勤设置"
@@ -2788,6 +2789,13 @@ func LangZH_CNInit() {
 	Lang[protocol.ZH_CN]["attend"]["personal"] = "我的考勤"
 	Lang[protocol.ZH_CN]["attend"]["common"] = "考勤"
 	Lang[protocol.ZH_CN]["attend"]["menu"] = Lang[protocol.ZH_CN]["oa"]["menu"]
+	Lang[protocol.ZH_CN]["attend"]["error"] = map[string]string{
+		"manualIn":       "签到时间填写错误",
+		"manualOut":      "签退时间填写错误",
+		"reviewNotAllow": "您没有权限审核此用户",
+		"beginDate":      "开始日期错误",
+		"endDate":        "结束日期错误",
+	}
 	Lang[protocol.ZH_CN]["leave"] = make(map[string]interface{})
 	Lang[protocol.ZH_CN]["leave"]["lieulist"] = "设置查看加班调休详情"
 	Lang[protocol.ZH_CN]["leave"]["setReviewerAction"] = "设置审批人"
