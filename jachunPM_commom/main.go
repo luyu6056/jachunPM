@@ -1,9 +1,9 @@
 package main
 
 import (
-	"jachunPM_commom/config"
 	"jachunPM_commom/db"
 	"jachunPM_commom/rpcHost"
+	"jachunPM_commom/setting"
 	"libraries"
 	"math/rand"
 	"net/http"
@@ -33,7 +33,7 @@ type rpcServer struct {
 func main() {
 	cache.StartWebServer("0.0.0.0:807")
 	go http.ListenAndServe("0.0.0.0:8100", nil)
-	rpcSvr := &rpcServer{addr: config.Config.ListenRpc}
+	rpcSvr := &rpcServer{addr: setting.Setting.ListenRpc}
 
 	gnet.Serve(rpcSvr, rpcSvr.addr, gnet.WithLoopNum(runtime.NumCPU()), gnet.WithCodec(&protocol.RpcCodec{}), gnet.WithReusePort(false), gnet.WithOutbuf(256), gnet.WithMultiOut(true), gnet.WithTCPNoDelay(true))
 }
@@ -45,7 +45,7 @@ func (rs *rpcServer) OnInitComplete(srv gnet.Server) (action gnet.Action) {
 func (rs *rpcServer) OnOpened(c gnet.Conn) (out []byte, action gnet.Action) {
 	c.SetContext(rpcHost.NewRpcServer(c)) //装载未注册消息
 	time.AfterFunc(time.Second*10, func() {
-		if  v,ok:=c.Context().(*rpcHost.RpcServer);ok && v.Id==-1 {
+		if v, ok := c.Context().(*rpcHost.RpcServer); ok && v.Id == -1 {
 			c.Close()
 		}
 	})

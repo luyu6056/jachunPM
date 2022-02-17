@@ -1,4 +1,4 @@
-package config
+package setting
 
 import (
 	"io/ioutil"
@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-var Config struct {
+var Setting struct {
 	ListenRpc    string
 	MysqlDsn     string
 	MysqlMaxConn int32
@@ -15,11 +15,11 @@ var Config struct {
 
 func init() {
 
-	data, err := ioutil.ReadFile("./config.json")
+	data, err := ioutil.ReadFile("./setting.json")
 	if err != nil {
 		log.Fatalf("无法读取配置文件config.json,错误%v", err)
 	}
-	err = libraries.JsonUnmarshal(data, &Config)
+	err = libraries.JsonUnmarshal(data, &Setting)
 	if err != nil {
 		log.Fatalf("无法解析配置json,错误%v", err)
 	}

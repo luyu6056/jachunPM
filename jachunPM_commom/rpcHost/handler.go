@@ -175,7 +175,7 @@ func HandlerMsg(data []byte, c gnet.Conn) error {
 									in.DB.DB = db.DB
 									hostAsyncHand.Invoke(in)
 									protocol.BufPoolPut(in.Buf())
-								}else{
+								} else {
 									rpcHostMsgInChan <- in
 								}
 
@@ -846,7 +846,19 @@ var hostAsyncHand, _ = ants.NewPoolWithFunc(10000, func(args interface{}) {
 		out.FileID = id
 		in.SendResult(out)
 		out.Put()
-
+	case *protocol.MSG_HOST_getCenterSvrId:
+		out := protocol.GET_MSG_HOST_getCenterSvrId_result()
+		rpcLock.RLock()
+		if v, ok := rpcServerIdList[data.No]; ok {
+			for _, s := range v {
+				if s.isCenter {
+					out.Id = uint16(svr.ServerNo) + uint16(s.Id)<<8
+				}
+			}
+		}
+		defer rpcLock.RUnlock()
+		in.SendResult(out)
+		out.Put()
 	default:
 		if protocol.SetMsgQuery(in) {
 			return

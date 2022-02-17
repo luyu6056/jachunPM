@@ -10,7 +10,7 @@ replace codec => ../codec
 
 replace protocol => ../protocol
 
-replace github.com/luyu6056/gnet => ../gnet
+replace github.com/luyu6056/gnet => ../net/gnet
 
 require (
 	github.com/kr/pretty v0.1.0 // indirect
