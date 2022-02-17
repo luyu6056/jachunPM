@@ -184,3 +184,10 @@ type MSG_FILE_download_byIds struct {
 type MSG_FILE_download_byIds_result struct {
 	FileID int64
 }
+
+type MSG_HOST_getCenterSvrId struct {
+	No uint8
+}
+type MSG_HOST_getCenterSvrId_result struct {
+	Id uint16
+}

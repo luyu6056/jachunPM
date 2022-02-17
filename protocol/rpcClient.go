@@ -379,9 +379,6 @@ func (client *RpcClient) GetMsg() (*Msg, error) {
 	return msg, nil
 }
 
-func (client *RpcClient) SetConfig(lang CountryNo, key string, config map[string]map[string]interface{}) (err error) {
-	return client.cache.Set(key, PATH_CONFIG_CACHE+lang.String(), libraries.JsonMarshal(config), 0)
-}
 func (client *RpcClient) GetUserCacheById(id int32) (user *MSG_USER_INFO_cache) {
 	err := client.CacheGet(UserServerNo, PATH_USER_INFO_CACHE, strconv.Itoa(int(id)), &user)
 	if err != nil {

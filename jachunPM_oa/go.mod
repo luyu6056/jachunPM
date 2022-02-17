@@ -6,11 +6,11 @@ replace mysql => ../mysql
 
 replace libraries => ../libraries
 
-replace server => ../server
-
-replace github.com/luyu6056/gnet => ../gnet
+replace github.com/luyu6056/gnet => ../net/gnet
 
 replace protocol => ../protocol
+
+replace config => ../config
 
 require (
 	github.com/luyu6056/cache v1.1.4

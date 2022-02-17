@@ -30,6 +30,7 @@ func init() {
 	httpHandlerMap["GET"]["/attend/exportDetail"] = get_attend_exportDetail
 	httpHandlerMap["POST"]["/attend/exportDetail"] = post_attend_exportDetail
 	httpHandlerMap["GET"]["/attend/stat"] = get_attend_stat
+	httpHandlerMap["GET"]["/attend/zkteco"] = get_attend_zkteco
 }
 func attendTemplateFuncs() {
 	global_Funcs["attend_printHour"] = func(data *TemplateData, hour float32, status string) string {
@@ -916,5 +917,11 @@ func get_attend_stat(data *TemplateData) (err error) {
 	getAllmonthResult.Put()
 	checkWaitReviews.Put()
 	checkResult.Put()
+	return
+}
+func get_attend_zkteco(data *TemplateData) (err error) {
+	data.Data["title"] = data.Lang["attend"]["zkteco"]
+
+	templateOut("attend.zkteco.html", data)
 	return
 }

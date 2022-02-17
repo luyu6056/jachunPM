@@ -3,7 +3,7 @@ package handler
 import (
 	"fmt"
 	"html/template"
-	"jachunPM_http/config"
+	"jachunPM_http/setting"
 	"libraries"
 	"protocol"
 	"reflect"
@@ -16,7 +16,7 @@ const (
 )
 
 func createLink(moduleName string, methodName string, vars interface{}) string {
-	return config.Server.Origin + protocol.CreateLink(moduleName, methodName, vars)
+	return setting.Setting.Origin + protocol.CreateLink(moduleName, methodName, vars)
 }
 func htmlTemplateFuncs() {
 	global_Funcs["helper_createLink"] = func(moduleName, methodName string, vars ...interface{}) string {
@@ -117,7 +117,7 @@ func htmlTemplateFuncs() {
 		buf.WriteString(url)
 		buf.WriteString(mark)
 		buf.WriteString("v=")
-		buf.WriteString(config.Server.Version)
+		buf.WriteString(setting.Setting.Version)
 		buf.WriteString("'></script>")
 		res := buf.String()
 		buf.Reset()
@@ -132,7 +132,7 @@ func htmlTemplateFuncs() {
 		buf.WriteString(url)
 
 		buf.WriteString("?v=")
-		buf.WriteString(config.Server.Version)
+		buf.WriteString(setting.Setting.Version)
 		buf.WriteString("' type='text/css' media='screen'")
 		if len(attrib) == 1 {
 			buf.WriteString(" ")

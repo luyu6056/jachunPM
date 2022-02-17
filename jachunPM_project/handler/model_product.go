@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"config"
 	"errors"
 	"fmt"
 	"jachunPM_project/db"
@@ -150,12 +151,7 @@ func product_getStories(data *protocol.MSG_PROJECT_product_getStories, in *proto
 	var list []*protocol.MSG_PROJECT_story
 	switch data.BrowseType {
 	case "unclosed":
-		var statusList []protocol.HtmlKeyValueStr
-		err = in.LoadConfigToValue("story", "common", "statusList", &statusList)
-		if err != nil {
-			return
-		}
-
+		statusList := config.Config[in.Lang]["story"]["common"]["statusList"].([]protocol.HtmlKeyValueStr)
 		var unclosedStatus []string
 		for _, kv := range statusList {
 			if kv.Key == "closed" {

@@ -1,13 +1,14 @@
 package handler
 
 import (
+	"config"
 	"errors"
 	"fmt"
 	"html"
 	"html/template"
 	"io/ioutil"
-	"jachunPM_http/config"
 	"jachunPM_http/js"
+	"jachunPM_http/setting"
 	"libraries"
 	"mysql"
 	"os"
@@ -160,6 +161,7 @@ func copyConfig() {
 					}
 					data.Config[kk] = tmp1
 				}
+				data.Config = setHttpConfig(data.Config)
 				for kk, vv := range config.Lang[k] {
 					tmp1 := make(map[string]interface{})
 					for kkk, vvv := range vv {
@@ -489,4 +491,15 @@ func (data *TemplateData) getCacheProjectById(id int32) *protocol.MSG_PROJECT_pr
 //执行了BeginTransaction后，data的send消息自动都带上事务
 func (data *TemplateData) BeginTransaction() (session *protocol.MsgDBTransaction, err error) {
 	return data.Msg.BeginTransaction()
+}
+
+func setHttpConfig(config map[string]map[string]map[string]interface{}) map[string]map[string]map[string]interface{} {
+	config["common"]["common"]["debug"] = setting.Setting.Debug
+	config["common"]["common"]["webRoot"] = setting.Setting.Origin + "/"
+	config["common"]["common"]["jsRoot"] = setting.Setting.Origin + "/js/"
+	config["common"]["common"]["themeRoot"] = setting.Setting.Origin + "/theme/"
+	config["common"]["common"]["defaultTheme"] = setting.Setting.Origin + "/theme/default/"
+	config["common"]["common"]["langs"] = []protocol.HtmlKeyValueStr{{string(protocol.ZH_CN), protocol.ZH_CN.String()}}
+	config["common"]["common"]["maxUploadSize"] = "4000M"
+	return config
 }

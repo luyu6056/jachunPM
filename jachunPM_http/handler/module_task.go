@@ -1,10 +1,10 @@
 package handler
 
 import (
+	"config"
 	"errors"
 	"fmt"
 	"html/template"
-	"jachunPM_http/config"
 	"jachunPM_http/js"
 	"libraries"
 	"math"
@@ -577,7 +577,7 @@ func tack_printAssignedHtml(data *TemplateData, task *protocol.MSG_PROJECT_TASK,
 		return "<span style='padding-left: 21px' class='" + btnTextClass + "'>" + assignedToText + "</span>"
 	}
 	btnClass := "iframe btn btn-icon-left btn-sm"
-	if task.AssignedTo == -1 {
+	if task.AssignedTo == -1 || (data.Config["task"]["custom"]["allowParentAssignTo"].(string) == "false" && task.AssignedTo == 0 && len(task.Children) > 0) {
 		btnClass += " disabled"
 	}
 	return html_a(createLink("task", "assignTo", []interface{}{"projectID=", task.Project, "&taskID=", task.Id, true}), "<i class='icon icon-hand-right'></i> <span class='"+btnTextClass+"'>"+assignedToText+"</span>", "", "class='"+btnClass+"'")
@@ -612,7 +612,7 @@ func post_task_assignTo(data *TemplateData) (err error) {
 	assignedTo, _ := strconv.Atoi(data.ws.Post("assignedTo"))
 	taskID, _ := strconv.Atoi(data.ws.Query("taskID"))
 
-	if HostConn.GetUserCacheById(int32(assignedTo)) == nil {
+	if assignedTo != 0 && (assignedTo < 0 || HostConn.GetUserCacheById(int32(assignedTo)) == nil) {
 		data.ws.WriteString(js.Error(data.Lang["task"]["error"].(map[string]string)["AssignedToNotFoundUser"]))
 		return
 	}
@@ -1299,10 +1299,14 @@ func get_task_edit(data *TemplateData) (err error) {
 		"Status":   mysql.WhereOperatorNOTIN([]string{"cancel", "closed"}),
 		"Project":  projectID,
 	}
+
 	var getParentTaskPairsResult *protocol.MSG_PROJECT_task_getPairs_result
 	if err = data.SendMsgWaitResultToDefault(getParentTaskPairs, &getParentTaskPairsResult); err != nil {
 		return
 	}
+	protocol.Order_htmlkvStr(getParentTaskPairsResult.List, func(a, b protocol.HtmlKeyValueStr) bool {
+		return a.Key > b.Key
+	})
 	for k, kv := range getParentTaskPairsResult.List {
 		if kv.Key == strconv.Itoa(int(task.Id)) {
 			getParentTaskPairsResult.List = append(getParentTaskPairsResult.List[:k], getParentTaskPairsResult.List[k+1:]...)

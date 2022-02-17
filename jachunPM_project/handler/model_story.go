@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"config"
 	"jachunPM_project/db"
 	"libraries"
 	"mysql"
@@ -18,7 +19,7 @@ func story_getProductStories(productID []int32, branch []int32, modules []int32,
 		where["status"] = status
 	}
 	protocol.Order_ascInt32(branch)
-	if len(branch) > 0 && branch[0]!=0{
+	if len(branch) > 0 && branch[0] != 0 {
 		branch = append([]int32{0}, branch...)
 		where["branch"] = branch
 	}
@@ -213,7 +214,7 @@ func story_create(data *protocol.MSG_PROJECT_stroy_create, in *protocol.Msg) {
 	}
 }
 func story_checkForceReview(in *protocol.Msg, id int32) (forceReview bool, err error) {
-	config, err := in.LoadConfig("story")
+	config := config.Config[in.Lang]["story"]
 	if err != nil {
 		return
 	}
@@ -422,14 +423,12 @@ func story_setStage(storyId int32, in *protocol.Msg) (err error) {
 	}
 	if hasBranch {
 		var stageList []string
-		var stageListConfig []protocol.HtmlKeyValueStr
-		if err := in.LoadConfigToValue("story", "common", "stageList", &stageListConfig); err != nil || len(stageListConfig) == 0 {
-			return err
-		} else {
-			for _, kv := range stageListConfig {
-				stageList = append(stageList, kv.Key)
-			}
+		stageListConfig := config.Config[in.Lang]["story"]["common"]["stageList"].([]protocol.HtmlKeyValueStr)
+
+		for _, kv := range stageListConfig {
+			stageList = append(stageList, kv.Key)
 		}
+
 		minStage := len(stageList) - 1
 		for branch, stage := range stages {
 			if _, err = session.Table(db.TABLE_STORYSTAGE).Insert(&db.StoryStage{Story: storyId, Branch: branch, Stage: stage}); err != nil {
@@ -681,4 +680,3 @@ func story_getProjectStoryPairs(data *protocol.MSG_PROJECT_story_getProjectStory
 	in.SendResult(out)
 	out.Put()
 }
-

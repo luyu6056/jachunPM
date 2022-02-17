@@ -49,6 +49,8 @@ const (
 	CMD_MSG_FILE_getByWhere_result = -453068031
 	CMD_MSG_FILE_download_byIds = 743980545
 	CMD_MSG_FILE_download_byIds_result = -1058626559
+	CMD_MSG_HOST_getCenterSvrId = -554136831
+	CMD_MSG_HOST_getCenterSvrId_result = -1094408447
 )
 
 type MSG_HOST_regServer struct {
@@ -1997,6 +1999,90 @@ func READ_MSG_FILE_download_byIds_result(buf *libraries.MsgBuffer) *MSG_FILE_dow
 
 func (data *MSG_FILE_download_byIds_result) read(buf *libraries.MsgBuffer) {
 	data.FileID = READ_int64(buf)
+
+}
+
+type MSG_HOST_getCenterSvrId struct {
+	No uint8
+}
+
+var pool_MSG_HOST_getCenterSvrId = sync.Pool{New: func() interface{} { return &MSG_HOST_getCenterSvrId{} }}
+
+func GET_MSG_HOST_getCenterSvrId() *MSG_HOST_getCenterSvrId {
+	return pool_MSG_HOST_getCenterSvrId.Get().(*MSG_HOST_getCenterSvrId)
+}
+
+func (data *MSG_HOST_getCenterSvrId) cmd() int32 {
+	return CMD_MSG_HOST_getCenterSvrId
+}
+
+func (data *MSG_HOST_getCenterSvrId) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_getCenterSvrId()))
+}
+
+func (data *MSG_HOST_getCenterSvrId) Put() {
+	data.No = 0
+	pool_MSG_HOST_getCenterSvrId.Put(data)
+}
+func (data *MSG_HOST_getCenterSvrId) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_HOST_getCenterSvrId,buf)
+	WRITE_MSG_HOST_getCenterSvrId(data, buf)
+}
+
+func WRITE_MSG_HOST_getCenterSvrId(data *MSG_HOST_getCenterSvrId, buf *libraries.MsgBuffer) {
+	WRITE_uint8(data.No, buf)
+}
+
+func READ_MSG_HOST_getCenterSvrId(buf *libraries.MsgBuffer) *MSG_HOST_getCenterSvrId {
+	data := pool_MSG_HOST_getCenterSvrId.Get().(*MSG_HOST_getCenterSvrId)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_HOST_getCenterSvrId) read(buf *libraries.MsgBuffer) {
+	data.No = READ_uint8(buf)
+
+}
+
+type MSG_HOST_getCenterSvrId_result struct {
+	Id uint16
+}
+
+var pool_MSG_HOST_getCenterSvrId_result = sync.Pool{New: func() interface{} { return &MSG_HOST_getCenterSvrId_result{} }}
+
+func GET_MSG_HOST_getCenterSvrId_result() *MSG_HOST_getCenterSvrId_result {
+	return pool_MSG_HOST_getCenterSvrId_result.Get().(*MSG_HOST_getCenterSvrId_result)
+}
+
+func (data *MSG_HOST_getCenterSvrId_result) cmd() int32 {
+	return CMD_MSG_HOST_getCenterSvrId_result
+}
+
+func (data *MSG_HOST_getCenterSvrId_result) SetUintptr(in uintptr) {
+	*(*uintptr)(unsafe.Pointer(in)) = uintptr(unsafe.Pointer(GET_MSG_HOST_getCenterSvrId_result()))
+}
+
+func (data *MSG_HOST_getCenterSvrId_result) Put() {
+	data.Id = 0
+	pool_MSG_HOST_getCenterSvrId_result.Put(data)
+}
+func (data *MSG_HOST_getCenterSvrId_result) write(buf *libraries.MsgBuffer) {
+	WRITE_int32(CMD_MSG_HOST_getCenterSvrId_result,buf)
+	WRITE_MSG_HOST_getCenterSvrId_result(data, buf)
+}
+
+func WRITE_MSG_HOST_getCenterSvrId_result(data *MSG_HOST_getCenterSvrId_result, buf *libraries.MsgBuffer) {
+	WRITE_uint16(data.Id, buf)
+}
+
+func READ_MSG_HOST_getCenterSvrId_result(buf *libraries.MsgBuffer) *MSG_HOST_getCenterSvrId_result {
+	data := pool_MSG_HOST_getCenterSvrId_result.Get().(*MSG_HOST_getCenterSvrId_result)
+	data.read(buf)
+	return data
+}
+
+func (data *MSG_HOST_getCenterSvrId_result) read(buf *libraries.MsgBuffer) {
+	data.Id = READ_uint16(buf)
 
 }
 

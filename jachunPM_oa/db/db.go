@@ -1,7 +1,7 @@
 package db
 
 import (
-	"jachunPM_oa/config"
+	"jachunPM_oa/setting"
 	"log"
 	"mysql"
 	"protocol"
@@ -20,12 +20,12 @@ const (
 )
 
 func Init() *mysql.MysqlDB {
-	db, err := mysql.Open(config.Config.MysqlDsn)
+	db, err := mysql.Open(setting.Setting.MysqlDsn)
 	if err != nil {
 		log.Fatalf("数据库连接失败 %v", err)
 	}
-	if config.Config.MysqlMaxConn > 0 {
-		db.SetMaxOpenConns(config.Config.MysqlMaxConn)
+	if setting.Setting.MysqlMaxConn > 0 {
+		db.SetMaxOpenConns(setting.Setting.MysqlMaxConn)
 	}
 	if err = db.Ping(); err != nil {
 		log.Fatalf("数据库启动失败 %v", err)

@@ -107,7 +107,14 @@ func task_getById(data *protocol.MSG_PROJECT_task_getById, in *protocol.Msg) {
 	task_processTask(out.Info)
 }
 func task_create(data *protocol.MSG_PROJECT_task_create, in *protocol.Msg) {
-
+	getConfig := protocol.GET_MSG_USER_config_get()
+	getConfig.Module = "task"
+	getConfig.Uid = protocol.SYSTEMUSER
+	var result *protocol.MSG_USER_config_get_result
+	if err := in.SendMsgWaitResult(0, getConfig, &result); err != nil {
+		in.WriteErr(err)
+		return
+	}
 	session, err := in.BeginTransaction()
 	out := protocol.GET_MSG_PROJECT_task_create_result()
 	defer func() {
@@ -124,9 +131,9 @@ func task_create(data *protocol.MSG_PROJECT_task_create, in *protocol.Msg) {
 		return
 	}
 	if data.Task.Id == 0 { //create
-		c, err := in.DB.Table(db.TABLE_TASK).Where("Name=? and Project=? and Deleted=0", data.Task.Name, data.Task.Project).Count()
-		if err != nil {
-			in.WriteErr(err)
+		var c int
+		if c, err = session.Table(db.TABLE_TASK).Where("Name=? and Project=? and Deleted=0", data.Task.Name, data.Task.Project).Count(); err != nil {
+
 			return
 		}
 		if c > 0 {
@@ -138,6 +145,18 @@ func task_create(data *protocol.MSG_PROJECT_task_create, in *protocol.Msg) {
 			return
 		}
 		out.Id = int32(id)
+		if data.Task.Parent > 0 {
+			if result.Config["custom"]["allowParentAssignTo"] == "false" {
+				if _, err = session.Table(db.TABLE_TASK).Where("id=?", data.Task.Parent).Update(map[string]interface{}{"assignedTo": 0}); err != nil {
+					return
+				}
+			}
+			if data.Task.Parent > 0 {
+				if err = task_updateParentAncestor(data.Task.Parent, in); err != nil {
+					return
+				}
+			}
+		}
 	} else { //update
 		out.Id = data.Task.Id
 		var oldTask *protocol.MSG_PROJECT_TASK
@@ -186,6 +205,11 @@ func task_create(data *protocol.MSG_PROJECT_task_create, in *protocol.Msg) {
 				}
 			}
 			data.Task.Ancestor = -1
+			if result.Config["custom"]["allowParentAssignTo"] == "false" {
+				if _, err = session.Table(db.TABLE_TASK).Where("id=?", data.Task.Parent).Update(map[string]interface{}{"assignedTo": 0}); err != nil {
+					return
+				}
+			}
 		}
 		if data.Task.Story > 0 {
 			var story *protocol.MSG_PROJECT_story
@@ -745,6 +769,25 @@ func task_computeBeginAndEnd(taskID int32, in *protocol.Msg) (err error) {
 }
 
 func task_assignTo(data *protocol.MSG_PROJECT_task_assignTo, in *protocol.Msg) {
+	getConfig := protocol.GET_MSG_USER_config_get()
+	getConfig.Module = "task"
+	getConfig.Uid = protocol.SYSTEMUSER
+	var result *protocol.MSG_USER_config_get_result
+	if err := in.SendMsgWaitResult(0, getConfig, &result); err != nil {
+		in.WriteErr(err)
+		return
+	}
+	if result.Config["custom"]["allowParentAssignTo"] == "false" && data.AssignedTo != 0 {
+		var children []*db.Task
+		//获得当前任务的子任务
+		if err := in.DB.Table(db.TABLE_TASK).Field("Id").Where("parent=? and Deleted=0", data.TaskID).Select(&children); err != nil {
+			return
+		}
+		if len(children) > 0 {
+			in.WriteErr(protocol.Err_taskHasAncestors.Err())
+			return
+		}
+	}
 	var oldTask, newTask *db.Task
 	if err := in.DB.Table(db.TABLE_TASK).Where("Id=?", data.TaskID).Prepare().Find(&oldTask); err != nil {
 		in.WriteErr(err)

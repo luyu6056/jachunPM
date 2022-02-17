@@ -6,16 +6,19 @@ replace mysql => ../mysql
 
 replace libraries => ../libraries
 
-replace codec => ../codec
-
-replace jachunPM/image => ../image
+replace jachunPM/image => ../libraries/image
 
 replace protocol => ../protocol
 
-replace github.com/luyu6056/gnet => ../gnet
+replace codec => ../net/codec
+
+replace github.com/luyu6056/gnet => ../net/gnet
+
+replace config => ../config
 
 require (
 	codec v0.0.0-00010101000000-000000000000
+	config v0.0.0-00010101000000-000000000000
 	github.com/dlclark/regexp2 v1.4.0
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/luyu6056/cache v1.1.12

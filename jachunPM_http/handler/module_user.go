@@ -1,11 +1,12 @@
 package handler
 
 import (
+	"config"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"jachunPM_http/config"
 	"jachunPM_http/js"
+	"jachunPM_http/setting"
 	"libraries"
 	"math/rand"
 	"protocol"
@@ -102,7 +103,7 @@ func post_user_login(data *TemplateData) (e error) {
 				ws.SetCookie("sessionID", session.Load_str("sessionID"), protocol.SessionKeepLoginExpires)
 			}
 			referer := ws.Post("referer")
-			if strings.Index(referer, config.Server.Origin) == -1 {
+			if strings.Index(referer, setting.Setting.Origin) == -1 {
 				referer = createLink("my", "index", nil)
 			}
 			ws.WriteString(`{"locate":"` + referer + `"}`)

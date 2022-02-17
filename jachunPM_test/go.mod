@@ -6,11 +6,11 @@ replace mysql => ../mysql
 
 replace libraries => ../libraries
 
-replace server => ../server
-
 replace protocol => ../protocol
 
-replace github.com/luyu6056/gnet => ../gnet
+replace github.com/luyu6056/gnet => ../net/gnet
+
+replace config => ../config
 
 require (
 	github.com/valyala/gozstd v1.16.0 // indirect

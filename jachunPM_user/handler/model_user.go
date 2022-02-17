@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"config"
 	"jachunPM_user/db"
 	"libraries"
 	"protocol"
@@ -82,10 +83,8 @@ func user_getPairs(params string, usersToAppended int32, in *protocol.Msg) ([]pr
 	if strings.Index(params, "first") > -1 {
 		orderBy = "roleOrder DESC, account"
 	}
-	userconfig, err := in.LoadConfig("user")
-	if err != nil {
-		return nil, err
-	}
+	userconfig:= config.Config[in.Lang]["user"]
+
 	var userList []*db.User
 	var conditions = make(map[string]interface{})
 	if strings.Index(params, "nodeleted") > -1 || !userconfig["common"]["showDeleted"].(bool) {
@@ -95,7 +94,7 @@ func user_getPairs(params string, usersToAppended int32, in *protocol.Msg) ([]pr
 		conditions["Id"] = usersToAppended
 	}
 
-	err = HostConn.DB.Table(db.TABLE_USER).Field(fields).WhereOr(conditions).Order(orderBy).Select(&userList)
+	err := HostConn.DB.Table(db.TABLE_USER).Field(fields).WhereOr(conditions).Order(orderBy).Select(&userList)
 	if err != nil {
 		return nil, err
 	}
@@ -523,7 +522,7 @@ func user_getContactLists(data *protocol.MSG_USER_getContactLists, in *protocol.
 			out.List = []protocol.HtmlKeyValueStr{{}}
 		}
 		if strings.Contains(data.Params, "withnote") {
-			userConfig, _ := in.LoadConfig("user")
+			userConfig := config.Config[in.Lang]["user"]
 			if userConfig != nil && userConfig["contacts"] != nil && userConfig["contacts"]["common"] != nil {
 				out.List = []protocol.HtmlKeyValueStr{{userConfig["contacts"]["common"].(string), ""}}
 			}

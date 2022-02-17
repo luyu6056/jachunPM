@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"config"
 )
 
 func project_getProducts(projectID int32) (products []*db.Product, err error) {
@@ -227,7 +228,7 @@ func project_create(data *protocol.MSG_PROJECT_project_create, in *protocol.Msg)
 		tmp.Join = now
 		tmp.Type = "project"
 		tmp.Days = data.Info.Days
-		in.LoadConfigToValue("project", "common", "defaultWorkhours", &tmp.Hours)
+		tmp.Hours=config.Config[in.Lang]["project"]["common"]["defaultWorkhours"].(float64)
 		addteam.List = append(addteam.List, tmp)
 
 	}

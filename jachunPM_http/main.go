@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"crypto/x509"
 	"io/ioutil"
-	"jachunPM_http/config"
 	"jachunPM_http/db"
 	"jachunPM_http/handler"
+	"jachunPM_http/setting"
 	"libraries"
 	"log"
 	"net/http"
@@ -33,9 +33,9 @@ type httpServer struct {
 func main() {
 	cache.StartWebServer("0.0.0.0:809")
 	var err error
-	handler.HostConn, err = protocol.NewClient(protocol.HttpServerNo, config.Server.HostIP, config.Server.TokenKey)
+	handler.HostConn, err = protocol.NewClient(protocol.HttpServerNo, setting.Setting.HostIP, setting.Setting.TokenKey)
 	if err != nil {
-		libraries.ReleaseLog("连接host %s 服务启动失败%v", config.Server.HostIP, err)
+		libraries.ReleaseLog("连接host %s 服务启动失败%v", setting.Setting.HostIP, err)
 		return
 	} else {
 		db.Init()
@@ -49,10 +49,10 @@ func main() {
 	}
 
 	go http.ListenAndServe("0.0.0.0:"+strconv.Itoa(8100+protocol.HttpServerNo), nil)
-	svr := &httpServer{addr: config.Server.ListenHttp}
+	svr := &httpServer{addr: setting.Setting.ListenHttp}
 	// Start serving!
 	var tlsconfig *tls.Config
-	if config.Server.HttpsTLScert != "" && config.Server.HttpsTLSca != "" && config.Server.HttpsTLSkey != "" {
+	if setting.Setting.HttpsTLScert != "" && setting.Setting.HttpsTLSca != "" && setting.Setting.HttpsTLSkey != "" {
 		tlsconfig = &tls.Config{
 			NextProtos:               []string{"http/1.1"},
 			PreferServerCipherSuites: true,
@@ -69,15 +69,15 @@ func main() {
 				tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
 			},
 		}
-		server_cert, err := ioutil.ReadFile(config.Server.HttpsTLScert)
+		server_cert, err := ioutil.ReadFile(setting.Setting.HttpsTLScert)
 		if err != nil {
 			log.Fatalf("读取服务器证书cert错误 err: %v", err)
 		}
-		server_key, err := ioutil.ReadFile(config.Server.HttpsTLSkey)
+		server_key, err := ioutil.ReadFile(setting.Setting.HttpsTLSkey)
 		if err != nil {
 			log.Fatalf("读取服务器证书key错误 err: %v", err)
 		}
-		if ca, err := ioutil.ReadFile(config.Server.HttpsTLSca); err == nil {
+		if ca, err := ioutil.ReadFile(setting.Setting.HttpsTLSca); err == nil {
 			ca = bytes.TrimLeft(ca, "\n")
 			server_cert = bytes.Replace(server_cert, ca, nil, 1)
 			server_cert = append(server_cert, ca...)
@@ -100,7 +100,7 @@ func main() {
 		/*go func() {
 			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 				r.Header.Add("strict-transport-security", "max-age=31536000; includeSubDomains; preload")
-				http.Redirect(w, r, config.Server.Origin, http.StatusFound)
+				http.Redirect(w, r, setting.Setting.Origin, http.StatusFound)
 			})
 			http.ListenAndServe("0.0.0.0:80", nil)
 		}()*/

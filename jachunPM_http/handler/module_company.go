@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"jachunPM_http/config"
+	"config"
 	"libraries"
 	"protocol"
 	"strconv"

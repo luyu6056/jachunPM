@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"config"
 	"fmt"
 	"jachunPM_log/db"
 	"libraries"
@@ -23,7 +24,7 @@ func action_crate(data *protocol.MSG_LOG_Action_Create, in *protocol.Msg) {
 		Date:       time.Now(),
 		Extra:      data.Extra,
 		Products:   data.Products,
-		Project:   data.Project,
+		Project:    data.Project,
 		Comment:    libraries.Html2bbcode(data.Comment),
 	}
 	if user := HostConn.GetUserCacheById(data.ActorId); user != nil {
@@ -49,22 +50,22 @@ func action_GetByWhereMap(data *protocol.MSG_LOG_Action_GetByWhereMap, in *proto
 	in.SendResult(out)
 	out.Put()
 }
-func action_transformActions(data *protocol.MSG_LOG_Action_transformActions, in *protocol.Msg)  {
+func action_transformActions(data *protocol.MSG_LOG_Action_transformActions, in *protocol.Msg) {
 	out := protocol.GET_MSG_LOG_Action_transformActions_result()
 	var err error
-	defer func(){
-		if err!=nil{
+	defer func() {
+		if err != nil {
 			in.WriteErr(err)
-		}else{
+		} else {
 			in.SendResult(out)
 			out.Put()
 		}
 	}()
-	if err = HostConn.DB.Table(db.TABLE_ACTION).Prepare().WhereOr(data.Where).Order(data.Order).Limit((data.Page-1)*data.PerPage,data.Page*data.PerPage).Select(&out.List); err != nil {
+	if err = HostConn.DB.Table(db.TABLE_ACTION).Prepare().WhereOr(data.Where).Order(data.Order).Limit((data.Page-1)*data.PerPage, data.Page*data.PerPage).Select(&out.List); err != nil {
 		return
 	}
-	if data.Total==0{
-		if data.Total,err=HostConn.DB.Table(db.TABLE_ACTION).WhereOr(data.Where).Order(data.Order).Count();err!=nil{
+	if data.Total == 0 {
+		if data.Total, err = HostConn.DB.Table(db.TABLE_ACTION).WhereOr(data.Where).Order(data.Order).Count(); err != nil {
 			return
 		}
 	}
@@ -177,10 +178,8 @@ func action_transformActions(data *protocol.MSG_LOG_Action_transformActions, in 
 		case "trip":
 		}
 	}
-	config, err := in.LoadConfig("action")
-	if err != nil {
-		return
-	}
+	config := config.Config[in.Lang]["action"]
+
 	for i := len(out.List) - 1; i >= 0; i-- {
 
 		action := out.List[i]
@@ -252,7 +251,6 @@ func action_AddHistory(data *protocol.MSG_LOG_Action_AddHistory, in *protocol.Ms
 			libraries.ReleaseLog("增加history失败%+v", err)
 		}
 	}
-
 
 }
 func action_read(data *protocol.MSG_LOG_Action_set_read, in *protocol.Msg) {

@@ -1,9 +1,9 @@
 package main
 
 import (
-	"jachunPM_log/config"
 	"jachunPM_log/db"
 	"jachunPM_log/handler"
+	"jachunPM_log/setting"
 	"libraries"
 	"net/http"
 	_ "net/http/pprof"
@@ -14,7 +14,7 @@ import (
 func main() {
 
 	var err error
-	handler.HostConn, err = protocol.NewClient(protocol.LogServerNo, config.Config.HostIP, config.Config.TokenKey)
+	handler.HostConn, err = protocol.NewClient(protocol.LogServerNo, setting.Setting.HostIP, setting.Setting.TokenKey)
 	go func() {
 		http.ListenAndServe("0.0.0.0:"+strconv.Itoa(8100+protocol.LogServerNo), nil)
 	}()

@@ -1,7 +1,7 @@
 package db
 
 import (
-	"jachunPM_log/config"
+	"jachunPM_log/setting"
 	"log"
 	"mysql"
 	"protocol"
@@ -13,12 +13,12 @@ const (
 )
 
 func Init() *mysql.MysqlDB {
-	db, err := mysql.Open(config.Config.MysqlDsn)
+	db, err := mysql.Open(setting.Setting.MysqlDsn)
 	if err != nil {
 		log.Fatalf("数据库连接失败 %v", err)
 	}
-	if config.Config.MysqlMaxConn > 0 {
-		db.SetMaxOpenConns(config.Config.MysqlMaxConn)
+	if setting.Setting.MysqlMaxConn > 0 {
+		db.SetMaxOpenConns(setting.Setting.MysqlMaxConn)
 	}
 	if err = db.Ping(); err != nil {
 		log.Fatalf("数据库启动失败 %v", err)
@@ -38,7 +38,7 @@ type Action struct {
 	ObjectType string  `db:"type:varchar(30);index"`
 	ObjectID   int32   `db:"default(0);index"`
 	Products   []int32 `db:"type:json;index"`
-	Project   int32   `db:"index"`
+	Project    int32   `db:"index"`
 	ActorId    int32
 	Actor      string    `db:"type:varchar(30)"`
 	Action     string    `db:"type:varchar(30)"`

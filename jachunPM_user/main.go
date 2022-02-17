@@ -1,9 +1,9 @@
 package main
 
 import (
-	"jachunPM_user/config"
 	"jachunPM_user/db"
 	"jachunPM_user/handler"
+	"jachunPM_user/setting"
 	"libraries"
 	"net/http"
 	_ "net/http/pprof"
@@ -17,7 +17,7 @@ func main() {
 	}()
 	var err error
 	DB := db.Init()
-	handler.HostConn, err = protocol.NewClient(protocol.UserServerNo, config.Config.HostIP, config.Config.TokenKey)
+	handler.HostConn, err = protocol.NewClient(protocol.UserServerNo, setting.Setting.HostIP, setting.Setting.TokenKey)
 
 	if err != nil {
 		libraries.ReleaseLog("服务启动失败%v", err)

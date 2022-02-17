@@ -10,6 +10,7 @@ import (
 	"encoding/binary"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	math_r "math/rand"
 	"runtime/debug"
 	"sync/atomic"
@@ -70,7 +71,7 @@ type MysqlDB struct {
 	storeEngine     *storeEngine
 	isPing          bool
 	structKeyColumn map[string]map[string]*Field_struct //结构体成员与Column的关系
-	structMake map[string]mysqlQueryMake
+	structMake      map[string]mysqlQueryMake
 }
 
 type Mysql_Conn struct {
@@ -87,7 +88,7 @@ type Mysql_Conn struct {
 	stmtMutex        sync.RWMutex
 	db               *MysqlDB
 	closeOnce        sync.Once
-	readErr          error
+	readErr          chan error
 	msgIn            chan []byte
 }
 
@@ -174,6 +175,7 @@ func (mysqldb *MysqlDB) ping() {
 
 	defer func() {
 		if err := recover(); err != nil {
+			fmt.Println(err)
 			debug.PrintStack()
 		}
 		if mysqldb != nil {
@@ -316,6 +318,7 @@ func (mysqldb *MysqlDB) connect_new() (new_connect *Mysql_Conn, err error) {
 		stmtCache:   make(map[string]*Database_mysql_stmt),
 		db:          mysqldb,
 		msgIn:       make(chan []byte),
+		readErr:     make(chan error),
 	}
 	var conn net.Conn
 	if strings.Contains(mysqldb.ip_port, ".sock") {
@@ -338,61 +341,9 @@ func (mysqldb *MysqlDB) connect_new() (new_connect *Mysql_Conn, err error) {
 			return nil, err
 		}
 	}
-	go func() {
-		buf := make([]byte, 2048)
-		buf1 := make([]byte, 0, 2<<24-1)
-		buf2 := make([]byte, 0, 2<<24-1)
-		var (
-			n, msglen int
-			m         uint8
-			err       error
-			outbuf    []byte
-		)
-		cacheBuf := new(MsgBuffer)
-		for {
 
-			n, err = conn.Read(buf[:2048])
-			if err != nil {
-				if new_connect != nil && new_connect.Status {
-					new_connect.readErr = err
-				}
-
-				return
-			}
-
-			cacheBuf.Write(buf[:n])
-			for cacheBuf.Len() > 4 {
-				b := cacheBuf.Bytes()
-				msglen = int(b[0]) | int(b[1])<<8 | int(b[2])<<16
-				new_connect.msg_no = b[3]
-				if cacheBuf.Len() >= msglen+4 {
-					m++
-					cacheBuf.Next(4)
-					if msglen > 2<<24-1 {
-						outbuf = make([]byte, msglen)
-						copy(outbuf, cacheBuf.Next(msglen))
-						//fmt.Println(new_connect.Thread_id, "写入outbuf", m)
-						new_connect.msgIn <- outbuf
-					} else if m%2 == 1 {
-						buf1 = buf1[:msglen]
-						copy(buf1, cacheBuf.Next(msglen))
-						//fmt.Println(new_connect.Thread_id, "写入buf1", m)
-						new_connect.msgIn <- buf1
-					} else {
-						buf2 = buf2[:msglen]
-						copy(buf2, cacheBuf.Next(msglen))
-						//fmt.Println(new_connect.Thread_id, "写入buf2", m)
-						new_connect.msgIn <- buf2
-					}
-
-				} else {
-					break
-				}
-			}
-
-		}
-	}()
 	new_connect.conn = conn
+	go new_connect.handleRead()
 	//new_connect.buf_4 = make([]byte, 4)
 	//new_connect.buf_exec = []byte{0, 0, 0, 0, 3}
 	err, seed, seed2 := new_connect.handshakePacket()
@@ -423,6 +374,48 @@ func (mysqldb *MysqlDB) connect_new() (new_connect *Mysql_Conn, err error) {
 	}
 	mysqldb.Lock.Unlock()
 	return new_connect, nil
+}
+
+func (mysqlConn *Mysql_Conn) handleRead() {
+
+	var (
+		n, msglen int
+		err       error
+	)
+	buf := make([]byte, 2048)
+	conn := mysqlConn.conn
+	cacheBuf := new(MsgBuffer)
+	for {
+		conn.SetReadDeadline(time.Now().Add(time.Minute))
+		n, err = conn.Read(buf)
+		if err != nil {
+			if strings.Contains(err.Error(), "i/o timeout") {
+				continue
+			}
+			if mysqlConn != nil && mysqlConn.Status {
+				mysqlConn.readErr <- err
+			}
+
+			return
+		} else {
+			cacheBuf.Write(buf[:n])
+			b := cacheBuf.Bytes()
+			for len(b) > 4 {
+				msglen = int(b[0]) | int(b[1])<<8 | int(b[2])<<16
+				if len(b) >= msglen+4 {
+					mysqlConn.msg_no = b[3]
+					buf := make([]byte, msglen)
+					copy(buf, b[4:])
+					mysqlConn.msgIn <- buf
+					cacheBuf.Shift(4 + msglen)
+					b = b[4+msglen:]
+				} else {
+					break
+				}
+			}
+		}
+
+	}
 }
 func (mysqldb *MysqlDB) getConn() (c *Mysql_Conn, err error) {
 	var conn *Mysql_Conn
@@ -910,7 +903,11 @@ func (mysql *Mysql_Conn) readmsg() (rowsAffected, lastInsertId int64, result int
 
 //至少读一条消息
 func (mysql *Mysql_Conn) readOneMsg() (data []byte, err error) {
-	return <-mysql.msgIn, mysql.readErr
+	select {
+	case data = <-mysql.msgIn:
+	case err = <-mysql.readErr:
+	}
+	return
 }
 
 func (mysql *Mysql_Conn) writemsg(msg []byte) error {

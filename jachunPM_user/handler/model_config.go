@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"config"
 	"jachunPM_user/db"
 	"libraries"
 	"protocol"
@@ -29,56 +30,57 @@ func config_save(data *protocol.MSG_USER_config_save, in *protocol.Msg) {
 	in.WriteErr(err)
 }
 
-func config_get(data *protocol.MSG_USER_config_get,in *protocol.Msg){
+func config_get(data *protocol.MSG_USER_config_get, in *protocol.Msg) {
 	var configs []*db.Config
-	if err:=in.DB.Table(db.TABLE_Config).Where("Uid=? and Module=?",data.Uid,data.Module).Select(&configs);err!=nil{
+	if err := in.DB.Table(db.TABLE_Config).Where("Uid=? and Module=?", data.Uid, data.Module).Select(&configs); err != nil {
 		in.WriteErr(err)
 		return
 	}
 
-	out:=protocol.GET_MSG_USER_config_get_result()
-	out.Config=make(map[string]map[string]string)
-	configCache,err:=in.LoadConfig(data.Module)
-	if err==nil{
-		for key,value:= range configCache{
-			if out.Config[key]==nil{
-				out.Config[key]=make(map[string]string)
+	out := protocol.GET_MSG_USER_config_get_result()
+	out.Config = make(map[string]map[string]string)
+	configCache, ok := config.Config[in.Lang][data.Module]
+	if ok {
+		for key, value := range configCache {
+			if out.Config[key] == nil {
+				out.Config[key] = make(map[string]string)
 			}
-			for k,v:= range value{
-				if str,ok:=v.(string);ok{
-					out.Config[key][k]=str
-				}else{
-					out.Config[key][k]=libraries.I2S(v)
+			for k, v := range value {
+				if str, ok := v.(string); ok {
+					out.Config[key][k] = str
+				} else {
+					out.Config[key][k] = libraries.I2S(v)
 				}
 			}
 		}
 	}
-	for _,config:= range configs{
-		if out.Config[config.Section]==nil{
-			out.Config[config.Section]=make(map[string]string)
+
+	for _, config := range configs {
+		if out.Config[config.Section] == nil {
+			out.Config[config.Section] = make(map[string]string)
 		}
-		out.Config[config.Section][config.Key]=config.Value
+		out.Config[config.Section][config.Key] = config.Value
 	}
 	in.SendResult(out)
 	out.Put()
 }
 func config_savelist(datas *protocol.MSG_USER_config_savelist, in *protocol.Msg) {
-	session,err:=in.BeginTransaction()
+	session, err := in.BeginTransaction()
 	var ids []int32
-	defer func(){
-		if err!=nil{
+	defer func() {
+		if err != nil {
 			session.Rollback()
-		}else{
+		} else {
 			session.Commit()
-			for _,id:= range ids{
+			for _, id := range ids {
 				user_updateCacheById(id)
 			}
 		}
 		in.WriteErr(err)
 	}()
-	for _,data:= range datas.List{
+	for _, data := range datas.List {
 		var custom db.Config
-		if err = session.Table(db.TABLE_Config).Where("Uid=? and Module=? and `Key`=?", data.Uid, data.Module, data.Key).Find(&custom);err != nil {
+		if err = session.Table(db.TABLE_Config).Where("Uid=? and Module=? and `Key`=?", data.Uid, data.Module, data.Key).Find(&custom); err != nil {
 			return
 		}
 		if data.Type == "add" {
@@ -94,16 +96,15 @@ func config_savelist(datas *protocol.MSG_USER_config_savelist, in *protocol.Msg)
 		if err != nil {
 			return
 		}
-		find:=false
-		for _,id:= range ids{
-			if id==data.Uid{
-				find=true
+		find := false
+		for _, id := range ids {
+			if id == data.Uid {
+				find = true
 			}
 		}
-		if !find{
-			ids=append(ids,data.Uid)
+		if !find {
+			ids = append(ids, data.Uid)
 		}
 	}
-
 
 }

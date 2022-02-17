@@ -1,0 +1,76 @@
+{{template "header.html" .}}
+  <style>
+  #menuActions{float:right !important; margin-top: -60px !important;}
+  .input-group-required > .required::after, .required-wrapper.required::after {top:12px !important;}
+  .modal-body .table {margin-bottom:0px !important;}
+  </style>
+  {{.Data.featurebar}}
+
+{{template "datepicker.html" .}}
+{{template "chosen.html" .}}
+
+  <div class='main'>
+    <div class='panel'>
+      <div class='panel-heading'>{{.Lang.attend.zkteco}}</div>
+      <div class='panel-body'>
+        <form id='ajaxForm' class='form-ajax' method='post'>
+          <table class='table table-form table-condensed w-p70'>
+            <tr>
+              <th class='w-160px'>{{.Lang.attend.zktecoTime}}</th>
+              <td class='w-500px'>{{html_input "beginDate"  $.Data.beginDate  "class='form-control form-date'"}}</td>
+              <td style='padding-left: 10px'><a data-toggle='tooltip' title='{{.Lang.attend.note.beginDate}}'><i class='icon-question-sign'></i></a></td>
+            </tr>
+            <tr>
+              <th>{{.Lang.attend.notAllowSignInLimit}}</th>
+              <td>{{html_input "notAllowSignInLimit"  $.Data.notAllowSignInLimit  "class='form-control form-time'"}}</td>
+              <td></td>
+            </tr>
+            <tr>
+              <th>{{.Lang.attend.signInLimit}}</th>
+              <td>{{html_input "signInLimit"  $.Data.signInLimit  "class='form-control form-time'"}}</td>
+              <td></td>
+            </tr>
+            <tr>
+              <th>{{.Lang.attend.signOutLimit}}</th>
+              <td>
+                  {{html_input "signOutLimit"  $.Data.signOutLimit  "class='form-control form-time'"}}
+              </td>
+              <td></td>
+            </tr>
+            <tr>
+              <th>{{.Lang.attend.notAllowSignOutLimit}}</th>
+              <td>{{html_input "notAllowSignOutLimit"  $.Data.notAllowSignOutLimit  "class='form-control form-time'"}}</td>
+              <td></td>
+            </tr>
+            <tr>
+              <th>{{.Lang.attend.workingHours}}</th>
+              <td>{{html_input "workingHours"  $.Data.workingHours  "class='form-control'"}}</td>
+              <td></td>
+            </tr>
+            <tr>
+              <th>{{.Lang.attend.workingDays}}</th>
+              <td>{{html_select "workingDays"  .Lang.attend.workingDaysList  $.Data.workingDays  "class='form-control chosen' multiple"}}</td>
+              <td></td>
+            </tr>
+            <tr>
+              <th>{{.Lang.attend.halfAbsent}}</th>
+              <td>{{html_input "halfAbsendMin"  $.Data.halfAbsendMin  "class='form-control'"}}</td>
+              <td></td>
+            </tr>
+            <tr>
+              <th>{{.Lang.attend.allAbsent}}</th>
+              <td>{{html_input "absendMin"  $.Data.absendMin "class='form-control'"}}</td>
+              <td></td>
+            </tr>
+           
+         
+            <tr><th></th><td colspan='2'>{{html_submitButton .}}</td></tr>
+          </table>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{{template "footer.html" .}}

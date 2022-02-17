@@ -1,0 +1,2144 @@
+package lang
+
+import (
+	"html/template"
+	"protocol"
+)
+
+func LangEnInit() {
+	Lang[protocol.EN]["common"] = make(map[string]interface{})
+
+	Lang[protocol.EN]["common"]["view"] = "View"
+	Lang[protocol.EN]["common"]["unlimited"] = "Unlimited"
+	Lang[protocol.EN]["common"]["try"] = ` Trial` //" Trial"替换` Trial`
+	Lang[protocol.EN]["common"]["setFileType"] = "File Type"
+	Lang[protocol.EN]["common"]["setFileNum"] = "File Number"
+	Lang[protocol.EN]["common"]["searchLang"] = "Search"
+	Lang[protocol.EN]["common"]["searchAB"] = "Search"
+	Lang[protocol.EN]["common"]["proName"] = "Pro"
+	Lang[protocol.EN]["common"]["noticeLimited"] = "<div style='float:left;color:red' id='userLimited'>The number of pro users has exceeded that of the licensed. Please contact Renee at Renee@cnezsoft.com, or delete users.</div>"
+	Lang[protocol.EN]["common"]["noticeBizLimited"] = "<div style='float:left;color:red' id='userLimited'>The number of users has exceeded that of the licensed. Please contact us at Renee@easysoft.ltd, or delete users.</div>"
+	Lang[protocol.EN]["common"]["month"] = "Month"
+	Lang[protocol.EN]["common"]["minus"] = " - "
+	Lang[protocol.EN]["common"]["licensedUser"] = "User Licensed: %s"
+	Lang[protocol.EN]["common"]["importIcon"] = "<i class='icon-import'> </i>"
+	Lang[protocol.EN]["common"]["forever"] = "Permanent"
+	Lang[protocol.EN]["common"]["extInfo"] = "Extention Info"
+	Lang[protocol.EN]["common"]["exportThisPage"] = "Export This Page"
+	Lang[protocol.EN]["common"]["exportIcon"] = "<i class='icon-upload-alt'> </i>"
+	Lang[protocol.EN]["common"]["exportAll"] = "Export All"
+	Lang[protocol.EN]["common"]["expireDate"] = "Expire on %s" //"Expiration: %s"替换"Expire on %s"
+	Lang[protocol.EN]["common"]["donate"] = ""
+	Lang[protocol.EN]["common"]["detail"] = `Detail` //"Detail"替换`Detail`
+	Lang[protocol.EN]["common"]["deleteing"] = "Deleting..."
+	Lang[protocol.EN]["common"]["create"] = "Create"
+	Lang[protocol.EN]["common"]["confirmDelete"] = "Do you want to delete it?"
+	Lang[protocol.EN]["common"]["chooseUserToMail"] = "Choose users to notify..."
+	Lang[protocol.EN]["common"]["bizName"] = " Ent"
+	Lang[protocol.EN]["common"]["basicInfo"] = "Basic Info"
+	Lang[protocol.EN]["common"]["pms"] = "JachunPM"
+	Lang[protocol.EN]["common"]["productCommon"] = "Product"
+	Lang[protocol.EN]["common"]["projectCommon"] = "Project"
+	Lang[protocol.EN]["common"]["arrow"] = template.HTML(`&nbsp;<i class="icon-angle-right"></i>&nbsp;`)
+	Lang[protocol.EN]["common"]["colon"] = `-`
+	Lang[protocol.EN]["common"]["comma"] = `,`
+	Lang[protocol.EN]["common"]["dot"] = `.`
+	Lang[protocol.EN]["common"]["at"] = ` on `
+	Lang[protocol.EN]["common"]["downArrow"] = `↓`
+	Lang[protocol.EN]["common"]["null"] = `Null`
+	Lang[protocol.EN]["common"]["ellipsis"] = `…`
+	Lang[protocol.EN]["common"]["percent"] = `%`
+	Lang[protocol.EN]["common"]["dash"] = `-`
+	Lang[protocol.EN]["common"]["logoImg"] = `zt-logo.png`
+	Lang[protocol.EN]["common"]["welcome"] = "%s ALM"
+	Lang[protocol.EN]["common"]["logout"] = `Logout`
+	Lang[protocol.EN]["common"]["login"] = `Login`
+	Lang[protocol.EN]["common"]["help"] = `Help`
+	Lang[protocol.EN]["common"]["aboutZenTao"] = `About`
+	Lang[protocol.EN]["common"]["profile"] = `Profile`
+	Lang[protocol.EN]["common"]["changePassword"] = `Password`
+	Lang[protocol.EN]["common"]["runInfo"] = "<div class=`row`><div class=`u-1 a-center` id=`debugbar`>Time %s MS, Memory %s KB, Query %s.  </div></div>"
+	Lang[protocol.EN]["common"]["agreement"] = "I have read and agreed to the terms and conditions of <a href=`http://zpl.pub/page/zplv12.html` target=`_blank`> Z PUBLIC LICENSE 1.2 </a>. <span class=`text-danger`>Without authorization, I should not remove, hide or cover any logos/links of ZenTao.</span>"
+	Lang[protocol.EN]["common"]["designedByAIUX"] = "<a href=`https://api.zentao.pm/goto.php?item=aiux` class=`link-aiux` target=`_blank`>Designed by <strong>AIUX</strong></a>"
+	Lang[protocol.EN]["common"]["reset"] = `Reset`
+	Lang[protocol.EN]["common"]["cancel"] = `Cancel`
+	Lang[protocol.EN]["common"]["refresh"] = `Refresh`
+	Lang[protocol.EN]["common"]["edit"] = `Edit`
+	Lang[protocol.EN]["common"]["delete"] = `Delete`
+	Lang[protocol.EN]["common"]["close"] = `Close`
+	Lang[protocol.EN]["common"]["unlink"] = `Unlink`
+	Lang[protocol.EN]["common"]["import"] = `Import`
+	Lang[protocol.EN]["common"]["export"] = `Export`
+	Lang[protocol.EN]["common"]["setFileName"] = `File Name`
+	Lang[protocol.EN]["common"]["submitting"] = `Saving...`
+	Lang[protocol.EN]["common"]["save"] = `Save`
+	Lang[protocol.EN]["common"]["saveSuccess"] = `Saved`
+	Lang[protocol.EN]["common"]["confirm"] = `Confirm`
+	Lang[protocol.EN]["common"]["preview"] = `View`
+	Lang[protocol.EN]["common"]["goback"] = `Back`
+	Lang[protocol.EN]["common"]["goPC"] = `PC`
+	Lang[protocol.EN]["common"]["more"] = `More`
+	Lang[protocol.EN]["common"]["day"] = `Day` //` Day`替换`Day`
+	Lang[protocol.EN]["common"]["customConfig"] = `Custom Config`
+	Lang[protocol.EN]["common"]["public"] = `Public`
+	Lang[protocol.EN]["common"]["trunk"] = `Trunk`
+	Lang[protocol.EN]["common"]["sort"] = `Order`
+	Lang[protocol.EN]["common"]["required"] = `Required`
+	Lang[protocol.EN]["common"]["noData"] = `No data.`
+	Lang[protocol.EN]["common"]["fullscreen"] = `Fullscreen`
+	Lang[protocol.EN]["common"]["retrack"] = `Retrack`
+	Lang[protocol.EN]["common"]["actions"] = `Action`
+	Lang[protocol.EN]["common"]["restore"] = `Reset`
+	Lang[protocol.EN]["common"]["comment"] = `Note`
+	Lang[protocol.EN]["common"]["history"] = `History`
+	Lang[protocol.EN]["common"]["attatch"] = `Files`
+	Lang[protocol.EN]["common"]["reverse"] = `Inverse`
+	Lang[protocol.EN]["common"]["switchDisplay"] = `Toggle`
+	Lang[protocol.EN]["common"]["expand"] = `Expand`
+	Lang[protocol.EN]["common"]["collapse"] = `Collapse`
+	Lang[protocol.EN]["common"]["saveSuccess"] = `Saved`
+	Lang[protocol.EN]["common"]["fail"] = `Fail`
+	Lang[protocol.EN]["common"]["addFiles"] = `Added Files`
+	Lang[protocol.EN]["common"]["files"] = `Files `
+	Lang[protocol.EN]["common"]["pasteText"] = `Multi-lines Paste`
+	Lang[protocol.EN]["common"]["uploadImages"] = `Multi-images Upload`
+	Lang[protocol.EN]["common"]["timeout"] = `Timeout. Check your newtwork connections, or try it again!`
+	Lang[protocol.EN]["common"]["repairTable"] = `Database table might be damaged. Run phpmyadmin or myisamchk to fix it.`
+	Lang[protocol.EN]["common"]["duplicate"] = `%s has the same title as a file existed.`
+	Lang[protocol.EN]["common"]["ipLimited"] = "<html><head><meta http-equiv=`Content-Type` content=`text/html; charset=utf-8` /></head><body>Sorry, your current IP is restricted. PLease contact your Administer to grant your permissions.</body></html>"
+	Lang[protocol.EN]["common"]["unfold"] = `+`
+	Lang[protocol.EN]["common"]["fold"] = `-`
+	Lang[protocol.EN]["common"]["homepage"] = `Set Home`
+	Lang[protocol.EN]["common"]["noviceTutorial"] = `ZenTao Tutorial`
+	Lang[protocol.EN]["common"]["changeLog"] = `Change Log`
+	Lang[protocol.EN]["common"]["manual"] = `User Manual`
+	Lang[protocol.EN]["common"]["manualUrl"] = `https://www.zentao.pm/book/zentaomanual/zentao-installation-11.html`
+	Lang[protocol.EN]["common"]["customMenu"] = `Custom Menu`
+	Lang[protocol.EN]["common"]["customField"] = `Custom Field`
+	Lang[protocol.EN]["common"]["lineNumber"] = `Line No.`
+	Lang[protocol.EN]["common"]["tutorialConfirm"] = `You are using ZenTao tutorial. Do you want to quit right now？`
+	Lang[protocol.EN]["common"]["preShortcutKey"] = `[Shortcut:←]`
+	Lang[protocol.EN]["common"]["nextShortcutKey"] = `[Shortcut:→]`
+	Lang[protocol.EN]["common"]["backShortcutKey"] = `[Shortcut:Alt+↑]`
+	Lang[protocol.EN]["common"]["select"] = `Select`
+	Lang[protocol.EN]["common"]["selectAll"] = `Select All`
+	Lang[protocol.EN]["common"]["selectReverse"] = `Select Inverse`
+	Lang[protocol.EN]["common"]["loading"] = `Loading...`
+	Lang[protocol.EN]["common"]["notFound"] = `Not found!`
+	Lang[protocol.EN]["common"]["notPage"] = `Sorry, the features you are visiting are in development!`
+	Lang[protocol.EN]["common"]["showAll"] = `[[Show All]]`
+	Lang[protocol.EN]["common"]["selectedItems"] = `Seleted <strong>{0}</strong> items`
+	Lang[protocol.EN]["common"]["future"] = `Waiting`
+	Lang[protocol.EN]["common"]["year"] = `Year`
+	Lang[protocol.EN]["common"]["workingHour"] = `Hours`
+	Lang[protocol.EN]["common"]["idAB"] = `ID`
+	Lang[protocol.EN]["common"]["priAB"] = `P`
+	Lang[protocol.EN]["common"]["statusAB"] = `Status`
+	Lang[protocol.EN]["common"]["openedByAB"] = `CreatedBy`
+	Lang[protocol.EN]["common"]["assignedToAB"] = `AssignedTo`
+	Lang[protocol.EN]["common"]["typeAB"] = `Type`
+	Lang[protocol.EN]["common"]["dividerMenu"] = []string{`qa`, `report`}
+	Lang[protocol.EN]["common"]["searchTips"] = `` //`ID (ctrl+g)`替换``
+	Lang[protocol.EN]["common"]["lang"] = `Language`
+	Lang[protocol.EN]["common"]["theme"] = `Theme`
+	Lang[protocol.EN]["common"]["proVersion"] = "" //"<a href=`https://www.zentao.pm/book/zentaopromanual/free-open-source-project-management-software-zentaopro-127.html` target=`_blank` id=`proLink` class=`text-important`>ZenTao Pro <i class=`text-danger icon-pro-version`></i></a> &nbsp; "替换""
+	Lang[protocol.EN]["common"]["downNotify"] = "Download Desktop Notification"
+	Lang[protocol.EN]["common"]["downloadClient"] = "Download ZenTao Desktop"
+	Lang[protocol.EN]["common"]["clientHelp"] = "Client Help"
+	Lang[protocol.EN]["common"]["clientHelpLink"] = "https://www.zentao.pm/book/zentaomanual/scrum-tool-im-integration-206.html"
+	Lang[protocol.EN]["common"]["website"] = "https://www.zentao.pm"
+	Lang[protocol.EN]["common"]["suhosinInfo"] = "Warning! Data is reaching the limit. Please change <font color=red>sohusin.post.max_vars</font> and <font color=red>sohusin.request.max_vars</font> (set larger %s value) in php.ini, then save and restart Apache or php-fpm, or some data will not be saved."
+	Lang[protocol.EN]["common"]["maxVarsInfo"] = "Warning! Data is reaching the limit. Please change <font color=red>max_input_vars</font> (set larger %s value) in php.ini, then save and restart Apache or php-fpm, or some data will not be saved."
+	Lang[protocol.EN]["common"]["pasteTextInfo"] = "Paste the text here. Each line will be a title. "
+	Lang[protocol.EN]["common"]["noticeImport"] = "Imported data contains data that has already existed in system. Please confirm you actions on the date."
+	Lang[protocol.EN]["common"]["importConfirm"] = "Import"
+	Lang[protocol.EN]["common"]["importAndCover"] = "Override"
+	Lang[protocol.EN]["common"]["importAndInsert"] = "Insert"
+	Lang[protocol.EN]["common"]["noResultsMatch"] = "No results match found!"
+	Lang[protocol.EN]["common"]["searchMore"] = "More results："
+	Lang[protocol.EN]["common"]["chooseUsersToMail"] = "Choose users that will be notified."
+	Lang[protocol.EN]["common"]["noticePasteImg"] = "You can paste images into the editor."
+	Lang[protocol.EN]["common"]["pasteImgFail"] = "Failed to paste images. Try again later."
+	Lang[protocol.EN]["common"]["pasteImgUploading"] = "Uploading..."
+	Lang[protocol.EN]["common"]["common"] = `Common Module`
+	Lang[protocol.EN]["common"]["storyCommon"] = `???`
+	/* Main menu. */
+	Lang[protocol.EN]["common"]["menu"] = []protocol.HtmlMenu{
+		{"my", map[string]string{`link`: `<span>Dashboard</span>|my|index`}},
+		{"product", map[string]string{`link`: Lang[protocol.EN]["common"]["productCommon"].(string) + "|product|index|locate=no"}},
+		{"project", map[string]string{`link`: Lang[protocol.EN]["common"]["projectCommon"].(string) + "|project|index|locate=no"}},
+		{"qa", map[string]string{`link`: `Test|qa|index`}},
+		{"ci", map[string]string{`link`: `CI|repo|browse`}},
+		{"doc", map[string]string{`link`: `Doc|doc|index`}},
+		{"report", map[string]string{`link`: `Report|report|index`}},
+		{"company", map[string]string{`link`: `Company|company|index`}},
+		{"admin", map[string]string{`link`: `Admin|admin|index`}},
+		{"feedback", map[string]string{`link`: "Feedback|feedback|admin|"}},
+		{"oa", map[string]string{`link`: "OA|attend|personal|"}},
+		{"ops", map[string]string{`link`: "OPS|ops|index|"}},
+		{"workflow", map[string]string{`link`: "Workflow|workflow|browseFlow"}},
+	}
+
+	Lang[protocol.EN]["deploy"] = make(map[string]interface{})
+	Lang[protocol.EN]["deploy"]["menu"] = []protocol.HtmlMenu{
+		{"deploy", map[string]string{`link`: `Deploy|deploy|browse`, `alias`: `create,view,edit,steps,scope,managescope,activate,finish,cases,linkcases,managestep`}},
+		{"host", map[string]string{`link`: `Host|host|browse`, `alias`: `create,edit,view,treemap`, `subModule`: `tree`}},
+		{"serverroom", map[string]string{`link`: `IDC|serverroom|browse`, `alias`: `create,edit,view`}},
+		{"service", map[string]string{`link`: `Service|service|manage`, `alias`: `create,edit,view,browse`}},
+		{"setting", map[string]string{`link`: `Settings|ops|setting`}},
+	}
+
+	Lang[protocol.EN]["service"] = make(map[string]interface{})
+	Lang[protocol.EN]["service"]["menu"] = []protocol.HtmlMenu{
+		{"deploy", map[string]string{`link`: `Deploy|deploy|browse`, `alias`: `create,edit,view`}},
+		{"host", map[string]string{`link`: `Host|host|browse`, `alias`: `create,edit,view,treemap`, `subModule`: `tree`}},
+		{"serverroom", map[string]string{`link`: `IDC|serverroom|browse`, `alias`: `create,edit,view`}},
+		{"service", map[string]string{`link`: `Service|service|manage`, `alias`: `create,edit,view,browse`}},
+		{"setting", map[string]string{`link`: `Settings|ops|setting`}},
+	}
+
+	/* Object list in search form. */
+	Lang[protocol.EN]["searchObjects"] = make(map[string]interface{})
+	Lang[protocol.EN]["searchObjects"]["service"] = "Service"
+	Lang[protocol.EN]["searchObjects"]["feedback"] = "Feedback"
+	Lang[protocol.EN]["searchObjects"]["deploystep"] = "Deploy Step"
+	Lang[protocol.EN]["searchObjects"]["deploy"] = "Deploy"
+	Lang[protocol.EN]["searchObjects"]["all"] = "All"
+	Lang[protocol.EN]["searchObjects"]["bug"] = `Bug`
+	Lang[protocol.EN]["searchObjects"]["story"] = `Story`
+	Lang[protocol.EN]["searchObjects"]["task"] = `Task`
+	Lang[protocol.EN]["searchObjects"]["testcase"] = `Case`
+	Lang[protocol.EN]["searchObjects"]["project"] = Lang[protocol.EN]["common"]["projectCommon"]
+	Lang[protocol.EN]["searchObjects"]["product"] = Lang[protocol.EN]["common"]["productCommon"]
+	Lang[protocol.EN]["searchObjects"]["user"] = `User`
+	Lang[protocol.EN]["searchObjects"]["build"] = `Build`
+	Lang[protocol.EN]["searchObjects"]["release"] = `Release`
+	Lang[protocol.EN]["searchObjects"]["productplan"] = Lang[protocol.EN]["common"]["productCommon"].(string) + "Plan"
+	Lang[protocol.EN]["searchObjects"]["testtask"] = `Request`
+	Lang[protocol.EN]["searchObjects"]["doc"] = `Document`
+	Lang[protocol.EN]["searchObjects"]["caselib"] = `Case Library`
+	Lang[protocol.EN]["searchObjects"]["testreport"] = `Test Report`
+
+	/* Code formats for import. */
+	Lang[protocol.EN]["importEncodeList"] = make(map[string]interface{})
+	Lang[protocol.EN]["importEncodeList"]["gbk"] = `GBK`
+	Lang[protocol.EN]["importEncodeList"][`big5`] = `BIG5`
+	Lang[protocol.EN]["importEncodeList"][`utf-8`] = `UTF-8`
+
+	/* File type list for export. */
+	Lang[protocol.EN]["exportFileTypeList"] = make(map[string]interface{})
+	Lang[protocol.EN]["exportFileTypeList"]["csv"] = `csv`
+	Lang[protocol.EN]["exportFileTypeList"]["xml"] = `xml`
+	Lang[protocol.EN]["exportFileTypeList"]["html"] = `html`
+	Lang[protocol.EN]["exportTypeList"] = make(map[string]interface{})
+	Lang[protocol.EN]["exportTypeList"]["all"] = `All Data`
+	Lang[protocol.EN]["exportTypeList"]["selected"] = `Selected Data`
+
+	/* Language. */
+
+	/* Theme style. */
+	Lang[protocol.EN]["themes"] = make(map[string]interface{})
+	Lang[protocol.EN]["themes"]["default"] = `Default`
+	Lang[protocol.EN]["themes"]["green"] = `Green`
+	Lang[protocol.EN]["themes"]["red"] = `Red`
+	Lang[protocol.EN]["themes"]["purple"] = `Purple`
+	Lang[protocol.EN]["themes"]["pink"] = `Pink`
+	Lang[protocol.EN]["themes"]["blackberry"] = `Blackberry`
+	Lang[protocol.EN]["themes"]["classic"] = `Classic`
+
+	/* Index menu settings. */
+	Lang[protocol.EN]["index"] = make(map[string]interface{})
+	Lang[protocol.EN]["index"]["menu"] = []protocol.HtmlMenu{
+		{"product", map[string]string{`link`: Lang[protocol.EN]["common"]["productCommon"].(string) + "|product|browse"}},
+		{"project", map[string]string{`link`: Lang[protocol.EN]["common"]["projectCommon"].(string) + "|project|browse"}},
+	}
+
+	/* My dashboard menu settings. */
+	Lang[protocol.EN]["my"] = make(map[string]interface{})
+	Lang[protocol.EN]["my"]["menu"] = []protocol.HtmlMenu{
+
+		{"index", map[string]string{`link`: `Home|my|index`}},
+		{"calendar", map[string]string{`link`: `Schedule|my|calendar|`, `subModule`: `todo,effort`, `alias`: `todo`, `class`: `dropdown dropdown-hover`}},
+		{"task", map[string]string{`link`: `Task|my|task|`, `subModule`: `task`}},
+		{"bug", map[string]string{`link`: `Bug|my|bug|`, `subModule`: `bug`}},
+		{"testtask", map[string]string{`link`: `Request|my|testtask|`, `subModule`: `testcase,testtask`, `alias`: `testcase`}},
+		{"story", map[string]string{`link`: `Story|my|story|`, `subModule`: `story`}},
+		{"myProject", map[string]string{`link`: Lang[protocol.EN]["common"]["projectCommon"].(string) + "|my|project|"}},
+		{"dynamic", map[string]string{`link`: `Dynamics|my|dynamic|`}},
+		{"profile", map[string]string{`link`: `Profile|my|profile`, `alias`: `editprofile`}},
+		{"changePassword", map[string]string{`link`: `Password|my|changepassword`}},
+		{"manageContacts", map[string]string{`link`: `Contact|my|managecontacts`}},
+		{"score", map[string]string{`link`: `Points|my|score`, `subModule`: `score`}},
+		{"review", map[string]string{`link`: "Review|my|review|type=all"}},
+	}
+	Lang[protocol.EN]["my"]["subMenu"] = []protocol.HtmlKeyValueInterface{
+		{"calendar", []protocol.HtmlMenu{
+			{"effort", map[string]string{`link`: `Effort|my|effort|`}},
+			{"todo", map[string]string{`link`: `Todo|my|todo|`}},
+		}},
+	}
+	Lang[protocol.EN]["my"]["dividerMenu"] = []string{`task`, `myProject`, `profile`}
+
+	Lang[protocol.EN]["todo"] = make(map[string]interface{})
+	Lang[protocol.EN]["todo"]["menu"] = Lang[protocol.EN]["my"]["menu"]
+
+	Lang[protocol.EN]["score"] = make(map[string]interface{})
+	Lang[protocol.EN]["score"]["menu"] = Lang[protocol.EN]["my"]["menu"]
+
+	/* Product menu settings. */
+	Lang[protocol.EN]["product"] = make(map[string]interface{})
+	Lang[protocol.EN]["product"]["menu"] = []protocol.HtmlMenu{
+		{"story", map[string]string{`link`: `Story|product|browse|productID=%s`, `alias`: `batchedit`, `subModule`: `story`}},
+		{"plan", map[string]string{`link`: `Plan|productplan|browse|productID=%s`, `subModule`: `productplan`}},
+		{"release", map[string]string{`link`: `Release|release|browse|productID=%s`, `subModule`: `release`}},
+		{"roadmap", map[string]string{`link`: `Roadmap|product|roadmap|productID=%s`}},
+		{"project", map[string]string{`link`: Lang[protocol.EN]["common"]["projectCommon"].(string) + "|product|project|status=all&productID=%s"}},
+		{"dynamic", map[string]string{`link`: `Dynamics|product|dynamic|productID=%s`}},
+		{"doc", map[string]string{`link`: `Doc|doc|objectLibs|type=product&objectID=%s&from=product`, `subModule`: `doc`}},
+		{"branch", map[string]string{`link`: `@branch@|branch|manage|productID=%s`}},
+		{"module", map[string]string{`link`: `Module|tree|browse|productID=%s&view=story`}},
+		{"view", map[string]string{`link`: `Overview|product|view|productID=%s`, `alias`: `edit`}},
+		{"build", map[string]string{`link`: `Build|product|build`, `subModule`: `build`}},
+	}
+
+	Lang[protocol.EN]["product"]["dividerMenu"] = []string{`plan`, `project`, `doc`}
+
+	Lang[protocol.EN]["story"] = make(map[string]interface{})
+	Lang[protocol.EN]["productplan"] = make(map[string]interface{})
+	Lang[protocol.EN]["release"] = make(map[string]interface{})
+	Lang[protocol.EN]["branch"] = make(map[string]interface{})
+
+	Lang[protocol.EN]["branch"]["menu"] = Lang[protocol.EN]["product"]["menu"]
+	Lang[protocol.EN]["story"]["menu"] = Lang[protocol.EN]["product"]["menu"]
+	Lang[protocol.EN]["productplan"]["menu"] = Lang[protocol.EN]["product"]["menu"]
+	Lang[protocol.EN]["release"]["menu"] = Lang[protocol.EN]["product"]["menu"]
+
+	/* Project menu settings. */
+	Lang[protocol.EN]["project"] = make(map[string]interface{})
+	Lang[protocol.EN]["project"]["menu"] = []protocol.HtmlMenu{
+		{"task", map[string]string{`link`: `Task|project|task|projectID=%s`, `subModule`: `task,tree`, `alias`: `importtask,importbug`}},
+		{"kanban", map[string]string{`link`: `Kanban|project|kanban|projectID=%s`}},
+		{"burn", map[string]string{`link`: `Burndown|project|burn|projectID=%s`}},
+		{"list", map[string]string{`link`: `More|project|grouptask|projectID=%s`, `alias`: `grouptask,tree,gantt,maintainrelation,relation`, `class`: `dropdown dropdown-hover`}},
+		{"story", map[string]string{`link`: `Story|project|story|projectID=%s`, `subModule`: `story`, `alias`: `linkstory,storykanban`}},
+		{"qa", map[string]string{`link`: `Test|project|bug|projectID=%s`, `subModule`: `bug,build,testtask`, `alias`: `build,testtask`, `class`: `dropdown dropdown-hover`}},
+		{"doc", map[string]string{`link`: `Doc|doc|objectLibs|type=project&objectID=%s&from=project`, `subModule`: `doc`}},
+		{"action", map[string]string{`link`: `Dynamics|project|dynamic|projectID=%s`, `subModule`: `dynamic`, `class`: `dropdown dropdown-hover`}},
+		{"product", map[string]string{`link`: Lang[protocol.EN]["common"]["productCommon"].(string) + `|project|manageproducts|projectID=%s`}},
+		{"team", map[string]string{`link`: `Team|project|team|projectID=%s`, `alias`: `managemembers`}},
+		{"view", map[string]string{`link`: `Overview|project|view|projectID=%s`, `alias`: `edit,start,suspend,putoff,close`}},
+		{"list", map[string]string{`alias`: ``}},
+	}
+	Lang[protocol.EN]["project"]["subMenu"] = []protocol.HtmlKeyValueInterface{
+		{"list", []protocol.HtmlMenu{
+			{"groupTask", map[string]string{`link`: `Group View|project|groupTask|projectID=%s`}},
+			{"tree", map[string]string{`link`: `Tree View|project|tree|projectID=%s`}},
+			{"gantt", map[string]string{`link`: `Gantt|project|gantt|projectID=%s`, `alias`: `maintainrelation,relation`}},
+			{"taskeffort", map[string]string{`link`: "Task Effort|project|taskeffort|projectID=%s"}},
+		}},
+		{"qa", []protocol.HtmlMenu{
+			{"bug", map[string]string{`link`: `Bug|project|bug|projectID=%s`}},
+			{"build", map[string]string{`link`: `Build|project|build|projectID=%s`, `subModule`: `build`}},
+			{"testtask", map[string]string{`link`: `Request|project|testtask|projectID=%s`, `subModule`: `testreport,testtask`}}}},
+	}
+	Lang[protocol.EN]["project"]["dividerMenu"] = []string{`story`, `team`, `product`}
+
+	Lang[protocol.EN]["task"] = make(map[string]interface{})
+	Lang[protocol.EN]["build"] = make(map[string]interface{})
+	Lang[protocol.EN]["task"]["menu"] = Lang[protocol.EN]["project"]["menu"]
+	Lang[protocol.EN]["build"]["menu"] = Lang[protocol.EN]["project"]["menu"]
+
+	/* QA menu settings. */
+	Lang[protocol.EN]["qa"] = make(map[string]interface{})
+	Lang[protocol.EN]["qa"]["menu"] = []protocol.HtmlMenu{
+
+		{"bug", map[string]string{`link`: `Bug|bug|browse|productID=%s`}},
+		{"testcase", map[string]string{`link`: `Case|testcase|browse|productID=%s`, `class`: `dropdown dropdown-hover`}},
+		{"testtask", map[string]string{`link`: `Request|testtask|browse|productID=%s`}},
+		{"testsuite", map[string]string{`link`: `Suite|testsuite|browse|productID=%s`}},
+		{"report", map[string]string{`link`: `Report|testreport|browse|productID=%s`}},
+		{"caselib", map[string]string{`link`: `Case Library|caselib|browse`}},
+	}
+	Lang[protocol.EN]["qa"]["subMenu"] = []protocol.HtmlKeyValueInterface{
+		{"testcase", []protocol.HtmlMenu{
+			{"feature", map[string]string{`link`: `Functional Test|testcase|browse|productID=%s`, `alias`: `view,create,batchcreate,edit,batchedit,showimport,groupcase,importfromlib`, `subModule`: `tree,story`}},
+			{"unit", map[string]string{`link`: `Unit Test|testtask|browseUnits|productID=%s`}},
+		}},
+	}
+	Lang[protocol.EN]["bug"] = make(map[string]interface{})
+
+	Lang[protocol.EN]["bug"]["subMenu"] = Lang[protocol.EN]["qa"]["subMenu"]
+	Lang[protocol.EN]["bug"]["menu"] = []protocol.HtmlMenu{
+		{"bug", map[string]string{`link`: `Bug|bug|browse|productID=%s`, `alias`: `view,create,batchcreate,edit,resolve,close,activate,report,batchedit,batchactivate,confirmbug,assignto`, `subModule`: `tree`}},
+		{"testcase", map[string]string{`link`: `Case|testcase|browse|productID=%s`, `class`: `dropdown dropdown-hover`}},
+		{"testtask", map[string]string{`link`: `Request|testtask|browse|productID=%s`}},
+		{"testsuite", map[string]string{`link`: `Suite|testsuite|browse|productID=%s`}},
+		{"report", map[string]string{`link`: `Report|testreport|browse|productID=%s`}},
+		{"caselib", map[string]string{`link`: `Case Library|caselib|browse`}},
+	}
+	Lang[protocol.EN]["testcase"] = make(map[string]interface{})
+
+	Lang[protocol.EN]["testcase"]["subMenu"] = Lang[protocol.EN]["qa"]["subMenu"]
+	Lang[protocol.EN]["testcase"]["menu"] = []protocol.HtmlMenu{
+		{"bug", map[string]string{`link`: `Bug|bug|browse|productID=%s`}},
+		{"testcase", map[string]string{`link`: `Case|testcase|browse|productID=%s`, `alias`: `view,create,batchcreate,edit,batchedit,showimport,groupcase,importfromlib`, `subModule`: `tree`, `class`: `dropdown dropdown-hover`}},
+		{"testtask", map[string]string{`link`: `Request|testtask|browse|productID=%s`}},
+		{"testsuite", map[string]string{`link`: `Suite|testsuite|browse|productID=%s`}},
+		{"report", map[string]string{`link`: `Report|testreport|browse|productID=%s`}},
+		{"caselib", map[string]string{`link`: `Case Library|caselib|browse`}},
+	}
+	Lang[protocol.EN]["testtask"] = make(map[string]interface{})
+	Lang[protocol.EN]["testtask"]["subMenu"] = Lang[protocol.EN]["qa"]["subMenu"]
+	Lang[protocol.EN]["testtask"]["menu"] = []protocol.HtmlMenu{
+
+		{"bug", map[string]string{`link`: `Bug|bug|browse|productID=%s`}},
+		{"testcase", map[string]string{`link`: `Case|testcase|browse|productID=%s`, `class`: `dropdown dropdown-hover`}},
+		{"testtask", map[string]string{`link`: `Request|testtask|browse|productID=%s`, `alias`: `view,create,edit,linkcase,cases,start,close,batchrun,groupcase,report`}},
+		{"testsuite", map[string]string{`link`: `Suite|testsuite|browse|productID=%s`}},
+		{"report", map[string]string{`link`: `Report|testreport|browse|productID=%s`}},
+		{"caselib", map[string]string{`link`: `Case Library|caselib|browse`}},
+	}
+	Lang[protocol.EN]["testsuite"] = make(map[string]interface{})
+	Lang[protocol.EN]["testsuite"]["subMenu"] = Lang[protocol.EN]["qa"]["subMenu"]
+	Lang[protocol.EN]["testsuite"]["menu"] = []protocol.HtmlMenu{
+
+		{"bug", map[string]string{`link`: `Bug|bug|browse|productID=%s`}},
+		{"testcase", map[string]string{`link`: `Case|testcase|browse|productID=%s`, `class`: `dropdown dropdown-hover`}},
+		{"testtask", map[string]string{`link`: `Request|testtask|browse|productID=%s`}},
+		{"testsuite", map[string]string{`link`: `Suite|testsuite|browse|productID=%s`, `alias`: `view,create,edit,linkcase`}},
+		{"report", map[string]string{`link`: `Report|testreport|browse|productID=%s`}},
+		{"caselib", map[string]string{`link`: `Case Library|caselib|browse`}},
+	}
+	Lang[protocol.EN]["testreport"] = make(map[string]interface{})
+	Lang[protocol.EN]["testreport"]["subMenu"] = Lang[protocol.EN]["qa"]["subMenu"]
+	Lang[protocol.EN]["testreport"]["menu"] = []protocol.HtmlMenu{
+
+		{"bug", map[string]string{`link`: `Bug|bug|browse|productID=%s`}},
+		{"testcase", map[string]string{`link`: `Case|testcase|browse|productID=%s`, `class`: `dropdown dropdown-hover`}},
+		{"testtask", map[string]string{`link`: `Request|testtask|browse|productID=%s`}},
+		{"testsuite", map[string]string{`link`: `Suite|testsuite|browse|productID=%s`}},
+		{"report", map[string]string{`link`: `Report|testreport|browse|productID=%s`, `alias`: `view,create,edit`}},
+		{"caselib", map[string]string{`link`: `Case Library|caselib|browse`}},
+	}
+	Lang[protocol.EN]["caselib"] = make(map[string]interface{})
+	Lang[protocol.EN]["caselib"]["subMenu"] = Lang[protocol.EN]["qa"]["subMenu"]
+	Lang[protocol.EN]["caselib"]["menu"] = []protocol.HtmlMenu{
+
+		{"bug", map[string]string{`link`: `Bug|bug|browse|`}},
+		{"testcase", map[string]string{`link`: `Case|testcase|browse|`, `class`: `dropdown dropdown-hover`}},
+		{"testtask", map[string]string{`link`: `Request|testtask|browse|`}},
+		{"testsuite", map[string]string{`link`: `Suite|testsuite|browse|`}},
+		{"report", map[string]string{`link`: `Report|testreport|browse|`}},
+		{"caselib", map[string]string{`link`: `Case Library|caselib|browse|libID=%s`, `alias`: `create,createcase,view,edit,batchcreatecase,showimport`, `subModule`: `tree,testcase`}},
+	}
+	Lang[protocol.EN]["ci"] = make(map[string]interface{})
+	Lang[protocol.EN]["ci"]["menu"] = []protocol.HtmlMenu{
+		{"code", map[string]string{`link`: `Code|repo|browse|repoID=%s`, `alias`: `diff,view,revision,log,blame,showsynccomment`}},
+		{"build", map[string]string{`link`: `Compile|job|browse`, `subModule`: `compile,job`}},
+		{"jenkins", map[string]string{`link`: `Jenkins|jenkins|browse`, `alias`: `create,edit`}},
+		{"maintain", map[string]string{`link`: `Repo|repo|maintain`, `alias`: `create,edit`}},
+		{"rules", map[string]string{`link`: `Rule|repo|setrules`}},
+		{"review", map[string]string{`link`: `Review|repo|review|repoID=%s`, `subModule`: `bug`}},
+	}
+	Lang[protocol.EN]["repo"] = make(map[string]interface{})
+	Lang[protocol.EN]["jenkins"] = make(map[string]interface{})
+	Lang[protocol.EN]["compile"] = make(map[string]interface{})
+	Lang[protocol.EN]["job"] = make(map[string]interface{})
+	Lang[protocol.EN]["repo"]["menu"] = Lang[protocol.EN]["ci"]["menu"]
+	Lang[protocol.EN]["jenkins"]["menu"] = Lang[protocol.EN]["ci"]["menu"]
+	Lang[protocol.EN]["compile"]["menu"] = Lang[protocol.EN]["ci"]["menu"]
+	Lang[protocol.EN]["job"]["menu"] = Lang[protocol.EN]["ci"]["menu"]
+
+	/* Doc menu settings. */
+	Lang[protocol.EN]["doc"] = make(map[string]interface{})
+	Lang[protocol.EN]["doc"]["menu"] = []protocol.HtmlMenu{
+		//{"createLib", map[string]string{`link` : `<i class="icon icon-folder-plus"></i>&nbsp;Add Library|doc|createLib`, `float` : `right`}},
+	}
+	Lang[protocol.EN]["svn"] = make(map[string]interface{})
+	Lang[protocol.EN]["git"] = make(map[string]interface{})
+
+	/* Report menu settings. */
+	Lang[protocol.EN]["report"] = make(map[string]interface{})
+	Lang[protocol.EN]["report"]["menu"] = []protocol.HtmlMenu{
+
+		{"annual", map[string]string{`link`: `Annual Summary|report|annualData`, `target`: `_blank`}},
+		{"product", map[string]string{`link`: "roadmap"}},
+		{"prj", map[string]string{`link`: Lang[protocol.EN]["common"]["projectCommon"].(string) + `|report|projectdeviation`}},
+		{"test", map[string]string{`link`: `QA|report|bugcreate`, `alias`: `bugassign,testcase,build,casesrun,storylinkedbug`}},
+		{"staff", map[string]string{`link`: `Company|report|workload`, `alias`: `worksummary,bugsummary,workassignsummary,bugassignsummary`}},
+		{"custom", map[string]string{`link`: `Custom|report|browsereport`, `alias`: `custom`}},
+	}
+	Lang[protocol.EN]["report"]["notice"] = map[string]string{
+		"help": `Note: The report is generated on the results of browsing the list. Click, e.g. AssignedToMe, then click Create Report to generate a report based on AssignedToMe list.`,
+	}
+
+	/* Company menu settings. */
+	Lang[protocol.EN]["company"] = make(map[string]interface{})
+	Lang[protocol.EN]["company"]["menu"] = []protocol.HtmlMenu{
+		{"browseUser", map[string]string{`link`: `User|company|browse`, `subModule`: `user`}},
+		{"dept", map[string]string{`link`: `Department|dept|browse`, `subModule`: `dept`}},
+		{"browseGroup", map[string]string{`link`: `Privilege|group|browse`, `subModule`: `group`}},
+		{"dynamic", map[string]string{`link`: `Dynamics|company|dynamic|`}},
+		{"view", map[string]string{`link`: `Company|company|view`}},
+	}
+
+	Lang[protocol.EN]["company"]["common"] = `Company`
+	Lang[protocol.EN]["company"]["index"] = "Home"
+	Lang[protocol.EN]["company"]["edit"] = "Edit Company"
+	Lang[protocol.EN]["company"]["view"] = "Company Information"
+	Lang[protocol.EN]["company"]["browse"] = "User List"
+	Lang[protocol.EN]["company"]["dynamic"] = "Dynamic"
+	Lang[protocol.EN]["company"]["orgView"] = `View`
+	Lang[protocol.EN]["company"]["name"] = `Name`
+	Lang[protocol.EN]["company"]["phone"] = `Phone`
+	Lang[protocol.EN]["company"]["fax"] = `Fax`
+	Lang[protocol.EN]["company"]["address"] = `Mailing Address`
+	Lang[protocol.EN]["company"]["zipcode"] = `Zip Code`
+	Lang[protocol.EN]["company"]["website"] = `Website`
+	Lang[protocol.EN]["company"]["backyard"] = `Intranet`
+	Lang[protocol.EN]["company"]["guest"] = `Guest Login`
+	Lang[protocol.EN]["company"]["admins"] = `Administrators`
+	Lang[protocol.EN]["company"]["product"] = Lang[protocol.EN]["productCommon"]
+	Lang[protocol.EN]["company"]["project"] = Lang[protocol.EN]["projectCommon"]
+	Lang[protocol.EN]["company"]["user"] = `User`
+
+	Lang[protocol.EN]["dept"] = make(map[string]interface{})
+	Lang[protocol.EN]["dept"]["common"] = `Department`
+	Lang[protocol.EN]["dept"]["manageChild"] = "Department"
+	Lang[protocol.EN]["dept"]["edit"] = "Edit"
+	Lang[protocol.EN]["dept"]["delete"] = "Delete"
+	Lang[protocol.EN]["dept"]["parent"] = "Parent"
+	Lang[protocol.EN]["dept"]["manager"] = "Manager"
+	Lang[protocol.EN]["dept"]["name"] = "Dept Name"
+	Lang[protocol.EN]["dept"]["browse"] = "Manage"
+	Lang[protocol.EN]["dept"]["manage"] = "Manage Dept"
+	Lang[protocol.EN]["dept"]["updateOrder"] = "Sort"
+	Lang[protocol.EN]["dept"]["add"] = "Add Dept"
+	Lang[protocol.EN]["dept"]["dragAndSort"] = "Drag and Sort"
+	Lang[protocol.EN]["dept"]["confirmDelete"] = " Do you want to delete this Dept?"
+	Lang[protocol.EN]["dept"]["successSave"] = " Saved!"
+	Lang[protocol.EN]["dept"]["error"] = map[string]string{
+		"hasSons":  `This Dept has child departments. You cannot delete it!`,
+		"hasUsers": `This Dept has users. You cannot delete it!`,
+	}
+
+	Lang[protocol.EN]["group"] = make(map[string]interface{})
+	Lang[protocol.EN]["user"] = make(map[string]interface{})
+	Lang[protocol.EN]["user"]["common"] = `User`
+	Lang[protocol.EN]["user"]["id"] = `ID`
+	Lang[protocol.EN]["user"]["company"] = `Company`
+	Lang[protocol.EN]["user"]["dept"] = `Department`
+	Lang[protocol.EN]["user"]["account"] = `Account`
+	Lang[protocol.EN]["user"]["password"] = `Password`
+	Lang[protocol.EN]["user"]["password2"] = `Repeat Password`
+	Lang[protocol.EN]["user"]["role"] = `Role`
+	Lang[protocol.EN]["user"]["group"] = `Privilege Group`
+	Lang[protocol.EN]["user"]["realname"] = `Name`
+	Lang[protocol.EN]["user"]["nickname"] = `Nickname`
+	Lang[protocol.EN]["user"]["commiter"] = `SVN/GIT Account`
+	Lang[protocol.EN]["user"]["birthyear"] = `DOB`
+	Lang[protocol.EN]["user"]["gender"] = `Gender`
+	Lang[protocol.EN]["user"]["email"] = `Email`
+	Lang[protocol.EN]["user"]["basicInfo"] = `Basic Info.`
+	Lang[protocol.EN]["user"]["accountInfo"] = `Account Info.`
+	Lang[protocol.EN]["user"]["verify"] = `Verification`
+	Lang[protocol.EN]["user"]["contactInfo"] = `Contact`
+	Lang[protocol.EN]["user"]["skype"] = `Skype`
+	Lang[protocol.EN]["user"]["qq"] = `QQ`
+	Lang[protocol.EN]["user"]["mobile"] = `Mobile`
+	Lang[protocol.EN]["user"]["phone"] = `Phone`
+	Lang[protocol.EN]["user"]["weixin"] = `WeChat`
+	Lang[protocol.EN]["user"]["dingding"] = `DingDing`
+	Lang[protocol.EN]["user"]["slack"] = `Slack`
+	Lang[protocol.EN]["user"]["whatsapp"] = `WhatsApp`
+	Lang[protocol.EN]["user"]["address"] = `Address`
+	Lang[protocol.EN]["user"]["zipcode"] = `ZipCode`
+	Lang[protocol.EN]["user"]["join"] = `Joined`
+	Lang[protocol.EN]["user"]["visits"] = `Visits`
+	Lang[protocol.EN]["user"]["ip"] = `Last IP`
+	Lang[protocol.EN]["user"]["last"] = `Last Login`
+	Lang[protocol.EN]["user"]["ranzhi"] = `Zdoo Account`
+	Lang[protocol.EN]["user"]["ditto"] = `Ditto`
+	Lang[protocol.EN]["user"]["originalPassword"] = `Old Password`
+	Lang[protocol.EN]["user"]["newPassword"] = `New Password`
+	Lang[protocol.EN]["user"]["verifyPassword"] = `Password`
+	Lang[protocol.EN]["user"]["resetPassword"] = `Forgot Password?`
+	Lang[protocol.EN]["user"]["score"] = `Score`
+
+	Lang[protocol.EN]["user"]["legendBasic"] = `Basic Information`
+	Lang[protocol.EN]["user"]["legendContribution"] = `Contribution`
+
+	Lang[protocol.EN]["user"]["index"] = "Home"
+	Lang[protocol.EN]["user"]["view"] = "User Detail"
+	Lang[protocol.EN]["user"]["create"] = "Add User"
+	Lang[protocol.EN]["user"]["batchCreate"] = "Batch Add"
+	Lang[protocol.EN]["user"]["edit"] = "Edit User"
+	Lang[protocol.EN]["user"]["batchEdit"] = "Batch Edit"
+	Lang[protocol.EN]["user"]["unlock"] = "Unlock User"
+	Lang[protocol.EN]["user"]["delete"] = "Delete User"
+	Lang[protocol.EN]["user"]["unbind"] = "Unbind from Zdoo"
+	Lang[protocol.EN]["user"]["login"] = "Login"
+	Lang[protocol.EN]["user"]["mobileLogin"] = "Mobile"
+	Lang[protocol.EN]["user"]["editProfile"] = "Edit Profile"
+	Lang[protocol.EN]["user"]["deny"] = "Your access is denied."
+	Lang[protocol.EN]["user"]["confirmDelete"] = "Do you want to delete this user?"
+	Lang[protocol.EN]["user"]["confirmUnlock"] = "Do you want to unlock this user?"
+	Lang[protocol.EN]["user"]["confirmUnbind"] = "Do you want to unbind this user from Zdoo?"
+	Lang[protocol.EN]["user"]["relogin"] = "Login Again"
+	Lang[protocol.EN]["user"]["asGuest"] = "Guest"
+	Lang[protocol.EN]["user"]["goback"] = "Back"
+	Lang[protocol.EN]["user"]["deleted"] = `(Deleted)`
+	Lang[protocol.EN]["user"]["search"] = `Search`
+
+	Lang[protocol.EN]["user"]["saveTemplate"] = `Save as Template`
+	Lang[protocol.EN]["user"]["setPublic"] = `Set as Public Template`
+	Lang[protocol.EN]["user"]["deleteTemplate"] = `Delete Template`
+	Lang[protocol.EN]["user"]["setTemplateTitle"] = `Please enter the title of template.`
+	Lang[protocol.EN]["user"]["applyTemplate"] = `Templates`
+	Lang[protocol.EN]["user"]["confirmDeleteTemplate"] = `Do you want to delete this template?`
+	Lang[protocol.EN]["user"]["setPublicTemplate"] = `Set as Public Template`
+	Lang[protocol.EN]["user"]["tplContentNotEmpty"] = `The template content cannot be empty!`
+
+	Lang[protocol.EN]["user"]["profile"] = `Profile`
+	Lang[protocol.EN]["user"]["project"] = Lang[protocol.EN]["common"]["projectCommon"].(string) + `s`
+	Lang[protocol.EN]["user"]["task"] = `Tasks`
+	Lang[protocol.EN]["user"]["bug"] = `Bugs`
+	Lang[protocol.EN]["user"]["test"] = `Test`
+	Lang[protocol.EN]["user"]["testTask"] = `Requests`
+	Lang[protocol.EN]["user"]["testCase"] = `Cases`
+	Lang[protocol.EN]["user"]["schedule"] = `Schedule`
+	Lang[protocol.EN]["user"]["todo"] = `Todos`
+	Lang[protocol.EN]["user"]["story"] = `Stories`
+	Lang[protocol.EN]["user"]["dynamic"] = `Dynamics`
+
+	Lang[protocol.EN]["user"]["openedBy"] = `CreatedBy%s`
+	Lang[protocol.EN]["user"]["assignedTo"] = `AssignedTo%s`
+	Lang[protocol.EN]["user"]["finishedBy"] = `FinishedBy%s`
+	Lang[protocol.EN]["user"]["resolvedBy"] = `ResolvedBy%s`
+	Lang[protocol.EN]["user"]["closedBy"] = `ClosedBy%s`
+	Lang[protocol.EN]["user"]["reviewedBy"] = `ReviewedBy%s`
+	Lang[protocol.EN]["user"]["canceledBy"] = `CancelledBy%s`
+
+	Lang[protocol.EN]["user"]["testTask2Him"] = `RequestsAssignedTo%s`
+	Lang[protocol.EN]["user"]["case2Him"] = `CasesAssignedTo%s`
+	Lang[protocol.EN]["user"]["caseByHim"] = `CasesCreatedBy%s`
+
+	Lang[protocol.EN]["user"]["errorDeny"] = "Sorry, your access to <b>%s</b> of <b>%s</b> is denied. Please contact your Admin to get privileges. Click Back to return."
+	Lang[protocol.EN]["user"]["errorView"] = "Sorry, your access view <b>%s</b> is denied. Please contact your Admin to get privileges. Click Back to return."
+	Lang[protocol.EN]["user"]["loginFailed"] = "Login failed. Please check your account and password."
+	Lang[protocol.EN]["user"]["lockWarning"] = "You can try %s times."
+	Lang[protocol.EN]["user"]["loginLocked"] = "Please contact the administrator to unlock your account or try %s minutes later."
+	Lang[protocol.EN]["user"]["weakPassword"] = "Your password does not meet the requirements."
+	Lang[protocol.EN]["user"]["errorWeak"] = "Passwords cannot use [%s] these commonly used weak passwords."
+
+	Lang[protocol.EN]["user"]["roleList"] = []protocol.HtmlKeyValueStr{
+		{`dev`, `Developer`},
+		{`qa`, `Tester`},
+		{`pm`, `Scrum Master`},
+		{`po`, `Product Owner`},
+		{`td`, `Technical Manager`},
+		{`pd`, `Product Manager`},
+		{`qd`, `QA Manager`},
+		{`top`, `Senior Manager`},
+		{`others`, `Others`},
+	}
+
+	Lang[protocol.EN]["user"]["genderList"] = map[string]string{
+		`m`: `Male`,
+		`f`: `Female`,
+	}
+
+	Lang[protocol.EN]["user"]["thirdPerson"] = map[string]string{
+		`m`: `Him`,
+		`f`: `Her`,
+	}
+	Lang[protocol.EN]["user"]["passwordStrengthList"] = []string{
+		"<span style=`color:red`>Weak</span>",
+		"<span style=`color:#000`>Good</span>",
+		"<span style=`color:green`>Strong</span>",
+	}
+
+	Lang[protocol.EN]["user"]["statusList"] = map[string]string{
+		`active`: `Active`,
+		`delete`: `Deleted`,
+	}
+	Lang[protocol.EN]["user"]["statusList"] = map[string]string{
+		`createdTodo`:  `Todos Created`,
+		`createdStory`: `Stories Created`,
+		`finishedTask`: `Tasks Finished`,
+		`resolvedBug`:  `Bugs Resolved`,
+		`createdCase`:  `Cases Created`,
+	}
+	Lang[protocol.EN]["user"]["keepLogin"] = []protocol.HtmlKeyValueStr{
+		{`on`, `Keep Login`},
+	}
+	Lang[protocol.EN]["user"]["loginWithDemoUser"] = `Login as Demo User:`
+
+	Lang[protocol.EN]["user"]["tpl"] = map[string]string{
+		"type":    `Type`,
+		"title":   `TPL Title`,
+		"content": `Content`,
+		"public":  `Public`,
+	}
+	Lang[protocol.EN]["user"]["placeholder"] = map[string]interface{}{
+		"account":          `>= 3 letters, underline and numbers`,
+		"password1":        `>= 6 characters`,
+		"role":             "Role is related to content and user listing order.",
+		"group":            "Group is related to user privileges.",
+		"commiter":         `SVN/Git account`,
+		"verify":           `Please enter your login password.`,
+		"passwordStrength": []string{`>= 6 letters and numbers`, `>= 10 letters, numbers and special characters`},
+	}
+	Lang[protocol.EN]["user"]["error"] = map[string]string{
+		"account":        "ID %s，account must be >= 3 letters, underline, or numbers",
+		"accountDupl":    "ID %s，account is used.",
+		"realname":       "ID %s，must be real name",
+		"password":       "ID %s，password must be >= 6 characters.",
+		"mail":           "ID %s，please enter valid Email address",
+		"reserved":       "ID %s，account is reserved.",
+		"weakPassword":   "ID %s，the password strength is less than the system setting.",
+		"dangerPassword": "ID %s，Passwords cannot be used with [%s] these commonly used if-passwords.",
+
+		"verifyPassword":   "Verification failed. Please enter your Login Password.",
+		"originalPassword": "Old password is incorrect.",
+	}
+	Lang[protocol.EN]["user"]["contactFieldList"] = map[string]interface{}{
+		`phone`:    Lang[protocol.EN]["user"]["phone"],
+		`mobile`:   Lang[protocol.EN]["user"]["mobile"],
+		`qq`:       Lang[protocol.EN]["user"]["qq"],
+		`dingding`: Lang[protocol.EN]["user"]["dingding"],
+		`weixin`:   Lang[protocol.EN]["user"]["weixin"],
+		`skype`:    Lang[protocol.EN]["user"]["skype"],
+		`slack`:    Lang[protocol.EN]["user"]["slack"],
+		`whatsapp`: Lang[protocol.EN]["user"]["whatsapp"],
+	}
+	Lang[protocol.EN]["user"]["contacts"] = map[string]string{
+		"common":   `Contacts`,
+		"listName": `List Name`,
+		"userList": `User List`,
+
+		"manage":        `Manage List`,
+		"contactsList":  `Contact List`,
+		"selectedUsers": `Users`,
+		"selectList":    `List`,
+		"createList":    `Create List`,
+		"noListYet":     `No contact list exists. Please create one first.`,
+		"confirmDelete": `Do you want to delete this list?`,
+		"or":            ` or `,
+	}
+	Lang[protocol.EN]["user"]["resetFail"] = "Failed. Please check the account."
+	Lang[protocol.EN]["user"]["resetSuccess"] = "Reset! Please use your new password to login."
+	Lang[protocol.EN]["user"]["noticeResetFile"] = `<h5>Contact the Administrator to reset your password.</h5>
+    <h5>If you are, please login your Zentao host and create a file named <span> ` + "`" + `%s` + "`" + ` </span>.</h5>
+    <p>Note:</p>
+    <ol>
+    <li>Keep the file empty.</li>
+    <li>If the file exists, remove it and create it again.</li>
+    </ol>`
+
+	Lang[protocol.EN]["dept"]["menu"] = Lang[protocol.EN]["company"]["menu"]
+	Lang[protocol.EN]["group"]["menu"] = Lang[protocol.EN]["company"]["menu"]
+	Lang[protocol.EN]["user"]["menu"] = Lang[protocol.EN]["company"]["menu"]
+
+	/* Admin menu settings. */
+	Lang[protocol.EN]["admin"] = make(map[string]interface{})
+	Lang[protocol.EN]["admin"]["days"] = "Valid Days"
+	Lang[protocol.EN]["admin"]["setting"] = "Setting"
+	Lang[protocol.EN]["admin"]["log"] = "Log"
+	Lang[protocol.EN]["admin"]["api"] = "API"
+	Lang[protocol.EN]["admin"]["getCaptcha"] = "Get Verification Code"
+	Lang[protocol.EN]["admin"]["captcha"] = "Verification Code"
+	Lang[protocol.EN]["admin"]["ztCompany"] = "Verify your company"
+	Lang[protocol.EN]["admin"]["certifyEmail"] = "Verify your Email"
+	Lang[protocol.EN]["admin"]["certifyMobile"] = "Verify your cellphone"
+	Lang[protocol.EN]["admin"]["checkWeak"] = "Weak Password Check"
+	Lang[protocol.EN]["admin"]["safeIndex"] = "Security"
+	Lang[protocol.EN]["admin"]["sso"] = "Zdoo"
+	Lang[protocol.EN]["admin"]["checkDB"] = "Check Database"
+	Lang[protocol.EN]["admin"]["index"] = "Admin Home"
+	Lang[protocol.EN]["admin"]["common"] = "Admin"
+	Lang[protocol.EN]["admin"]["menu"] = []protocol.HtmlMenu{
+		{"index", map[string]string{`link`: `Home|admin|index`, `alias`: `register,certifytemail,certifyztmobile,ztcompany`}},
+		{"message", map[string]string{`link`: `Notification|message|index`, `subModule`: `message,mail,webhook,sms`}},
+		{"custom", map[string]string{`link`: `Custom|custom|set`, `subModule`: `custom`}},
+		{"sso", map[string]string{`link`: `Integration|admin|sso`, `subModule`: `,ldap`}},
+		{"extension", map[string]string{`link`: `Extension|extension|browse`, `subModule`: `extension`}},
+		{"dev", map[string]string{`link`: `Develop|dev|api`, `alias`: `db`, `subModule`: `dev,entry`}},
+		{"translate", map[string]string{`link`: `Translate|dev|translate`}},
+		{"data", map[string]string{`link`: `Data|backup|index`, `subModule`: `backup,action`}},
+		{"safe", map[string]string{`link`: `Security|admin|safe`, `alias`: `checkweak`}},
+		{"system", map[string]string{`link`: `System|cron|index`, `subModule`: `cron`}},
+	}
+	Lang[protocol.EN]["admin"]["subMenu"] = []protocol.HtmlKeyValueInterface{
+		{"message", []protocol.HtmlMenu{
+			{"mail", map[string]string{`link`: `Mail|mail|index`, `subModule`: `mail`}},
+			{"webhook", map[string]string{`link`: `Webhook|webhook|browse`, `subModule`: `webhook`}},
+			{"browser", map[string]string{`link`: `Browser|message|browser`}},
+			{"setting", map[string]string{`link`: `Settings|message|setting`}},
+			{"sms", map[string]string{`link`: "SMS|sms|index"}},
+		}},
+		{"sso", []protocol.HtmlMenu{
+			{"ranzhi", map[string]string{`link`: `Zdoo|admin|sso`}},
+			{"ldap", map[string]string{`link`: `LDAP|ldap|set`, `subModule`: `ldap`}},
+			{"libreoffice", map[string]string{`link`: `Office|custom|libreoffice`}},
+		}},
+		{"dev", []protocol.HtmlMenu{
+			{"api", map[string]string{`link`: `API|dev|api`}},
+			{"db", map[string]string{`link`: `Database|dev|db`}},
+			{"editor", map[string]string{`link`: `Editor|dev|editor`}},
+			{"entry", map[string]string{`link`: `Application|entry|browse`, `subModule`: `entry`}},
+		}},
+		{"data", []protocol.HtmlMenu{
+			{"backup", map[string]string{`link`: `Backup|backup|index`, `subModule`: `backup`}},
+			{"trash", map[string]string{`link`: `Recycle|action|trash`}},
+		}},
+		{"system", []protocol.HtmlMenu{
+			{"cron", map[string]string{`link`: `Cron|cron|index`, `subModule`: `cron`}},
+			{"timezone", map[string]string{`link`: `Timezone|custom|timezone`, `subModule`: `custom`}},
+			{"buildIndex", map[string]string{`link`: `Full Text Search|search|buildindex|`}},
+		}},
+	}
+	Lang[protocol.EN]["convert"] = make(map[string]interface{})
+	Lang[protocol.EN]["upgrade"] = make(map[string]interface{})
+	Lang[protocol.EN]["action"] = make(map[string]interface{})
+	Lang[protocol.EN]["action"]["action"] = `Action`                                       //"Action"替换`Action`
+	Lang[protocol.EN]["action"]["actionID"] = `Action ID`                                  //"Action ID"替换`Action ID`
+	Lang[protocol.EN]["action"]["actor"] = `Handler`                                       //"Handler"替换`Handler`
+	Lang[protocol.EN]["action"]["comment"] = `Comment`                                     //"Comment"替换`Comment`
+	Lang[protocol.EN]["action"]["common"] = `Log`                                          //"Log"替换`Log`
+	Lang[protocol.EN]["action"]["confirmHideAll"] = `Do you want to hide all the records?` //"Do you want to hide all the records?"替换`Do you want to hide all the records?`
+	Lang[protocol.EN]["action"]["create"] = `Add Comment`                                  //"Add Comment"替换`Add Comment`
+	Lang[protocol.EN]["action"]["date"] = `Date`                                           //"Date"替换`Date`
+	Lang[protocol.EN]["action"]["desc"] = map[string]string{
+		"activated":         `$date, activated by <strong>$actor</strong> .` + "\n",
+		"asked":             `$date, doubted by <strong>$actor</strong>.` + "\n",
+		"assigned":          `$date, <strong>$actor</strong> assigned to <strong>$extra</strong>.` + "\n",
+		"blocked":           `$date, blocked by <strong>$actor</strong> .` + "\n",
+		"bugconfirmed":      `$date, <strong>$actor</strong> confirmed Bug.` + "\n",
+		"canceled":          `$date, cancelled by <strong>$actor</strong>.` + "\n",
+		"caseconfirmed":     `$date, <strong>$actor</strong> confirmed the case change. The latest build is <strong>#$extra</strong>` + "\n",
+		"changed":           `$date, changed by <strong>$actor</strong> .` + "\n",
+		"closed":            `$date, closed by <strong>$actor</strong> .` + "\n",
+		"commented":         `$date, added by <strong>$actor</strong>.` + "\n",
+		"commited":          `$date, committed by <strong>$actor</strong>.` + "\n",
+		"common":            `$date, <strong>$action</strong> by <strong>$actor</strong>.` + "\n",
+		"confirmed":         `$date, <strong>$actor</strong> confirmed the story change. The latest build is <strong>#$extra</strong>.` + "\n",
+		"created":           `$date, created by  <strong>$actor</strong> .` + "\n",
+		"delayed":           `$date, postponed by <strong>$actor</strong>.` + "\n",
+		"deleted":           `$date, deleted by <strong>$actor</strong> .` + "\n",
+		"deletedfile":       `$date, <strong>$actor</strong> deleted <strong><i>$extra</i></strong>.` + "\n",
+		"deleteestimate":    `$date, <strong>$actor</strong> deleted Hour.`,
+		"diff1":             `<strong><i>%s</i></strong> is changed. It was "%s" and it is "%s".<br />` + "\n",
+		"diff2":             `<strong><i>%s</i></strong> is changed. The difference is ` + "\n" + "<blockquote class=`textdiff`>%s</blockquote>" + "\n<blockquote class=`original`>%s</blockquote>",
+		"diff3":             `File Name %s was changed to %s .` + "\n",
+		"edited":            `$date, edited by <strong>$actor</strong> .` + "\n",
+		"editestimate":      `$date, <strong>$actor</strong> edited Hour.`,
+		"editfile":          `$date, <strong>$actor</strong> edited <strong><i>$extra</i></strong>.` + "\n",
+		"erased":            `$date, deleted by <strong>$actor</strong> .` + "\n",
+		"extra":             `$date, <strong>$action</strong> as <strong>$extra</strong> by <strong>$actor</strong>.` + "\n",
+		"finished":          `$date, finished by <strong>$actor</strong>.` + "\n",
+		"frombug":           `$date, converted from <strong>$actor</strong>. Its ID was <strong>$extra</strong>.`,
+		"fromfeedback":      `$date, created by <strong>$actor</strong> from <strong>feedback</strong>, the ID which was <strong>$extra</strong>.` + "\n",
+		"gitcommited":       `$date, <strong>$actor</strong> committed and the build is <strong>#$extra</strong>.` + "\n",
+		"hidden":            `$date, hidden by <strong>$actor</strong> .` + "\n",
+		"linkcases":         `$date, the case is linked by <strong>$actor</strong> .` + "\n",
+		"linkcomponent":     `$date, the component is linked by <strong>$actor</strong> .` + "\n",
+		"linked2bug":        `$date Linked to <strong>$extra</strong> by <strong>$actor</strong>`,
+		"linkhost":          `$date, the host is linked by <strong>$actor</strong> .` + "\n",
+		"linkrelatedcase":   `$date, <strong>$actor</strong> linked to  use case <strong>$extra</strong>.` + "\n",
+		"linkservice":       `$date, the service is linked by <strong>$actor</strong> .` + "\n",
+		"moved":             `$date, moved by <strong>$actor</strong> , which was "$extra".` + "\n",
+		"offline":           `$date, set offline by <strong>$actor</strong> .` + "\n",
+		"online":            `$date, set online by <strong>$actor</strong> .` + "\n",
+		"opened":            `$date, created by <strong>$actor</strong> .` + "\n",
+		"paused":            `$date, paused by <strong>$actor</strong>.` + "\n",
+		"recordestimate":    `$date, recorded by <strong>$actor</strong> and it cost <strong>$extra</strong> hours.`,
+		"replied":           `$date, replied by <strong>$actor</strong>.` + "\n",
+		"repocreated":       `$date, created and reviewed by <strong>$actor</strong>: $extra.` + "\n",
+		"reported":          `$date, reported by <strong>$actor</strong>.` + "\n",
+		"restarted":         `$date, continued by <strong>$actor</strong>.` + "\n",
+		"revoked":           `$date, reviewed by <strong>$actor</strong>.` + "\n",
+		"started":           `$date, started by <strong>$actor</strong>.` + "\n",
+		"suspended":         `$date, suspended by <strong>$actor</strong>.` + "\n",
+		"svncommited":       `$date, <strong>$actor</strong> committed and the build is <strong>#$extra</strong>.` + "\n",
+		"tobug":             `$date, converted to Bug by <strong>$actor</strong>. Its ID was <strong>$extra</strong>.` + "\n",
+		"tostory":           `$date, converted to ` + Lang[protocol.EN]["common"]["storyCommon"].(string) + ` by <strong>$actor</strong>. Its ID was <strong>$extra</strong>.` + "\n",
+		"totask":            `$date, converted to Task by <strong>$actor</strong>. Its ID was <strong>$extra</strong>.` + "\n",
+		"totodo":            `$date, converted to todo from <strong>$actor</strong>. Its ID was <strong>$extra</strong>.` + "\n",
+		"undeleted":         `$date, restored by <strong>$actor</strong> .` + "\n",
+		"unlinkrelatedcase": `$date, <strong>$actor</strong> unlinked use case <strong>$extra</strong>.` + "\n",
+		"verified":          `$date, verified by <strong>$actor</strong>.` + "\n",
+	}
+
+	Lang[protocol.EN]["action"]["dynamic"] = []protocol.HtmlKeyValueStr{
+		{"all", `All`},
+		{"hidden", `Hidden`},
+		{"lastMonth", `Last Month`},
+		{"lastWeek", `Last Week`},
+		{"search", `Search`},
+		{"thisMonth", `This Month`},
+		{"thisWeek", `This Week`},
+		{"today", `Today`},
+		{"twoDaysAgo", `2 Days Ago`},
+		{"yesterday", `Yesterday`},
+	}
+	Lang[protocol.EN]["action"]["dynamicAction"] = map[string]map[string]string{
+		"attend": map[string]string{
+			`commited`: `Commit attend`,
+			`reviewed`: `Review attend`,
+		},
+		"buf": map[string]string{
+			`fromfeedback`: `Create bug  from feedback`,
+			`repocreated`:  "create and review",
+		},
+		"deploy": map[string]string{
+			"activated": `Activate deploy`,
+			"finished":  `Finish deploy`,
+			`commented`: `Comment deploy`,
+			`created`:   `Create deploy`,
+			`deleted`:   `Delete deploy`,
+			`edited`:    `Edit deploy`,
+			`hidden`:    `Hide deploy`,
+			`undeleted`: `Restore deploy`,
+		},
+		"deploystep": map[string]string{
+			"assigned":  `Assign step`,
+			"finished":  `Finish step`,
+			`created`:   `Create step`,
+			`deleted`:   `Delete step`,
+			`edited`:    `Edit step`,
+			`hidden`:    `Hide step`,
+			`undeleted`: `Restore step`,
+		},
+		"effort": map[string]string{
+			`created`:   `Create Effort`,
+			`deleted`:   `Delete Effort`,
+			`edited`:    `Edite Effort`,
+			`hidden`:    `Hide Effort`,
+			`undeleted`: `Restore Effort`,
+		},
+		"feedback": map[string]string{
+			`asked`:     `Ask feedback`,
+			`assigned`:  `Assign feedback`,
+			`closed`:    `Close feedback`,
+			`commented`: `Commit feedback`,
+			`edited`:    `Edit feedback`,
+			`opened`:    `Create feedback`,
+			`replied`:   `Reply feedback`,
+			`reviewed`:  `Review feedback`,
+			`tobug`:     `To bug`,
+			`tostory`:   `To ` + Lang[protocol.EN]["common"]["storyCommon"].(string),
+			`totask`:    `To task`,
+			`totodo`:    `To todo`,
+		},
+		"holiday": map[string]string{
+			`created`: `Create holiday`,
+		},
+		"host": map[string]string{
+			`created`:   `Create host`,
+			`deleted`:   `Delete host`,
+			`edited`:    `Edit host`,
+			`hidden`:    `Hide host`,
+			`offline`:   `Offline host`,
+			`online`:    `Online host`,
+			`undeleted`: `Restore host`,
+		},
+		"leave": map[string]string{
+			`commited`: `Commit leave`,
+			`created`:  `Create leave`,
+			`edited`:   `Edit leave`,
+			`reported`: `Sales leave`,
+			`reviewed`: `Review leave`,
+			`revoked`:  `Revoke leave`,
+		},
+		"lieu": map[string]string{
+
+			`commited`: `Commit lieu`,
+			`created`:  `Create lieu`,
+			`edited`:   `Edit lieu`,
+			`reviewed`: `Review lieu`,
+			`revoked`:  `Revoke lieu`,
+		},
+		"makeup": map[string]string{
+			`commited`: `Commit makeup`,
+			`created`:  `Create makeup`,
+			`edited`:   `Edit makeup`,
+			`reviewed`: `Review makeup`,
+			`revoked`:  `Revoke makeup`,
+		},
+		"overtime": map[string]string{
+			`commited`: `Commit overtime`,
+			`created`:  `Create overtime`,
+			`edited`:   `Edit overtime`,
+			`reviewed`: `Review overtime`,
+			`revoked`:  `Revoke overtime`,
+		},
+		"serverroom": map[string]string{
+			`created`:   `Create server room`,
+			`deleted`:   `Delete server room`,
+			`edited`:    `Edit server room`,
+			`hidden`:    `Hide server room`,
+			`undeleted`: `Restore server room`,
+		},
+		"service": map[string]string{
+			`created`:   `Create service`,
+			`deleted`:   `Delete service`,
+			`edited`:    `Edit service`,
+			`hidden`:    `Hide service`,
+			`undeleted`: `Restore service`,
+		},
+		"story": map[string]string{
+			`fromfeedback`: "Create " + Lang[protocol.EN]["common"]["storyCommon"].(string) + " from feedback",
+		},
+		"task": map[string]string{
+			`fromfeedback`: `Create task from feedback`,
+			`gitcommited`:  `Git Commit`,
+		},
+		"todo": map[string]string{
+			`fromfeedback`: `Create todo from feedback`,
+		},
+	}
+
+	Lang[protocol.EN]["action"]["editComment"] = `Edit` //"Edit"替换`Edit`
+	Lang[protocol.EN]["action"]["hideAll"] = `Hide All` //"Hide All"替换`Hide All`
+	Lang[protocol.EN]["action"]["hideOne"] = `Hide`     //"Hide"替换`Hide`
+	Lang[protocol.EN]["action"]["history"] = map[string]string{
+		"action": `Link`,
+		"diff":   `Diff`,
+		"field":  `Field`,
+		"new":    `New value`,
+		"old":    `Old value`,
+	}
+
+	Lang[protocol.EN]["action"]["historyEdit"] = `The history EditBy cannot be empty.` //"The history EditBy cannot be empty."替换`The history EditBy cannot be empty.`
+	Lang[protocol.EN]["action"]["label"] = map[string]string{
+		"activated":           `activated `,
+		"asked":               `doubted`,
+		"assigned":            `assigned `,
+		"attend_commited":     `attend|attend|browsereview|`,
+		"attend_reviewed":     `attend|attend|personal|`,
+		"blocked":             `blocked `,
+		"bug":                 `Bug|bug|view|bugID=%s`,
+		"bugconfirmed":        `Confirmed`,
+		"build":               `Build|build|view|buildID=%s`,
+		"canceled":            `cancelled `,
+		"case":                `Case|testcase|view|caseID=%s`,
+		"caselib":             `Case Library|testsuite|libview|libID=%s`,
+		"changed":             `changed `,
+		"changestatus":        `Change Status`,
+		"closed":              `closed `,
+		"commented":           `commented `,
+		"commited":            `committed`,
+		"confirmed":           `Confirm Story`,
+		"created":             `created `,
+		"delayed":             `delayed `,
+		"deleted":             `deleted `,
+		"deletedfile":         `deleted `,
+		"deleteestimate":      "deleted ",
+		"deploy":              `Deploy|deploy|view|id=%s`,
+		"deploystep":          `Deploy Step|deploy|viewStep|id=%s`,
+		"doc":                 `Doc|doc|view|docID=%s`,
+		"doclib":              `Doc Lib|doc|browse|libID=%s`,
+		"edited":              `edited `,
+		"editestimate":        `edited `,
+		"editfile":            `edit `,
+		"effort":              `Effort|effort|view|effortID=%s`,
+		"entry":               `Entry|entry|browse|`,
+		"erased":              `erased `,
+		"feedback":            `Feedback|feedback|view|id=%s`,
+		"finished":            `finished `,
+		"frombug":             `Converted from Bug`,
+		"fromfeedback":        `from feedback`,
+		"fromlib":             `Import from library`,
+		"gitcommited":         `Git Commit`,
+		"hidden":              `hid `,
+		"holiday":             `Holiday|holiday|browse|`,
+		"host":                `Host|host|view|id=%s`,
+		"leave_commited":      `leave|leave|browsereview|`,
+		"leave_created":       `leave|leave|browsereview|`,
+		"leave_reported":      `leave|leave|browsereview|`,
+		"leave_reviewed":      `leave|leave|personal|`,
+		"leave_revoked":       `leave|leave|browsereview|`,
+		"lieu_commited":       `lieu|lieu|browsereview|`,
+		"lieu_created":        `lieu|lieu|browsereview|`,
+		"lieu_reviewed":       `lieu|lieu|personal|`,
+		"lieu_revoked":        `lieu|lieu|browsereview|`,
+		"linkcases":           `link cases to`,
+		"linkcomponent":       `link components to`,
+		"linked2bug":          "linked ",
+		"linked2build":        "linked ",
+		"linked2plan":         `Link to Plan`,
+		"linked2project":      "Link " + Lang[protocol.EN]["common"]["projectCommon"].(string) + "",
+		"linked2release":      "Link Release",
+		"linkhost":            `link hosts to`,
+		"linkrelatedbug":      "Link to Bug",
+		"linkrelatedcase":     "Link to Case",
+		"linkrelatedstory":    "Link to Story",
+		"linkservice":         `link services to`,
+		"login":               `Login`,
+		"logout":              "Logout",
+		"makeup_commited":     `makeup|makeup|browsereview|`,
+		"makeup_created":      `makeup|makeup|browsereview|`,
+		"makeup_reviewed":     `makeup|makeup|personal|`,
+		"makeup_revoked":      `makeup|makeup|browsereview|`,
+		"marked":              `marked`,
+		"moved":               `moved `,
+		"offline":             `offline`,
+		"online":              `online`,
+		"opened":              `opened `,
+		"overtime_commited":   `overtime|overtime|browsereview|`,
+		"overtime_created":    `overtime|overtime|browsereview|`,
+		"overtime_reviewed":   `overtime|overtime|personal|`,
+		"overtime_revoked":    `overtime|overtime|browsereview|`,
+		"paused":              `paused `,
+		"product":             Lang[protocol.EN]["common"]["productCommon"].(string) + `|product|view|productID=%s`,
+		"productplan":         `Plan|productplan|view|productID=%s`,
+		"project":             "" + Lang[protocol.EN]["common"]["projectCommon"].(string) + "|project|view|projectID=%s",
+		"recordestimate":      `recorded `,
+		"release":             `Release|release|view|productID=%s`,
+		"replied":             `replied`,
+		"repocreated":         "create and review",
+		"reported":            `reported`,
+		"resolved":            `resolved `,
+		"restarted":           `continued `,
+		"reviewed":            `reviewed `,
+		"revoked":             `revoked`,
+		"serverroom":          `IDC|serverroom|browse|`,
+		"service":             `Service|service|view|id=%s`,
+		"space":               ` `,
+		"started":             `started `,
+		"story":               `Story|story|view|storyID=%s`,
+		"subdividestory":      "Decompose Story",
+		"suspended":           `suspended `,
+		"svncommited":         `SVN Commit`,
+		"task":                `Task|task|view|taskID=%s`,
+		"testreport":          `Report|testreport|view|report=%s`,
+		"testsuite":           `Test Suite|testsuite|view|suiteID=%s`,
+		"testtask":            `Test Task|testtask|view|caseID=%s`,
+		"tobug":               `convert to bug`,
+		"todo":                `Todo|todo|view|todoID=%s`,
+		"tostory":             `Convert to Story`,
+		"totask":              `Convert to Task`,
+		"totodo":              `convert to todo`,
+		"undeleted":           `restored `,
+		"unlinkchildstory":    "Unlink",
+		"unlinkedfrombuild":   "Unlink Build",
+		"unlinkedfromplan":    `Unlink`,
+		"unlinkedfromproject": "Unlink " + Lang[protocol.EN]["common"]["projectCommon"].(string) + "",
+		"unlinkedfromrelease": "Unlink Release",
+		"unlinkrelatedbug":    "Unlink",
+		"unlinkrelatedcase":   "Unlink",
+		"unlinkrelatedstory":  "Unlink",
+		"user":                `User|user|view|account=%s`,
+		"verified":            `verified `,
+		"webhook":             `Webhook|webhook|browse|`,
+	}
+
+	Lang[protocol.EN]["action"]["needEdit"] = `%s that you want to restore exists. Please edit it.` //"%s that you want to restore exists. Please edit it."替换`%s that you want to restore exists. Please edit it.`
+	Lang[protocol.EN]["action"]["noDynamic"] = `No dynamics. `                                      //"No dynamics. "替换`No dynamics. `
+	Lang[protocol.EN]["action"]["objectID"] = `ID`                                                  //"ID"替换`ID`
+	Lang[protocol.EN]["action"]["objectName"] = `Object Name`                                       //"Object Name"替换`Object Name`
+	Lang[protocol.EN]["action"]["objectType"] = `Object Type`                                       //"Object Type"替换`Object Type`
+	Lang[protocol.EN]["action"]["objectTypes"] = map[string]string{
+		"branch":      `Branch`,
+		"bug":         `Bug`,
+		"build":       `Build`,
+		"case":        `Case`,
+		"caselib":     `Library`,
+		"caseresult":  `Case Result`,
+		"deploy":      `Deploy`,
+		"deploystep":  `Deploy Step`,
+		"doc":         `Doc`,
+		"doclib":      `Doc Lib`,
+		"effort":      "Effort",
+		"entry":       `Entry`,
+		"feedback":    `Feedback`,
+		"holiday":     `Holiday`,
+		"host":        `Host`,
+		"leave":       `Leave`,
+		"lieu":        `Lieu`,
+		"makeup":      `Makeup`,
+		"module":      `Module`,
+		"overtime":    `Overtime`,
+		"product":     Lang[protocol.EN]["common"]["productCommon"].(string),
+		"productplan": `Plan`,
+		"project":     Lang[protocol.EN]["common"]["projectCommon"].(string),
+		"release":     `Release`,
+		"report":      `Report`,
+		"serverroom":  `IDC`,
+		"service":     `Service`,
+		"stepresult":  `Case Steps`,
+		"story":       `Story`,
+		"task":        `Task`,
+		"testreport":  `Report`,
+		"testsuite":   `Suite`,
+		"testtask":    `Test Build`,
+		"todo":        `Todo`,
+		"user":        `User`,
+		"webhook":     `Webhook`,
+	}
+
+	Lang[protocol.EN]["action"]["original"] = `Original Format` //"Original Format"替换`Original Format`
+	Lang[protocol.EN]["action"]["periods"] = []protocol.HtmlKeyValueStr{
+		{"all", `All`},
+		{"lastMonth", `Last Month`},
+		{"lastWeek", `Last Week`},
+		{"thisMonth", `This Month`},
+		{"thisWeek", `This Week`},
+		{"today", `Today`},
+		{"yesterday", `Yesterday`},
+	}
+
+	Lang[protocol.EN]["action"]["product"] = Lang[protocol.EN]["common"]["productCommon"]
+	Lang[protocol.EN]["action"]["project"] = Lang[protocol.EN]["common"]["projectCommon"].(string)
+	Lang[protocol.EN]["action"]["search"] = map[string]interface{}{
+		"label": []protocol.HtmlKeyValueStr{
+			{``, ``},
+			{"activated", Lang[protocol.EN]["action"]["label"].(map[string]string)["activated"]},
+			{"assigned", Lang[protocol.EN]["action"]["label"].(map[string]string)["assigned"]},
+			{"blocked", Lang[protocol.EN]["action"]["label"].(map[string]string)["blocked"]},
+			{"bugconfirmed", Lang[protocol.EN]["action"]["label"].(map[string]string)["bugconfirmed"]},
+			{"canceled", Lang[protocol.EN]["action"]["label"].(map[string]string)["canceled"]},
+			{"changed", Lang[protocol.EN]["action"]["label"].(map[string]string)["changed"]},
+			{"changestatus", Lang[protocol.EN]["action"]["label"].(map[string]string)["changestatus"]},
+			{"closed", Lang[protocol.EN]["action"]["label"].(map[string]string)["closed"]},
+			{"commented", Lang[protocol.EN]["action"]["label"].(map[string]string)["commented"]},
+			{"confirmed", Lang[protocol.EN]["action"]["label"].(map[string]string)["confirmed"]},
+			{"created", Lang[protocol.EN]["action"]["label"].(map[string]string)["created"]},
+			{"deleted", Lang[protocol.EN]["action"]["label"].(map[string]string)["deleted"]},
+			{"deletedfile", Lang[protocol.EN]["action"]["label"].(map[string]string)["deletedfile"]},
+			{"edited", Lang[protocol.EN]["action"]["label"].(map[string]string)["edited"]},
+			{"editestimate", Lang[protocol.EN]["action"]["label"].(map[string]string)["editestimate"]},
+			{"editfile", Lang[protocol.EN]["action"]["label"].(map[string]string)["editfile"]},
+			{"erased", Lang[protocol.EN]["action"]["label"].(map[string]string)["erased"]},
+			{"finished", Lang[protocol.EN]["action"]["label"].(map[string]string)["finished"]},
+			{"frombug", Lang[protocol.EN]["action"]["label"].(map[string]string)["frombug"]},
+			{"gitcommited", Lang[protocol.EN]["action"]["label"].(map[string]string)["gitcommited"]},
+			{"hidden", Lang[protocol.EN]["action"]["label"].(map[string]string)["hidden"]},
+			{"linked2plan", Lang[protocol.EN]["action"]["label"].(map[string]string)["linked2plan"]},
+			{"linked2project", Lang[protocol.EN]["action"]["label"].(map[string]string)["linked2project"]},
+			{"login", Lang[protocol.EN]["action"]["label"].(map[string]string)["login"]},
+			{"logout", Lang[protocol.EN]["action"]["label"].(map[string]string)["logout"]},
+			{"marked", Lang[protocol.EN]["action"]["label"].(map[string]string)["marked"]},
+			{"moved", Lang[protocol.EN]["action"]["label"].(map[string]string)["moved"]},
+			{"opened", Lang[protocol.EN]["action"]["label"].(map[string]string)["opened"]},
+			{"paused", Lang[protocol.EN]["action"]["label"].(map[string]string)["paused"]},
+			{"recordestimate", Lang[protocol.EN]["action"]["label"].(map[string]string)["recordestimate"]},
+			{"resolved", Lang[protocol.EN]["action"]["label"].(map[string]string)["resolved"]},
+			{"restarted", Lang[protocol.EN]["action"]["label"].(map[string]string)["restarted"]},
+			{"reviewed", Lang[protocol.EN]["action"]["label"].(map[string]string)["reviewed"]},
+			{"started", Lang[protocol.EN]["action"]["label"].(map[string]string)["started"]},
+			{"svncommited", Lang[protocol.EN]["action"]["label"].(map[string]string)["svncommited"]},
+			{"tostory", Lang[protocol.EN]["action"]["label"].(map[string]string)["tostory"]},
+			{"totask", Lang[protocol.EN]["action"]["label"].(map[string]string)["totask"]},
+			{"undeleted", Lang[protocol.EN]["action"]["label"].(map[string]string)["undeleted"]},
+			{"unlinkedfromplan", Lang[protocol.EN]["action"]["label"].(map[string]string)["unlinkedfromplan"]},
+			{"unlinkedfromproject", Lang[protocol.EN]["action"]["label"].(map[string]string)["unlinkedfromproject"]},
+			{"verified", Lang[protocol.EN]["action"]["label"].(map[string]string)["verified"]},
+		},
+		"objectTypeList": []protocol.HtmlKeyValueStr{
+			{``, ``},
+			{"branch", `Branch`},
+			{"bug", `Bug`},
+			{"build", `Build`},
+			{"case", `Case`},
+			{"caselib", `Library`},
+			{"caseresult", `Case Results`},
+			{"doc", `Doc`},
+			{"doclib", `Doc Lib`},
+			{"product", Lang[protocol.EN]["common"]["productCommon"].(string)},
+			{"productplan", `Plan`},
+			{"project", Lang[protocol.EN]["common"]["projectCommon"].(string)},
+			{"release", `Release`},
+			{"stepresult", `Case Steps`},
+			{"story", `Story`},
+			{"task", `Task`},
+			{"testreport", `Report`},
+			{"testsuite", `Suite`},
+			{"testtask", `Test Task`},
+			{"todo", `Todo`},
+			{"user", `User`},
+		},
+	}
+
+	Lang[protocol.EN]["action"]["textDiff"] = `Text Format`                       //"Text Format"替换`Text Format`
+	Lang[protocol.EN]["action"]["trash"] = `Recycle`                              //"Recycle"替换`Recycle`
+	Lang[protocol.EN]["action"]["trashTips"] = `Note: Delete in ZenTao is logic.` //"Note: Delete in ZenTao is logic."替换`Note: Delete in ZenTao is logic.`
+	Lang[protocol.EN]["action"]["undelete"] = `Restore`                           //"Restore"替换`Restore`
+
+	Lang[protocol.EN]["backup"] = make(map[string]interface{})
+	Lang[protocol.EN]["extension"] = make(map[string]interface{})
+	Lang[protocol.EN]["custom"] = make(map[string]interface{})
+	Lang[protocol.EN]["mail"] = make(map[string]interface{})
+	Lang[protocol.EN]["cron"] = make(map[string]interface{})
+	Lang[protocol.EN]["dev"] = make(map[string]interface{})
+	Lang[protocol.EN]["entry"] = make(map[string]interface{})
+	Lang[protocol.EN]["webhook"] = make(map[string]interface{})
+	Lang[protocol.EN]["message"] = make(map[string]interface{})
+	Lang[protocol.EN]["search"] = make(map[string]interface{})
+
+	Lang[protocol.EN]["convert"]["menu"] = Lang[protocol.EN]["admin"]["menu"]
+	Lang[protocol.EN]["upgrade"]["menu"] = Lang[protocol.EN]["admin"]["menu"]
+	Lang[protocol.EN]["action"]["menu"] = Lang[protocol.EN]["admin"]["menu"]
+	Lang[protocol.EN]["backup"]["menu"] = Lang[protocol.EN]["admin"]["menu"]
+	Lang[protocol.EN]["cron"]["menu"] = Lang[protocol.EN]["admin"]["menu"]
+	Lang[protocol.EN]["extension"]["menu"] = Lang[protocol.EN]["admin"]["menu"]
+	Lang[protocol.EN]["custom"]["menu"] = Lang[protocol.EN]["admin"]["menu"]
+	Lang[protocol.EN]["mail"]["menu"] = Lang[protocol.EN]["admin"]["menu"]
+	Lang[protocol.EN]["dev"]["menu"] = Lang[protocol.EN]["admin"]["menu"]
+	Lang[protocol.EN]["entry"]["menu"] = Lang[protocol.EN]["admin"]["menu"]
+	Lang[protocol.EN]["webhook"]["menu"] = Lang[protocol.EN]["admin"]["menu"]
+	Lang[protocol.EN]["message"]["menu"] = Lang[protocol.EN]["admin"]["menu"]
+
+	/* Menu group. */
+	Lang[protocol.EN]["menugroup"] = make(map[string]interface{})
+	Lang[protocol.EN]["menugroup"]["workflowrule"] = "workflow"
+	Lang[protocol.EN]["menugroup"]["workflowlayout"] = "workflow"
+	Lang[protocol.EN]["menugroup"]["workflowlabel"] = "workflow"
+	Lang[protocol.EN]["menugroup"]["workflowhook"] = "workflow"
+	Lang[protocol.EN]["menugroup"]["workflowfield"] = "workflow"
+	Lang[protocol.EN]["menugroup"]["workflowdatasource"] = "workflow"
+	Lang[protocol.EN]["menugroup"]["workflowaction"] = "workflow"
+	Lang[protocol.EN]["menugroup"]["sms"] = "admin"
+	Lang[protocol.EN]["menugroup"]["service"] = "ops"
+	Lang[protocol.EN]["menugroup"]["serverroom"] = "ops"
+	Lang[protocol.EN]["menugroup"]["overtime"] = "oa"
+	Lang[protocol.EN]["menugroup"]["makeup"] = "oa"
+	Lang[protocol.EN]["menugroup"]["lieu"] = "oa"
+	Lang[protocol.EN]["menugroup"]["leave"] = "oa"
+	Lang[protocol.EN]["menugroup"]["ldap"] = "admin"
+	Lang[protocol.EN]["menugroup"]["host"] = "ops"
+	Lang[protocol.EN]["menugroup"]["holiday"] = "oa"
+	Lang[protocol.EN]["menugroup"]["faq"] = "feedback"
+	Lang[protocol.EN]["menugroup"]["effort"] = "my"
+	Lang[protocol.EN]["menugroup"]["deploy"] = "ops"
+	Lang[protocol.EN]["menugroup"]["attend"] = "oa"
+	Lang[protocol.EN]["menugroup"]["release"] = `product`
+	Lang[protocol.EN]["menugroup"]["story"] = `product`
+	Lang[protocol.EN]["menugroup"]["branch"] = `product`
+	Lang[protocol.EN]["menugroup"]["productplan"] = `product`
+	Lang[protocol.EN]["menugroup"]["task"] = `project`
+	Lang[protocol.EN]["menugroup"]["build"] = `project`
+	Lang[protocol.EN]["menugroup"]["convert"] = `admin`
+	Lang[protocol.EN]["menugroup"]["upgrade"] = `admin`
+	Lang[protocol.EN]["menugroup"]["user"] = `company`
+	Lang[protocol.EN]["menugroup"]["group"] = `company`
+	Lang[protocol.EN]["menugroup"]["bug"] = `qa`
+	Lang[protocol.EN]["menugroup"]["testcase"] = `qa`
+	Lang[protocol.EN]["menugroup"]["case"] = `qa`
+	Lang[protocol.EN]["menugroup"]["testtask"] = `qa`
+	Lang[protocol.EN]["menugroup"]["testsuite"] = `qa`
+	Lang[protocol.EN]["menugroup"]["caselib"] = `qa`
+	Lang[protocol.EN]["menugroup"]["testreport"] = `qa`
+	Lang[protocol.EN]["menugroup"]["doclib"] = `doc`
+	Lang[protocol.EN]["menugroup"]["people"] = `company`
+	Lang[protocol.EN]["menugroup"]["dept"] = `company`
+	Lang[protocol.EN]["menugroup"]["todo"] = `my`
+	Lang[protocol.EN]["menugroup"]["score"] = `my`
+	Lang[protocol.EN]["menugroup"]["action"] = `admin`
+	Lang[protocol.EN]["menugroup"]["backup"] = `admin`
+	Lang[protocol.EN]["menugroup"]["cron"] = `admin`
+	Lang[protocol.EN]["menugroup"]["extension"] = `admin`
+	Lang[protocol.EN]["menugroup"]["custom"] = `admin`
+	Lang[protocol.EN]["menugroup"]["mail"] = `admin`
+	Lang[protocol.EN]["menugroup"]["dev"] = `admin`
+	Lang[protocol.EN]["menugroup"]["entry"] = `admin`
+	Lang[protocol.EN]["menugroup"]["webhook"] = `admin`
+	Lang[protocol.EN]["menugroup"]["message"] = `admin`
+
+	Lang[protocol.EN]["menugroup"]["repo"] = `ci`
+	Lang[protocol.EN]["menugroup"]["jenkins"] = `ci`
+	Lang[protocol.EN]["menugroup"]["compile"] = `ci`
+	Lang[protocol.EN]["menugroup"]["job"] = `ci`
+
+	/* Error info. */
+	Lang[protocol.EN]["error"] = make(map[string]interface{})
+	Lang[protocol.EN]["error"]["companyNotFound"] = "The domain %s cannot be found!"
+	Lang[protocol.EN]["error"]["length"] = "『%s』length error. It should be『%s』"
+	Lang[protocol.EN]["error"]["length1"] = "『%s』length should be <=『%s』and >『%s』."
+	Lang[protocol.EN]["error"]["reg"] = "『%s』format error. It should be『%s』."
+	Lang[protocol.EN]["error"]["unique"] = "『%s』『%s』exists. Go to Admin->Data->Recycle Bin to restore it, if you are sure it is deleted."
+	Lang[protocol.EN]["error"]["gt"] = "『%s』should be >『%s』."
+	Lang[protocol.EN]["error"]["ge"] = "『%s』should be >=『%s』."
+	Lang[protocol.EN]["error"]["notempty"] = "『%s』should not be blank."
+	Lang[protocol.EN]["error"]["empty"] = "『%s』should be null."
+	Lang[protocol.EN]["error"]["equal"] = "『%s』has to be『%s』."
+	Lang[protocol.EN]["error"]["int"] = "『%s』should be numbers"
+	Lang[protocol.EN]["error"]["int1"] = "『%s』should be 『%s-%s』."
+	Lang[protocol.EN]["error"]["float"] = "『%s』should have numbers, or decimals."
+	Lang[protocol.EN]["error"]["email"] = "『%s』should be valid Email."
+	Lang[protocol.EN]["error"]["URL"] = "『%s』should be url."
+	Lang[protocol.EN]["error"]["date"] = "『%s』should be valid date."
+	Lang[protocol.EN]["error"]["datetime"] = "『%s』should be valid date."
+	Lang[protocol.EN]["error"]["code"] = "『%s』should be letters or numbers."
+	Lang[protocol.EN]["error"]["account"] = "『%s』should be >= 3 letters or numbers."
+	Lang[protocol.EN]["error"]["passwordsame"] = "Passwords should be consistent."
+	Lang[protocol.EN]["error"]["passwordrule"] = "Password should conform to rules. It should be >= 6 characters."
+	Lang[protocol.EN]["error"]["accessDenied"] = `Access is denied.`
+	Lang[protocol.EN]["error"]["pasteImg"] = `Images are not allowed to be pasted in your browser!`
+	Lang[protocol.EN]["error"]["noData"] = `No data.`
+	Lang[protocol.EN]["error"]["editedByOther"] = `This record might have been changed. Please refresh and try to edit again!`
+	Lang[protocol.EN]["error"]["tutorialData"] = `No data can be imported in tutorial mode. Please quit tutorial first!`
+	Lang[protocol.EN]["error"]["noCurlExt"] = `No Curl module installed`
+
+	/* Page info. */
+	Lang[protocol.EN]["pager"] = make(map[string]interface{})
+	Lang[protocol.EN]["pager"]["noRecord"] = "No records."
+	Lang[protocol.EN]["pager"]["digest"] = "Total: <strong>%s</strong>. %s <strong>%s/%s</strong> &nbsp; "
+	Lang[protocol.EN]["pager"]["recPerPage"] = " <strong>%s</strong> per page"
+	Lang[protocol.EN]["pager"]["first"] = "<i class=`icon-step-backward` title=`Home`></i>"
+	Lang[protocol.EN]["pager"]["pre"] = "<i class=`icon-play icon-flip-horizontal` title=`Previous Page`></i>"
+	Lang[protocol.EN]["pager"]["next"] = "<i class=`icon-play` title=`Next Page`></i>"
+	Lang[protocol.EN]["pager"]["last"] = "<i class=`icon-step-forward` title=`Last Page`></i>"
+	Lang[protocol.EN]["pager"]["locate"] = "Go!"
+	Lang[protocol.EN]["pager"]["previousPage"] = "Prev"
+	Lang[protocol.EN]["pager"]["nextPage"] = "Next"
+	Lang[protocol.EN]["pager"]["summery"] = "<strong>%s-%s</strong> of <strong>%s</strong>."
+	Lang[protocol.EN]["pager"]["pageOfText"] = "Page {0}"
+	Lang[protocol.EN]["pager"]["firstPage"] = "First"
+	Lang[protocol.EN]["pager"]["lastPage"] = "Last"
+	Lang[protocol.EN]["pager"]["goto"] = "Goto"
+	Lang[protocol.EN]["pager"]["pageOf"] = "Page <strong>{page}</strong>"
+	Lang[protocol.EN]["pager"]["totalPage"] = "<strong>{totalPage}</strong> pages"
+	Lang[protocol.EN]["pager"]["totalCount"] = "Total: <strong>{recTotal}</strong> items"
+	Lang[protocol.EN]["pager"]["pageSize"] = "<strong>{recPerPage}</strong> per page"
+	Lang[protocol.EN]["pager"]["itemsRange"] = "From <strong>{start}</strong> to <strong>{end}</strong>"
+	Lang[protocol.EN]["pager"]["pageOfTotal"] = "Page <strong>{page}</strong> of <strong>{totalPage}</strong>"
+
+	Lang[protocol.EN]["colorPicker"] = make(map[string]interface{})
+	Lang[protocol.EN]["colorPicker"]["errorTip"] = `Not a valid color value`
+	/* Datepicker. */
+	Lang[protocol.EN]["datepicker"] = make(map[string]interface{})
+
+	Lang[protocol.EN]["datepicker"]["dpText"] = map[string]string{
+		"TEXT_OR":          `or `,
+		"TEXT_PREV_YEAR":   `Last Year`,
+		"TEXT_PREV_MONTH":  `Last Month`,
+		"TEXT_PREV_WEEK":   `Last Week`,
+		"TEXT_YESTERDAY":   `Yesterday`,
+		"TEXT_THIS_MONTH":  `This Month`,
+		"TEXT_THIS_WEEK":   `This Week`,
+		"TEXT_TODAY":       `Today`,
+		"TEXT_NEXT_YEAR":   `Next Year`,
+		"TEXT_NEXT_MONTH":  `Next Month`,
+		"TEXT_CLOSE":       `Close`,
+		"TEXT_DATE":        ``,
+		"TEXT_CHOOSE_DATE": `Choose Date`,
+	}
+
+	Lang[protocol.EN]["datepicker"]["dayNames"] = []string{`Sunday`, `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday`, `Saturday`}
+	Lang[protocol.EN]["datepicker"]["abbrDayNames"] = []string{`Sun`, `Mon`, `Tues`, `Wed`, `Thur`, `Fri`, `Sat`}
+	Lang[protocol.EN]["datepicker"]["monthNames"] = []string{`Jan`, `Feb`, `Mar`, `Apr`, `May`, `Jun`, `Jul`, `Aug`, `Sep`, `Oct`, `Nov`, `Dec`}
+
+	/* Common action icons. */
+	Lang[protocol.EN]["icons"] = make(map[string]interface{})
+	Lang[protocol.EN]["icons"]["todo"] = `check`
+	Lang[protocol.EN]["icons"]["product"] = `cube`
+	Lang[protocol.EN]["icons"]["bug"] = `bug`
+	Lang[protocol.EN]["icons"]["task"] = `check-sign`
+	Lang[protocol.EN]["icons"]["tasks"] = `tasks`
+	Lang[protocol.EN]["icons"]["project"] = `stack`
+	Lang[protocol.EN]["icons"]["doc"] = `file-text`
+	Lang[protocol.EN]["icons"]["doclib"] = `folder-close`
+	Lang[protocol.EN]["icons"]["story"] = `lightbulb`
+	Lang[protocol.EN]["icons"]["release"] = `tags`
+	Lang[protocol.EN]["icons"]["roadmap"] = `code-fork`
+	Lang[protocol.EN]["icons"]["plan"] = `flag`
+	Lang[protocol.EN]["icons"]["dynamic"] = `volume-up`
+	Lang[protocol.EN]["icons"]["build"] = `tag`
+	Lang[protocol.EN]["icons"]["test"] = `check`
+	Lang[protocol.EN]["icons"]["testtask"] = `check`
+	Lang[protocol.EN]["icons"]["group"] = `group`
+	Lang[protocol.EN]["icons"]["team"] = `group`
+	Lang[protocol.EN]["icons"]["company"] = `sitemap`
+	Lang[protocol.EN]["icons"]["user"] = `user`
+	Lang[protocol.EN]["icons"]["dept"] = `sitemap`
+	Lang[protocol.EN]["icons"]["tree"] = `sitemap`
+	Lang[protocol.EN]["icons"]["usecase"] = `sitemap`
+	Lang[protocol.EN]["icons"]["testcase"] = `sitemap`
+	Lang[protocol.EN]["icons"]["result"] = `list-alt`
+	Lang[protocol.EN]["icons"]["mail"] = `envelope`
+	Lang[protocol.EN]["icons"]["trash"] = `trash`
+	Lang[protocol.EN]["icons"]["extension"] = `th-large`
+	Lang[protocol.EN]["icons"]["app"] = `th-large`
+
+	Lang[protocol.EN]["icons"]["results"] = `list-alt`
+	Lang[protocol.EN]["icons"]["create"] = `plus`
+	Lang[protocol.EN]["icons"]["post"] = `edit`
+	Lang[protocol.EN]["icons"]["batchCreate"] = `plus-sign`
+	Lang[protocol.EN]["icons"]["batchEdit"] = `edit-sign`
+	Lang[protocol.EN]["icons"]["batchClose"] = `off`
+	Lang[protocol.EN]["icons"]["edit"] = `edit`
+	Lang[protocol.EN]["icons"]["delete"] = `close`
+	Lang[protocol.EN]["icons"]["copy"] = `copy`
+	Lang[protocol.EN]["icons"]["report"] = `bar-chart`
+	Lang[protocol.EN]["icons"]["export"] = `export`
+	Lang[protocol.EN]["icons"][`report-file`] = `file-powerpoint`
+	Lang[protocol.EN]["icons"]["import"] = `import`
+	Lang[protocol.EN]["icons"]["finish"] = `checked`
+	Lang[protocol.EN]["icons"]["resolve"] = `check`
+	Lang[protocol.EN]["icons"]["start"] = `play`
+	Lang[protocol.EN]["icons"]["restart"] = `play`
+	Lang[protocol.EN]["icons"]["run"] = `play`
+	Lang[protocol.EN]["icons"]["runCase"] = `play`
+	Lang[protocol.EN]["icons"]["batchRun"] = `play-sign`
+	Lang[protocol.EN]["icons"]["assign"] = `hand-right`
+	Lang[protocol.EN]["icons"]["assignTo"] = `hand-right`
+	Lang[protocol.EN]["icons"]["change"] = `fork`
+	Lang[protocol.EN]["icons"]["link"] = `link`
+	Lang[protocol.EN]["icons"]["close"] = `off`
+	Lang[protocol.EN]["icons"]["activate"] = `magic`
+	Lang[protocol.EN]["icons"]["review"] = `glasses`
+	Lang[protocol.EN]["icons"]["confirm"] = `search`
+	Lang[protocol.EN]["icons"]["confirmBug"] = `search`
+	Lang[protocol.EN]["icons"]["putoff"] = `calendar`
+	Lang[protocol.EN]["icons"]["suspend"] = `pause`
+	Lang[protocol.EN]["icons"]["pause"] = `pause`
+	Lang[protocol.EN]["icons"]["cancel"] = `ban-circle`
+	Lang[protocol.EN]["icons"]["recordEstimate"] = `time`
+	Lang[protocol.EN]["icons"]["customFields"] = `cogs`
+	Lang[protocol.EN]["icons"]["manage"] = `cog`
+	Lang[protocol.EN]["icons"]["unlock"] = `unlock-alt`
+	Lang[protocol.EN]["icons"]["confirmStoryChange"] = `search`
+	Lang[protocol.EN]["icons"]["score"] = `tint`
+
+	for name, order := range getOrder() {
+		if _, ok := Lang[protocol.EN][name]; ok {
+			Lang[protocol.EN][name]["menuOrder"] = order
+		}
+
+	}
+	for name, orders := range getSubMenuOrder() {
+		if _, ok := Lang[protocol.EN][name]; ok {
+			Lang[protocol.EN][name]["subMenuOrder"] = orders
+		}
+	}
+	Lang[protocol.EN]["nonRDMenu"] = make(map[string]interface{})
+	Lang[protocol.EN]["nonRDMenu"]["oa"] = `OA|attend|personal|`             //"OA|attend|personal|"替换`OA|attend|personal|`
+	Lang[protocol.EN]["nonRDMenu"]["my"] = `Calendar|my|calendar|`           //"Calendar|my|calendar|"替换`Calendar|my|calendar|`
+	Lang[protocol.EN]["nonRDMenu"]["feedback"] = `Feedback|feedback|browse|` //"Feedback|feedback|browse|"替换`Feedback|feedback|browse|`
+	Lang[protocol.EN]["nonRDMenu"]["faq"] = `FAQ|faq|browse|`                //"FAQ|faq|browse|"替换`FAQ|faq|browse|`
+	Lang[protocol.EN]["nonRDMenu"]["company"] = `Company|company|index`
+
+	Lang[protocol.EN]["feedback"] = make(map[string]interface{})
+
+	Lang[protocol.EN]["feedback"]["menu"] = []protocol.HtmlMenu{
+		{"all", map[string]string{`link`: `All|feedback|admin|browseType=all`}},
+		{"assigntome", map[string]string{`link`: `AssignedToMe|feedback|admin|browseType=assigntome`}},
+		{"bysearch", map[string]string{`link`: `<a href="javascript:;" class="querybox-toggle"><i class="icon-search icon"></i> ' . $lang->searchLang . '</a>`}},
+		{"faq", map[string]string{`link`: `FAQ|faq|browse|`}},
+		{"products", map[string]string{`link`: `Privilege|feedback|products`, `alias`: `manageproduct`}},
+		{"public", map[string]string{`link`: `Public|feedback|admin|browseType=public`}},
+		{"review", map[string]string{`link`: `Review|feedback|admin|browseType=review`}},
+		{"tobug", map[string]string{`link`: `To Bug|feedback|admin|browseType=tobug`}},
+		{"tostory", map[string]string{`link`: `To Story|feedback|admin|browseType=tostory`}},
+		{"totask", map[string]string{`link`: `To Task|feedback|admin|browseType=totask`}},
+		{"totodo", map[string]string{`link`: `To Todo|feedback|admin|browseType=totodo`}},
+		{"unclosed", map[string]string{`link`: `Unclosed|feedback|admin|browseType=unclosed`}},
+	}
+
+	Lang[protocol.EN]["oa"] = make(map[string]interface{})
+
+	Lang[protocol.EN]["oa"]["menu"] = []protocol.HtmlMenu{
+		{"attend", map[string]string{`link`: `Attend|attend|personal`, `subModule`: `attend`}},
+		{"holiday", map[string]string{`link`: `Holiday|holiday|browse`, `subModule`: `holiday`}},
+		{"leave", map[string]string{`link`: `Leave|leave|personal`, `alias`: `browse`, `subModule`: `leave`}},
+		{"lieu", map[string]string{`link`: `Lieu|lieu|personal`, `subModule`: `lieu`}},
+		{"makeup", map[string]string{`link`: `Makeup|makeup|personal`, `alias`: `create,edit,view,browse`, `subModule`: `makeup`}},
+		{"overtime", map[string]string{`link`: `Overtime|overtime|personal`, `subModule`: `overtime`}},
+		{"review", map[string]string{`link`: `Review|my|review|type=all&orderBy=status&from=oa`}},
+	}
+
+	Lang[protocol.EN]["ops"] = make(map[string]interface{})
+
+	Lang[protocol.EN]["ops"]["menu"] = []protocol.HtmlMenu{
+		{"deploy", map[string]string{`link`: `Deploy|deploy|browse`, `alias`: `create,edit,view`}},
+		{"host", map[string]string{`link`: `Host|host|browse`, `alias`: `create,edit,view,treemap`, `subModule`: `tree`}},
+		{"serverroom", map[string]string{`link`: `IDC|serverroom|browse`, `alias`: `create,edit,view`}},
+		{"service", map[string]string{`link`: `Service|service|manage`, `alias`: `create,edit,view,browse`}},
+		{"setting", map[string]string{`link`: `Settings|ops|setting`}},
+	}
+
+	Lang[protocol.EN]["attend"] = make(map[string]interface{})
+	Lang[protocol.EN]["attend"]["waitReviews"] = "There are <strong>%s</strong> records waiting to be reviewed."
+	Lang[protocol.EN]["attend"]["signInClientError"] = "Clockin failed. The settings is to clock-in via %s only."
+	Lang[protocol.EN]["attend"]["s"] = "seconds"
+	Lang[protocol.EN]["attend"]["m"] = "minutes"
+	Lang[protocol.EN]["attend"]["h"] = "hours"
+	Lang[protocol.EN]["attend"]["setDept"] = "Set Department"
+	Lang[protocol.EN]["attend"]["setManager"] = "Department Manager Settings"
+	Lang[protocol.EN]["attend"]["personalSettings"] = "Personal Settings"
+	Lang[protocol.EN]["attend"]["weeks"] = []string{`1st week`, `2nd week`, `3rd week`, `4th week`, `5th week`, `6th week`}
+	Lang[protocol.EN]["attend"]["reviewSuccess"] = "Reviewed"
+	Lang[protocol.EN]["attend"]["nodata"] = "No data is selected."
+	Lang[protocol.EN]["attend"]["denied"] = "Access is denied."
+	Lang[protocol.EN]["attend"]["mustSignOut"] = "Required"
+	Lang[protocol.EN]["attend"]["workingHours"] = "Working hours"
+	Lang[protocol.EN]["attend"]["workingDays"] = "Working days"
+	Lang[protocol.EN]["attend"]["signOutLimit"] = "Clock-out"
+	Lang[protocol.EN]["attend"]["signInLimit"] = "Clock-in"
+	Lang[protocol.EN]["attend"]["outFail"] = "Clock-out failed."
+	Lang[protocol.EN]["attend"]["outSuccess"] = "Clocked out."
+	Lang[protocol.EN]["attend"]["inFail"] = "Clock-in failed."
+	Lang[protocol.EN]["attend"]["inSuccess"] = "Clocked in."
+	Lang[protocol.EN]["attend"]["actualDays"] = "Actual Days"
+	Lang[protocol.EN]["attend"]["deserveDays"] = "Expected Days"
+	Lang[protocol.EN]["attend"]["reviewedDate"] = "Reviewed"
+	Lang[protocol.EN]["attend"]["reviewedBy"] = "Reviewed By"
+	Lang[protocol.EN]["attend"]["reviewStatus"] = "Review"
+	Lang[protocol.EN]["attend"]["reason"] = "Reasons"
+	Lang[protocol.EN]["attend"]["manualOut"] = "Clock-Out"
+	Lang[protocol.EN]["attend"]["manualIn"] = "Clock-In"
+	Lang[protocol.EN]["attend"]["search"] = "Search"
+	Lang[protocol.EN]["attend"]["end"] = "End"
+	Lang[protocol.EN]["attend"]["begin"] = "Begin"
+	Lang[protocol.EN]["attend"]["user"] = "User"
+	Lang[protocol.EN]["attend"]["rejectReason"] = "Reject Reason"
+	Lang[protocol.EN]["attend"]["signInClient"] = "Client"
+	Lang[protocol.EN]["attend"]["noAttendUsers"] = "Not required"
+	Lang[protocol.EN]["attend"]["ipList"] = "IP List"
+	Lang[protocol.EN]["attend"]["PM"] = "PM"
+	Lang[protocol.EN]["attend"]["AM"] = "AM"
+	Lang[protocol.EN]["attend"]["report"] = "Report"
+	Lang[protocol.EN]["attend"]["dayName"] = "Day"
+	Lang[protocol.EN]["attend"]["desc"] = "Description"
+	Lang[protocol.EN]["attend"]["device"] = "Device"
+	Lang[protocol.EN]["attend"]["ip"] = "IP"
+	Lang[protocol.EN]["attend"]["status"] = "Status"
+	Lang[protocol.EN]["attend"]["signOut"] = "Clock-Out"
+	Lang[protocol.EN]["attend"]["signIn"] = "Clock-In"
+	Lang[protocol.EN]["attend"]["account"] = "User"
+	Lang[protocol.EN]["attend"]["date"] = "Date"
+	Lang[protocol.EN]["attend"]["id"] = "ID"
+	Lang[protocol.EN]["attend"]["batchPass"] = "Batch Pass"
+	Lang[protocol.EN]["attend"]["batchReview"] = "Batch Review"
+	Lang[protocol.EN]["attend"]["browseReview"] = "Review List"
+	Lang[protocol.EN]["attend"]["exportDetail"] = "Export Details"
+	Lang[protocol.EN]["attend"]["exportStat"] = "Export Report"
+	Lang[protocol.EN]["attend"]["saveStat"] = "Save"
+	Lang[protocol.EN]["attend"]["stat"] = "Report"
+	Lang[protocol.EN]["attend"]["export"] = "Export"
+	Lang[protocol.EN]["attend"]["settings"] = `Company Settings` //"Settings"替换`Company Settings`
+	Lang[protocol.EN]["attend"]["review"] = "Review Attendance"
+	Lang[protocol.EN]["attend"]["overtimed"] = "Overtime taken"
+	Lang[protocol.EN]["attend"]["overtime"] = "Overtime"
+	Lang[protocol.EN]["attend"]["egressed"] = "Egress taken"
+	Lang[protocol.EN]["attend"]["egress"] = "Egress"
+	Lang[protocol.EN]["attend"]["triped"] = "Trip taken"
+	Lang[protocol.EN]["attend"]["trip"] = "Trip"
+	Lang[protocol.EN]["attend"]["lieud"] = "Lieu taken"
+	Lang[protocol.EN]["attend"]["lieu"] = "Lieu"
+	Lang[protocol.EN]["attend"]["makeuped"] = "Made up"
+	Lang[protocol.EN]["attend"]["makeup"] = "Makeup times"
+	Lang[protocol.EN]["attend"]["leaved"] = "Leave asked"
+	Lang[protocol.EN]["attend"]["leave"] = "Leave"
+	Lang[protocol.EN]["attend"]["edited"] = "Clock In"
+	Lang[protocol.EN]["attend"]["edit"] = "Edit"
+	Lang[protocol.EN]["attend"]["detail"] = "Details"
+	Lang[protocol.EN]["attend"]["company"] = "Company"
+	Lang[protocol.EN]["attend"]["department"] = "Department"
+	Lang[protocol.EN]["attend"]["personal"] = "My Attendance"
+	Lang[protocol.EN]["attend"]["common"] = "Attendance"
+	Lang[protocol.EN]["attend"]["menu"] = Lang[protocol.EN]["oa"]["menu"]
+	Lang[protocol.EN]["attend"]["featurebar"] = map[string]interface{}{
+		"browsereview": "Review|attend|browsereview|",
+		"company":      "Company|attend|company|",
+		"department":   "Department|attend|department|",
+		"detail":       "Detail|attend|detail|",
+		"personal":     "My|attend|personal|",
+		"settings":     map[string]string{`link`: `Settings|attend|settings|`},
+
+		"stat": "Report|attend|stat|",
+	}
+	Lang[protocol.EN]["effort"] = make(map[string]interface{})
+	Lang[protocol.EN]["effort"]["menu"] = Lang[protocol.EN]["my"]["menu"]
+
+	Lang[protocol.EN]["excel"] = make(map[string]interface{})
+	Lang[protocol.EN]["excel"]["noData"] = "No data."
+	Lang[protocol.EN]["excel"]["insert"] = "New Insertion"
+	Lang[protocol.EN]["excel"]["canNotRead"] = "It cannot parse this file."
+
+	Lang[protocol.EN]["faq"] = make(map[string]interface{})
+	Lang[protocol.EN]["faq"]["menu"] = Lang[protocol.EN]["feedback"]["menu"]
+	Lang[protocol.EN]["common"]["feedbackView"] = []string{"Developer Interface", "Feedback Interface"}
+
+	Lang[protocol.EN]["flow"] = make(map[string]interface{})
+
+	Lang[protocol.EN]["holiday"] = make(map[string]interface{})
+	Lang[protocol.EN]["holiday"]["menu"] = Lang[protocol.EN]["oa"]["menu"]
+	Lang[protocol.EN]["holiday"]["featurebar"] = map[string]string{
+		"browse": "All|holiday|browse|",
+	}
+
+	Lang[protocol.EN]["host"] = make(map[string]interface{})
+	Lang[protocol.EN]["host"]["menu"] = Lang[protocol.EN]["ops"]["menu"]
+	Lang[protocol.EN]["ldap"] = make(map[string]interface{})
+	Lang[protocol.EN]["ldap"]["menu"] = Lang[protocol.EN]["admin"]["menu"]
+	Lang[protocol.EN]["leave"] = make(map[string]interface{})
+	Lang[protocol.EN]["leave"]["menu"] = Lang[protocol.EN]["oa"]["menu"]
+	Lang[protocol.EN]["leave"]["featurebar"] = map[string]string{
+		"browseReview": "Review|leave|browsereview|",
+		"company":      "All|leave|company|",
+		"personal":     "My Leave|leave|personal|",
+		"setReviewer":  "Settings|leave|setReviewer|",
+	}
+
+	Lang[protocol.EN]["lieu"] = make(map[string]interface{})
+	Lang[protocol.EN]["lieu"]["menu"] = Lang[protocol.EN]["oa"]["menu"]
+	Lang[protocol.EN]["lieu"]["featurebar"] = map[string]string{
+		"browseReview": "Review|lieu|browsereview|",
+		"company":      "All|lieu|company|",
+		"personal":     "My Lieu|lieu|personal|",
+		"setReviewer":  "Settings|lieu|setReviewer|",
+	}
+
+	Lang[protocol.EN]["makeup"] = make(map[string]interface{})
+	Lang[protocol.EN]["makeup"]["menu"] = Lang[protocol.EN]["oa"]["menu"]
+	Lang[protocol.EN]["makeup"]["featurebar"] = map[string]string{
+		"browseReview": "Review|makeup|browsereview|",
+		"company":      "All|makeup|company|",
+		"personal":     "My Makeup|makeup|personal|",
+		"setReviewer":  "Settings|makeup|setReviewer|",
+	}
+
+	Lang[protocol.EN]["overtime"] = make(map[string]interface{})
+	Lang[protocol.EN]["overtime"]["menu"] = Lang[protocol.EN]["oa"]["menu"]
+	Lang[protocol.EN]["overtime"]["featurebar"] = map[string]string{
+		"browseReview": "Review|overtime|browsereview|",
+		"company":      "All|overtime|company|",
+		"personal":     "My Overtime|overtime|personal|",
+		"setReviewer":  "Settings|overtime|setReviewer|",
+	}
+
+	Lang[protocol.EN]["report"]["methodOrder"] = []string{"testcase", "build", "workSummary"}
+
+	Lang[protocol.EN]["serverroom"] = make(map[string]interface{})
+	Lang[protocol.EN]["serverroom"]["menu"] = Lang[protocol.EN]["ops"]["menu"]
+	Lang[protocol.EN]["sms"] = make(map[string]interface{})
+	Lang[protocol.EN]["sms"]["menu"] = Lang[protocol.EN]["admin"]["menu"]
+	Lang[protocol.EN]["workflow"] = make(map[string]interface{})
+
+	Lang[protocol.EN]["workflow"]["menu"] = []protocol.HtmlMenu{
+		{"database", map[string]string{`link`: `Database|workflow|browsedb|`, `subModule`: `workflowfield`}},
+		{"datasource", map[string]string{`link`: `Datasource|workflowdatasource|browse|`}},
+		{"flow", map[string]string{`link`: `Flows|workflow|browseflow|`, `alias`: `browse`, `subModule`: `workflowaction,workflowcondition,workflowlabel,workflowlayout,workflowlinkage,workflowhook`}},
+		{"rule", map[string]string{`link`: `Rules|workflowrule|browse|`}},
+	}
+
+	Lang[protocol.EN]["workflowaction"] = make(map[string]interface{})
+	Lang[protocol.EN]["workflowaction"]["menu"] = Lang[protocol.EN]["workflow"]["menu"]
+	Lang[protocol.EN]["workflowcondition"] = make(map[string]interface{})
+	Lang[protocol.EN]["workflowcondition"]["menu"] = Lang[protocol.EN]["workflow"]["menu"]
+	Lang[protocol.EN]["workflowdatasource"] = make(map[string]interface{})
+	Lang[protocol.EN]["workflowdatasource"]["menu"] = Lang[protocol.EN]["workflow"]["menu"]
+	Lang[protocol.EN]["workflowfield"] = make(map[string]interface{})
+	Lang[protocol.EN]["workflowfield"]["menu"] = Lang[protocol.EN]["workflow"]["menu"]
+	Lang[protocol.EN]["workflowhook"] = make(map[string]interface{})
+	Lang[protocol.EN]["workflowhook"]["menu"] = Lang[protocol.EN]["workflow"]["menu"]
+	Lang[protocol.EN]["workflowlabel"] = make(map[string]interface{})
+	Lang[protocol.EN]["workflowlabel"]["menu"] = Lang[protocol.EN]["workflow"]["menu"]
+	Lang[protocol.EN]["workflowlayout"] = make(map[string]interface{})
+	Lang[protocol.EN]["workflowlayout"]["menu"] = Lang[protocol.EN]["workflow"]["menu"]
+	Lang[protocol.EN]["workflowlinkage"] = make(map[string]interface{})
+	Lang[protocol.EN]["workflowlinkage"]["menu"] = Lang[protocol.EN]["workflow"]["menu"]
+	Lang[protocol.EN]["workflowrule"] = make(map[string]interface{})
+	Lang[protocol.EN]["workflowrule"]["menu"] = Lang[protocol.EN]["workflow"]["menu"]
+	Lang[protocol.EN]["admin"]["info"] = map[string]string{
+		"version": "Current Version is %s. ",
+		"links":   "You can visit links below",
+		"account": "Your ZenTao account is %s.",
+		"log":     "Log that is beyond valid days will be deleted and it has to run cron.",
+	}
+
+	Lang[protocol.EN]["admin"]["notice"] = map[string]string{
+		"register": "Note: You haven't registered in ZenTao(www.zentao.pm). %s then get the Latest ZenTao Upgrades and News.",
+		"ignore":   "Ignore",
+		"int":      "『%s』should be a positive integer.",
+	}
+
+	Lang[protocol.EN]["admin"]["register"] = map[string]string{
+		"common":     "Bind Account",
+		"caption":    "Register in Zentao Community",
+		"click":      "Please Register here",
+		"lblAccount": "at least 3 characters pls; contains letters and numbers.",
+		"lblPasswd":  "at least 6 characters pls; contains letters and numbers.",
+		"submit":     "Register",
+		"bind":       "Binding Exsit Account",
+		"success":    "You have registered with us!",
+	}
+
+	Lang[protocol.EN]["admin"]["bind"] = map[string]string{
+		"caption": "Link Account",
+		"success": "Account is linked!",
+	}
+
+	Lang[protocol.EN]["admin"]["safe"] = map[string]interface{}{
+		"common":                   "Security Policy",
+		"set":                      "Password Strength",
+		"password":                 "Password Strength",
+		"weak":                     "Weak Password",
+		"reason":                   "Type",
+		"checkWeak":                "Weak Password",
+		"changeWeak":               "Your password is weak. Change it.",
+		"modifyPasswordFirstLogin": "Change password after first login",
+		"modeList":                 []string{"N/A", "Medium", "Strong"},
+
+		"modeRuleList": []string{"Contains upper and lower case, numbers. Length >= 6", "Contains upper and lower case, numbers and special characters.  Length >= 10."},
+
+		"reasonList": map[string]string{
+			"weak":     "Common Weak Password",
+			"account":  "Same as your account",
+			"mobile":   "Same as your cellphone number",
+			"phone":    "Same as your phone number",
+			"birthday": "Same as your DOB",
+		},
+
+		"modifyPasswordList": []string{"Yes", "No"},
+
+		"noticeMode":   "Password will be checked when login, add and edit user.",
+		"noticeStrong": "",
+	}
+
+	Lang[protocol.EN]["api"] = make(map[string]interface{})
+	Lang[protocol.EN]["api"]["post"] = `Refer to page list if POST Debug`       //"Refer to page list if POST Debug"替换`Refer to page list if POST Debug`
+	Lang[protocol.EN]["api"]["noParam"] = `No parameters required if GET Debug` //"No parameters required if GET Debug"替换`No parameters required if GET Debug`
+	Lang[protocol.EN]["api"]["data"] = `Data`                                   //"Data"替换`Data`
+	Lang[protocol.EN]["api"]["status"] = `Status`                               //"Status"替换`Status`
+	Lang[protocol.EN]["api"]["result"] = `Results`                              //"Results"替换`Results`
+	Lang[protocol.EN]["api"]["url"] = `Request URL`                             //"Request URL"替换`Request URL`
+	Lang[protocol.EN]["api"]["submit"] = `Submit`                               //"Submit"替换`Submit`
+	Lang[protocol.EN]["api"]["debug"] = `Debug`                                 //"Debug"替换`Debug`
+	Lang[protocol.EN]["api"]["desc"] = `Description`                            //"Description"替换`Description`
+	Lang[protocol.EN]["api"]["startLine"] = "%s,%s"
+	Lang[protocol.EN]["api"]["position"] = `Position`        //"Position"替换`Position`
+	Lang[protocol.EN]["api"]["sql"] = `SQL Query API`        //"SQL Query API"替换`SQL Query API`
+	Lang[protocol.EN]["api"]["getModel"] = `Super Model API` //"Super Model API"替换`Super Model API`
+	Lang[protocol.EN]["api"]["common"] = `API`               //"API"替换`API`
+
+	Lang[protocol.EN]["api"]["error"] = map[string]string{
+		"onlySelect": "SQL interface only allow SELECT query.",
+	}
+
+	Lang[protocol.EN]["attend"]["clientList"] = map[string]string{
+		"all":     "All",
+		"desktop": "Desktop",
+	}
+
+	Lang[protocol.EN]["attend"]["statusList"] = map[string]string{
+		"normal":   "Normal",
+		"late":     "Late",
+		"early":    "Leave early",
+		"both":     "Late and Leave early",
+		"absent":   "Absent",
+		"leave":    "Ask for leave",
+		"makeup":   "Makeup times",
+		"overtime": "Overtime",
+		"lieu":     "Lieu",
+		"trip":     "Biz trip",
+		"egress":   "Biz egress",
+		"rest":     "Off",
+	}
+
+	Lang[protocol.EN]["attend"]["abbrStatusList"] = map[string]string{
+		"normal":   "√",
+		"late":     "Late",
+		"early":    "Early",
+		"both":     "L+E",
+		"absent":   "Absent",
+		"leave":    "Leave",
+		"makeup":   "Makeup",
+		"overtime": "OT",
+		"lieu":     "Lieu",
+		"trip":     "Biz",
+		"egress":   "Out",
+		"rest":     "Off",
+	}
+
+	Lang[protocol.EN]["attend"]["markStatusList"] = map[string]string{
+		"normal":   "√",
+		"late":     "=",
+		"early":    ">",
+		"both":     "=>",
+		"absent":   "x",
+		"leave":    "!",
+		"makeup":   "↑",
+		"overtime": "+",
+		"lieu":     "↓",
+		"trip":     "$",
+		"egress":   "#",
+		"rest":     "~",
+	}
+
+	Lang[protocol.EN]["attend"]["reasonList"] = map[string]string{
+		"normal":   "Normal",
+		"leave":    "Ask for leave",
+		"makeup":   "Makeup times",
+		"overtime": "Overtime",
+		"lieu":     "Lieu",
+		"trip":     "Biz trip",
+		"egress":   "Biz egress",
+	}
+
+	Lang[protocol.EN]["attend"]["reviewStatusList"] = map[string]string{
+		"wait":   "Wait",
+		"pass":   "Pass",
+		"reject": "Reject",
+	}
+
+	Lang[protocol.EN]["attend"]["workingDaysList"] = []string{"Monday ~ Friday", "Monday ~ Saturday", "Monday ~ Sunday", "Sunday ~ Thursday", "Sunday ~ Friday"}
+
+	Lang[protocol.EN]["attend"]["mustSignOutList"] = map[string]string{
+		"yes": "Yes",
+		"no":  "No",
+	}
+
+	Lang[protocol.EN]["attend"]["notice"] = map[string]string{
+		"today":    "<p>Your attendance yesterday was %s, <a href='%s' %s> Click here to edit.</a></p>",
+		"yestoday": "<p>Your attendance today is %s, <a href='%s' %s> Click here to edit.</a></p>",
+		"absent":   "N/A",
+	}
+
+	Lang[protocol.EN]["attend"]["confirmReview"] = map[string]string{
+		"pass":   "Do you want to pass it?",
+		"reject": "Do you want to reject it?",
+	}
+
+	Lang[protocol.EN]["attend"]["beginDate"] = map[string]string{
+		"company":  "Start Date",
+		"personal": "Start Date",
+	}
+
+	Lang[protocol.EN]["attend"]["note"] = map[string]string{
+		"ip":           "Use comma to separate IPs, and IP segment is OK, e.g. 192.168.1.*",
+		"allip":        "All IPs",
+		"IPDenied":     "IP denied.",
+		"beginDate":    "Set a date to begin record attendance. The attenance before this date will not be record.",
+		"signInClient": "Select All to clock in via any way, otherwise users have to clock in via the selected one.",
+	}
+	Lang[protocol.EN]["block"] = make(map[string]interface{})
+	Lang[protocol.EN]["block"]["default"] = map[string]interface{}{
+		"product": []protocol.HtmlBlock{
+			protocol.HtmlBlock{
+				Title: Lang[protocol.EN]["common"]["productCommon"].(string) + " Report",
+				Block: `statistic`,
+				Grid:  8,
+				Prams: map[string]string{
+					`type`: `all`,
+					`num`:  `20`,
+				},
+			},
+			protocol.HtmlBlock{
+				Title: Lang[protocol.EN]["common"]["productCommon"].(string) + ` Overview`,
+				Block: `overview`,
+				Grid:  4,
+			},
+			protocol.HtmlBlock{
+				Title: `Open ` + Lang[protocol.EN]["common"]["productCommon"].(string) + `s`,
+				Block: `list`,
+				Grid:  8,
+			},
+			protocol.HtmlBlock{
+				Title: `My Story`,
+				Block: `story`,
+				Grid:  4,
+				Prams: map[string]string{
+					`num`:     `15`,
+					`orderBy`: `id_desc`,
+					`type`:    `assignedTo`,
+				},
+			},
+		},
+		"project": []protocol.HtmlBlock{
+			protocol.HtmlBlock{
+				Title: Lang[protocol.EN]["common"]["projectCommon"].(string) + ` Report`,
+				Block: `statistic`,
+				Grid:  8,
+				Prams: map[string]string{
+					`type`: `all`,
+					`num`:  `20`,
+				},
+			}, protocol.HtmlBlock{
+				Title: Lang[protocol.EN]["common"]["projectCommon"].(string) + ` Overview`,
+				Block: `overview`,
+				Grid:  4,
+			}, protocol.HtmlBlock{
+				Title: `Active ` + Lang[protocol.EN]["common"]["projectCommon"].(string) + `s`,
+				Block: `list`,
+				Grid:  8,
+				Prams: map[string]string{
+					`num`:     `15`,
+					`orderBy`: `id_desc`,
+					`type`:    `undone`,
+				},
+			}, protocol.HtmlBlock{
+				Title: `My Tasks`,
+				Block: `task`,
+				Grid:  4,
+				Prams: map[string]string{
+					`num`:     `15`,
+					`orderBy`: `id_desc`,
+					`type`:    `assignedTo`,
+				},
+			},
+		},
+		"qa": []protocol.HtmlBlock{
+			protocol.HtmlBlock{
+				Title: `Test Report`,
+				Block: `statistic`,
+				Grid:  8,
+				Prams: map[string]string{
+					`type`: `noclosed`,
+					`num`:  `20`,
+				},
+			},
+			protocol.HtmlBlock{
+
+				Title: `My Bug`,
+				Block: `bug`,
+				Grid:  4,
+			},
+			protocol.HtmlBlock{
+				Title: `My Case`,
+				Block: `case`,
+				Grid:  4,
+				Prams: map[string]string{
+					`num`:     `15`,
+					`orderBy`: `id_desc`,
+					`type`:    `assigntome`,
+				},
+			},
+			protocol.HtmlBlock{
+				Title: `Pending Builds`,
+				Block: `testtask`,
+				Grid:  4,
+				Prams: map[string]string{
+					`num`:     `15`,
+					`orderBy`: `id_desc`,
+					`type`:    `wait`,
+				},
+			},
+		},
+		"full": map[string][]protocol.HtmlBlock{
+			"my": []protocol.HtmlBlock{
+				protocol.HtmlBlock{
+					Title: `Welcome`,
+					Block: `welcome`,
+					Grid:  8,
+				},
+				protocol.HtmlBlock{
+					Title: `Dynamic`,
+					Block: `dynamic`,
+					Grid:  4,
+				},
+				protocol.HtmlBlock{
+					Title: `Flowchart`,
+					Block: `flowchart`,
+					Grid:  8,
+				},
+				protocol.HtmlBlock{
+					Title:  `My Todo`,
+					Block:  `list`,
+					Grid:   4,
+					Source: "todo",
+					Prams: map[string]string{
+						`num`: `20`,
+					},
+				},
+				protocol.HtmlBlock{
+					Title:  Lang[protocol.EN]["common"]["projectCommon"].(string) + ` Report`,
+					Block:  `statistic`,
+					Grid:   8,
+					Source: "project",
+					Prams: map[string]string{
+						`type`: `all`,
+						`num`:  `20`,
+					},
+				}, protocol.HtmlBlock{
+					Title:  Lang[protocol.EN]["common"]["projectCommon"].(string) + ` Overview`,
+					Block:  `overview`,
+					Grid:   4,
+					Source: "project",
+				},
+				protocol.HtmlBlock{
+					Title:  Lang[protocol.EN]["common"]["productCommon"].(string) + " Report",
+					Block:  `statistic`,
+					Grid:   8,
+					Source: "product",
+					Prams: map[string]string{
+						`type`: `all`,
+						`num`:  `20`,
+					},
+				},
+				protocol.HtmlBlock{
+					Title:  Lang[protocol.EN]["common"]["productCommon"].(string) + ` Overview`,
+					Block:  `overview`,
+					Grid:   4,
+					Source: "product",
+				},
+				protocol.HtmlBlock{
+					Title:  `My Bug`,
+					Block:  `bug`,
+					Grid:   4,
+					Source: "qa",
+				},
+			},
+		},
+	}
+	Lang[protocol.EN]["block"]["modules"] = map[string]interface{}{
+		"product": map[string]map[string]string{
+			"availableBlocks": map[string]string{
+				"statistic": Lang[protocol.EN]["common"]["productCommon"].(string) + `Product Report`,
+				"overview":  Lang[protocol.EN]["common"]["productCommon"].(string) + `Product Overview`,
+				"list":      `Product List`,
+				"story":     `Story`,
+				"plan":      `Plan`,
+				"release":   `Release`,
+			},
+			"moreLinkList": map[string]string{
+				"list":  `product|all|product=&line=0&status=%s`,
+				"story": `my|story|type=%s`,
+			},
+		},
+		"project": map[string]map[string]string{
+			"availableBlocks": map[string]string{
+				"statistic": Lang[protocol.EN]["common"]["projectCommon"].(string) + ` Report`,
+				"overview":  Lang[protocol.EN]["common"]["projectCommon"].(string) + ` Overview`,
+				"list":      Lang[protocol.EN]["common"]["projectCommon"].(string) + ` List`,
+				"task":      `Task`,
+				"build":     `Build`,
+			},
+			"moreLinkList": map[string]string{
+				"list": `project|all|status=%s&project=`,
+				"task": `my|task|type=%s`,
+			},
+		},
+		"qa": map[string]map[string]string{
+			"availableBlocks": map[string]string{
+				"statistic": `Test Report`,
+				//overview  = `Testcase Overview`;
+				"bug":      `Bug`,
+				"case":     `Case`,
+				"testtask": `Test Build`,
+			},
+			"moreLinkList": map[string]string{
+				"bug":      `my|bug|type=%s`,
+				"case":     `my|testcase|type=%s`,
+				"testtask": `testtask|browse|type=%s`,
+			},
+		},
+		"todo": map[string]map[string]string{
+			"availableBlocks": map[string]string{
+				"list": `Todo`,
+			},
+			"moreLinkList": map[string]string{
+				"list": `my|todo|type=all`,
+			},
+		},
+		"common": map[string]map[string]string{
+			"moreLinkList": map[string]string{
+				"dynamic": `company|dynamic|`,
+			},
+		},
+	}
+	//block文件
+}

@@ -31,7 +31,7 @@ type Msg struct {
 	cache              RpcCache
 	transactionTimeOut time.Duration
 	DB                 *MsgDB
-	lang               CountryNo
+	Lang               CountryNo
 	QueryID            uint32
 	Uid                int32
 	Addr               string
@@ -77,7 +77,7 @@ func ReadOneMsg(buf *libraries.MsgBuffer) (msg *Msg, err error) {
 	msg.Uid = int32(data[18]) | int32(data[19])<<8 | int32(data[20])<<16 | int32(data[21])<<24
 	msg.DB.msg = msg
 	msg.Cmd = int32(data[MsgHeadLen]) | int32(data[MsgHeadLen+1])<<8 | int32(data[MsgHeadLen+2])<<16 | int32(data[MsgHeadLen+3])<<24
-	msg.lang = DefaultLang //暂时默认语言
+	msg.Lang = DefaultLang //暂时默认语言
 	msg.buf = buf
 	return msg, nil
 }
@@ -87,6 +87,7 @@ func ReadOneMsgFromBytes(data []byte) (msg *Msg, length int, err error) {
 	}
 
 	datalen := int(data[MsgHeadLen-3]) | int(data[MsgHeadLen-2])<<8 | int(data[MsgHeadLen-1])<<16
+
 	if len(data) < MsgHeadLen+datalen {
 		return nil, 0, errMsgDataLen
 	}
@@ -101,7 +102,7 @@ func ReadOneMsgFromBytes(data []byte) (msg *Msg, length int, err error) {
 	msg.Uid = int32(data[18]) | int32(data[19])<<8 | int32(data[20])<<16 | int32(data[21])<<24
 	msg.DB.msg = msg
 	msg.Cmd = int32(data[MsgHeadLen]) | int32(data[MsgHeadLen+1])<<8 | int32(data[MsgHeadLen+2])<<16 | int32(data[MsgHeadLen+3])<<24
-	msg.lang = DefaultLang //暂时默认语言
+	msg.Lang = DefaultLang //暂时默认语言
 	//msg.Data = data[MsgHeadLen : MsgHeadLen+datalen]
 	msg.buf = BufPoolGet()
 	msg.buf.Write(data[:MsgHeadLen+msg.datalen])
@@ -224,32 +225,7 @@ func (m *Msg) Cache_Set(key string, value MSG_DATA) error {
 func (m *Msg) Cache_Del(key string) error {
 	return m.cache.Del(key, "Msg:"+strconv.Itoa(int(m.Msgno)))
 }
-func (m *Msg) LoadConfig(key string) (res map[string]map[string]interface{}, err error) {
-	b, err := m.cache.Get(key, PATH_CONFIG_CACHE+m.lang.String())
-	if err != nil {
-		return nil, err
-	}
-	if len(b) == 0 {
-		return
-	}
-	err = libraries.JsonUnmarshal(b, &res)
 
-	return res, err
-}
-
-//解析具体某个值
-func (m *Msg) LoadConfigToValue(key, key1, key2 string, value interface{}) error {
-	res, err := m.LoadConfig(key)
-	if err != nil {
-		return err
-	}
-	if v1, ok := res[key1]; ok {
-		if v2, ok := v1[key2]; ok {
-			err = libraries.JsonUnmarshal(libraries.JsonMarshal(v2), value)
-		}
-	}
-	return err
-}
 
 //解决其他地方无法调用小写方法
 func MSG_DATA_Write(data MSG_DATA, buf *libraries.MsgBuffer) {
@@ -547,7 +523,7 @@ func (msg *Msg) BeginTransaction() (*MsgDBTransaction, error) {
 		cache:              msg.cache,
 		transactionTimeOut: msg.transactionTimeOut,
 		DB:                 &MsgDB{transactionNo: msg.DB.transaction.newTransactionNo},
-		lang:               msg.lang,
+		Lang:               msg.Lang,
 	}
 	newMsg.DB.msg = newMsg
 	newMsg.DB.transaction = &MsgDBTransaction{t: msg.DB.transaction.t, msg: newMsg, newTransactionNo: msg.DB.transaction.newTransactionNo}
